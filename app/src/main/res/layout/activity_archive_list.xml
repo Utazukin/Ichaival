@@ -8,8 +8,12 @@
         tools:context=".ArchiveList">
 
     <fragment
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:name="com.example.shaku.ichaival.ArchiveFragment"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:name="com.example.shaku.ichaival.ArchiveFragment"
             android:id="@+id/fragment"
-            tools:layout="@layout/fragment_archive_list"/>
+            tools:layout="@layout/fragment_archive_list"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 </android.support.constraint.ConstraintLayout>
