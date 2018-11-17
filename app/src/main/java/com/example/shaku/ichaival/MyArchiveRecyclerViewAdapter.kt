@@ -17,11 +17,13 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MyArchiveRecyclerViewAdapter(
-    private val mValues: List<Archive>,
+    private val mValues: MutableList<Archive>,
     private val mListener: OnListFragmentInteractionListener?
 ) : RecyclerView.Adapter<MyArchiveRecyclerViewAdapter.ViewHolder>() {
 
     private val mOnClickListener: View.OnClickListener
+
+    private var mValuesCopy: List<Archive>
 
     init {
         mOnClickListener = View.OnClickListener { v ->
@@ -30,6 +32,7 @@ class MyArchiveRecyclerViewAdapter(
             // one) that an item has been selected.
             mListener?.onListFragmentInteraction(item)
         }
+        mValuesCopy = mValues.toList()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -47,6 +50,34 @@ class MyArchiveRecyclerViewAdapter(
             tag = item
             setOnClickListener(mOnClickListener)
         }
+    }
+
+    fun updateDataCopy() {
+        mValuesCopy = mValues.toList()
+    }
+
+    fun filter(filter: String?) {
+        if (filter == null)
+            return
+
+        mValues.clear()
+        if (filter.isEmpty())
+            mValues.addAll(mValuesCopy)
+        else {
+            val normalized = filter.toLowerCase()
+            for (archive in mValuesCopy) {
+                if (archive.title.toLowerCase().contains(normalized))
+                    mValues.add(archive)
+                else {
+                   val terms = filter.split(Regex("\\s"))
+                    for (term in terms) {
+                        if (archive.containsTag(term))
+                            mValues.add(archive)
+                    }
+                }
+            }
+        }
+        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int = mValues.size

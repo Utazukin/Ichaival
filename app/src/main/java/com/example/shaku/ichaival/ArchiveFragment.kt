@@ -6,6 +6,7 @@ import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.widget.SearchView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,25 +40,42 @@ class ArchiveFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
+        val listView: RecyclerView = view.findViewById(R.id.list)
+        lateinit var listAdapter: MyArchiveRecyclerViewAdapter
+
 
         // Set the adapter
-        if (view is RecyclerView) {
-            val tempList = mutableListOf<Archive>()
-            with(view) {
-                layoutManager = when {
-                    columnCount <= 1 -> LinearLayoutManager(context)
-                    else -> GridLayoutManager(context, columnCount)
-                }
-                adapter = MyArchiveRecyclerViewAdapter(tempList, listener)
+        val tempList = mutableListOf<Archive>()
+        with(listView) {
+            layoutManager = when {
+                columnCount <= 1 -> LinearLayoutManager(context)
+                else -> GridLayoutManager(context, columnCount)
+            }
+            val temp = MyArchiveRecyclerViewAdapter(tempList, listener)
+            listAdapter = temp
+            adapter = temp
+        }
+
+        val searchView: SearchView = view.findViewById(R.id.archive_search)
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(p0: String?): Boolean {
+                listAdapter.filter(p0)
+                return true
             }
 
-            val copy = context
-            if (copy != null)
-                GlobalScope.launch(Dispatchers.Main) {
-                    tempList.addAll(DatabaseReader.readArchiveList(copy))
-                    view.adapter?.notifyDataSetChanged()
-                }
-        }
+            override fun onQueryTextChange(p0: String?): Boolean {
+                listAdapter.filter(p0)
+                return true
+            }
+        })
+
+        val copy = context
+        if (copy != null)
+            GlobalScope.launch(Dispatchers.Main) {
+                tempList.addAll(DatabaseReader.readArchiveList(copy))
+                listAdapter.updateDataCopy()
+                listAdapter.notifyDataSetChanged()
+            }
         return view
     }
 
