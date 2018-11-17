@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Ichaival</string>
+    <string name="archive_thumb">thumb</string>
+    <string name="archive_label">name</string>
+
+    <string name="title_activity_reader">ReaderActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+</resources>
