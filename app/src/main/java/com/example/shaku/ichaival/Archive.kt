@@ -1,11 +1,8 @@
 package com.example.shaku.ichaival
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.support.annotation.UiThread
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 
@@ -70,7 +67,7 @@ class Archive(json: JSONObject) {
         return page >= 0 && page < imageUrls.size
     }
 
-    private suspend fun getPage(page: Int, parentDir: File, preload: Boolean) : File? {
+    private suspend fun getPage(page: Int, parentDir: File) : File? {
         val archiveCache = File(parentDir, "temp/$id")
         if (!archiveCache.exists())
             archiveCache.mkdirs()
@@ -90,28 +87,12 @@ class Archive(json: JSONObject) {
             }
         }
 
-        if (preload) {
-            GlobalScope.launch {
-                if (page < imageUrls.size - 1) {
-                    for (i in (page + 1)..(page + 4)) {
-                        if (i >= imageUrls.size)
-                            break
-                        getPage(i, parentDir, false)
-                    }
-                }
-            }
-        }
-
         return imageFile
     }
 
     @UiThread
-    suspend fun getPageImage(page: Int, parentDir: File) : Bitmap? {
-        val imageFile = getPage(page, parentDir, true)
-
-        if (imageFile != null)
-            return BitmapFactory.decodeFile(imageFile.path)
-        return null
+    suspend fun getPageImage(page: Int, parentDir: File) : String? {
+        return getPage(page, parentDir)?.path
     }
 
     private fun downloadPage(page: Int) : ByteArray? {

@@ -1,11 +1,17 @@
 package com.example.shaku.ichaival
 
+import android.graphics.Bitmap
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
 import android.support.v4.app.NavUtils
 import android.view.MenuItem
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.transition.Transition
 import com.github.chrisbanes.photoview.OnSingleFlingListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.Dispatchers
@@ -89,17 +95,27 @@ class ReaderActivity : AppCompatActivity() {
                 GlobalScope.launch(Dispatchers.Main) {
                     archive = DatabaseReader.getArchive(arcid, applicationContext)
                     val image = GlobalScope.async { archive?.getPageImage(0, filesDir) }.await()
-                    main_image.setImageBitmap(image)
+                    displayImage(image)
                 }
             }
         }
     }
 
+    private fun displayImage(image: String?) {
+        Glide.with(this).asBitmap().load(image).apply{RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL)}
+            .into(object : SimpleTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    main_image.setImageBitmap(resource)
+                }
+            })
+    }
+
     private fun replaceImage(page: Int) {
         GlobalScope.launch(Dispatchers.Main) {
-            if (archive?.hasPage(page)!!) {
-                val image = GlobalScope.async { archive?.getPageImage(page, filesDir) }.await()
-                main_image.setImageBitmap(image)
+            val copy = archive
+            if (copy != null && copy.hasPage(page)) {
+                val image = GlobalScope.async { copy.getPageImage(page, filesDir) }.await()
+                displayImage(image)
                 currentPage = page
             }
         }
