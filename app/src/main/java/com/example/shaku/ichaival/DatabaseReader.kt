@@ -3,6 +3,7 @@ package com.example.shaku.ichaival
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.preference.Preference
 import android.support.annotation.UiThread
 import kotlinx.coroutines.*
 import org.json.JSONArray
@@ -13,18 +14,16 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.Charset
-import java.nio.charset.CharsetDecoder
 
-class DatabaseReader private constructor() {
+class DatabaseReader private constructor() : Preference.OnPreferenceChangeListener {
     companion object {
-        private const val serverLocation: String = "http://custom-htpc:3000" //TODO make this a setting.
         private const val jsonLocation: String = "archives.json"
         private const val apiPath: String = "/api"
         private const val archiveListPath = "$apiPath/archivelist"
         private const val thumbPath = "$apiPath/thumbnail"
         private const val extractPath = "$apiPath/extract"
 
-        private val reader = DatabaseReader()
+        val reader = DatabaseReader()
 
         @UiThread
         suspend fun readArchiveList(context: Context, forceUpdate: Boolean = false): List<Archive> {
@@ -43,12 +42,21 @@ class DatabaseReader private constructor() {
             return reader.extractArchive(id)
         }
 
+        fun getRawImageUrl(path: String) : String {
+            return reader.getRawImageUrl(path)
+        }
+
+        fun updateServerLocation(location: String) {
+            reader.serverLocation = location
+        }
+
         suspend fun getArchiveImage(archive: Archive, context: Context) : Bitmap? {
             return reader.getArchiveImage(archive, context)
         }
     }
 
     private lateinit var archiveList: List<Archive>
+    private var serverLocation: String = ""
 
     @UiThread
     private suspend fun readArchiveList(context: Context, forceUpdate: Boolean = false): List<Archive> {
@@ -69,6 +77,17 @@ class DatabaseReader private constructor() {
             archiveList = archiveList.sortedBy { archive -> archive.title }
         }
         return archiveList
+    }
+
+    override fun onPreferenceChange(pref: Preference?, newValue: Any?): Boolean {
+        return try { //TODO use something better for validation
+            val url = URL(newValue as String)
+            serverLocation = newValue
+            true
+        } catch (e: Exception) {
+            //TODO show a toast telling the user to enter a valid url.
+            false
+        }
     }
 
     private suspend fun getArchive(id: String, context: Context) : Archive? {
@@ -92,6 +111,10 @@ class DatabaseReader private constructor() {
                 return inputStream.readBytes()
             }
         }
+    }
+
+    private fun getRawImageUrl(path: String) : String {
+        return serverLocation + path
     }
 
     private fun extractArchive(id: String) : JSONObject? {

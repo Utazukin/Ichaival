@@ -3,9 +3,13 @@ package com.example.shaku.ichaival
 import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.preference.PreferenceManager
+import android.support.design.widget.NavigationView
+import android.support.v4.widget.DrawerLayout
 import com.example.shaku.ichaival.ArchiveFragment.OnListFragmentInteractionListener
 
 class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener {
+    private lateinit var drawerLayout: DrawerLayout
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive == null)
@@ -21,5 +25,24 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_list)
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
+
+        drawerLayout = findViewById(R.id.drawer_layout)
+        val navView: NavigationView = drawerLayout.findViewById(R.id.nav_view)
+        val context = this
+        navView.setNavigationItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_settings -> {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    startActivity(intent)
+                    drawerLayout.closeDrawers()
+                    true
+                }
+                else -> false
+            }
+        }
     }
 }

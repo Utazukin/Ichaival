@@ -30,6 +30,14 @@
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="com.example.shaku.ichaival.ArchiveList"/>
         </activity>
+        <activity
+                android:name=".SettingsActivity"
+                android:label="@string/title_activity_settings"
+                android:parentActivityName=".ArchiveList">
+            <meta-data
+                    android:name="android.support.PARENT_ACTIVITY"
+                    android:value="com.example.shaku.ichaival.ArchiveList"/>
+        </activity>
     </application>
 
 </manifest>
