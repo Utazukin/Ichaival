@@ -6,6 +6,7 @@ import android.os.Handler
 import android.view.View
 import android.support.v4.app.NavUtils
 import android.view.MenuItem
+import com.github.chrisbanes.photoview.OnSingleFlingListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -61,10 +62,21 @@ class ReaderActivity : AppCompatActivity() {
 
         mVisible = true
 
-        // Set up the user interaction to manually show or hide the system UI.
-        //main_image.setOnClickListener { toggle() }
-        left_button.setOnClickListener { replaceImage(currentPage - 1)}
-        right_button.setOnClickListener { replaceImage(currentPage + 1)}
+        main_image.setOnPhotoTapListener { _, x, _ ->
+            if (x < 0.5)
+                replaceImage(currentPage - 1)
+            else
+                replaceImage(currentPage + 1)
+        }
+
+        main_image.setOnSingleFlingListener(OnSingleFlingListener { _, _, velocityX, _ ->
+            when {
+                velocityX >= 10 -> replaceImage(currentPage - 1)
+                velocityX <= -10 -> replaceImage(currentPage + 1)
+                else -> return@OnSingleFlingListener false
+            }
+            true
+        })
 
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
