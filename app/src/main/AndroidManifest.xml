@@ -38,6 +38,12 @@
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="com.example.shaku.ichaival.ArchiveList"/>
         </activity>
+        <activity android:name=".ClearCacheActivity">
+            <intent-filter>
+                <action android:name="com.example.shaku.ichaival.ClearCacheActivity"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

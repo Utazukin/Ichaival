@@ -16,5 +16,6 @@
             android:key="@string/server_address_preference"/>
 
     <Preference android:title="@string/clear_cache">
+        <intent android:action="com.example.shaku.ichaival.ClearCacheActivity"/>
     </Preference>
 </PreferenceScreen>

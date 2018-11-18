@@ -22,6 +22,7 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
         private const val archiveListPath = "$apiPath/archivelist"
         private const val thumbPath = "$apiPath/thumbnail"
         private const val extractPath = "$apiPath/extract"
+        private const val tempFolder = "temp"
 
         val reader = DatabaseReader()
 
@@ -48,6 +49,14 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
 
         fun updateServerLocation(location: String) {
             reader.serverLocation = location
+        }
+
+        fun clearCache(context: Context) {
+            reader.clearCache(context)
+        }
+
+        fun getCacheSize(context: Context) : Long {
+            return reader.getCacheSize(context)
         }
 
         suspend fun getArchiveImage(archive: Archive, context: Context) : Bitmap? {
@@ -98,6 +107,17 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
                 return archive
         }
         return null
+    }
+
+    private fun clearCache(context: Context) {
+        val tempDir = File(context.filesDir, tempFolder)
+        if (tempDir.exists() && tempDir.isDirectory)
+            tempDir.deleteRecursively()
+    }
+
+    private fun getCacheSize(context: Context) : Long {
+        val tempDir = File(context.filesDir, tempFolder)
+        return if (tempDir.exists()) tempDir.totalSpace else 0
     }
 
     private fun downloadPage(path: String) : ByteArray? {
