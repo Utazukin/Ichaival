@@ -1,16 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <SearchView
+    <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/archive_search"
-            />
+            android:layout_height="wrap_content">
+
+        <SearchView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/archive_search"
+                android:layout_weight="1">
+
+        </SearchView>
+
+        <Button
+                android:text="@string/random"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/random_button"
+                android:layout_weight=".05"/>
+
+    </LinearLayout>
 
     <android.support.v7.widget.RecyclerView
             xmlns:android="http://schemas.android.com/apk/res/android"

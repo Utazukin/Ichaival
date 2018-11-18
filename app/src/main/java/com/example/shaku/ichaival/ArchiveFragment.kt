@@ -1,6 +1,7 @@
 package com.example.shaku.ichaival
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
@@ -10,6 +11,7 @@ import android.widget.SearchView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import kotlinx.coroutines.Dispatchers
 
 import kotlinx.coroutines.GlobalScope
@@ -68,6 +70,15 @@ class ArchiveFragment : Fragment() {
                 return true
             }
         })
+
+        val randomButton: Button = view.findViewById(R.id.random_button)
+        randomButton.setOnClickListener { p0 ->
+            val intent = Intent(p0?.context, ReaderActivity::class.java)
+            val bundle = Bundle()
+            bundle.putString("id", listAdapter.getRandomArchive().id)
+            intent.putExtras(bundle)
+            startActivity(intent)
+        }
 
         val copy = context
         if (copy != null)

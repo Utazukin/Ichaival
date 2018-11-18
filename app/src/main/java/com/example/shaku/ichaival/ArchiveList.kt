@@ -16,7 +16,6 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener {
         bundle.putString("id", archive.id)
         intent.putExtras(bundle)
         startActivity(intent)
-        //finish()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -56,6 +56,10 @@ class MyArchiveRecyclerViewAdapter(
         mValuesCopy = mValues.toList()
     }
 
+    fun getRandomArchive() : Archive {
+        return mValues.random()
+    }
+
     fun filter(filter: String?) {
         if (filter == null)
             return
