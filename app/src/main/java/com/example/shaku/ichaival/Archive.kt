@@ -104,14 +104,14 @@ class Archive(json: JSONObject) {
         if (tag.contains(":")) {
             val split = tag.split(":")
             val namespace = split[0].trim()
-            val tag = split[1].trim().replace("_", " ")
+            val normalized = split[1].trim().replace("_", " ").toLowerCase()
             val nTags = getTags(namespace)
-            return nTags != null && nTags.contains(tag)
+            return nTags != null && nTags.any { it.toLowerCase().contains(normalized) }
         }
         else {
-            val normalized = tag.trim().replace("_", " ")
+            val normalized = tag.trim().replace("_", " ").toLowerCase()
             for (pair in tags) {
-                if (pair.value.contains(normalized))
+                if (pair.value.any { it.toLowerCase().contains(normalized)})
                     return true
             }
         }
