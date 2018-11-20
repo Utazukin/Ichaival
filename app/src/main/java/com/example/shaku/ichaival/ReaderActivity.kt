@@ -6,7 +6,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.view.View
 import android.support.v4.app.NavUtils
+import android.view.GestureDetector
 import android.view.MenuItem
+import android.view.MotionEvent
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
@@ -94,15 +96,21 @@ class ReaderActivity : AppCompatActivity() {
             if (arcid != null) {
                 GlobalScope.launch(Dispatchers.Main) {
                     archive = DatabaseReader.getArchive(arcid, applicationContext)
-                    val image = GlobalScope.async { archive?.getPageImage(0, filesDir) }.await()
-                    displayImage(image)
+                    val copy = archive
+                    if (copy != null) {
+                        val page = ReaderTabHolder.instance.getCurrentPage(arcid)
+                        currentPage = page
+                        ReaderTabHolder.instance.addTab(copy, page)
+                        val image = GlobalScope.async { copy.getPageImage(page, filesDir) }.await()
+                        displayImage(image)
+                    }
                 }
             }
         }
     }
 
     private fun displayImage(image: String?) {
-        Glide.with(this).asBitmap().load(image).apply{RequestOptions().diskCacheStrategy(DiskCacheStrategy.ALL)}
+        Glide.with(this).asBitmap().load(image)
             .into(object : SimpleTarget<Bitmap>() {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                     main_image.setImageBitmap(resource)
@@ -117,6 +125,7 @@ class ReaderActivity : AppCompatActivity() {
                 val image = GlobalScope.async { copy.getPageImage(page, filesDir) }.await()
                 displayImage(image)
                 currentPage = page
+                ReaderTabHolder.instance.updatePageIfTabbed(copy.id, page)
             }
         }
     }

@@ -6,18 +6,23 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.design.widget.NavigationView
 import android.support.v4.widget.DrawerLayout
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import com.example.shaku.ichaival.ArchiveFragment.OnListFragmentInteractionListener
 
-class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener {
+class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener {
+
     private lateinit var drawerLayout: DrawerLayout
 
     override fun onListFragmentInteraction(archive: Archive?) {
-        if (archive == null)
-            return
+        if (archive != null)
+            startReaderActivity(archive.id)
+    }
 
+    private fun startReaderActivity(id: String) {
         val intent = Intent(this, ReaderActivity::class.java)
         val bundle = Bundle()
-        bundle.putString("id", archive.id)
+        bundle.putString("id", id)
         intent.putExtras(bundle)
         startActivity(intent)
     }
@@ -44,5 +49,16 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener {
                 else -> false
             }
         }
+
+        val tabView: RecyclerView = findViewById(R.id.tab_view)
+        val listener = this
+        with(tabView) {
+            layoutManager = LinearLayoutManager(context)
+            adapter = ReaderTabViewAdapter(ReaderTabHolder.instance.getTabList(), listener)
+        }
+    }
+
+    override fun onTabInteraction(tab: ReaderTabHolder.ReaderTab) {
+        startReaderActivity(tab.id)
     }
 }

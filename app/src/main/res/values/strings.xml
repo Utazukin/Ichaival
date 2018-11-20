@@ -83,4 +83,7 @@
     <string name="server_address_preference">localhost:3000</string>
     <string name="server_location_name">Server Address</string>
     <string name="clear_cache">Clear Cache</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
