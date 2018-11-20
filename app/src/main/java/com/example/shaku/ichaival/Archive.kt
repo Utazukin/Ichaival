@@ -9,7 +9,7 @@ import java.io.File
 class Archive(json: JSONObject) {
     val title: String = json.getString("title")
     val id: String = json.getString("arcid")
-    val tags: Map<String, List<String>>
+    private val tags: Map<String, List<String>>
     private val imageUrls = mutableListOf<String>()
     private lateinit var imageLocations: Array<String>
 
