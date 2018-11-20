@@ -34,14 +34,14 @@
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:fitsSystemWindows="true"
-            >
+            app:menu="@menu/drawer_menu">
 
         <android.support.v7.widget.RecyclerView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/tab_view"
                 tools:listitem="@layout/reader_tab"
-                android:layout_marginTop="100dp"/>
+                android:layout_marginTop="150dp"/>
 
     </android.support.design.widget.NavigationView>
 

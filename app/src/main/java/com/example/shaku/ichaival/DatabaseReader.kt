@@ -14,6 +14,7 @@ import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.Charset
+import java.util.*
 
 class DatabaseReader private constructor() : Preference.OnPreferenceChangeListener {
     companion object {
@@ -66,13 +67,14 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
 
     private lateinit var archiveList: List<Archive>
     private var serverLocation: String = ""
+    private var isDirty = false
 
     @UiThread
     private suspend fun readArchiveList(context: Context, forceUpdate: Boolean = false): List<Archive> {
         if (!this::archiveList.isInitialized || forceUpdate) {
             val cacheDir: File = context.filesDir
             val jsonFile = File(cacheDir, jsonLocation)
-            archiveList = if (jsonFile.exists())
+            archiveList = if (!checkDirty(cacheDir))
                 readArchiveList(jsonFile.readText())
             else {
                 val archiveJson = GlobalScope.async { downloadArchiveList() }.await()
@@ -88,11 +90,21 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
         return archiveList
     }
 
+    private fun checkDirty(fileDir: File) : Boolean {
+        val jsonCache = File(fileDir, jsonLocation)
+        val dayInMill = 1000 * 60 * 60 * 60 * 24L
+        return isDirty || !jsonCache.exists() || Calendar.getInstance().timeInMillis - jsonCache.lastModified() >  dayInMill
+    }
+
     override fun onPreferenceChange(pref: Preference?, newValue: Any?): Boolean {
         return try { //TODO use something better for validation
             val url = URL(newValue as String)
-            serverLocation = newValue
-            true
+            if (serverLocation != newValue) {
+                serverLocation = newValue
+                isDirty = false
+                true
+            } else
+                false
         } catch (e: Exception) {
             //TODO show a toast telling the user to enter a valid url.
             false
@@ -158,24 +170,28 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
     }
 
     private fun downloadArchiveList() : String {
-        val url = URL(serverLocation + archiveListPath)
+        try {
+            val url = URL(serverLocation + archiveListPath)
 
+            with(url.openConnection() as HttpURLConnection) {
+                if (responseCode != 200)
+                    return ""
 
-        with(url.openConnection() as HttpURLConnection) {
-            if (responseCode != 200)
-                return ""
+                val decoder = Charset.forName("utf-8").newDecoder()
+                BufferedReader(InputStreamReader(inputStream, decoder)).use {
+                    val response = StringBuffer()
 
-            val decoder = Charset.forName("utf-8").newDecoder()
-            BufferedReader(InputStreamReader(inputStream, decoder)).use {
-                val response = StringBuffer()
-
-                var inputLine = it.readLine()
-                while (inputLine != null) {
-                    response.append(inputLine)
-                    inputLine = it.readLine()
+                    var inputLine = it.readLine()
+                    while (inputLine != null) {
+                        response.append(inputLine)
+                        inputLine = it.readLine()
+                    }
+                    return response.toString()
                 }
-                return response.toString()
             }
+        }
+        catch (e: Exception) {
+            return ""
         }
     }
 
