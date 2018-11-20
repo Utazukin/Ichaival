@@ -35,6 +35,10 @@ class ReaderTabViewAdapter (
         }
     }
 
+    fun removeTab(position: Int) {
+        ReaderTabHolder.instance.removeTab(openTabs[position].id)
+    }
+
     override fun onTabListUpdate(tabList: List<ReaderTabHolder.ReaderTab>) {
         openTabs = tabList
         notifyDataSetChanged()
@@ -56,8 +60,7 @@ class ReaderTabViewAdapter (
         ReaderTabHolder.instance.unregisterTabListener(this)
     }
 
-    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val view = view
+    inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val titleView: TextView = view.findViewById(R.id.archive_title)
         val pageView: TextView = view.findViewById(R.id.archive_page)
     }

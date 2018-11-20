@@ -8,6 +8,7 @@ import android.support.design.widget.NavigationView
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.helper.ItemTouchHelper
 import com.example.shaku.ichaival.ArchiveFragment.OnListFragmentInteractionListener
 
 class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener {
@@ -56,6 +57,18 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(ReaderTabHolder.instance.getTabList(), listener)
         }
+
+        val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
+                return false
+            }
+
+            override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
+                val adapter = tabView.adapter as ReaderTabViewAdapter
+                adapter.removeTab(holder.adapterPosition)
+            }
+        }
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
     }
 
     override fun onTabInteraction(tab: ReaderTabHolder.ReaderTab) {
