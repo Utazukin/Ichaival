@@ -43,6 +43,10 @@ class ReaderTabHolder private constructor() {
         updateListeners()
     }
 
+    fun isTabbed(id: String?) : Boolean {
+        return openTabs.containsKey(id)
+    }
+
     fun removeTab(id: String) {
         openTabs.remove(id)
         updateListeners()

@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import com.bumptech.glide.Glide
@@ -63,6 +64,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
 
     private var archive: Archive? = null
     private var currentPage = 0
+    private lateinit var optionsMenu: Menu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,6 +82,8 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
                 replaceImage(currentPage + 1)
         }
 
+        main_image.setOnOutsidePhotoTapListener { toggle() }
+
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
@@ -94,7 +98,6 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
                     if (copy != null) {
                         val page = ReaderTabHolder.instance.getCurrentPage(arcid)
                         currentPage = page
-                        ReaderTabHolder.instance.addTab(copy, page)
                         val image = GlobalScope.async { copy.getPageImage(page, filesDir) }.await()
                         displayImage(image)
                     }
@@ -132,6 +135,8 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
             override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
                 val adapter = tabView.adapter as ReaderTabViewAdapter
                 adapter.removeTab(holder.adapterPosition)
+                val bookmarker = optionsMenu.findItem(R.id.bookmark_archive)
+                setTabbedIcon(bookmarker, false)
             }
         }
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
@@ -167,12 +172,45 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
         delayedHide(100)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.reader_menu, menu)
+        optionsMenu = menu!!
+        val bookmarker = menu.findItem(R.id.bookmark_archive)
+        setTabbedIcon(bookmarker, ReaderTabHolder.instance.isTabbed(archive?.id))
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    private fun setTabbedIcon(menuItem: MenuItem?, tabbed: Boolean) {
+        val icon = if (tabbed)
+            android.R.drawable.star_big_on
+        else
+            android.R.drawable.star_big_off
+        menuItem?.icon = getDrawable(icon)
+
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
-        if (id == android.R.id.home) {
+        when (id) {
             // This ID represents the Home or Up button.
-            NavUtils.navigateUpFromSameTask(this)
-            return true
+            android.R.id.home -> {
+                NavUtils.navigateUpFromSameTask(this)
+                return true
+            }
+            R.id.bookmark_archive -> {
+                val copy = archive
+                if (copy != null) {
+                    if (!ReaderTabHolder.instance.isTabbed(copy.id)) {
+                        ReaderTabHolder.instance.addTab(copy, currentPage)
+                        setTabbedIcon(item, true)
+                    }
+                    else {
+                        ReaderTabHolder.instance.removeTab(copy.id)
+                        setTabbedIcon(item, false)
+                    }
+                    return true
+                }
+            }
         }
         return super.onOptionsItemSelected(item)
     }

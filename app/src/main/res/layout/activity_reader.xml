@@ -6,7 +6,8 @@
                                         android:layout_height="match_parent"
                                         android:background="#000000"
                                         tools:context=".ReaderActivity"
-                                        android:id="@+id/drawer_layout">
+                                        android:id="@+id/drawer_layout"
+                                        android:fitsSystemWindows="false">
 
     <FrameLayout
             android:layout_height="match_parent"
@@ -19,7 +20,8 @@
                 android:theme="?attr/actionBarTheme"
                 android:minHeight="?attr/actionBarSize"
                 android:id="@+id/reader_toolbar"
-                android:elevation="4dp"/>
+                android:elevation="4dp"
+                android:layout_marginTop="@dimen/status_bar_height"/>
 
         <com.github.chrisbanes.photoview.PhotoView
                 android:layout_width="match_parent"
@@ -35,7 +37,8 @@
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:fitsSystemWindows="true"
-            android:background="@android:color/background_light">
+            android:background="@android:color/background_light"
+            android:paddingTop="@dimen/status_bar_height">
 
         <android.support.v7.widget.RecyclerView
                 android:layout_width="match_parent"

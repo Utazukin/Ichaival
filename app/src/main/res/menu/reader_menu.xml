@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+            android:title="Bookmark"
+            android:id="@+id/bookmark_archive"
+            android:icon="@android:drawable/btn_star_big_off"
+            app:showAsAction="always"/>
+</menu>
