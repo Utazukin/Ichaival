@@ -24,18 +24,7 @@ import kotlinx.coroutines.launch
  */
 class ArchiveFragment : Fragment() {
 
-    // TODO: Customize parameters
-    private var columnCount = 1
-
     private var listener: OnListFragmentInteractionListener? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        arguments?.let {
-            columnCount = it.getInt(ARG_COLUMN_COUNT)
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,10 +38,7 @@ class ArchiveFragment : Fragment() {
         // Set the adapter
         val tempList = mutableListOf<Archive>()
         with(listView) {
-            layoutManager = when {
-                columnCount <= 1 -> LinearLayoutManager(context)
-                else -> GridLayoutManager(context, columnCount)
-            }
+            layoutManager = GridLayoutManager(context, 2)
             val temp = MyArchiveRecyclerViewAdapter(tempList, listener)
             listAdapter = temp
             adapter = temp
