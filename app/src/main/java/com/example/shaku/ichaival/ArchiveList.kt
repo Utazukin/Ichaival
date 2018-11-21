@@ -31,6 +31,7 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_list)
+        setSupportActionBar(findViewById(R.id.toolbar))
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")

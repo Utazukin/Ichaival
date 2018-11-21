@@ -17,8 +17,8 @@ class ReaderTabHolder private constructor() {
 
     private val listeners = mutableSetOf<TabUpdateListener>()
 
-    fun getCurrentPage(id: String) : Int {
-        return if (openTabs.containsKey(id)) openTabs[id]!!.page else 0
+    fun getCurrentPage(id: String?) : Int {
+        return if (id != null && openTabs.containsKey(id)) openTabs[id]!!.page else 0
     }
 
     fun updatePageIfTabbed(id: String, page: Int) {

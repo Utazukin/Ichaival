@@ -1,20 +1,22 @@
 package com.example.shaku.ichaival
 
+import android.content.Intent
 import android.graphics.Bitmap
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
-import android.view.View
+import android.support.design.widget.NavigationView
 import android.support.v4.app.NavUtils
-import android.view.GestureDetector
+import android.support.v4.widget.DrawerLayout
+import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.MenuItem
-import android.view.MotionEvent
+import android.view.View
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
-import com.github.chrisbanes.photoview.OnSingleFlingListener
+import com.example.shaku.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -25,7 +27,7 @@ import kotlinx.coroutines.launch
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-class ReaderActivity : AppCompatActivity() {
+class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -66,6 +68,7 @@ class ReaderActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_reader)
+        setSupportActionBar(findViewById(R.id.reader_toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         mVisible = true
@@ -76,15 +79,6 @@ class ReaderActivity : AppCompatActivity() {
             else
                 replaceImage(currentPage + 1)
         }
-
-        main_image.setOnSingleFlingListener(OnSingleFlingListener { _, _, velocityX, _ ->
-            when {
-                velocityX >= 10 -> replaceImage(currentPage - 1)
-                velocityX <= -10 -> replaceImage(currentPage + 1)
-                else -> return@OnSingleFlingListener false
-            }
-            true
-        })
 
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
@@ -107,6 +101,40 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
         }
+
+        val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
+        val navView: NavigationView = drawerLayout.findViewById(R.id.nav_view)
+        val context = this
+        navView.setNavigationItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_settings -> {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    startActivity(intent)
+                    drawerLayout.closeDrawers()
+                    true
+                }
+                else -> false
+            }
+        }
+
+        val tabView: RecyclerView = findViewById(R.id.tab_view)
+        val listener = this
+        with(tabView) {
+            layoutManager = LinearLayoutManager(context)
+            adapter = ReaderTabViewAdapter(ReaderTabHolder.instance.getTabList(), listener)
+        }
+
+        val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
+                return false
+            }
+
+            override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
+                val adapter = tabView.adapter as ReaderTabViewAdapter
+                adapter.removeTab(holder.adapterPosition)
+            }
+        }
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
     }
 
     private fun displayImage(image: String?) {
@@ -122,7 +150,7 @@ class ReaderActivity : AppCompatActivity() {
         GlobalScope.launch(Dispatchers.Main) {
             val copy = archive
             if (copy != null && copy.hasPage(page)) {
-                val image = GlobalScope.async { copy.getPageImage(page, filesDir) }.await()
+                val image = async { copy.getPageImage(page, filesDir) }.await()
                 displayImage(image)
                 currentPage = page
                 ReaderTabHolder.instance.updatePageIfTabbed(copy.id, page)
@@ -147,6 +175,15 @@ class ReaderActivity : AppCompatActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    override fun onTabInteraction(tab: ReaderTabHolder.ReaderTab) {
+        val intent = Intent(this, ReaderActivity::class.java)
+        val bundle = Bundle()
+        bundle.putString("id", tab.id)
+        intent.putExtras(bundle)
+        startActivity(intent)
+        finish()
     }
 
     private fun toggle() {
