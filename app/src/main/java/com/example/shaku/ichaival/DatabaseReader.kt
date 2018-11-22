@@ -28,12 +28,12 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
         val reader = DatabaseReader()
 
         @UiThread
-        suspend fun readArchiveList(context: Context, forceUpdate: Boolean = false): List<Archive> {
-            return reader.readArchiveList(context, forceUpdate)
+        suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
+            return reader.readArchiveList(cacheDir, forceUpdate)
         }
 
-        suspend fun getArchive(id: String, context: Context) : Archive? {
-            return reader.getArchive(id, context)
+        suspend fun getArchive(id: String, fileDir: File) : Archive? {
+            return reader.getArchive(id, fileDir)
         }
 
         fun downloadPage(path: String) : ByteArray? {
@@ -70,9 +70,8 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
     private var isDirty = false
 
     @UiThread
-    private suspend fun readArchiveList(context: Context, forceUpdate: Boolean = false): List<Archive> {
+    private suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
         if (!this::archiveList.isInitialized || forceUpdate) {
-            val cacheDir: File = context.filesDir
             val jsonFile = File(cacheDir, jsonLocation)
             archiveList = if (!checkDirty(cacheDir))
                 readArchiveList(jsonFile.readText())
@@ -101,7 +100,7 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
             val url = URL(newValue as String)
             if (serverLocation != newValue) {
                 serverLocation = newValue
-                isDirty = false
+                isDirty = true
                 true
             } else
                 false
@@ -111,8 +110,8 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
         }
     }
 
-    private suspend fun getArchive(id: String, context: Context) : Archive? {
-        readArchiveList(context)
+    private suspend fun getArchive(id: String, fileDir: File) : Archive? {
+        readArchiveList(fileDir)
 
         for (archive: Archive in archiveList) {
             if (archive.id == id)

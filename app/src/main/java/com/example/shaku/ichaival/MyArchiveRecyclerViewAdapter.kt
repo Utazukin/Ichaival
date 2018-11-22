@@ -17,13 +17,14 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MyArchiveRecyclerViewAdapter(
-    private val mValues: MutableList<Archive>,
     private val mListener: OnListFragmentInteractionListener?
 ) : RecyclerView.Adapter<MyArchiveRecyclerViewAdapter.ViewHolder>() {
 
     private val mOnClickListener: View.OnClickListener
 
     private var mValuesCopy: List<Archive>
+
+    private val mValues: MutableList<Archive> = mutableListOf()
 
     init {
         mOnClickListener = View.OnClickListener { v ->
@@ -52,8 +53,11 @@ class MyArchiveRecyclerViewAdapter(
         }
     }
 
-    fun updateDataCopy() {
+    fun updateDataCopy(list: List<Archive>) {
+        mValues.clear()
+        mValues.addAll(list)
         mValuesCopy = mValues.toList()
+        notifyDataSetChanged()
     }
 
     fun getRandomArchive() : Archive {

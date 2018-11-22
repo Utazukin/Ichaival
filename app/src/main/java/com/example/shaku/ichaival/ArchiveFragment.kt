@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.GridLayoutManager
-import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.widget.SearchView
 import android.view.LayoutInflater
@@ -15,31 +15,28 @@ import android.widget.Button
 import kotlinx.coroutines.Dispatchers
 
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
-/**
- * A fragment representing a list of Items.
- * Activities containing this fragment MUST implement the
- * [ArchiveFragment.OnListFragmentInteractionListener] interface.
- */
 class ArchiveFragment : Fragment() {
 
     private var listener: OnListFragmentInteractionListener? = null
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var listView: RecyclerView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
-        val listView: RecyclerView = view.findViewById(R.id.list)
+        listView = view.findViewById(R.id.list)
         lateinit var listAdapter: MyArchiveRecyclerViewAdapter
 
 
         // Set the adapter
-        val tempList = mutableListOf<Archive>()
         with(listView) {
             layoutManager = GridLayoutManager(context, 2)
-            val temp = MyArchiveRecyclerViewAdapter(tempList, listener)
+            val temp = MyArchiveRecyclerViewAdapter(listener)
             listAdapter = temp
             adapter = temp
         }
@@ -66,13 +63,12 @@ class ArchiveFragment : Fragment() {
             startActivity(intent)
         }
 
-        val copy = context
-        if (copy != null)
-            GlobalScope.launch(Dispatchers.Main) {
-                tempList.addAll(DatabaseReader.readArchiveList(copy))
-                listAdapter.updateDataCopy()
-                listAdapter.notifyDataSetChanged()
-            }
+        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
+        swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
+
+        GlobalScope.launch(Dispatchers.Main) {
+            listAdapter.updateDataCopy(DatabaseReader.readArchiveList(context!!.filesDir))
+        }
         return view
     }
 
@@ -90,34 +86,16 @@ class ArchiveFragment : Fragment() {
         listener = null
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     *
-     *
-     * See the Android Training lesson
-     * [Communicating with Other Fragments](http://developer.android.com/training/basics/fragments/communicating.html)
-     * for more information.
-     */
-    interface OnListFragmentInteractionListener {
-        // TODO: Update argument type and name
-        fun onListFragmentInteraction(archive: Archive?)
+    private fun forceArchiveListUpdate() {
+        GlobalScope.launch(Dispatchers.Main) {
+            val newList = async { DatabaseReader.readArchiveList(context!!.filesDir, true) }.await()
+            val adapter = listView.adapter as MyArchiveRecyclerViewAdapter
+            adapter.updateDataCopy(newList)
+            swipeRefreshLayout.isRefreshing = false
+        }
     }
 
-    companion object {
-
-        // TODO: Customize parameter argument names
-        const val ARG_COLUMN_COUNT = "column-count"
-
-        // TODO: Customize parameter initialization
-        @JvmStatic
-        fun newInstance(columnCount: Int) =
-            ArchiveFragment().apply {
-                arguments = Bundle().apply {
-                    putInt(ARG_COLUMN_COUNT, columnCount)
-                }
-            }
+    interface OnListFragmentInteractionListener {
+        fun onListFragmentInteraction(archive: Archive?)
     }
 }

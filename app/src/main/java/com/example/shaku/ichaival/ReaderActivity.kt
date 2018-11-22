@@ -93,7 +93,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
             val arcid = bundle.getString("id")
             if (arcid != null) {
                 GlobalScope.launch(Dispatchers.Main) {
-                    archive = DatabaseReader.getArchive(arcid, applicationContext)
+                    archive = DatabaseReader.getArchive(arcid, applicationContext.filesDir)
                     val copy = archive
                     if (copy != null) {
                         val page = ReaderTabHolder.instance.getCurrentPage(arcid)
