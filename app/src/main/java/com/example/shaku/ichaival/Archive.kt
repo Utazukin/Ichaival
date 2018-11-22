@@ -1,8 +1,6 @@
 package com.example.shaku.ichaival
 
 import android.support.annotation.UiThread
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
 import org.json.JSONObject
 import java.io.File
 
@@ -50,54 +48,18 @@ class Archive(json: JSONObject) {
         return true
     }
 
-    private fun extractArchive(parentDir: File) : Boolean {
-        val gotImages = getImageUrls()
-        if (parentDir.exists() && parentDir.listFiles().size == imageUrls.size) {
-            val files = parentDir.listFiles()
-            imageLocations = Array(files.size) { "" }
-            for (i in 0..(files.size - 1))
-                imageLocations[i] = files[i].path
-            return true
-        }
-
-        return gotImages
-    }
-
     fun hasPage(page: Int) : Boolean {
         return page >= 0 && page < imageUrls.size
     }
 
-    private suspend fun getPage(page: Int, parentDir: File) : File? {
-        val archiveCache = File(parentDir, "temp/$id")
-        if (!archiveCache.exists())
-            archiveCache.mkdirs()
-
-        if (!extractArchive(archiveCache))
-            return null
-
-        var imageFile = File(parentDir, imageLocations[page])
-        if (!imageFile.exists()) {
-
-            val bytes = GlobalScope.async { downloadPage(page) }.await()
-            if (bytes != null) {
-                imageFile = File(archiveCache, imageUrls[page].substring(imageUrls[page].lastIndexOf("/") + 1))
-                imageFile.createNewFile()
-                imageFile.writeBytes(bytes)
-                imageLocations[page] = imageFile.path
-            }
-        }
-
-        return imageFile
-    }
-
     @UiThread
-    suspend fun getPageImage(page: Int, parentDir: File) : String? {
-        return getPage(page, parentDir)?.path
+    fun getPageImage(page: Int) : String? {
+        return downloadPage(page)
     }
 
-    private fun downloadPage(page: Int) : ByteArray? {
+    private fun downloadPage(page: Int) : String {
         getImageUrls()
-        return DatabaseReader.downloadPage(imageUrls[page])
+        return DatabaseReader.getRawImageUrl(imageUrls[page])
     }
 
     fun containsTag(tag: String) : Boolean {

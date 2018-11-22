@@ -98,7 +98,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
                     if (copy != null) {
                         val page = ReaderTabHolder.instance.getCurrentPage(arcid)
                         currentPage = page
-                        val image = GlobalScope.async { copy.getPageImage(page, filesDir) }.await()
+                        val image = GlobalScope.async { copy.getPageImage(page) }.await()
                         displayImage(image)
                     }
                 }
@@ -155,7 +155,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
         GlobalScope.launch(Dispatchers.Main) {
             val copy = archive
             if (copy != null && copy.hasPage(page)) {
-                val image = async { copy.getPageImage(page, filesDir) }.await()
+                val image = async { copy.getPageImage(page) }.await()
                 displayImage(image)
                 currentPage = page
                 ReaderTabHolder.instance.updatePageIfTabbed(copy.id, page)
