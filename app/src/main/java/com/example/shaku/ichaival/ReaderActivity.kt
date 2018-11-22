@@ -1,11 +1,14 @@
 package com.example.shaku.ichaival
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
 import android.support.design.widget.NavigationView
+import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentManager
+import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.app.NavUtils
+import android.support.v4.view.ViewPager
 import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -14,9 +17,6 @@ import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.transition.Transition
 import com.example.shaku.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +36,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
         // Note that some of these constants are new as of API 16 (Jelly Bean)
         // and API 19 (KitKat). It is safe to use them, as they are inlined
         // at compile-time and do nothing on earlier devices.
-        main_image.systemUiVisibility =
+        image_pager.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_LOW_PROFILE or
                 View.SYSTEM_UI_FLAG_FULLSCREEN or
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
@@ -64,6 +64,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
 
     private var archive: Archive? = null
     private var currentPage = 0
+    private val loadedPages = mutableSetOf<Int>()
     private lateinit var optionsMenu: Menu
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,19 +76,31 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
 
         mVisible = true
 
-        main_image.setOnPhotoTapListener { _, x, _ ->
+        /*main_image.setOnPhotoTapListener { _, x, _ ->
             if (x < 0.5)
                 replaceImage(currentPage - 1)
             else
                 replaceImage(currentPage + 1)
         }
 
-        main_image.setOnOutsidePhotoTapListener { toggle() }
+        main_image.setOnOutsidePhotoTapListener { toggle() }*/
 
-        // Upon interacting with UI controls, delay any scheduled hide()
-        // operations to prevent the jarring behavior of controls going away
-        // while interacting with the UI.
+        image_pager.adapter = ReaderFragmentAdapter(supportFragmentManager)
+        image_pager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener{
+            override fun onPageScrollStateChanged(page: Int) {
+                currentPage = page
+                loadImage(currentPage)
+            }
 
+            override fun onPageScrolled(p0: Int, p1: Float, p2: Int) {
+            }
+
+            override fun onPageSelected(page: Int) {
+                currentPage = page
+                loadImage(currentPage)
+            }
+
+        } )
         val bundle = intent.extras
         if (bundle != null) {
             val arcid = bundle.getString("id")
@@ -98,8 +111,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
                     if (copy != null) {
                         val page = ReaderTabHolder.instance.getCurrentPage(arcid)
                         currentPage = page
-                        val image = GlobalScope.async { copy.getPageImage(page) }.await()
-                        displayImage(image)
+                        loadImage(page)
                     }
                 }
             }
@@ -142,23 +154,14 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
     }
 
-    private fun displayImage(image: String?) {
-        Glide.with(this).asBitmap().load(image)
-            .into(object : SimpleTarget<Bitmap>() {
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    main_image.setImageBitmap(resource)
-                }
-            })
-    }
+    private fun loadImage(page: Int, preload: Boolean = true) {
+        if (loadedPages.add(page))
+            image_pager.adapter?.notifyDataSetChanged()
 
-    private fun replaceImage(page: Int) {
-        GlobalScope.launch(Dispatchers.Main) {
-            val copy = archive
-            if (copy != null && copy.hasPage(page)) {
-                val image = async { copy.getPageImage(page) }.await()
-                displayImage(image)
-                currentPage = page
-                ReaderTabHolder.instance.updatePageIfTabbed(copy.id, page)
+        if (preload) {
+            for (i in (-1..1)) {
+                if (!loadedPages.contains(page + i) && page + i >= 0)
+                    loadImage(page + i, false)
             }
         }
     }
@@ -244,7 +247,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
 
     private fun show() {
         // Show the system bar
-        main_image.systemUiVisibility =
+        image_pager.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         mVisible = true
@@ -281,5 +284,19 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
          * and a change of the status and navigation bar.
          */
         private val UI_ANIMATION_DELAY = 300
+    }
+
+    private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
+
+        override fun getItem(position: Int): Fragment {
+            val fragment = ReaderFragment()
+            GlobalScope.launch(Dispatchers.Main) {
+                val image = GlobalScope.async { archive?.getPageImage(position) }.await()
+                fragment.displayImage(image)
+            }
+            return fragment
+        }
+
+        override fun getCount(): Int = loadedPages.size
     }
 }
