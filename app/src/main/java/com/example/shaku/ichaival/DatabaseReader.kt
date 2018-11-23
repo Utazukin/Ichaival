@@ -1,6 +1,5 @@
 package com.example.shaku.ichaival
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.preference.Preference
@@ -168,10 +167,9 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         return thumbDir
     }
 
-    suspend fun getArchiveImage(archive: Archive, context: Context) : Bitmap? {
+    suspend fun getArchiveImage(archive: Archive, filesDir: File) : Bitmap? {
         val id = archive.id
-        val cacheDir = context.filesDir
-        val thumbDir = getThumbDir(cacheDir)
+        val thumbDir = getThumbDir(filesDir)
 
         var image: File? = File(thumbDir, "$id.jpg")
         if (image != null && !image.exists())

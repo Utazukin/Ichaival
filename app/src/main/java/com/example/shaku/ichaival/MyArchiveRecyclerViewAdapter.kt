@@ -45,7 +45,7 @@ class MyArchiveRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = mValues[position]
         holder.archiveName.text = item.title
-        GlobalScope.launch(Dispatchers.Main) { holder.archiveImage.setImageBitmap(DatabaseReader.getArchiveImage(item, holder.mContentView.context)) }
+        GlobalScope.launch(Dispatchers.Main) { holder.archiveImage.setImageBitmap(DatabaseReader.getArchiveImage(item, holder.mContentView.context.filesDir)) }
 
         with(holder.mView) {
             tag = item
