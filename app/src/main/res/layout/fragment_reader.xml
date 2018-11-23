@@ -20,7 +20,8 @@
             android:textSize="36sp"
             android:layout_centerHorizontal="true"
             android:layout_above="@+id/progressBar"
-            android:textColor="@android:color/darker_gray"/>
+            android:textColor="@android:color/darker_gray"
+            android:textAlignment="center"/>
 
     <ProgressBar
             style="?android:attr/progressBarStyle"

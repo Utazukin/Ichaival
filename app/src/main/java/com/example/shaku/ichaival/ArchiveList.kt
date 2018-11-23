@@ -1,11 +1,11 @@
 package com.example.shaku.ichaival
 
 import android.content.Intent
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.design.widget.NavigationView
 import android.support.v4.widget.DrawerLayout
+import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
@@ -74,5 +74,6 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
 
     override fun onTabInteraction(tab: ReaderTabHolder.ReaderTab) {
         startReaderActivity(tab.id)
+        drawerLayout.closeDrawers()
     }
 }

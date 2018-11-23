@@ -16,7 +16,7 @@ import com.bumptech.glide.request.transition.Transition
 import com.github.chrisbanes.photoview.PhotoView
 
 
-class ReaderFragment : Fragment(), ArchiveExtractListener {
+class ReaderFragment : Fragment() {
     private var listener: OnFragmentInteractionListener? = null
     private var imageToDisplay: String? = null
     private var isAttached = false
@@ -38,7 +38,7 @@ class ReaderFragment : Fragment(), ArchiveExtractListener {
 
 
         pageNum = view.findViewById(R.id.page_num)
-        pageNum.text = page.toString()
+        pageNum.text = (page + 1).toString()
         pageNum.visibility = View.VISIBLE
 
         progressBar = view.findViewById(R.id.progressBar)
@@ -49,7 +49,7 @@ class ReaderFragment : Fragment(), ArchiveExtractListener {
 
     fun displayImage(image: String?, page: Int) {
         this.page = page
-        pageNum.text = page.toString()
+        pageNum.text = (page + 1).toString()
         if (!isAttached)
            imageToDisplay = image
         else {
