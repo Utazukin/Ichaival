@@ -2,14 +2,13 @@ package com.example.shaku.ichaival
 
 import android.support.annotation.UiThread
 import org.json.JSONObject
-import java.io.File
 
 class Archive(json: JSONObject) {
     val title: String = json.getString("title")
     val id: String = json.getString("arcid")
     private val tags: Map<String, List<String>>
     private val imageUrls = mutableListOf<String>()
-    private lateinit var imageLocations: Array<String>
+    private var loadedUrls = false
 
     init {
         val tagString: String = json.getString("tags")
@@ -32,26 +31,25 @@ class Archive(json: JSONObject) {
         tags = mutableTags
     }
 
-    private fun getImageUrls() : Boolean {
-        if (imageUrls.size > 0)
-            return true
+    private fun getImageUrls() {
+        if (loadedUrls)
+            return
 
-        val jsonPages = DatabaseReader.extractArchive(id)?.getJSONArray("pages") ?: return false
+        val jsonPages = DatabaseReader.extractArchive(id)?.getJSONArray("pages") ?: return
 
+        imageUrls.clear()
         val count = jsonPages.length()
-        imageLocations = Array(count) { "$$" }
         for (i in 0..(count - 1)) {
             var path = jsonPages.getString(i)
             path = path.substring(1)
             imageUrls.add(path)
         }
-        return true
+        loadedUrls = true
     }
 
     fun hasPage(page: Int) : Boolean {
-        return page >= 0 && page < imageUrls.size
+        return !loadedUrls || (page >= 0 && page < imageUrls.size)
     }
-
     @UiThread
     fun getPageImage(page: Int) : String? {
         return downloadPage(page)

@@ -143,6 +143,9 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
     }
 
     private fun loadImage(page: Int, preload: Boolean = true) {
+        if (!archive!!.hasPage(page))
+            return
+
         if (adjustLoadedPages(page))
             image_pager.adapter?.notifyDataSetChanged()
 
