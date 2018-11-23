@@ -85,7 +85,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
 
             override fun onPageSelected(page: Int) {
                 currentPage = page
-                ReaderTabHolder.instance.updatePageIfTabbed(archive!!.id, page)
+                ReaderTabHolder.updatePageIfTabbed(archive!!.id, page)
                 loadImage(currentPage)
             }
 
@@ -99,7 +99,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
                     archive = DatabaseReader.getArchive(arcid, applicationContext.filesDir)
                     val copy = archive
                     if (copy != null) {
-                        val page = ReaderTabHolder.instance.getCurrentPage(arcid)
+                        val page = ReaderTabHolder.getCurrentPage(arcid)
                         currentPage = page
                         loadImage(page)
                         image_pager.setCurrentItem(page, false)
@@ -112,7 +112,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
         val listener = this
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(ReaderTabHolder.instance.getTabList(), listener)
+            adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener)
         }
 
         val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
@@ -171,7 +171,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
         menuInflater.inflate(R.menu.reader_menu, menu)
         optionsMenu = menu!!
         val bookmarker = menu.findItem(R.id.bookmark_archive)
-        setTabbedIcon(bookmarker, ReaderTabHolder.instance.isTabbed(archive?.id))
+        setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(archive?.id))
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -195,12 +195,12 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
             R.id.bookmark_archive -> {
                 val copy = archive
                 if (copy != null) {
-                    if (!ReaderTabHolder.instance.isTabbed(copy.id)) {
-                        ReaderTabHolder.instance.addTab(copy, currentPage)
+                    if (!ReaderTabHolder.isTabbed(copy.id)) {
+                        ReaderTabHolder.addTab(copy, currentPage)
                         setTabbedIcon(item, true)
                     }
                     else {
-                        ReaderTabHolder.instance.removeTab(copy.id)
+                        ReaderTabHolder.removeTab(copy.id)
                         setTabbedIcon(item, false)
                     }
                     return true
@@ -210,7 +210,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onTabInteraction(tab: ReaderTabHolder.ReaderTab) {
+    override fun onTabInteraction(tab: ReaderTab) {
         val intent = Intent(this, ReaderActivity::class.java)
         val bundle = Bundle()
         bundle.putString("id", tab.id)

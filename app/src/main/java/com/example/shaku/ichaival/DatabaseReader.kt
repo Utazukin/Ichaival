@@ -5,7 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.preference.Preference
 import android.support.annotation.UiThread
-import kotlinx.coroutines.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -16,61 +17,19 @@ import java.net.URL
 import java.nio.charset.Charset
 import java.util.*
 
-class DatabaseReader private constructor() : Preference.OnPreferenceChangeListener {
-    companion object {
-        private const val jsonLocation: String = "archives.json"
-        private const val apiPath: String = "/api"
-        private const val archiveListPath = "$apiPath/archivelist"
-        private const val thumbPath = "$apiPath/thumbnail"
-        private const val extractPath = "$apiPath/extract"
-        private const val tempFolder = "temp"
-
-        val reader = DatabaseReader()
-
-        @UiThread
-        suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
-            return reader.readArchiveList(cacheDir, forceUpdate)
-        }
-
-        suspend fun getArchive(id: String, fileDir: File) : Archive? {
-            return reader.getArchive(id, fileDir)
-        }
-
-        fun downloadPage(path: String) : ByteArray? {
-            return reader.downloadPage(path)
-        }
-
-        fun extractArchive(id: String) : JSONObject? {
-            return reader.extractArchive(id)
-        }
-
-        fun getRawImageUrl(path: String) : String {
-            return reader.getRawImageUrl(path)
-        }
-
-        fun updateServerLocation(location: String) {
-            reader.serverLocation = location
-        }
-
-        fun clearCache(context: Context) {
-            reader.clearCache(context)
-        }
-
-        fun getCacheSize(context: Context) : Long {
-            return reader.getCacheSize(context)
-        }
-
-        suspend fun getArchiveImage(archive: Archive, context: Context) : Bitmap? {
-            return reader.getArchiveImage(archive, context)
-        }
-    }
+object DatabaseReader : Preference.OnPreferenceChangeListener {
+    private const val jsonLocation: String = "archives.json"
+    private const val apiPath: String = "/api"
+    private const val archiveListPath = "$apiPath/archivelist"
+    private const val thumbPath = "$apiPath/thumbnail"
+    private const val extractPath = "$apiPath/extract"
 
     private lateinit var archiveList: List<Archive>
     private var serverLocation: String = ""
     private var isDirty = false
 
     @UiThread
-    private suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
+    suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
         if (!this::archiveList.isInitialized || forceUpdate) {
             val jsonFile = File(cacheDir, jsonLocation)
             archiveList = if (!checkDirty(cacheDir))
@@ -87,6 +46,10 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
             archiveList = archiveList.sortedBy { archive -> archive.title }
         }
         return archiveList
+    }
+
+    fun updateServerLocation(location: String) {
+        serverLocation = location
     }
 
     private fun checkDirty(fileDir: File) : Boolean {
@@ -110,7 +73,7 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
         }
     }
 
-    private suspend fun getArchive(id: String, fileDir: File) : Archive? {
+    suspend fun getArchive(id: String, fileDir: File) : Archive? {
         readArchiveList(fileDir)
 
         for (archive: Archive in archiveList) {
@@ -120,35 +83,11 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
         return null
     }
 
-    private fun clearCache(context: Context) {
-        val tempDir = File(context.filesDir, tempFolder)
-        if (tempDir.exists() && tempDir.isDirectory)
-            tempDir.deleteRecursively()
-    }
-
-    private fun getCacheSize(context: Context) : Long {
-        val tempDir = File(context.filesDir, tempFolder)
-        return if (tempDir.exists()) tempDir.totalSpace else 0
-    }
-
-    private fun downloadPage(path: String) : ByteArray? {
-        val url = URL(serverLocation + path)
-
-        with (url.openConnection() as HttpURLConnection) {
-            if (responseCode != 200)
-                return null
-
-            BufferedReader(InputStreamReader(inputStream)).use {
-                return inputStream.readBytes()
-            }
-        }
-    }
-
-    private fun getRawImageUrl(path: String) : String {
+    fun getRawImageUrl(path: String) : String {
         return serverLocation + path
     }
 
-    private fun extractArchive(id: String) : JSONObject? {
+    fun extractArchive(id: String) : JSONObject? {
         val url = URL("$serverLocation$extractPath?id=$id")
 
         with (url.openConnection() as HttpURLConnection) {
@@ -229,7 +168,7 @@ class DatabaseReader private constructor() : Preference.OnPreferenceChangeListen
         return thumbDir
     }
 
-    private suspend fun getArchiveImage(archive: Archive, context: Context) : Bitmap? {
+    suspend fun getArchiveImage(archive: Archive, context: Context) : Bitmap? {
         val id = archive.id
         val cacheDir = context.filesDir
         val thumbDir = getThumbDir(cacheDir)

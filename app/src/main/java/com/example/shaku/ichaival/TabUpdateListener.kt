@@ -1,5 +1,5 @@
 package com.example.shaku.ichaival
 
 interface TabUpdateListener {
-    fun onTabListUpdate(tabList: List<ReaderTabHolder.ReaderTab>)
+    fun onTabListUpdate(tabList: List<ReaderTab>)
 }

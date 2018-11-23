@@ -56,7 +56,7 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
         val listener = this
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(ReaderTabHolder.instance.getTabList(), listener)
+            adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener)
         }
 
         val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
@@ -72,7 +72,7 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
     }
 
-    override fun onTabInteraction(tab: ReaderTabHolder.ReaderTab) {
+    override fun onTabInteraction(tab: ReaderTab) {
         startReaderActivity(tab.id)
         drawerLayout.closeDrawers()
     }

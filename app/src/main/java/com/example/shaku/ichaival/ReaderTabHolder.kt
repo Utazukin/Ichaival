@@ -1,18 +1,6 @@
 package com.example.shaku.ichaival
 
-class ReaderTabHolder private constructor() {
-    inner class ReaderTab(
-        archive: Archive,
-        var page: Int
-    ) {
-        val title = archive.title
-        val id = archive.id
-    }
-
-    companion object {
-        val instance by lazy { ReaderTabHolder() }
-    }
-
+object ReaderTabHolder {
     private val openTabs = mutableMapOf<String, ReaderTab>()
 
     private val listeners = mutableSetOf<TabUpdateListener>()
@@ -62,3 +50,12 @@ class ReaderTabHolder private constructor() {
         return openTabs.values.toList()
     }
 }
+
+class ReaderTab(
+    archive: Archive,
+    var page: Int
+) {
+    val title = archive.title
+    val id = archive.id
+}
+

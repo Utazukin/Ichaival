@@ -11,7 +11,7 @@ class Archive(json: JSONObject) {
     private val tags: Map<String, List<String>>
     private val imageUrls = mutableListOf<String>()
     private var loadedUrls = false
-    private val mutex: Mutex = Mutex(false)
+    private val mutex: Mutex by lazy { Mutex(false) }
 
     init {
         val tagString: String = json.getString("tags")
