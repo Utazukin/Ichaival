@@ -17,11 +17,19 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
-            startReaderActivity(archive.id)
+            startDetailsActivity(archive.id)
     }
 
     private fun startReaderActivity(id: String) {
         val intent = Intent(this, ReaderActivity::class.java)
+        val bundle = Bundle()
+        bundle.putString("id", id)
+        intent.putExtras(bundle)
+        startActivity(intent)
+    }
+
+    private fun startDetailsActivity(id: String){
+        val intent = Intent(this, ArchiveDetails::class.java)
         val bundle = Bundle()
         bundle.putString("id", id)
         intent.putExtras(bundle)

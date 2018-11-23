@@ -16,9 +16,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class MyArchiveRecyclerViewAdapter(
+class ArchiveRecyclerViewAdapter(
     private val mListener: OnListFragmentInteractionListener?
-) : RecyclerView.Adapter<MyArchiveRecyclerViewAdapter.ViewHolder>() {
+) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
 
     private val mOnClickListener: View.OnClickListener
 

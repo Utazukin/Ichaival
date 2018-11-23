@@ -94,12 +94,14 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
         val bundle = intent.extras
         if (bundle != null) {
             val arcid = bundle.getString("id")
+            val savedPage = if (bundle.containsKey("page")) bundle.getInt("page") else null
             if (arcid != null) {
                 GlobalScope.launch(Dispatchers.Main) {
                     archive = DatabaseReader.getArchive(arcid, applicationContext.filesDir)
                     val copy = archive
                     if (copy != null) {
-                        val page = ReaderTabHolder.getCurrentPage(arcid)
+                        //Use the page from the thumbnail over the bookmark
+                        val page = savedPage ?: ReaderTabHolder.getCurrentPage(arcid)
                         currentPage = page
                         loadImage(page)
                         image_pager.setCurrentItem(page, false)

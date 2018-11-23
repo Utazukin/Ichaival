@@ -12,6 +12,8 @@ class Archive(json: JSONObject) {
     private val imageUrls = mutableListOf<String>()
     private var loadedUrls = false
     private val mutex: Mutex by lazy { Mutex(false) }
+    val numPages: Int
+        get() = imageUrls.size
 
     init {
         val tagString: String = json.getString("tags")
@@ -34,7 +36,7 @@ class Archive(json: JSONObject) {
         tags = mutableTags
     }
 
-    private suspend fun getImageUrls() {
+    suspend fun loadImageUrls() {
         if (loadedUrls)
             return
 
@@ -63,7 +65,7 @@ class Archive(json: JSONObject) {
     }
 
     private suspend fun downloadPage(page: Int) : String? {
-        getImageUrls()
+        loadImageUrls()
         return if (page < imageUrls.size) DatabaseReader.getRawImageUrl(imageUrls[page]) else null
     }
 

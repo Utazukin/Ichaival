@@ -7,13 +7,12 @@ import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.widget.SearchView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.SearchView
 import kotlinx.coroutines.Dispatchers
-
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -30,13 +29,13 @@ class ArchiveFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
-        lateinit var listAdapter: MyArchiveRecyclerViewAdapter
+        lateinit var listAdapter: ArchiveRecyclerViewAdapter
 
 
         // Set the adapter
         with(listView) {
             layoutManager = GridLayoutManager(context, 2)
-            val temp = MyArchiveRecyclerViewAdapter(listener)
+            val temp = ArchiveRecyclerViewAdapter(listener)
             listAdapter = temp
             adapter = temp
         }
@@ -56,11 +55,7 @@ class ArchiveFragment : Fragment() {
 
         val randomButton: Button = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener { p0 ->
-            val intent = Intent(p0?.context, ReaderActivity::class.java)
-            val bundle = Bundle()
-            bundle.putString("id", listAdapter.getRandomArchive().id)
-            intent.putExtras(bundle)
-            startActivity(intent)
+            startDetailsActivity(listAdapter.getRandomArchive().id, p0?.context)
         }
 
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
@@ -70,6 +65,14 @@ class ArchiveFragment : Fragment() {
             listAdapter.updateDataCopy(DatabaseReader.readArchiveList(context!!.filesDir))
         }
         return view
+    }
+
+    private fun startDetailsActivity(id: String, context:Context?){
+        val intent = Intent(context, ArchiveDetails::class.java)
+        val bundle = Bundle()
+        bundle.putString("id", id)
+        intent.putExtras(bundle)
+        startActivity(intent)
     }
 
     override fun onAttach(context: Context) {
@@ -89,7 +92,7 @@ class ArchiveFragment : Fragment() {
     private fun forceArchiveListUpdate() {
         GlobalScope.launch(Dispatchers.Main) {
             val newList = async { DatabaseReader.readArchiveList(context!!.filesDir, true) }.await()
-            val adapter = listView.adapter as MyArchiveRecyclerViewAdapter
+            val adapter = listView.adapter as ArchiveRecyclerViewAdapter
             adapter.updateDataCopy(newList)
             swipeRefreshLayout.isRefreshing = false
         }
