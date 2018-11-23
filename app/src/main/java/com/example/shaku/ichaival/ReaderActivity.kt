@@ -3,13 +3,11 @@ package com.example.shaku.ichaival
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
-import android.support.design.widget.NavigationView
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentStatePagerAdapter
 import android.support.v4.app.NavUtils
 import android.support.v4.view.ViewPager
-import android.support.v4.widget.DrawerLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -17,6 +15,7 @@ import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import com.example.shaku.ichaival.ReaderFragment.OnFragmentInteractionListener
 import com.example.shaku.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +27,7 @@ import kotlinx.coroutines.launch
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
+class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragmentInteractionListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -64,7 +63,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
 
     private var archive: Archive? = null
     private var currentPage = 0
-    private val loadedPages = mutableSetOf<Int>()
+    private val loadedPages = mutableListOf<Boolean>()
     private lateinit var optionsMenu: Menu
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,20 +75,9 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
 
         mVisible = true
 
-        /*main_image.setOnPhotoTapListener { _, x, _ ->
-            if (x < 0.5)
-                replaceImage(currentPage - 1)
-            else
-                replaceImage(currentPage + 1)
-        }
-
-        main_image.setOnOutsidePhotoTapListener { toggle() }*/
-
         image_pager.adapter = ReaderFragmentAdapter(supportFragmentManager)
         image_pager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener{
             override fun onPageScrollStateChanged(page: Int) {
-                currentPage = page
-                loadImage(currentPage)
             }
 
             override fun onPageScrolled(p0: Int, p1: Float, p2: Int) {
@@ -97,10 +85,12 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
 
             override fun onPageSelected(page: Int) {
                 currentPage = page
+                ReaderTabHolder.instance.updatePageIfTabbed(archive!!.id, page)
                 loadImage(currentPage)
             }
 
         } )
+
         val bundle = intent.extras
         if (bundle != null) {
             val arcid = bundle.getString("id")
@@ -112,23 +102,9 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
                         val page = ReaderTabHolder.instance.getCurrentPage(arcid)
                         currentPage = page
                         loadImage(page)
+                        image_pager.setCurrentItem(page, false)
                     }
                 }
-            }
-        }
-
-        val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
-        val navView: NavigationView = drawerLayout.findViewById(R.id.nav_view)
-        val context = this
-        navView.setNavigationItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_settings -> {
-                    val intent = Intent(context, SettingsActivity::class.java)
-                    startActivity(intent)
-                    drawerLayout.closeDrawers()
-                    true
-                }
-                else -> false
             }
         }
 
@@ -154,13 +130,26 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
     }
 
+    private fun adjustLoadedPages(page: Int) : Boolean {
+        if (page >= loadedPages.size) {
+            val currentSize = loadedPages.size
+            for (i in currentSize..page)
+                loadedPages.add(false)
+        }
+        else if (loadedPages[page])
+            return false
+        loadedPages[page] = true
+        return true
+    }
+
     private fun loadImage(page: Int, preload: Boolean = true) {
-        if (loadedPages.add(page))
+        if (adjustLoadedPages(page))
             image_pager.adapter?.notifyDataSetChanged()
 
         if (preload) {
             for (i in (-1..1)) {
-                if (!loadedPages.contains(page + i) && page + i >= 0)
+                val newPage = page + i
+                if (newPage >= 0 && (newPage >= loadedPages.size || !loadedPages[page + i]))
                     loadImage(page + i, false)
             }
         }
@@ -264,6 +253,10 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener {
     private fun delayedHide(delayMillis: Int) {
         mHideHandler.removeCallbacks(mHideRunnable)
         mHideHandler.postDelayed(mHideRunnable, delayMillis.toLong())
+    }
+
+    override fun onFragmentTap() {
+        toggle()
     }
 
     companion object {
