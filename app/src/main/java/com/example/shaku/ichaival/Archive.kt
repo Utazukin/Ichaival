@@ -1,6 +1,8 @@
 package com.example.shaku.ichaival
 
 import android.support.annotation.UiThread
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject
 
 class Archive(json: JSONObject) {
@@ -9,6 +11,7 @@ class Archive(json: JSONObject) {
     private val tags: Map<String, List<String>>
     private val imageUrls = mutableListOf<String>()
     private var loadedUrls = false
+    private val mutex: Mutex = Mutex(false)
 
     init {
         val tagString: String = json.getString("tags")
@@ -31,33 +34,37 @@ class Archive(json: JSONObject) {
         tags = mutableTags
     }
 
-    private fun getImageUrls() {
+    private suspend fun getImageUrls() {
         if (loadedUrls)
             return
 
-        val jsonPages = DatabaseReader.extractArchive(id)?.getJSONArray("pages") ?: return
+        mutex.withLock {
+            if (loadedUrls)
+                return
 
-        imageUrls.clear()
-        val count = jsonPages.length()
-        for (i in 0..(count - 1)) {
-            var path = jsonPages.getString(i)
-            path = path.substring(1)
-            imageUrls.add(path)
+            val jsonPages = DatabaseReader.extractArchive(id)?.getJSONArray("pages") ?: return
+
+            val count = jsonPages.length()
+            for (i in 0..(count - 1)) {
+                var path = jsonPages.getString(i)
+                path = path.substring(1)
+                imageUrls.add(path)
+            }
+            loadedUrls = true
         }
-        loadedUrls = true
     }
 
     fun hasPage(page: Int) : Boolean {
         return !loadedUrls || (page >= 0 && page < imageUrls.size)
     }
     @UiThread
-    fun getPageImage(page: Int) : String? {
+    suspend fun getPageImage(page: Int) : String? {
         return downloadPage(page)
     }
 
-    private fun downloadPage(page: Int) : String {
+    private suspend fun downloadPage(page: Int) : String? {
         getImageUrls()
-        return DatabaseReader.getRawImageUrl(imageUrls[page])
+        return if (page < imageUrls.size) DatabaseReader.getRawImageUrl(imageUrls[page]) else null
     }
 
     fun containsTag(tag: String) : Boolean {
