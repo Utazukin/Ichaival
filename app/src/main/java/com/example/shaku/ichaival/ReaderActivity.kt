@@ -288,7 +288,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
             val fragment = ReaderFragment()
             GlobalScope.launch(Dispatchers.Main) {
                 val image = GlobalScope.async { archive?.getPageImage(position) }.await()
-                fragment.displayImage(image)
+                fragment.displayImage(image, position)
             }
             return fragment
         }

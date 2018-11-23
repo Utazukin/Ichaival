@@ -1,15 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:tools="http://schemas.android.com/tools"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent"
-             tools:context=".ReaderFragment">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context=".ReaderFragment">
 
     <com.github.chrisbanes.photoview.PhotoView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tools:src="@tools:sample/backgrounds/scenic"
             android:id="@+id/main_image"
-            android:background="@android:color/black"/>
+            android:background="@android:color/black"
+            tools:src="@tools:sample/backgrounds/scenic"/>
 
-</FrameLayout>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/page_num"
+            tools:text="25"
+            android:textSize="36sp"
+            android:layout_centerHorizontal="true"
+            android:layout_above="@+id/progressBar"
+            android:textColor="@android:color/darker_gray"/>
+
+    <ProgressBar
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/progressBar"
+            android:layout_centerInParent="true"
+            android:indeterminate="true"/>
+
+</RelativeLayout>

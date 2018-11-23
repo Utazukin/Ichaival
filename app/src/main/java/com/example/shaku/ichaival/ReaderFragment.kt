@@ -8,17 +8,22 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
+import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.github.chrisbanes.photoview.PhotoView
-import kotlinx.android.synthetic.main.fragment_reader.*
 
 
-class ReaderFragment : Fragment() {
+class ReaderFragment : Fragment(), ArchiveExtractListener {
     private var listener: OnFragmentInteractionListener? = null
     private var imageToDisplay: String? = null
     private var isAttached = false
+    private var page = 0
+    private lateinit var mainImage: PhotoView
+    private lateinit var pageNum: TextView
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -27,21 +32,33 @@ class ReaderFragment : Fragment() {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_reader, container, false)
 
-        val mainImage: PhotoView = view.findViewById(R.id.main_image)
+        mainImage = view.findViewById(R.id.main_image)
         mainImage.setOnPhotoTapListener { _, _, _ -> listener?.onFragmentTap() }
         mainImage.setOnOutsidePhotoTapListener{ listener?.onFragmentTap() }
+
+
+        pageNum = view.findViewById(R.id.page_num)
+        pageNum.text = page.toString()
+        pageNum.visibility = View.VISIBLE
+
+        progressBar = view.findViewById(R.id.progressBar)
+        progressBar.visibility = View.VISIBLE
 
         return view
     }
 
-    fun displayImage(image: String?) {
+    fun displayImage(image: String?, page: Int) {
+        this.page = page
+        pageNum.text = page.toString()
         if (!isAttached)
            imageToDisplay = image
         else {
             Glide.with(this).asBitmap().load(image)
                 .into(object : SimpleTarget<Bitmap>() {
                     override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                        main_image.setImageBitmap(resource)
+                        pageNum.visibility = View.GONE
+                        progressBar.visibility = View.GONE
+                        mainImage.setImageBitmap(resource)
                     }
                 })
         }
@@ -61,7 +78,7 @@ class ReaderFragment : Fragment() {
             if (imageToDisplay != null) {
                 val image = imageToDisplay
                 imageToDisplay = null
-                displayImage(image)
+                displayImage(image, page)
             }
         } else {
             throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
