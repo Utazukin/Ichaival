@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.NestedScrollView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+<android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        tools:context=".ArchiveDetailsFragment">
+
+
+    <ImageView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            tools:srcCompat="@tools:sample/backgrounds/scenic"
+            android:id="@+id/cover"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp"
+            app:layout_constraintEnd_toStartOf="@id/title"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toTopOf="parent"
+            android:adjustViewBounds="true"/>
+
+    <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/title"
+            android:textSize="24sp"
+            app:layout_constraintStart_toEndOf="@id/cover"
+            android:layout_marginStart="16dp"
+            tools:text="Title"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+    <Button
+            android:text="@string/bookmark"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/bookmark_button"
+            android:textAllCaps="true"
+            app:layout_constraintTop_toBottomOf="@id/cover"
+            android:layout_marginTop="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp"
+            app:layout_constraintEnd_toStartOf="@+id/read_button"
+            android:layout_marginEnd="8dp"/>
+
+    <Button
+            android:text="@string/read_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/read_button"
+            app:layout_constraintStart_toEndOf="@id/bookmark_button"
+            android:layout_marginStart="8dp"
+            app:layout_constraintTop_toBottomOf="@id/cover"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="8dp"/>
+
+</android.support.constraint.ConstraintLayout>
+</android.support.v4.widget.NestedScrollView>

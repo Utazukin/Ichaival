@@ -89,4 +89,7 @@
     <string name="load_previews">Load more thumbs</string>
     <string name="bookmark">Bookmark</string>
     <string name="unbookmark">Unbookmark</string>
+    <string name="archive_details">Details</string>
+    <string name="archive_gallery">Thumbs</string>
+    <string name="read_button">Read</string>
 </resources>
