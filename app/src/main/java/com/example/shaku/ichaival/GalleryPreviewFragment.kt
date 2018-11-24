@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -52,7 +53,11 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
         val loadPreviewsButton: Button = view.findViewById(R.id.load_thumbs_button)
         with(listView) {
-            layoutManager = GridLayoutManager(context, 2)
+            post {
+                val dpWidth = getDpWidth(width)
+                val columns = Math.floor(dpWidth / 150.0).toInt()
+                layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
+            }
             thumbAdapter = ThumbRecyclerViewAdapter(listener, archive!!, Glide.with(this))
             adapter = thumbAdapter
             isNestedScrollingEnabled = false

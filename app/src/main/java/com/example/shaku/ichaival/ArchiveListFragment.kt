@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -17,7 +18,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
-class ArchiveFragment : Fragment() {
+class ArchiveListFragment : Fragment() {
 
     private var listener: OnListFragmentInteractionListener? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
@@ -34,7 +35,12 @@ class ArchiveFragment : Fragment() {
 
         // Set the adapter
         with(listView) {
-            layoutManager = GridLayoutManager(context, 2)
+            post {
+                val dpWidth = getDpWidth(width)
+                val columns = Math.floor(dpWidth / 200.0).toInt()
+                layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
+            }
+            //layoutManager = GridLayoutManager(context, 2)
             val temp = ArchiveRecyclerViewAdapter(listener)
             listAdapter = temp
             adapter = temp

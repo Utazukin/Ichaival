@@ -46,7 +46,7 @@
             android:layout_marginLeft="16dp"
             android:layout_marginRight="16dp"
             app:layoutManager="LinearLayoutManager"
-            tools:context=".ArchiveFragment"
+            tools:context=".ArchiveListFragment"
             tools:listitem="@layout/fragment_archive"/>
     </android.support.v4.widget.SwipeRefreshLayout>
 

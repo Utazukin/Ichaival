@@ -76,7 +76,6 @@ class ArchiveDetailsFragment : Fragment() {
     private fun createTagView(tag: String) : TextView {
         val tagView = TextView(context)
         tagView.text = tag
-        //tagView.setPadding(10, 10,10 ,10)
         tagView.background = ContextCompat.getDrawable(context!!, R.drawable.tag_gray_background)
         tagView.setTextColor(Color.WHITE)
         val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)

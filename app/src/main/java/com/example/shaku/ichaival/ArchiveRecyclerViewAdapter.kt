@@ -9,7 +9,7 @@ import android.widget.ImageView
 import android.widget.TextView
 
 
-import com.example.shaku.ichaival.ArchiveFragment.OnListFragmentInteractionListener
+import com.example.shaku.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
 import kotlinx.android.synthetic.main.fragment_archive.view.*
 import kotlinx.coroutines.Dispatchers

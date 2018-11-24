@@ -9,7 +9,7 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
-import com.example.shaku.ichaival.ArchiveFragment.OnListFragmentInteractionListener
+import com.example.shaku.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
 class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener {
 
