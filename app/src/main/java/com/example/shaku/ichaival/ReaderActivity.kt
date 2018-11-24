@@ -179,9 +179,9 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
 
     private fun setTabbedIcon(menuItem: MenuItem?, tabbed: Boolean) {
         val icon = if (tabbed)
-            android.R.drawable.star_big_on
+            R.drawable.ic_bookmark_white_24dp
         else
-            android.R.drawable.star_big_off
+            R.drawable.ic_bookmark_border_white_24dp
         menuItem?.icon = getDrawable(icon)
 
     }

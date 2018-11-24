@@ -3,8 +3,8 @@
       xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-            android:title="Bookmark"
+            android:title="@string/bookmark"
             android:id="@+id/bookmark_archive"
-            android:icon="@android:drawable/btn_star_big_off"
+            android:icon="@drawable/ic_bookmark_border_white_24dp"
             app:showAsAction="always"/>
 </menu>
