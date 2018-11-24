@@ -5,7 +5,9 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -13,13 +15,14 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
+import com.example.shaku.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import com.example.shaku.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
-class ArchiveDetails : AppCompatActivity(), ThumbInteractionListener {
+class ArchiveDetails : AppCompatActivity(), ThumbInteractionListener, OnTabInteractionListener {
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
 
@@ -50,6 +53,23 @@ class ArchiveDetails : AppCompatActivity(), ThumbInteractionListener {
             isNestedScrollingEnabled = false
         }
 
+        val bookmarkButton: Button = findViewById(R.id.bookmark_button)
+        with(bookmarkButton) {
+            setOnClickListener {
+                val copy = archive
+                if (copy != null) {
+                    if (ReaderTabHolder.isTabbed(copy.id)) {
+                        ReaderTabHolder.removeTab(copy.id)
+                        text = getString(R.string.bookmark)
+                    } else {
+                        ReaderTabHolder.addTab(copy, 0)
+                        text = getString(R.string.unbookmark)
+                    }
+                }
+            }
+            text = getString(if (ReaderTabHolder.isTabbed(archive?.id)) R.string.unbookmark else R.string.bookmark)
+        }
+
         loadPreviewsButton.setOnClickListener {
             thumbAdapter.increasePreviewCount()
             if (!thumbAdapter.hasMorePreviews)
@@ -72,6 +92,35 @@ class ArchiveDetails : AppCompatActivity(), ThumbInteractionListener {
                 }
             })
         }
+
+        val tabView: RecyclerView = findViewById(R.id.tab_view)
+        val tabListener = this
+        with(tabView) {
+            layoutManager = LinearLayoutManager(context)
+            adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), tabListener)
+        }
+
+        val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
+                return false
+            }
+
+            override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
+                val adapter = tabView.adapter as ReaderTabViewAdapter
+                adapter.removeTab(holder.adapterPosition)
+                bookmarkButton.text = getString((R.string.bookmark))
+            }
+        }
+        ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
+    }
+
+    override fun onTabInteraction(tab: ReaderTab) {
+        val intent = Intent(this, ReaderActivity::class.java)
+        val bundle = Bundle()
+        bundle.putString("id", tab.id)
+        intent.putExtras(bundle)
+        startActivity(intent)
+        finish()
     }
 
     override fun onThumbSelection(page: Int) {

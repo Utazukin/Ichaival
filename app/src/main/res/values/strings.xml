@@ -87,4 +87,6 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="load_previews">Load more thumbs</string>
+    <string name="bookmark">Bookmark</string>
+    <string name="unbookmark">Unbookmark</string>
 </resources>
