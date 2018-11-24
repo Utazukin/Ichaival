@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -72,8 +73,8 @@ class ArchiveDetailsFragment : Fragment() {
     private fun createTagView(tag: String) : TextView {
         val tagView = TextView(context)
         tagView.text = tag
-        tagView.setPadding(10, 10,10 ,10)
-        tagView.setBackgroundColor(Color.DKGRAY)
+        //tagView.setPadding(10, 10,10 ,10)
+        tagView.background = ContextCompat.getDrawable(context!!, R.drawable.tag_gray_background)
         tagView.setTextColor(Color.WHITE)
         val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         layoutParams.setMargins(10, 10, 10, 10)
