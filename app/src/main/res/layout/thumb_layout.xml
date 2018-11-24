@@ -9,7 +9,10 @@
             android:layout_height="wrap_content"
             android:id="@+id/small_thumb"
             tools:src="@tools:sample/backgrounds/scenic"
-            android:layout_margin="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
             android:adjustViewBounds="true"/>
 
     <TextView

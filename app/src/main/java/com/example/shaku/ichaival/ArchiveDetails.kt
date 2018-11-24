@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import com.bumptech.glide.Glide
@@ -19,6 +21,7 @@ import kotlinx.coroutines.launch
 
 class ArchiveDetails : AppCompatActivity(), ThumbInteractionListener {
     private var archive: Archive? = null
+    private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,9 +42,18 @@ class ArchiveDetails : AppCompatActivity(), ThumbInteractionListener {
     private fun setUpDetailView() {
         val listener: ThumbInteractionListener = this
         val listView: RecyclerView = findViewById(R.id.thumb_list)
+        val loadPreviewsButton: Button = findViewById(R.id.load_thumbs_button)
         with(listView) {
             layoutManager = GridLayoutManager(context, 2)
-            adapter = ThumbRecyclerViewAdapter(listener, archive!!)
+            thumbAdapter = ThumbRecyclerViewAdapter(listener, archive!!, Glide.with(this))
+            adapter = thumbAdapter
+            isNestedScrollingEnabled = false
+        }
+
+        loadPreviewsButton.setOnClickListener {
+            thumbAdapter.increasePreviewCount()
+            if (!thumbAdapter.hasMorePreviews)
+                loadPreviewsButton.visibility = View.GONE
         }
 
         val titleView: TextView = findViewById(R.id.title)
@@ -58,7 +70,6 @@ class ArchiveDetails : AppCompatActivity(), ThumbInteractionListener {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                     thumbView.setImageBitmap(resource)
                 }
-
             })
         }
     }
