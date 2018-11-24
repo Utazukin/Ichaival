@@ -8,7 +8,7 @@ import org.json.JSONObject
 class Archive(json: JSONObject) {
     val title: String = json.getString("title")
     val id: String = json.getString("arcid")
-    private val tags: Map<String, List<String>>
+    val tags: Map<String, List<String>>
     private val imageUrls = mutableListOf<String>()
     private var loadedUrls = false
     private val mutex: Mutex by lazy { Mutex(false) }

@@ -92,4 +92,5 @@
     <string name="archive_details">Details</string>
     <string name="archive_gallery">Thumbs</string>
     <string name="read_button">Read</string>
+    <string name="tag_header">Tags</string>
 </resources>
