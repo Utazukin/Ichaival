@@ -56,6 +56,9 @@ class ArchiveDetailsFragment : Fragment() {
         val archiveCopy = archive ?: return
 
         for (pair in archiveCopy.tags) {
+            if (pair.value.isEmpty())
+                continue
+
             val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
             val namespaceLayout = LinearLayout(context)
             namespaceLayout.orientation = LinearLayout.HORIZONTAL
