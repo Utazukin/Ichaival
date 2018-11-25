@@ -1,6 +1,7 @@
 package com.example.shaku.ichaival
 
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -25,10 +26,11 @@ import kotlinx.coroutines.launch
 
 private const val ARCHIVE_ID = "arcid"
 
-class ArchiveDetailsFragment : Fragment() {
+class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     private var archiveId: String? = null
     private var archive: Archive? = null
     private lateinit var tagLayout: LinearLayout
+    private lateinit var bookmarkButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +52,21 @@ class ArchiveDetailsFragment : Fragment() {
             setUpDetailView(view)
         }
         return view
+    }
+
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+        ReaderTabHolder.registerRemoveListener(this)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        ReaderTabHolder.unregisterRemoveListener(this)
+    }
+
+    override fun onTabRemoved(id: String) {
+        if (id == archiveId)
+            bookmarkButton.text = getString(R.string.bookmark)
     }
 
     private fun setUpTags() {
@@ -85,7 +102,7 @@ class ArchiveDetailsFragment : Fragment() {
     }
 
     private fun setUpDetailView(view: View) {
-        val bookmarkButton: Button = view.findViewById(R.id.bookmark_button)
+        bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {
                 val copy = archive
