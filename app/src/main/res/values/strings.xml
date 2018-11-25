@@ -93,4 +93,5 @@
     <string name="archive_gallery">Thumbs</string>
     <string name="read_button">Read</string>
     <string name="tag_header">Tags</string>
+    <string name="bookmark_label">Bookmarks</string>
 </resources>

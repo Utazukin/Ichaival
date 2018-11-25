@@ -39,12 +39,10 @@
             android:paddingTop="@dimen/status_bar_height"
             >
 
-        <androidx.recyclerview.widget.RecyclerView
+        <include
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/tab_view"
-                tools:listitem="@layout/reader_tab"
-                />
+                android:layout_height="wrap_content"
+                layout="@layout/reader_tab_layout"/>
 
     </com.google.android.material.navigation.NavigationView>
 </androidx.drawerlayout.widget.DrawerLayout>
