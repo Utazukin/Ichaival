@@ -37,7 +37,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:fitsSystemWindows="true"
-            android:background="@android:color/background_light"
+            android:background="?colorPrimary"
             android:paddingTop="@dimen/status_bar_height">
 
         <androidx.recyclerview.widget.RecyclerView
