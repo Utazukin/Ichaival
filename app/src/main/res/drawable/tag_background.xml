@@ -4,9 +4,9 @@
  
  <stroke
         android:width="4dp"
-        android:color="#ff444444" />
+        android:color="?colorPrimaryDark" />
 
-    <solid android:color="#ff444444"/>
+    <solid android:color="?colorPrimaryDark"/>
  
     <corners android:radius="360dp" />
  
