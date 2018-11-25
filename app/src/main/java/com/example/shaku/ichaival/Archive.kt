@@ -27,7 +27,7 @@ class Archive(json: JSONObject) {
                     mutableTags[split[0]] = mutableListOf()
                 mutableTags[split[0]]?.add(split[1])
             }
-            else {
+            else if (!tag.isEmpty()) {
                 if (!mutableTags.containsKey("global"))
                     mutableTags["global"] = mutableListOf()
                 mutableTags["global"]?.add(trimmed)
