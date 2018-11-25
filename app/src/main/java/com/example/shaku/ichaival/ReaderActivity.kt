@@ -72,6 +72,7 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
         setContentView(R.layout.activity_reader)
         setSupportActionBar(findViewById(R.id.reader_toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = ""
 
         mVisible = true
 
@@ -97,9 +98,10 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
             val savedPage = if (bundle.containsKey("page")) bundle.getInt("page") else null
             if (arcid != null) {
                 GlobalScope.launch(Dispatchers.Main) {
-                    archive = DatabaseReader.getArchive(arcid, applicationContext.filesDir)
+                    archive = async { DatabaseReader.getArchive(arcid, applicationContext.filesDir) }.await()
                     val copy = archive
                     if (copy != null) {
+                        supportActionBar?.title = copy.title
                         //Use the page from the thumbnail over the bookmark
                         val page = savedPage ?: ReaderTabHolder.getCurrentPage(arcid)
                         currentPage = page
