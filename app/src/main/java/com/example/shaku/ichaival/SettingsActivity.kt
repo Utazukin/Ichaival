@@ -85,6 +85,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
             val pref = findPreference(getString(R.string.server_address_preference))
             pref.onPreferenceChangeListener = DatabaseReader
+            bindPreferenceSummaryToValue(pref)
         }
 
         override fun onOptionsItemSelected(item: MenuItem): Boolean {
