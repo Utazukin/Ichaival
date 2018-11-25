@@ -1,6 +1,6 @@
 package com.example.shaku.ichaival
 
-import android.support.annotation.UiThread
+import androidx.annotation.UiThread
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONObject

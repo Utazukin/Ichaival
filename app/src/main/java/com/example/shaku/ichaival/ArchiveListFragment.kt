@@ -3,16 +3,16 @@ package com.example.shaku.ichaival
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v4.widget.SwipeRefreshLayout
-import android.support.v7.widget.GridLayoutManager
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.SearchView
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
@@ -38,7 +38,10 @@ class ArchiveListFragment : Fragment() {
             post {
                 val dpWidth = getDpWidth(width)
                 val columns = Math.floor(dpWidth / 200.0).toInt()
-                layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
+                layoutManager = if (columns > 1) GridLayoutManager(
+                    context,
+                    columns
+                ) else LinearLayoutManager(context)
             }
             //layoutManager = GridLayoutManager(context, 2)
             val temp = ArchiveRecyclerViewAdapter(listener)

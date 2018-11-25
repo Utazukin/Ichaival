@@ -9,9 +9,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.preference.*
-import android.support.v4.app.NavUtils
 import android.text.TextUtils
 import android.view.MenuItem
+import androidx.core.app.NavUtils
 
 /**
  * A [PreferenceActivity] that presents a set of application settings. On

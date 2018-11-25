@@ -3,7 +3,7 @@ package com.example.shaku.ichaival
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.preference.Preference
-import android.support.annotation.UiThread
+import androidx.annotation.UiThread
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import org.json.JSONArray

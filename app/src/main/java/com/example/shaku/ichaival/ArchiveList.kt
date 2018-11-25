@@ -3,13 +3,13 @@ package com.example.shaku.ichaival
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.support.design.widget.NavigationView
-import android.support.v4.widget.DrawerLayout
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
+import androidx.appcompat.app.AppCompatActivity
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.shaku.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
+import com.google.android.material.navigation.NavigationView
 
 class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener {
 
