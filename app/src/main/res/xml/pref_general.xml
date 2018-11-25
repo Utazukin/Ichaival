@@ -1,5 +1,5 @@
-<PreferenceScreen xmlns:tools="http://schemas.android.com/tools"
-                  xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen
+        xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
@@ -8,14 +8,12 @@
          dismiss it. -->
     <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
 
-    <EditTextPreference
+    <com.example.shaku.ichaival.SummaryTextPreference
             android:defaultValue="localhost:3000"
             android:selectAllOnFocus="true"
-            android:singleLine="true"
             android:title="@string/server_location_name"
-            android:key="@string/server_address_preference"/>
+            android:key="@string/server_address_preference"
+            android:singleLine="true"
+            />
 
-    <Preference android:title="@string/clear_cache">
-        <intent android:action="com.example.shaku.ichaival.ClearCacheActivity"/>
-    </Preference>
 </PreferenceScreen>
