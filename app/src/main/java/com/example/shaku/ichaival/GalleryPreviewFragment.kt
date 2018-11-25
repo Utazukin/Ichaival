@@ -62,8 +62,6 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
             }
             thumbAdapter = ThumbRecyclerViewAdapter(listener, archive!!)
             adapter = thumbAdapter
-            isNestedScrollingEnabled = false
-            setHasFixedSize(true)
         }
 
         loadPreviewsButton.setOnClickListener {

@@ -55,23 +55,23 @@ class ThumbRecyclerViewAdapter(
         val page = position
         holder.pageNumView.text = (page + 1).toString()
 
-            val job = GlobalScope.launch(Dispatchers.Main) {
-                val image = async { archive.getPageImage(page) }.await()
+        val job = GlobalScope.launch(Dispatchers.Main) {
+            val image = async { archive.getPageImage(page) }.await()
 
-                with(holder.thumbView) {
-                    tag = page
-                    setOnClickListener(onClickListener)
-                }
-
-                Glide.with(holder.view).asBitmap().load(image).into(object : SimpleTarget<Bitmap>() {
-                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                        holder.pageNumView.visibility = View.GONE
-                        holder.progressBar.visibility = View.GONE
-                        holder.thumbView.setImageBitmap(resource)
-                    }
-                })
+            with(holder.thumbView) {
+                tag = page
+                setOnClickListener(onClickListener)
             }
-            imageLoadingJobs[holder] = job
+
+            Glide.with(holder.view).asBitmap().load(image).into(object : SimpleTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    holder.pageNumView.visibility = View.GONE
+                    holder.progressBar.visibility = View.GONE
+                    holder.thumbView.setImageBitmap(resource)
+                }
+            })
+        }
+        imageLoadingJobs[holder] = job
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
