@@ -18,10 +18,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 
 private const val ARCHIVE_ID = "arcid"
@@ -31,6 +28,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     private var archive: Archive? = null
     private lateinit var tagLayout: LinearLayout
     private lateinit var bookmarkButton: Button
+    private var thumbLoadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,6 +65,11 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     override fun onTabRemoved(id: String) {
         if (id == archiveId)
             bookmarkButton.text = getString(R.string.bookmark)
+    }
+
+    override fun onDestroy() {
+        thumbLoadJob?.cancel()
+        super.onDestroy()
     }
 
     private fun setUpTags() {
@@ -133,13 +136,13 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive?.title
 
-        GlobalScope.launch(Dispatchers.Main) {
+        thumbLoadJob = GlobalScope.launch(Dispatchers.Main) {
             val thumbView: ImageView = view.findViewById(R.id.cover)
             val thumb = async { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }.await()
             Glide.with(thumbView).asBitmap().load(thumb).into(thumbView)
 
             //Replace the thumbnail with the full size image.
-            val image = async { archive?.getPageImage(0) }.await()
+            val image = async(Dispatchers.Default) { archive?.getPageImage(0) }.await()
             Glide.with(thumbView).asBitmap().load(image).into(object: SimpleTarget<Bitmap>() {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                     thumbView.setImageBitmap(resource)

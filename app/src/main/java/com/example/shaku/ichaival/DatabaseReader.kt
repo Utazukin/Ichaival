@@ -12,6 +12,7 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
+import java.net.SocketException
 import java.net.URL
 import java.nio.charset.Charset
 import java.util.*
@@ -89,20 +90,25 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     fun extractArchive(id: String) : JSONObject? {
         val url = URL("$serverLocation$extractPath?id=$id")
 
-        with (url.openConnection() as HttpURLConnection) {
-            if (responseCode != 200)
-                return null
+        try {
+            with(url.openConnection() as HttpURLConnection) {
+                if (responseCode != 200)
+                    return null
 
-            BufferedReader(InputStreamReader(inputStream)).use {
-                val response = StringBuffer()
+                BufferedReader(InputStreamReader(inputStream)).use {
+                    val response = StringBuffer()
 
-                var inputLine = it.readLine()
-                while (inputLine != null) {
-                    response.append(inputLine)
-                    inputLine = it.readLine()
+                    var inputLine = it.readLine()
+                    while (inputLine != null) {
+                        response.append(inputLine)
+                        inputLine = it.readLine()
+                    }
+                    return JSONObject(response.toString())
                 }
-                return JSONObject(response.toString())
             }
+        } catch (e: SocketException) {
+            //TODO toast
+            return null
         }
     }
 
