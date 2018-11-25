@@ -11,7 +11,6 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.shaku.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -61,9 +60,10 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(listener, archive!!, Glide.with(this))
+            thumbAdapter = ThumbRecyclerViewAdapter(listener, archive!!)
             adapter = thumbAdapter
             isNestedScrollingEnabled = false
+            setHasFixedSize(true)
         }
 
         loadPreviewsButton.setOnClickListener {

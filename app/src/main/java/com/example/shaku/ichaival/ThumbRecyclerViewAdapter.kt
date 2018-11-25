@@ -7,24 +7,22 @@ import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.RequestManager
+import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.github.chrisbanes.photoview.PhotoView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
-class ThumbRecyclerViewAdapter(private val listener: ThumbInteractionListener?,
-                               private val archive: Archive,
-                               private val glide: RequestManager)
+class ThumbRecyclerViewAdapter(
+    private val listener: ThumbInteractionListener?,
+    private val archive: Archive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val onClickListener: View.OnClickListener
     private var maxThumbnails = 10
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
+    private val imageLoadingJobs: MutableMap<ViewHolder, Job> = mutableMapOf()
 
     init {
         onClickListener = View.OnClickListener { v ->
@@ -39,8 +37,9 @@ class ThumbRecyclerViewAdapter(private val listener: ThumbInteractionListener?,
 
     fun increasePreviewCount() {
         if (maxThumbnails < archive.numPages) {
+            val currentCount = itemCount
             maxThumbnails *= 2
-            notifyDataSetChanged()
+            notifyItemRangeInserted(currentCount + 1, Math.min(maxThumbnails, archive.numPages))
         }
     }
 
@@ -54,23 +53,31 @@ class ThumbRecyclerViewAdapter(private val listener: ThumbInteractionListener?,
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val page = position
-        GlobalScope.launch(Dispatchers.Main) {
-            val image = async { archive.getPageImage(page) }.await()
-            holder.pageNumView.text = (page + 1).toString()
+        holder.pageNumView.text = (page + 1).toString()
 
-            with(holder.thumbView) {
-                tag = page
-                setOnClickListener(onClickListener)
-            }
+            val job = GlobalScope.launch(Dispatchers.Main) {
+                val image = async { archive.getPageImage(page) }.await()
 
-            glide.asBitmap().load(image).into(object: SimpleTarget<Bitmap>() {
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    holder.pageNumView.visibility = View.GONE
-                    holder.progressBar.visibility = View.GONE
-                    holder.thumbView.setImageBitmap(resource)
+                with(holder.thumbView) {
+                    tag = page
+                    setOnClickListener(onClickListener)
                 }
-            })
-        }
+
+                Glide.with(holder.view).asBitmap().load(image).into(object : SimpleTarget<Bitmap>() {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        holder.pageNumView.visibility = View.GONE
+                        holder.progressBar.visibility = View.GONE
+                        holder.thumbView.setImageBitmap(resource)
+                    }
+                })
+            }
+            imageLoadingJobs[holder] = job
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        imageLoadingJobs[holder]?.cancel()
+        imageLoadingJobs.remove(holder)
+        super.onViewRecycled(holder)
     }
 
     interface ThumbInteractionListener {
