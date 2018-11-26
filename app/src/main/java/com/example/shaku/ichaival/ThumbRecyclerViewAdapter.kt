@@ -1,20 +1,25 @@
 package com.example.shaku.ichaival
 
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.transition.Transition
+import com.bumptech.glide.RequestManager
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.Target
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.*
 
 class ThumbRecyclerViewAdapter(
     private val listener: ThumbInteractionListener?,
+    private val glide: RequestManager,
     private val archive: Archive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
@@ -26,7 +31,7 @@ class ThumbRecyclerViewAdapter(
 
     init {
         onClickListener = View.OnClickListener { v ->
-            val item = v.tag as Int
+            val item = v.getTag(R.id.small_thumb) as Int
             listener?.onThumbSelection(item)
         }
         GlobalScope.launch(Dispatchers.Main) {
@@ -59,17 +64,40 @@ class ThumbRecyclerViewAdapter(
             val image = async { archive.getPageImage(page) }.await()
 
             with(holder.thumbView) {
-                tag = page
+                setTag(R.id.small_thumb, page)
                 setOnClickListener(onClickListener)
             }
 
-            Glide.with(holder.view).asBitmap().load(image).into(object : SimpleTarget<Bitmap>() {
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    holder.pageNumView.visibility = View.GONE
-                    holder.progressBar.visibility = View.GONE
-                    holder.thumbView.setImageBitmap(resource)
-                }
-            })
+            val options = RequestOptions()
+            options.encodeFormat(Bitmap.CompressFormat.JPEG)
+            options.encodeQuality(80)
+            options.override(getDpAdjusted(200), getDpAdjusted(200))
+            glide.load(image)
+                .apply(options)
+                .addListener(object : RequestListener<Drawable>{
+                    override fun onLoadFailed(
+                        e: GlideException?,
+                        model: Any?,
+                        target: Target<Drawable>?,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        holder.pageNumView.visibility = View.GONE
+                        return false
+                    }
+
+                    override fun onResourceReady(
+                        resource: Drawable?,
+                        model: Any?,
+                        target: Target<Drawable>?,
+                        dataSource: DataSource?,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        holder.pageNumView.visibility = View.GONE
+                        holder.progressBar.visibility = View.GONE
+                        return false
+                    }
+
+                }).into(holder.thumbView)
         }
         imageLoadingJobs[holder] = job
     }
