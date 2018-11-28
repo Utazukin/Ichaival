@@ -27,7 +27,7 @@ class ReaderTabViewAdapter (
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = openTabs[position]
         holder.titleView.text = item.title
-        holder.pageView.text = item.page.toString()
+        holder.pageView.text = (item.page + 1).toString()
 
         with(holder.view) {
             tag = item
