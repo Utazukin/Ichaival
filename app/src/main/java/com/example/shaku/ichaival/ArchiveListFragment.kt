@@ -37,7 +37,7 @@ class ArchiveListFragment : Fragment() {
         with(listView) {
             post {
                 val dpWidth = getDpWidth(width)
-                val columns = Math.floor(dpWidth / 200.0).toInt()
+                val columns = Math.floor(dpWidth / 300.0).toInt()
                 layoutManager = if (columns > 1) GridLayoutManager(
                     context,
                     columns
