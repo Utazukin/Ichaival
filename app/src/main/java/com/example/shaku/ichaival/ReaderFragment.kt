@@ -11,8 +11,10 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.transition.Transition
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.github.chrisbanes.photoview.PhotoView
 
 
@@ -53,14 +55,29 @@ class ReaderFragment : Fragment() {
         if (!isAttached)
            imageToDisplay = image
         else {
-            Glide.with(this).asBitmap().load(image)
-                .into(object : SimpleTarget<Bitmap>() {
-                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                        pageNum.visibility = View.GONE
-                        progressBar.visibility = View.GONE
-                        mainImage.setImageBitmap(resource)
-                    }
-                })
+            Glide.with(activity!!).asBitmap().load(image).addListener(object: RequestListener<Bitmap>{
+                override fun onLoadFailed(
+                    e: GlideException?,
+                    model: Any?,
+                    target: Target<Bitmap>?,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    return false
+                }
+
+                override fun onResourceReady(
+                    resource: Bitmap?,
+                    model: Any?,
+                    target: Target<Bitmap>?,
+                    dataSource: DataSource?,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    pageNum.visibility = View.GONE
+                    progressBar.visibility = View.GONE
+                    return false
+                }
+
+            }).into(mainImage)
         }
     }
 

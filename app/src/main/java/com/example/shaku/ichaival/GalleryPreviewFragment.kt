@@ -48,6 +48,11 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
         return view
     }
 
+    override fun onDetach() {
+        super.onDetach()
+        Glide.get(activity!!).clearMemory()
+    }
+
     private fun setGalleryView(view: View) {
         val listener: ThumbInteractionListener = this
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
@@ -61,7 +66,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(listener, Glide.with(this), archive!!)
+            thumbAdapter = ThumbRecyclerViewAdapter(listener, Glide.with(activity!!), archive!!)
             adapter = thumbAdapter
         }
 

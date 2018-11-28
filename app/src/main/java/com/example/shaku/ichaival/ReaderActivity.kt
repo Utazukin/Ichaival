@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
+import com.bumptech.glide.Glide
 import com.example.shaku.ichaival.ReaderFragment.OnFragmentInteractionListener
 import com.example.shaku.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
@@ -186,6 +187,11 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
             R.drawable.ic_bookmark_border_white_24dp
         menuItem?.icon = getDrawable(icon)
 
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Glide.get(this).clearMemory()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
