@@ -32,7 +32,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
         if (!this::archiveList.isInitialized || forceUpdate) {
             val jsonFile = File(cacheDir, jsonLocation)
-            archiveList = if (!checkDirty(cacheDir))
+            archiveList = if (forceUpdate || !checkDirty(cacheDir))
                 readArchiveList(jsonFile.readText())
             else {
                 val archiveJson = GlobalScope.async { downloadArchiveList() }.await()
@@ -44,6 +44,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                 }
             }
             archiveList = archiveList.sortedBy { archive -> archive.title }
+            isDirty = false
         }
         return archiveList
     }
