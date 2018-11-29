@@ -7,4 +7,8 @@
             android:id="@+id/bookmark_archive"
             android:icon="@drawable/ic_bookmark_border_white_24dp"
             app:showAsAction="always"/>
+    <item
+            android:title="@string/detail_menu_item"
+            app:showAsAction="never"
+            android:id="@+id/detail_menu"/>
 </menu>

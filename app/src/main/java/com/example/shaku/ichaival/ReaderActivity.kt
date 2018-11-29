@@ -216,6 +216,15 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
                     return true
                 }
             }
+            R.id.detail_menu -> {
+                val intent = Intent(this, ArchiveDetails::class.java)
+                val bundle = Bundle()
+                bundle.putString("id", archive?.id)
+                intent.putExtras(bundle)
+                startActivity(intent)
+                finish()
+                return true
+            }
         }
         return super.onOptionsItemSelected(item)
     }
