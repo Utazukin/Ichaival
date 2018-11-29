@@ -16,16 +16,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-    <Button
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/load_thumbs_button"
-            android:text="@string/load_previews"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginTop="8dp"
-            />
-
     <androidx.recyclerview.widget.RecyclerView
             android:layout_width="match_parent"
             android:layout_height="match_parent"

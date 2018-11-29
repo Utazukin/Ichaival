@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -56,7 +55,6 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
     private fun setGalleryView(view: View) {
         val listener: ThumbInteractionListener = this
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
-        val loadPreviewsButton: Button = view.findViewById(R.id.load_thumbs_button)
         with(listView) {
             post {
                 val dpWidth = getDpWidth(width)
@@ -68,12 +66,13 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
             }
             thumbAdapter = ThumbRecyclerViewAdapter(listener, Glide.with(activity!!), archive!!)
             adapter = thumbAdapter
-        }
-
-        loadPreviewsButton.setOnClickListener {
-            thumbAdapter.increasePreviewCount()
-            if (!thumbAdapter.hasMorePreviews)
-                loadPreviewsButton.visibility = View.GONE
+            addOnScrollListener(object: RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    super.onScrollStateChanged(recyclerView, newState)
+                    if (!listView.canScrollVertically(1) && thumbAdapter.hasMorePreviews)
+                        thumbAdapter.increasePreviewCount()
+                }
+            })
         }
     }
 
