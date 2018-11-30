@@ -18,6 +18,9 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexWrap
+import com.google.android.flexbox.FlexboxLayout
 import kotlinx.coroutines.*
 
 
@@ -80,8 +83,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
                 continue
 
             val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
-            val namespaceLayout = LinearLayout(context)
-            namespaceLayout.orientation = LinearLayout.HORIZONTAL
+            val namespaceLayout = FlexboxLayout(context)
+            namespaceLayout.flexWrap = FlexWrap.WRAP
+            namespaceLayout.flexDirection = FlexDirection.ROW
             tagLayout.addView(namespaceLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             val namespaceView = createTagView(namespace)
             namespaceLayout.addView(namespaceView)
