@@ -14,6 +14,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.github.chrisbanes.photoview.PhotoView
 
@@ -55,29 +56,32 @@ class ReaderFragment : Fragment() {
         if (!isAttached)
            imageToDisplay = image
         else {
-            Glide.with(activity!!).asBitmap().load(image).addListener(object: RequestListener<Bitmap>{
-                override fun onLoadFailed(
-                    e: GlideException?,
-                    model: Any?,
-                    target: Target<Bitmap>?,
-                    isFirstResource: Boolean
-                ): Boolean {
-                    return false
-                }
+            Glide.with(activity!!).asBitmap().load(image)
+                .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                .addListener(object: RequestListener<Bitmap>{
+                    override fun onLoadFailed(
+                        e: GlideException?,
+                        model: Any?,
+                        target: Target<Bitmap>?,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        return false
+                    }
 
-                override fun onResourceReady(
-                    resource: Bitmap?,
-                    model: Any?,
-                    target: Target<Bitmap>?,
-                    dataSource: DataSource?,
-                    isFirstResource: Boolean
-                ): Boolean {
-                    pageNum.visibility = View.GONE
-                    progressBar.visibility = View.GONE
-                    return false
-                }
+                    override fun onResourceReady(
+                        resource: Bitmap?,
+                        model: Any?,
+                        target: Target<Bitmap>?,
+                        dataSource: DataSource?,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        pageNum.visibility = View.GONE
+                        progressBar.visibility = View.GONE
+                        return false
+                    }
 
-            }).into(mainImage)
+                })
+                .into(mainImage)
         }
     }
 
