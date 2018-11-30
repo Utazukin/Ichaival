@@ -67,6 +67,13 @@ class ArchiveListFragment : Fragment() {
             startDetailsActivity(listAdapter.getRandomArchive().id, p0?.context)
         }
 
+        randomButton.setOnLongClickListener { v ->
+            val archive = listAdapter.getRandomArchive()
+            if (!ReaderTabHolder.isTabbed(archive.id))
+                ReaderTabHolder.addTab(archive, 0)
+            true
+        }
+
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
 

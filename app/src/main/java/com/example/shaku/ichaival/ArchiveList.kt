@@ -11,9 +11,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.shaku.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.google.android.material.navigation.NavigationView
 
-class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener {
-
+class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener, TabAddedListener {
     private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navView: NavigationView
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
@@ -46,7 +46,7 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
         DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
 
         drawerLayout = findViewById(R.id.drawer_layout)
-        val navView: NavigationView = drawerLayout.findViewById(R.id.nav_view)
+        navView = drawerLayout.findViewById(R.id.nav_view)
         val context = this
         navView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
@@ -78,6 +78,20 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
             }
         }
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ReaderTabHolder.registerAddListener(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        ReaderTabHolder.unregisterAddListener(this)
+    }
+
+    override fun onTabAdded(index: Int, id: String) {
+        drawerLayout.openDrawer(navView, true)
     }
 
     override fun onTabInteraction(tab: ReaderTab) {
