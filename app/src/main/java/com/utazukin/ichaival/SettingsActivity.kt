@@ -30,6 +30,7 @@ import android.preference.*
 import android.text.TextUtils
 import android.view.MenuItem
 import androidx.core.app.NavUtils
+import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 
 /**
  * A [PreferenceActivity] that presents a set of application settings. On
@@ -107,6 +108,12 @@ class SettingsActivity : AppCompatPreferenceActivity() {
 
             val apiPref = findPreference(getString(R.string.api_key_pref))
             bindPreferenceSummaryToValue(apiPref)
+
+            val licensePref = findPreference(getString(R.string.license_key))
+            licensePref.setOnPreferenceClickListener { p ->
+                startActivity(Intent(activity, OssLicensesMenuActivity::class.java))
+                true
+            }
         }
 
         override fun onOptionsItemSelected(item: MenuItem): Boolean {

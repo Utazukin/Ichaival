@@ -38,5 +38,9 @@
             android:singleLine="true"
             android:title="@string/api_key_pref_name"
             android:key="@string/api_key_pref"/>
+    <Preference
+        android:title="Open Source Licenses"
+        android:key="@string/license_key"
+        android:summary="Licences used by this app"/>
 
 </PreferenceScreen>
