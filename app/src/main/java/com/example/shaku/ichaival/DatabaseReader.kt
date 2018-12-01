@@ -41,7 +41,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             else {
                 val archiveJson = GlobalScope.async { downloadArchiveList() }.await()
                 if (archiveJson == "")
-                    listOf()
+                    if (this::archiveList.isInitialized) archiveList else listOf()
                 else {
                     jsonFile.writeText(archiveJson)
                     readArchiveList(archiveJson)
