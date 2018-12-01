@@ -81,7 +81,7 @@ class ThumbRecyclerViewAdapter(
                         target: Target<Drawable>?,
                         isFirstResource: Boolean
                     ): Boolean {
-                        holder.pageNumView.visibility = View.GONE
+                        holder.progressBar.visibility = View.GONE
                         return false
                     }
 
