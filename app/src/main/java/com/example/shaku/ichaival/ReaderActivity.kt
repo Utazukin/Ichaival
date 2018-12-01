@@ -6,7 +6,6 @@ import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NavUtils
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -28,7 +27,7 @@ import kotlinx.coroutines.launch
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragmentInteractionListener {
+class ReaderActivity : BaseActivity(), OnTabInteractionListener, OnFragmentInteractionListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar

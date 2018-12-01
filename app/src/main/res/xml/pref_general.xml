@@ -15,5 +15,10 @@
             android:key="@string/server_address_preference"
             android:singleLine="true"
             />
+    <EditTextPreference
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/api_key_pref_name"
+            android:key="@string/api_key_pref"/>
 
 </PreferenceScreen>

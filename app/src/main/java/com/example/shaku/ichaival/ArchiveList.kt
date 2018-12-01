@@ -3,7 +3,6 @@ package com.example.shaku.ichaival
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -11,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.shaku.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.google.android.material.navigation.NavigationView
 
-class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener, TabAddedListener {
+class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener, TabAddedListener {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navView: NavigationView
 
@@ -44,6 +43,9 @@ class ArchiveList : AppCompatActivity(), OnListFragmentInteractionListener, Read
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
+
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
 
         drawerLayout = findViewById(R.id.drawer_layout)
         navView = drawerLayout.findViewById(R.id.nav_view)

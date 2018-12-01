@@ -4,8 +4,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.preference.Preference
 import androidx.annotation.UiThread
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -27,6 +29,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private lateinit var archiveList: List<Archive>
     private var serverLocation: String = ""
     private var isDirty = false
+    private var apiKey: String = ""
+    var errorListener: DatabaseErrorListener? = null
 
     @UiThread
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
@@ -51,6 +55,14 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     fun updateServerLocation(location: String) {
         serverLocation = location
+    }
+
+    fun updateApiKey(key: String) {
+        apiKey = key
+    }
+
+    private fun getApiKey() : String {
+        return if (apiKey.isBlank()) "" else "?key=$apiKey"
     }
 
     private fun checkDirty(fileDir: File) : Boolean {
@@ -89,7 +101,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     fun extractArchive(id: String) : JSONObject? {
-        val url = URL("$serverLocation$extractPath?id=$id")
+        val url = URL("$serverLocation$extractPath?id=$id${getApiKey()}")
 
         try {
             with(url.openConnection() as HttpURLConnection) {
@@ -104,22 +116,34 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                         response.append(inputLine)
                         inputLine = it.readLine()
                     }
-                    return JSONObject(response.toString())
+                    val json = JSONObject(response.toString())
+                    if (!json.has("error"))
+                        return json
+                    else{
+                        notifyError(json.getString("error"))
+                        return null
+                    }
                 }
             }
         } catch (e: SocketException) {
-            //TODO toast
+            notifyError("extracting archive!")
             return null
         }
     }
 
+    private fun notifyError(error: String) {
+        GlobalScope.launch(Dispatchers.Main) { errorListener?.onError(error) }
+    }
+
     private fun downloadArchiveList() : String {
         try {
-            val url = URL(serverLocation + archiveListPath)
+            val url = URL(serverLocation + archiveListPath + getApiKey())
 
             with(url.openConnection() as HttpURLConnection) {
-                if (responseCode != 200)
+                if (responseCode != 200) {
+                    notifyError("downloading archive list!")
                     return ""
+                }
 
                 val decoder = Charset.forName("utf-8").newDecoder()
                 BufferedReader(InputStreamReader(inputStream, decoder)).use {
@@ -135,6 +159,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             }
         }
         catch (e: Exception) {
+            notifyError("downloading archive list!")
             return ""
         }
     }
@@ -151,11 +176,13 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     private fun downloadThumb(id: String, thumbDir: File) : File? {
-        val url = URL("$serverLocation$thumbPath?id=$id")
+        val url = URL("$serverLocation$thumbPath?id=$id${getApiKey()}")
 
         with(url.openConnection() as HttpURLConnection) {
-            if (responseCode != 200)
+            if (responseCode != 200) {
+                notifyError("downloading thumbnail!")
                 return null
+            }
 
             BufferedReader(InputStreamReader(inputStream)).use {
                 val bytes = inputStream.readBytes()
