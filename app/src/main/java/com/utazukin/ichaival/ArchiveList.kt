@@ -22,6 +22,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
+import android.view.MenuItem
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -58,6 +60,11 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTab
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_list)
         setSupportActionBar(findViewById(R.id.toolbar))
+
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeAsUpIndicator(R.drawable.ic_menu)
+        }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
@@ -120,5 +127,15 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTab
     override fun onTabInteraction(tab: ReaderTab) {
         startReaderActivity(tab.id)
         drawerLayout.closeDrawers()
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return when(item?.itemId) {
+            android.R.id.home -> {
+                drawerLayout.openDrawer(GravityCompat.START)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 }
