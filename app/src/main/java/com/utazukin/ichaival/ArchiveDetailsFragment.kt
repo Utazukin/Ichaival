@@ -3,7 +3,6 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -16,8 +15,6 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.SimpleTarget
-import com.bumptech.glide.request.transition.Transition
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
@@ -143,15 +140,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         thumbLoadJob = GlobalScope.launch(Dispatchers.Main) {
             val thumbView: ImageView = view.findViewById(R.id.cover)
             val thumb = async { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }.await()
-            Glide.with(thumbView).asBitmap().load(thumb).into(thumbView)
+            val request = Glide.with(thumbView).asBitmap().load(thumb)
+            request.into(thumbView)
 
             //Replace the thumbnail with the full size image.
             val image = async(Dispatchers.Default) { archive?.getPageImage(0) }.await()
-            Glide.with(thumbView).asBitmap().load(image).into(object: SimpleTarget<Bitmap>() {
-                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    thumbView.setImageBitmap(resource)
-                }
-            })
+            Glide.with(thumbView).asBitmap().load(image).thumbnail(request).into(thumbView)
         }
     }
 
