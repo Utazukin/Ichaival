@@ -21,18 +21,22 @@ package com.utazukin.ichaival
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
-abstract class BaseActivity : AppCompatActivity(), DatabaseErrorListener {
+abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener {
     override fun onStart() {
         super.onStart()
-        DatabaseReader.errorListener = this
+        DatabaseReader.listener = this
     }
 
     override fun onPause() {
         super.onPause()
-        DatabaseReader.errorListener = null
+        DatabaseReader.listener = null
     }
 
     override fun onError(error: String) {
         Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+    }
+
+    override fun onExtract(title: String) {
+        Toast.makeText(this, "Extracting...", Toast.LENGTH_LONG).show()
     }
 }

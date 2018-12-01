@@ -18,6 +18,8 @@
 
 package com.utazukin.ichaival
 
-interface DatabaseErrorListener {
+interface DatabaseMessageListener {
     fun onError(error: String)
+
+    fun onExtract(title: String)
 }

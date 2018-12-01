@@ -48,7 +48,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private var serverLocation: String = ""
     private var isDirty = false
     private var apiKey: String = ""
-    var errorListener: DatabaseErrorListener? = null
+    var listener: DatabaseMessageListener? = null
 
     @UiThread
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
@@ -126,6 +126,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     fun extractArchive(id: String) : JSONObject? {
         val url = URL("$serverLocation$extractPath?id=$id${getApiKey(true)}")
+        notifyExtract(id)
 
         try {
             with(url.openConnection() as HttpURLConnection) {
@@ -156,7 +157,17 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     private fun notifyError(error: String) {
-        GlobalScope.launch(Dispatchers.Main) { errorListener?.onError(error) }
+        GlobalScope.launch(Dispatchers.Main) { listener?.onError(error) }
+    }
+
+    private fun getArchive(id: String) : Archive? {
+        return if (this::archiveList.isInitialized) archiveList.find { x -> x.id == id } else null
+    }
+
+    private fun notifyExtract(id: String) {
+        val title = getArchive(id)?.title
+        if (title != null)
+            GlobalScope.launch(Dispatchers.Main) { listener?.onExtract(title) }
     }
 
     private fun downloadArchiveList() : String {

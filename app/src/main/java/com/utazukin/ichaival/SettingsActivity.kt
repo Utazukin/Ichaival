@@ -43,7 +43,7 @@ import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
  * for design guidelines and the [Settings API Guide](http://developer.android.com/guide/topics/ui/settings.html)
  * for more information on developing a Settings UI.
  */
-class SettingsActivity : AppCompatPreferenceActivity(), DatabaseErrorListener {
+class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,17 +70,19 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseErrorListener {
 
     override fun onStart() {
         super.onStart()
-        DatabaseReader.errorListener = this
+        DatabaseReader.listener = this
     }
 
     override fun onPause() {
         super.onPause()
-        DatabaseReader.errorListener = null
+        DatabaseReader.listener = null
     }
 
     override fun onError(error: String) {
         Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
     }
+
+    override fun onExtract(title: String) {}
 
     /**
      * {@inheritDoc}
