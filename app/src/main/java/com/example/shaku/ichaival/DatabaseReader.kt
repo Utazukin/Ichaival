@@ -61,8 +61,15 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         apiKey = key
     }
 
-    private fun getApiKey() : String {
-        return if (apiKey.isBlank()) "" else "?key=$apiKey"
+    private fun getApiKey(multiParam: Boolean) : String {
+        if (apiKey.isBlank())
+            return ""
+        else {
+           var string = "key=$apiKey"
+            if (multiParam)
+                string = "&$string"
+            return string
+        }
     }
 
     private fun checkDirty(fileDir: File) : Boolean {
@@ -101,7 +108,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     fun extractArchive(id: String) : JSONObject? {
-        val url = URL("$serverLocation$extractPath?id=$id${getApiKey()}")
+        val url = URL("$serverLocation$extractPath?id=$id${getApiKey(true)}")
 
         try {
             with(url.openConnection() as HttpURLConnection) {
@@ -137,7 +144,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     private fun downloadArchiveList() : String {
         try {
-            val url = URL(serverLocation + archiveListPath + getApiKey())
+            val url = URL("$serverLocation$archiveListPath?${getApiKey(false)}")
 
             with(url.openConnection() as HttpURLConnection) {
                 if (responseCode != 200) {
@@ -176,7 +183,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     private fun downloadThumb(id: String, thumbDir: File) : File? {
-        val url = URL("$serverLocation$thumbPath?id=$id${getApiKey()}")
+        val url = URL("$serverLocation$thumbPath?id=$id${getApiKey(true)}")
 
         with(url.openConnection() as HttpURLConnection) {
             if (responseCode != 200) {
