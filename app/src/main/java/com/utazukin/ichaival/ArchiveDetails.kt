@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
-import com.example.shaku.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
+import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 
 class ArchiveDetails : BaseActivity(), OnTabInteractionListener {
     private var archiveId: String? = null

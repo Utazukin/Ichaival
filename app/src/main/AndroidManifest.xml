@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.example.shaku.ichaival">
+          package="com.utazukin.ichaival">
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -11,31 +11,31 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
-        <activity android:name=".ArchiveList">
+        <activity android:name="com.utazukin.ichaival.ArchiveList">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".ArchiveDetails">
+        <activity android:name="com.utazukin.ichaival.ArchiveDetails">
         </activity>
         <activity
-                android:name=".ReaderActivity"
+                android:name="com.utazukin.ichaival.ReaderActivity"
                 android:configChanges="orientation|keyboardHidden|screenSize"
                 android:label="@string/title_activity_reader"
                 android:theme="@style/FullscreenTheme">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
-                    android:value="com.example.shaku.ichaival.ArchiveList"/>
+                    android:value="com.utazukin.ichaival.ArchiveList"/>
         </activity>
         <activity
-                android:name=".SettingsActivity"
+                android:name="com.utazukin.ichaival.SettingsActivity"
                 android:label="@string/title_activity_settings"
-                android:parentActivityName=".ArchiveList">
+                android:parentActivityName="com.utazukin.ichaival.ArchiveList">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
-                    android:value="com.example.shaku.ichaival.ArchiveList"/>
+                    android:value="com.utazukin.ichaival.ArchiveList"/>
         </activity>
     </application>
 

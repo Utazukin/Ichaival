@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 import androidx.annotation.UiThread
 import kotlinx.coroutines.sync.Mutex

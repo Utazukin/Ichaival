@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 interface TabUpdateListener {
     fun onTabListUpdate(tabList: List<ReaderTab>)

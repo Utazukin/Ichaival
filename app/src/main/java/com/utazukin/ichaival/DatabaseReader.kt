@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

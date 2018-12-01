@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 object ReaderTabHolder {
     private val openTabs = mutableMapOf<String, ReaderTab>()

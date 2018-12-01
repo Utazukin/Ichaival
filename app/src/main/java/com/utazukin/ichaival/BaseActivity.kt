@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity

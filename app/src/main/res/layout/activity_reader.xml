@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.example.shaku.ichaival.HackyDrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                           xmlns:tools="http://schemas.android.com/tools"
-                                           android:layout_width="match_parent"
-                                           android:layout_height="match_parent"
-                                           android:background="#000000"
-                                           tools:context=".ReaderActivity"
-                                           android:id="@+id/drawer_layout"
-                                           android:fitsSystemWindows="false">
+<com.utazukin.ichaival.HackyDrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                                         xmlns:tools="http://schemas.android.com/tools"
+                                         android:layout_width="match_parent"
+                                         android:layout_height="match_parent"
+                                         android:background="#000000"
+                                         tools:context=".ReaderActivity"
+                                         android:id="@+id/drawer_layout"
+                                         android:fitsSystemWindows="false">
 
     <FrameLayout
             android:layout_height="match_parent"
             android:layout_width="match_parent"
             android:id="@+id/reader_frame_layout">
 
-        <com.example.shaku.ichaival.HackyViewPager
+        <com.utazukin.ichaival.HackyViewPager
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/image_pager"
@@ -46,4 +46,4 @@
                 layout="@layout/reader_tab_layout"/>
     </com.google.android.material.navigation.NavigationView>
 
-</com.example.shaku.ichaival.HackyDrawerLayout>
+</com.utazukin.ichaival.HackyDrawerLayout>

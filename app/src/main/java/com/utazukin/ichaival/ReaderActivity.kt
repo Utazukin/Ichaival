@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 import android.content.Intent
 import android.os.Bundle
@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
-import com.example.shaku.ichaival.ReaderFragment.OnFragmentInteractionListener
-import com.example.shaku.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
+import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
+import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope

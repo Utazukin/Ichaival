@@ -1,4 +1,4 @@
-package com.example.shaku.ichaival
+package com.utazukin.ichaival
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,8 +7,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.shaku.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.google.android.material.navigation.NavigationView
+import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener, TabAddedListener {
     private lateinit var drawerLayout: DrawerLayout
