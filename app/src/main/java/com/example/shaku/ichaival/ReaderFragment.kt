@@ -17,6 +17,7 @@ import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.github.chrisbanes.photoview.PhotoView
+import java.io.FileNotFoundException
 
 
 class ReaderFragment : Fragment() {
@@ -65,6 +66,10 @@ class ReaderFragment : Fragment() {
                         target: Target<Bitmap>?,
                         isFirstResource: Boolean
                     ): Boolean {
+                        if (e?.rootCauses?.any { x -> x is FileNotFoundException} == true) {
+                            listener?.onImageLoadError()
+                            return true
+                        }
                         return false
                     }
 
@@ -108,6 +113,8 @@ class ReaderFragment : Fragment() {
 
     interface OnFragmentInteractionListener {
         fun onFragmentTap()
+
+        fun onImageLoadError()
     }
 
 }

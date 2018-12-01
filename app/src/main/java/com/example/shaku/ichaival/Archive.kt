@@ -56,6 +56,11 @@ class Archive(json: JSONObject) {
         }
     }
 
+    fun invalidateCache() {
+        imageUrls.clear()
+        loadedUrls = false
+    }
+
     fun hasPage(page: Int) : Boolean {
         return !loadedUrls || (page >= 0 && page < imageUrls.size)
     }

@@ -281,6 +281,11 @@ class ReaderActivity : AppCompatActivity(), OnTabInteractionListener, OnFragment
         toggle()
     }
 
+    override fun onImageLoadError() {
+        archive?.invalidateCache()
+        GlobalScope.launch {  archive?.loadImageUrls() }
+    }
+
     companion object {
         /**
          * Whether or not the system UI should be auto-hidden after
