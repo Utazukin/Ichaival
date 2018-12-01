@@ -13,7 +13,8 @@
             android:layout_marginBottom="8dp"
             android:layout_marginTop="8dp"
             android:layout_height="150dp"
-            android:layout_width="match_parent">
+            android:layout_width="match_parent"
+            >
 
         <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
@@ -34,7 +35,7 @@
                     android:adjustViewBounds="true"
                     app:layout_constraintEnd_toStartOf="@+id/archive_label"
                     app:layout_constraintStart_toStartOf="parent"
-                    />
+                    app:layout_constraintHorizontal_bias="1.0"/>
 
             <TextView
                     android:layout_width="0dp"
