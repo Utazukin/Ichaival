@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import android.content.Intent
 import android.os.Bundle
+import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -72,6 +73,8 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTab
             when (item.itemId) {
                 R.id.nav_settings -> {
                     val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, SettingsActivity.GeneralPreferenceFragment::class.java.name)
+                    intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true)
                     startActivity(intent)
                     drawerLayout.closeDrawers()
                     true
