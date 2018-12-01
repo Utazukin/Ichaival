@@ -22,30 +22,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
-import android.view.MenuItem
-import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
-class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTabViewAdapter.OnTabInteractionListener, TabAddedListener {
-    private lateinit var drawerLayout: DrawerLayout
-    private lateinit var navView: NavigationView
-
+class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
             startDetailsActivity(archive.id)
-    }
-
-    private fun startReaderActivity(id: String) {
-        val intent = Intent(this, ReaderActivity::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", id)
-        intent.putExtras(bundle)
-        startActivity(intent)
     }
 
     private fun startDetailsActivity(id: String){
@@ -72,9 +54,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTab
 
         @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
+    }
 
-        drawerLayout = findViewById(R.id.drawer_layout)
-        navView = drawerLayout.findViewById(R.id.nav_view)
+    override fun onCreateDrawer() {
+        super.onCreateDrawer()
         val context = this
         navView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
@@ -89,25 +72,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTab
                 else -> false
             }
         }
-
-        val tabView: RecyclerView = findViewById(R.id.tab_view)
-        val listener = this
-        with(tabView) {
-            layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener)
-        }
-
-        val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
-            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
-                return false
-            }
-
-            override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
-                val adapter = tabView.adapter as ReaderTabViewAdapter
-                adapter.removeTab(holder.adapterPosition)
-            }
-        }
-        ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
     }
 
     override fun onStart() {
@@ -118,24 +82,5 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, ReaderTab
     override fun onStop() {
         super.onStop()
         ReaderTabHolder.unregisterAddListener(this)
-    }
-
-    override fun onTabAdded(index: Int, id: String) {
-        drawerLayout.openDrawer(navView, true)
-    }
-
-    override fun onTabInteraction(tab: ReaderTab) {
-        startReaderActivity(tab.id)
-        drawerLayout.closeDrawers()
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        return when(item?.itemId) {
-            android.R.id.home -> {
-                drawerLayout.openDrawer(GravityCompat.START)
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 }

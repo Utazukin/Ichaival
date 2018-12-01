@@ -24,7 +24,6 @@ import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import androidx.core.app.NavUtils
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
@@ -34,7 +33,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
-import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -45,7 +43,7 @@ import kotlinx.coroutines.launch
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-class ReaderActivity : BaseActivity(), OnTabInteractionListener, OnFragmentInteractionListener {
+class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -129,7 +127,10 @@ class ReaderActivity : BaseActivity(), OnTabInteractionListener, OnFragmentInter
                 }
             }
         }
+    }
 
+    override fun onCreateDrawer() {
+        drawerLayout = findViewById(R.id.drawer_layout)
         val tabView: RecyclerView = findViewById(R.id.tab_view)
         val listener = this
         with(tabView) {
@@ -214,11 +215,6 @@ class ReaderActivity : BaseActivity(), OnTabInteractionListener, OnFragmentInter
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
         when (id) {
-            // This ID represents the Home or Up button.
-            android.R.id.home -> {
-                NavUtils.navigateUpFromSameTask(this)
-                return true
-            }
             R.id.bookmark_archive -> {
                 val copy = archive
                 if (copy != null) {
@@ -247,12 +243,11 @@ class ReaderActivity : BaseActivity(), OnTabInteractionListener, OnFragmentInter
     }
 
     override fun onTabInteraction(tab: ReaderTab) {
-        val intent = Intent(this, ReaderActivity::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", tab.id)
-        intent.putExtras(bundle)
-        startActivity(intent)
-        finish()
+        if (tab.id != archive?.id) {
+            super.onTabInteraction(tab)
+            finish()
+        } else
+            drawerLayout.closeDrawers()
     }
 
     private fun toggle() {
