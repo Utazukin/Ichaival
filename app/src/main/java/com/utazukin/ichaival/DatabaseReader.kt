@@ -102,11 +102,10 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             if (serverLocation != newValue) {
                 serverLocation = newValue
                 isDirty = true
-                true
-            } else
-                false
+            }
+            true
         } catch (e: Exception) {
-            //TODO show a toast telling the user to enter a valid url.
+            notifyError("Invalid URL!")
             false
         }
     }

@@ -29,6 +29,7 @@ import android.os.Bundle
 import android.preference.*
 import android.text.TextUtils
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.core.app.NavUtils
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 
@@ -42,7 +43,7 @@ import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
  * for design guidelines and the [Settings API Guide](http://developer.android.com/guide/topics/ui/settings.html)
  * for more information on developing a Settings UI.
  */
-class SettingsActivity : AppCompatPreferenceActivity() {
+class SettingsActivity : AppCompatPreferenceActivity(), DatabaseErrorListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +66,20 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             return true
         }
         return super.onMenuItemSelected(featureId, item)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        DatabaseReader.errorListener = this
+    }
+
+    override fun onPause() {
+        super.onPause()
+        DatabaseReader.errorListener = null
+    }
+
+    override fun onError(error: String) {
+        Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
     }
 
     /**
@@ -103,8 +118,7 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             setHasOptionsMenu(true)
 
             val pref = findPreference(getString(R.string.server_address_preference))
-            pref.onPreferenceChangeListener = DatabaseReader
-            bindPreferenceSummaryToValue(pref)
+            binPrefSummaryNotify(pref)
 
             val apiPref = findPreference(getString(R.string.api_key_pref))
             bindPreferenceSummaryToValue(apiPref)
@@ -180,6 +194,13 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             true
         }
 
+        private val bindAndNotifyPreferenceListener = Preference.OnPreferenceChangeListener { pref, value ->
+            if (DatabaseReader.onPreferenceChange(pref, value))
+                sBindPreferenceSummaryToValueListener.onPreferenceChange(pref, value)
+            else
+            false
+        }
+
         /**
          * Helper method to determine if the device has an extra-large screen. For
          * example, 10" tablets are extra-large.
@@ -204,6 +225,16 @@ class SettingsActivity : AppCompatPreferenceActivity() {
             // Trigger the listener immediately with the preference's
             // current value.
             sBindPreferenceSummaryToValueListener.onPreferenceChange(
+                preference,
+                PreferenceManager
+                    .getDefaultSharedPreferences(preference.context)
+                    .getString(preference.key, "")
+            )
+        }
+
+        private fun binPrefSummaryNotify(preference: Preference) {
+            preference.onPreferenceChangeListener = bindAndNotifyPreferenceListener
+            bindAndNotifyPreferenceListener.onPreferenceChange(
                 preference,
                 PreferenceManager
                     .getDefaultSharedPreferences(preference.context)

@@ -27,8 +27,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseErrorListener {
         DatabaseReader.errorListener = this
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onPause() {
+        super.onPause()
         DatabaseReader.errorListener = null
     }
 
