@@ -97,4 +97,6 @@
     <string name="detail_menu_item">Details</string>
     <string name="api_key_pref">api_key</string>
     <string name="api_key_pref_name">API Key</string>
+    <string name="details_title">Details</string>
+    <string name="thumbs_title">Thumbs</string>
 </resources>

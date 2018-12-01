@@ -20,7 +20,8 @@
                 android:theme="?attr/actionBarTheme"
                 android:minHeight="?attr/actionBarSize"
                 android:id="@+id/toolbar"
-                android:elevation="4dp"/>
+                android:elevation="4dp"
+                app:title="@string/details_title"/>
 
         <androidx.viewpager.widget.ViewPager
                 android:layout_width="match_parent"

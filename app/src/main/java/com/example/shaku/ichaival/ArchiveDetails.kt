@@ -48,6 +48,21 @@ class ArchiveDetails : BaseActivity(), OnTabInteractionListener {
 
         val pager: ViewPager = findViewById(R.id.details_pager)
         pager.adapter = DetailsPagerAdapter(supportFragmentManager)
+        pager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener{
+            override fun onPageScrollStateChanged(state: Int) {
+            }
+
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+            }
+
+            override fun onPageSelected(position: Int) {
+                when(position) {
+                    0 -> supportActionBar?.title = getString(R.string.details_title)
+                    1 -> supportActionBar?.title = getString(R.string.thumbs_title)
+                }
+            }
+
+        })
     }
 
     override fun onTabInteraction(tab: ReaderTab) {
