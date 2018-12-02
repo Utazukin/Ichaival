@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.ConnectivityManager
 import android.preference.Preference
 import androidx.annotation.UiThread
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private var isDirty = false
     private var apiKey: String = ""
     var listener: DatabaseMessageListener? = null
+    var connectivityManager: ConnectivityManager? = null
 
     @UiThread
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
@@ -56,7 +58,9 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             val jsonFile = File(cacheDir, jsonLocation)
             archiveList = if (!forceUpdate && !checkDirty(cacheDir))
                 readArchiveList(jsonFile.readText())
-            else {
+            else if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
+                if (this::archiveList.isInitialized) archiveList else listOf()
+            } else {
                 val archiveJson = GlobalScope.async { downloadArchiveList() }.await()
                 if (archiveJson == "")
                     if (this::archiveList.isInitialized) archiveList else listOf()
@@ -125,6 +129,11 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     fun extractArchive(id: String) : JSONObject? {
+        if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
+            notifyError("No network connection!")
+            return null
+        }
+
         val url = URL("$serverLocation$extractPath?id=$id${getApiKey(true)}")
         notifyExtract(id)
 
@@ -171,6 +180,11 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     private fun downloadArchiveList() : String {
+        if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
+            notifyError("No network connection!")
+            return ""
+        }
+
         try {
             val url = URL("$serverLocation$archiveListPath?${getApiKey(false)}")
 

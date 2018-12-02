@@ -18,7 +18,9 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.view.MenuItem
@@ -81,11 +83,13 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onStart() {
         super.onStart()
         DatabaseReader.listener = this
+        DatabaseReader.connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
     override fun onPause() {
         super.onPause()
         DatabaseReader.listener = null
+        DatabaseReader.connectivityManager = null
     }
 
     override fun onStop() {
