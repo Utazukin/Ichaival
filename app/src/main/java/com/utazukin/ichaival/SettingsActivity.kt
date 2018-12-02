@@ -138,6 +138,14 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener 
                 startActivity(intent)
                 true
             }
+
+            val gitPref = findPreference(getString(R.string.git_key))
+            gitPref.setOnPreferenceClickListener {
+                val webpage = Uri.parse("https://github.com/Utazukin/Ichaival")
+                val intent = Intent(Intent.ACTION_VIEW, webpage)
+                startActivity(intent)
+                true
+            }
         }
 
         override fun onOptionsItemSelected(item: MenuItem): Boolean {

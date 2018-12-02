@@ -40,6 +40,11 @@
             android:key="@string/api_key_pref"/>
 
     <Preference
+            android:title="View on GitHub"
+            android:key="@string/git_key"
+            android:summary="View source on GitHub"/>
+
+    <Preference
             android:title="Licensed under GPLv3"
             android:key="@string/gpl_key"
             android:summary="Tap to view"/>

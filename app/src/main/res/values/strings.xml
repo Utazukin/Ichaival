@@ -119,4 +119,5 @@
     <string name="thumbs_title">Thumbs</string>
     <string name="license_key">licenses</string>
     <string name="gpl_key">gpl</string>
+    <string name="git_key">github</string>
 </resources>
