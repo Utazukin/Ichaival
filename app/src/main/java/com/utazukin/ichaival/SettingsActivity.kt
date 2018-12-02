@@ -126,8 +126,16 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener 
             bindPreferenceSummaryToValue(apiPref)
 
             val licensePref = findPreference(getString(R.string.license_key))
-            licensePref.setOnPreferenceClickListener { p ->
+            licensePref.setOnPreferenceClickListener {
                 startActivity(Intent(activity, OssLicensesMenuActivity::class.java))
+                true
+            }
+
+            val gplPref = findPreference(getString(R.string.gpl_key))
+            gplPref.setOnPreferenceClickListener {
+                val webpage = Uri.parse("https://www.gnu.org/licenses/gpl.txt")
+                val intent = Intent(Intent.ACTION_VIEW, webpage)
+                startActivity(intent)
                 true
             }
         }
