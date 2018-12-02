@@ -30,14 +30,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
             startDetailsActivity(archive.id)
     }
 
-    private fun startDetailsActivity(id: String){
-        val intent = Intent(this, ArchiveDetails::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", id)
-        intent.putExtras(bundle)
-        startActivity(intent)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_list)

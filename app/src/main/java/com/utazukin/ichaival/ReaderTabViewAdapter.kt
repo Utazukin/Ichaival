@@ -33,12 +33,18 @@ class ReaderTabViewAdapter (
 
     private val onClickListener: View.OnClickListener
 
+    private val onLongClickListener: View.OnLongClickListener
+
     init {
         onClickListener = View.OnClickListener { v ->
             val item = v.tag as ReaderTab
-            // Notify the active callbacks interface (the activity, if the fragment is attached to
-            // one) that an item has been selected.
-            listener?.onTabInteraction(item)
+            listener?.onTabInteraction(item, false)
+        }
+
+        onLongClickListener = View.OnLongClickListener { v ->
+            val item = v.tag as ReaderTab
+            listener?.onTabInteraction(item, true)
+            true
         }
     }
 
@@ -50,6 +56,7 @@ class ReaderTabViewAdapter (
         with(holder.view) {
             tag = item
             setOnClickListener(onClickListener)
+            setOnLongClickListener(onLongClickListener)
         }
     }
 
@@ -84,6 +91,6 @@ class ReaderTabViewAdapter (
     }
 
     interface OnTabInteractionListener {
-        fun onTabInteraction(tab: ReaderTab)
+        fun onTabInteraction(tab: ReaderTab, longPress: Boolean)
     }
 }

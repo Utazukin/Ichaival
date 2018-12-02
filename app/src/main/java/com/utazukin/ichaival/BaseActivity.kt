@@ -79,6 +79,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         DatabaseReader.listener = null
     }
 
+    override fun onStop() {
+        super.onStop()
+        drawerLayout.closeDrawers()
+    }
+
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
         super.onRestoreInstanceState(savedInstanceState)
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
@@ -103,9 +108,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         drawerLayout.openDrawer(navView, true)
     }
 
-    override fun onTabInteraction(tab: ReaderTab) {
-        startReaderActivity(tab.id)
-        drawerLayout.closeDrawers()
+    override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
+        if (longPress)
+            startDetailsActivity(tab.id)
+        else
+            startReaderActivity(tab.id)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -131,4 +138,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         startActivity(intent)
     }
 
+    protected fun startDetailsActivity(id: String){
+        val intent = Intent(this, ArchiveDetails::class.java)
+        val bundle = Bundle()
+        bundle.putString("id", id)
+        intent.putExtras(bundle)
+        startActivity(intent)
+    }
 }

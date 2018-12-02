@@ -59,8 +59,8 @@ class ArchiveDetails : BaseActivity() {
         })
     }
 
-    override fun onTabInteraction(tab: ReaderTab) {
-        super.onTabInteraction(tab)
+    override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
+        super.onTabInteraction(tab, longPress)
         finish()
     }
 

@@ -249,9 +249,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onTabInteraction(tab: ReaderTab) {
-        if (tab.id != archive?.id) {
-            super.onTabInteraction(tab)
+    override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
+        if (tab.id != archive?.id || longPress) {
+            super.onTabInteraction(tab, longPress)
             finish()
         } else
             drawerLayout.closeDrawers()
