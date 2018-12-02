@@ -87,6 +87,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
         @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
+
+        ReaderTabHolder.restoreTabs(savedInstanceState)
     }
 
     override fun onError(error: String) {
@@ -104,6 +106,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onTabInteraction(tab: ReaderTab) {
         startReaderActivity(tab.id)
         drawerLayout.closeDrawers()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        ReaderTabHolder.saveTabs(outState)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

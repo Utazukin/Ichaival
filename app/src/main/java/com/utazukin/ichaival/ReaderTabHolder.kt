@@ -18,7 +18,13 @@
 
 package com.utazukin.ichaival
 
+import android.os.Bundle
+
 object ReaderTabHolder {
+    private const val titleKey = "tabTitles"
+    private const val idKey = "tabIds"
+    private const val pageKey = "tabPages"
+
     private val openTabs = mutableMapOf<String, ReaderTab>()
 
     private val listeners = mutableSetOf<TabUpdateListener>()
@@ -88,6 +94,36 @@ object ReaderTabHolder {
         updateListeners()
     }
 
+    fun restoreTabs(savedInstance: Bundle?) {
+        savedInstance?.let {
+            val ids = it.getStringArrayList(idKey) ?: return
+            val titles = it.getStringArrayList(titleKey) ?: return
+            val pages = it.getIntArray(pageKey) ?: return
+
+            for (i in 0..(ids.size - 1)) {
+                openTabs[ids[i]] = ReaderTab(ids[i], titles[i], pages[i])
+            }
+            updateListeners()
+        }
+    }
+
+    fun saveTabs(outState: Bundle) {
+        if (openTabs.any()) {
+            val ids = ArrayList<String>(openTabs.size)
+            val titles = ArrayList<String>(openTabs.size)
+            val pages = IntArray(openTabs.size)
+            for ((index, tab) in openTabs.values.withIndex()) {
+                ids.add(tab.id)
+                titles.add(tab.title)
+                pages[index] = tab.page
+            }
+
+            outState.putStringArrayList(titleKey, titles)
+            outState.putStringArrayList(idKey, ids)
+            outState.putIntArray(pageKey, pages)
+        }
+    }
+
     private fun updateRemoveListeners(id: String) {
         for (listener in removeListeners)
             listener.onTabRemoved(id)
@@ -110,11 +146,7 @@ object ReaderTabHolder {
     }
 }
 
-class ReaderTab(
-    archive: Archive,
-    var page: Int
-) {
-    val title = archive.title
-    val id = archive.id
+data class ReaderTab(val id: String, val title: String, var page: Int) {
+    constructor(archive: Archive, page: Int) : this(archive.id, archive.title, page)
 }
 

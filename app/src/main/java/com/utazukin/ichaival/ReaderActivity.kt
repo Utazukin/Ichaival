@@ -130,10 +130,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
+    override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState?.putInt("currentPage", currentPage)
-        outState?.putString("id", archive?.id)
+        outState.putInt("currentPage", currentPage)
+        outState.putString("id", archive?.id)
     }
 
     override fun onCreateDrawer() {
