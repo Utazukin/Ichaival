@@ -160,7 +160,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                 }
             }
         } catch (e: SocketException) {
-            notifyError("extracting archive!")
+            notifyError("Failed to extract archive!")
             return null
         }
     }
@@ -190,7 +190,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
             with(url.openConnection() as HttpURLConnection) {
                 if (responseCode != 200) {
-                    notifyError("downloading archive list!")
+                    notifyError("Failed to connect to server!")
                     return ""
                 }
 
@@ -208,7 +208,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             }
         }
         catch (e: Exception) {
-            notifyError("downloading archive list!")
+            notifyError("Failed to connect to server!")
             return ""
         }
     }
@@ -229,7 +229,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
         with(url.openConnection() as HttpURLConnection) {
             if (responseCode != 200) {
-                notifyError("downloading thumbnail!")
+                notifyError("Failed to download thumbnail!")
                 return null
             }
 
