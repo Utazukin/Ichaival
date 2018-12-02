@@ -76,6 +76,7 @@ class ArchiveRecyclerViewAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         thumbLoadingJobs[holder]?.cancel()
         thumbLoadingJobs.remove(holder)
+        holder.archiveImage.setImageBitmap(null)
         super.onViewRecycled(holder)
     }
 
