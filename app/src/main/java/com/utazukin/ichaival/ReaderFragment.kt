@@ -43,6 +43,7 @@ class ReaderFragment : Fragment() {
     private var imageToDisplay: String? = null
     private var isAttached = false
     private var page = 0
+    private var imagePath: String? = null
     private lateinit var mainImage: PhotoView
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
@@ -75,6 +76,7 @@ class ReaderFragment : Fragment() {
         if (!isAttached)
            imageToDisplay = image
         else {
+            imagePath = image
             Glide.with(activity!!).asBitmap().load(image)
                 .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
                 .addListener(object: RequestListener<Bitmap>{
@@ -126,6 +128,21 @@ class ReaderFragment : Fragment() {
             }
         } else {
             throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt("page", page)
+        outState.putString("pagePath", imagePath)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
+        savedInstanceState?.run {
+            page = getInt("page")
+            displayImage(getString("pagePath"), page)
         }
     }
 

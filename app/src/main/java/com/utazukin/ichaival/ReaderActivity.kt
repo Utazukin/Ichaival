@@ -109,24 +109,31 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         } )
 
         val bundle = intent.extras
-        if (bundle != null) {
-            val arcid = bundle.getString("id")
-            val savedPage = if (bundle.containsKey("page")) bundle.getInt("page") else null
-            if (arcid != null) {
-                GlobalScope.launch(Dispatchers.Main) {
-                    archive = async { DatabaseReader.getArchive(arcid, applicationContext.filesDir) }.await()
-                    val copy = archive
-                    if (copy != null) {
-                        supportActionBar?.title = copy.title
-                        //Use the page from the thumbnail over the bookmark
-                        val page = savedPage ?: ReaderTabHolder.getCurrentPage(arcid)
-                        currentPage = page
-                        loadImage(page)
-                        image_pager.setCurrentItem(page, false)
-                    }
+        val arcid = bundle?.getString("id") ?: savedInstanceState?.getString("id")
+        val savedPage = when {
+            savedInstanceState?.containsKey("currentPage") == true -> savedInstanceState.getInt("currentPage")
+            bundle?.containsKey("page") == true -> bundle.getInt("page")
+            else -> null
+        }
+        if (arcid != null) {
+            GlobalScope.launch(Dispatchers.Main) {
+                archive = async { DatabaseReader.getArchive(arcid, applicationContext.filesDir) }.await()
+                archive?.let {
+                    supportActionBar?.title = it.title
+                    //Use the page from the thumbnail over the bookmark
+                    val page = savedPage ?: ReaderTabHolder.getCurrentPage(arcid)
+                    currentPage = page
+                    loadImage(page)
+                    image_pager.setCurrentItem(page, false)
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+        outState?.putInt("currentPage", currentPage)
+        outState?.putString("id", archive?.id)
     }
 
     override fun onCreateDrawer() {

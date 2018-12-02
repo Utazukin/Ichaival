@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import android.content.Intent
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
@@ -76,6 +77,16 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onPause() {
         super.onPause()
         DatabaseReader.listener = null
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        super.onRestoreInstanceState(savedInstanceState)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
+
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
     }
 
     override fun onError(error: String) {
