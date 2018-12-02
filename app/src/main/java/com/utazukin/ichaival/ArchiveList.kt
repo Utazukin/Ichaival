@@ -35,11 +35,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
         setContentView(R.layout.activity_archive_list)
         setSupportActionBar(findViewById(R.id.toolbar))
 
-        supportActionBar?.apply {
-            setDisplayHomeAsUpEnabled(true)
-            setHomeAsUpIndicator(R.drawable.ic_menu)
-        }
-
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
