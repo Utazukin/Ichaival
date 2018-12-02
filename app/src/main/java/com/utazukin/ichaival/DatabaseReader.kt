@@ -65,7 +65,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     readArchiveList(archiveJson)
                 }
             }
-            archiveList = archiveList.sortedBy { archive -> archive.title }
+            archiveList = archiveList.sortedBy { archive -> archive.title.toLowerCase() }
             isDirty = false
         }
         return archiveList
