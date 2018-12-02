@@ -28,9 +28,7 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.android.synthetic.main.fragment_archive.view.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class ArchiveRecyclerViewAdapter(
     private val mListener: OnListFragmentInteractionListener?
@@ -41,6 +39,8 @@ class ArchiveRecyclerViewAdapter(
     private var mValuesCopy: List<Archive>
 
     private val mValues: MutableList<Archive> = mutableListOf()
+
+    private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
 
     init {
         mOnClickListener = View.OnClickListener { v ->
@@ -61,12 +61,22 @@ class ArchiveRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = mValues[position]
         holder.archiveName.text = item.title
-        GlobalScope.launch(Dispatchers.Main) { holder.archiveImage.setImageBitmap(DatabaseReader.getArchiveImage(item, holder.mContentView.context.filesDir)) }
+        val job = GlobalScope.launch(Dispatchers.Main) {
+            val image = async { DatabaseReader.getArchiveImage(item, holder.mContentView.context.filesDir)}.await()
+            holder.archiveImage.setImageBitmap(image)
+        }
+        thumbLoadingJobs[holder] = job
 
         with(holder.mView) {
             tag = item
             setOnClickListener(mOnClickListener)
         }
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        thumbLoadingJobs[holder]?.cancel()
+        thumbLoadingJobs.remove(holder)
+        super.onViewRecycled(holder)
     }
 
     fun updateDataCopy(list: List<Archive>) {
