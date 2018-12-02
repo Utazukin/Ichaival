@@ -80,6 +80,14 @@ object ReaderTabHolder {
         updateListeners()
     }
 
+    fun removeAll() {
+        for (tab in openTabs.keys)
+            updateRemoveListeners(tab)
+
+        openTabs.clear()
+        updateListeners()
+    }
+
     private fun updateRemoveListeners(id: String) {
         for (listener in removeListeners)
             listener.onTabRemoved(id)

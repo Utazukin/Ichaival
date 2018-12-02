@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
@@ -50,6 +51,9 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener)
         }
+
+        val closeButton: TextView = findViewById(R.id.clear_bookmark)
+        closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
         val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
             override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
