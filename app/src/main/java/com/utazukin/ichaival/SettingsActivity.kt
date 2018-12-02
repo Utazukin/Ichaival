@@ -146,6 +146,13 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener 
                 startActivity(intent)
                 true
             }
+
+            val thumbPref = findPreference(getString(R.string.thumbnail_pref))
+            thumbPref.setOnPreferenceClickListener {
+                DatabaseReader.clearThumbnails(activity.filesDir)
+                Toast.makeText(activity, getString(R.string.clear_cache), Toast.LENGTH_SHORT).show()
+                true
+            }
         }
 
         override fun onOptionsItemSelected(item: MenuItem): Boolean {

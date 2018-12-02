@@ -236,6 +236,12 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         return thumbDir
     }
 
+    fun clearThumbnails(cacheDir: File) {
+        val thumbDir = File(cacheDir, "thumbs")
+        if (thumbDir.exists())
+            thumbDir.deleteRecursively()
+    }
+
     suspend fun getArchiveImage(archive: Archive, filesDir: File) : Bitmap? {
         val id = archive.id
         val thumbDir = getThumbDir(filesDir)
