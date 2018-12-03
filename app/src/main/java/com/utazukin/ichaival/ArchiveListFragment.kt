@@ -134,5 +134,7 @@ class ArchiveListFragment : Fragment() {
 
     interface OnListFragmentInteractionListener {
         fun onListFragmentInteraction(archive: Archive?)
+
+        fun onFragmentLongPress(archive: Archive?, view: View) : Boolean
     }
 }

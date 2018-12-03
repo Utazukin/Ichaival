@@ -22,12 +22,21 @@ import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
+import android.view.View
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
             startDetailsActivity(archive.id)
+    }
+
+    override fun onFragmentLongPress(archive: Archive?, view: View) : Boolean {
+        archive?.run {
+            val tagFragment = TagDialogFragment.newInstance(id)
+            tagFragment.show(supportFragmentManager, "tag_popup")
+        }
+        return true
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

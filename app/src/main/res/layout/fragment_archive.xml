@@ -67,6 +67,18 @@
                     app:layout_constraintStart_toEndOf="@+id/archive_thumb"
                     android:layout_marginStart="8dp"
                     />
+
+            <TextView
+                    android:text="@string/press_for_tags"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:layout_marginBottom="16dp"
+                    android:layout_marginEnd="8dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/archive_thumb"
+                    android:layout_marginStart="8dp"
+                    android:textAlignment="textEnd"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.cardview.widget.CardView>

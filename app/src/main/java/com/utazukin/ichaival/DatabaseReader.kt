@@ -22,7 +22,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.preference.Preference
-import androidx.annotation.UiThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
@@ -52,7 +51,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     var listener: DatabaseMessageListener? = null
     var connectivityManager: ConnectivityManager? = null
 
-    @UiThread
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
         if (!this::archiveList.isInitialized || forceUpdate) {
             val jsonFile = File(cacheDir, jsonLocation)
@@ -61,7 +59,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             else if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
                 if (this::archiveList.isInitialized) archiveList else listOf()
             } else {
-                val archiveJson = GlobalScope.async { downloadArchiveList() }.await()
+                val archiveJson = GlobalScope.async(Dispatchers.Default) { downloadArchiveList() }.await()
                 if (archiveJson == "")
                     if (this::archiveList.isInitialized) archiveList else listOf()
                 else {

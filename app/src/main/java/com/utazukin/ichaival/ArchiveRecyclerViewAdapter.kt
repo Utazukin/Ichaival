@@ -36,6 +36,8 @@ class ArchiveRecyclerViewAdapter(
 
     private val mOnClickListener: View.OnClickListener
 
+    private val onLongClickListener: View.OnLongClickListener
+
     private var mValuesCopy: List<Archive>
 
     private val mValues: MutableList<Archive> = mutableListOf()
@@ -49,6 +51,12 @@ class ArchiveRecyclerViewAdapter(
             // one) that an item has been selected.
             mListener?.onListFragmentInteraction(item)
         }
+
+        onLongClickListener = View.OnLongClickListener { v ->
+            val item = v.tag as Archive
+            mListener?.onFragmentLongPress(item, v) == true
+        }
+
         mValuesCopy = mValues.toList()
     }
 
@@ -70,6 +78,7 @@ class ArchiveRecyclerViewAdapter(
         with(holder.mView) {
             tag = item
             setOnClickListener(mOnClickListener)
+            setOnLongClickListener(onLongClickListener)
         }
     }
 
