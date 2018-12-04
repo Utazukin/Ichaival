@@ -78,7 +78,8 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/archive_thumb"
                     android:layout_marginStart="8dp"
-                    android:textAlignment="textEnd"/>
+                    android:textAlignment="textEnd"
+                    android:textStyle="italic"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.cardview.widget.CardView>
