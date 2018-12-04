@@ -52,6 +52,16 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
     }
 
+    override fun onResume() {
+        super.onResume()
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
+
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
+    }
+
     override fun onCreateDrawer() {
         super.onCreateDrawer()
         val context = this
