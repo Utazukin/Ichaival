@@ -33,6 +33,7 @@ import java.io.File
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.SocketException
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.nio.charset.Charset
 import java.util.*
@@ -159,9 +160,14 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     }
                 }
             }
-        } catch (e: SocketException) {
-            notifyError("Failed to extract archive!")
-            return null
+        } catch (e: Exception) {
+            when (e) {
+                is SocketException, is SocketTimeoutException -> {
+                    notifyError("Failed to extract archive!")
+                    return null
+                }
+                else -> throw e
+            }
         }
         finally {
             connection.disconnect()
