@@ -135,8 +135,10 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         val url = URL("$serverLocation$extractPath?id=$id${getApiKey(true)}")
         notifyExtract(id)
 
+        val connection = url.openConnection() as HttpURLConnection
+        connection.connectTimeout = 5000
         try {
-            with(url.openConnection() as HttpURLConnection) {
+            with(connection) {
                 if (responseCode != 200)
                     return null
 
@@ -160,6 +162,9 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         } catch (e: SocketException) {
             notifyError("Failed to extract archive!")
             return null
+        }
+        finally {
+            connection.disconnect()
         }
     }
 
