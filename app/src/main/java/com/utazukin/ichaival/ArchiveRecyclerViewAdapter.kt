@@ -96,8 +96,8 @@ class ArchiveRecyclerViewAdapter(
         notifyDataSetChanged()
     }
 
-    fun getRandomArchive() : Archive {
-        return mValues.random()
+    fun getRandomArchive() : Archive? {
+        return if (mValues.any()) mValues.random() else null
     }
 
     fun filter(filter: String?) {

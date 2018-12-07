@@ -81,13 +81,15 @@ class ArchiveListFragment : Fragment() {
         })
 
         val randomButton: Button = view.findViewById(R.id.random_button)
-        randomButton.setOnClickListener { p0 ->
-            startDetailsActivity(listAdapter.getRandomArchive().id, p0?.context)
+        randomButton.setOnClickListener { v ->
+            val archive = listAdapter.getRandomArchive()
+            if (archive != null)
+                startDetailsActivity(archive.id, v?.context)
         }
 
-        randomButton.setOnLongClickListener { v ->
+        randomButton.setOnLongClickListener {
             val archive = listAdapter.getRandomArchive()
-            if (!ReaderTabHolder.isTabbed(archive.id))
+            if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
                 ReaderTabHolder.addTab(archive, 0)
             true
         }
