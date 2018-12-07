@@ -27,6 +27,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.File
@@ -44,6 +45,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val archiveListPath = "$apiPath/archivelist"
     private const val thumbPath = "$apiPath/thumbnail"
     private const val extractPath = "$apiPath/extract"
+    private const val timeout = 5000 //ms
 
     private lateinit var archiveList: List<Archive>
     private var serverLocation: String = ""
@@ -56,15 +58,15 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         if (!this::archiveList.isInitialized || forceUpdate) {
             val jsonFile = File(cacheDir, jsonLocation)
             archiveList = if (!forceUpdate && !checkDirty(cacheDir))
-                readArchiveList(jsonFile.readText())
+                readArchiveList(JSONArray(jsonFile.readText()))
             else if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
                 if (this::archiveList.isInitialized) archiveList else listOf()
             } else {
                 val archiveJson = GlobalScope.async(Dispatchers.Default) { downloadArchiveList() }.await()
-                if (archiveJson == "")
+                if (archiveJson == null)
                     if (this::archiveList.isInitialized) archiveList else listOf()
                 else {
-                    jsonFile.writeText(archiveJson)
+                    jsonFile.writeText(archiveJson.toString())
                     readArchiveList(archiveJson)
                 }
             }
@@ -100,6 +102,9 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     override fun onPreferenceChange(pref: Preference?, newValue: Any?): Boolean {
+        if ((newValue as String?)?.isEmpty() == true)
+            return false
+
         return try { //TODO use something better for validation
             val url = URL(newValue as String)
             if (serverLocation != newValue) {
@@ -137,7 +142,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         notifyExtract(id)
 
         val connection = url.openConnection() as HttpURLConnection
-        connection.connectTimeout = 5000
+        connection.connectTimeout = timeout
         try {
             with(connection) {
                 if (responseCode != 200)
@@ -188,19 +193,23 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             GlobalScope.launch(Dispatchers.Main) { listener?.onExtract(title) }
     }
 
-    private fun downloadArchiveList() : String {
+    private fun downloadArchiveList() : JSONArray? {
+        if (serverLocation.isEmpty())
+            return null
+
         if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
             notifyError("No network connection!")
-            return ""
+            return null
         }
 
+        val url = URL("$serverLocation$archiveListPath?${getApiKey(false)}")
+        val connection = url.openConnection() as HttpURLConnection
         try {
-            val url = URL("$serverLocation$archiveListPath?${getApiKey(false)}")
-
-            with(url.openConnection() as HttpURLConnection) {
+            with(connection) {
+                connectTimeout = timeout
                 if (responseCode != 200) {
                     notifyError("Failed to connect to server!")
-                    return ""
+                    return null
                 }
 
                 val decoder = Charset.forName("utf-8").newDecoder()
@@ -212,19 +221,23 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                         response.append(inputLine)
                         inputLine = it.readLine()
                     }
-                    return response.toString()
+
+                    val jsonString = response.toString()
+                    val json =  parseJsonArray(jsonString)
+                    if (json == null)
+                        notifyError(JSONObject(jsonString).getString("error")) //Invalid api key
+                    return json
                 }
             }
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             notifyError("Failed to connect to server!")
-            return ""
+            return null
+        } finally {
+            connection.disconnect()
         }
     }
 
-    private fun readArchiveList(jsonString: String) : List<Archive> {
-        val json = JSONArray(jsonString)
-
+    private fun readArchiveList(json: JSONArray) : List<Archive> {
         val archiveList = mutableListOf<Archive>()
         for (i in 0..(json.length() - 1)) {
             archiveList.add(Archive(json.getJSONObject(i)))
@@ -249,6 +262,14 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                 thumbFile.writeBytes(bytes)
                 return thumbFile
             }
+        }
+    }
+
+    private fun parseJsonArray(input: String) : JSONArray? {
+        return try {
+            JSONArray(input)
+        } catch (e: JSONException) {
+            null
         }
     }
 

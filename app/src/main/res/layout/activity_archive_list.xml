@@ -43,6 +43,16 @@
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
                 android:layout_height="?attr/actionBarSize"/>
 
+        <TextView
+                android:text="@string/first_time_text"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/first_time_text"
+                android:textAlignment="center"
+                android:paddingTop="200dp"
+                android:textSize="24sp"
+                />
+
         <fragment
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

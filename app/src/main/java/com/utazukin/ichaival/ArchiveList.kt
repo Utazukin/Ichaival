@@ -23,9 +23,12 @@ import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
 import android.view.View
+import android.widget.TextView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
+    private lateinit var setupText: TextView
+
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
             startDetailsActivity(archive.id)
@@ -45,39 +48,51 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
         setSupportActionBar(findViewById(R.id.toolbar))
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
+        prefs.registerOnSharedPreferenceChangeListener { p, key ->
+            when(key) {
+                getString(R.string.server_address_preference) -> {
+                    val location = p.getString(key, "") as String
+                    DatabaseReader.updateServerLocation(location)
+                    handleSetupText(location.isEmpty())
+                }
+                getString((R.string.api_key_pref)) -> DatabaseReader.updateApiKey(p.getString(key, "") as String)
+            }
+        }
 
-        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
-    }
+        val serverSetting = prefs.getString(getString(R.string.server_address_preference), "") as String
+        setupText = findViewById(R.id.first_time_text)
+        handleSetupText(serverSetting.isEmpty())
 
-    override fun onResume() {
-        super.onResume()
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
-
-        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
+        DatabaseReader.updateServerLocation(serverSetting)
+        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "") as String)
     }
 
     override fun onCreateDrawer() {
         super.onCreateDrawer()
-        val context = this
         navView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_settings -> {
-                    val intent = Intent(context, SettingsActivity::class.java)
-                    intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, SettingsActivity.GeneralPreferenceFragment::class.java.name)
-                    intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true)
-                    startActivity(intent)
+                    startSettingsActivity()
                     drawerLayout.closeDrawers()
                     true
                 }
                 else -> false
             }
         }
+    }
+
+    private fun handleSetupText(setup: Boolean) {
+        if (setup)
+            setupText.setOnClickListener { startSettingsActivity() }
+        else
+            setupText.visibility = View.GONE
+    }
+
+    private fun startSettingsActivity() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, SettingsActivity.GeneralPreferenceFragment::class.java.name)
+        intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true)
+        startActivity(intent)
     }
 
     override fun onStart() {

@@ -124,4 +124,5 @@
     <string name="thumbnail_pref">clear_thumbs</string>
     <string name="thumbnail_summary">Tap to delete thumbnail cache</string>
     <string name="press_for_tags">Long press for tags</string>
+    <string name="first_time_text">Tap to set up server settings.</string>
 </resources>
