@@ -44,6 +44,7 @@ class ThumbRecyclerViewAdapter(
 
     private val onClickListener: View.OnClickListener
     private var maxThumbnails = 10
+    private val thumbIncrease = 10
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
     private val imageLoadingJobs: MutableMap<ViewHolder, Job> = mutableMapOf()
@@ -62,7 +63,7 @@ class ThumbRecyclerViewAdapter(
     fun increasePreviewCount() {
         if (maxThumbnails < archive.numPages) {
             val currentCount = itemCount
-            maxThumbnails *= 2
+            maxThumbnails += thumbIncrease
             notifyItemRangeInserted(currentCount + 1, Math.min(maxThumbnails, archive.numPages))
         }
     }
