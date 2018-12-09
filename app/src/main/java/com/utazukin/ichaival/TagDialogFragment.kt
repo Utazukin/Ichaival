@@ -33,8 +33,8 @@ import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val ARCHIVE_PARAM = "archive"
 
@@ -48,7 +48,7 @@ class TagDialogFragment : DialogFragment() {
             val archiveId = it.getString(ARCHIVE_PARAM)
             archiveId?.let {
                 GlobalScope.launch(Dispatchers.Main) {
-                    archive = async { DatabaseReader.getArchive(archiveId, activity!!.filesDir) }.await()
+                    archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId, activity!!.filesDir) }
                     setUpTags()
                 }
             }

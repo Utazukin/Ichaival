@@ -35,10 +35,18 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlin.coroutines.CoroutineContext
 
-abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener  {
+abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener,
+    CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
+    protected val job: Job by lazy { Job() }
 
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
@@ -95,6 +103,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onStop() {
         super.onStop()
         drawerLayout.closeDrawers()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {

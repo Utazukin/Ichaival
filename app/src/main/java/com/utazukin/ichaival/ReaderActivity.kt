@@ -34,10 +34,7 @@ import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -116,8 +113,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
             else -> null
         }
         if (arcid != null) {
-            GlobalScope.launch(Dispatchers.Main) {
-                archive = async { DatabaseReader.getArchive(arcid, applicationContext.filesDir) }.await()
+            launch(Dispatchers.Main) {
+                archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(arcid, applicationContext.filesDir) }
                 archive?.let {
                     supportActionBar?.title = it.title
                     //Use the page from the thumbnail over the bookmark
@@ -329,8 +326,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
 
         override fun getItem(position: Int): Fragment {
             val fragment = ReaderFragment()
-            GlobalScope.launch(Dispatchers.Main) {
-                val image = GlobalScope.async { archive?.getPageImage(position) }.await()
+            launch {
+                val image = withContext(Dispatchers.Default) { archive?.getPageImage(position) }
                 fragment.displayImage(image, position)
             }
             return fragment

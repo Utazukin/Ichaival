@@ -38,6 +38,7 @@ import kotlinx.coroutines.*
 class ThumbRecyclerViewAdapter(
     private val listener: ThumbInteractionListener?,
     private val glide: RequestManager,
+    private val scope: CoroutineScope,
     private val archive: Archive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
@@ -52,7 +53,7 @@ class ThumbRecyclerViewAdapter(
             val item = v.getTag(R.id.small_thumb) as Int
             listener?.onThumbSelection(item)
         }
-        GlobalScope.launch(Dispatchers.Main) {
+        scope.launch(Dispatchers.Main) {
             launch(Dispatchers.IO) { archive.loadImageUrls() }.join()
             notifyDataSetChanged()
         }
@@ -78,8 +79,8 @@ class ThumbRecyclerViewAdapter(
         val page = position
         holder.pageNumView.text = (page + 1).toString()
 
-        val job = GlobalScope.launch(Dispatchers.Main) {
-            val image = async { archive.getPageImage(page) }.await()
+        val job = scope.launch(Dispatchers.Main) {
+            val image = withContext(Dispatchers.Default) { archive.getPageImage(page) }
 
             with(holder.thumbView) {
                 setTag(R.id.small_thumb, page)

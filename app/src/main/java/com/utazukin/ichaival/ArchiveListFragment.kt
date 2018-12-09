@@ -31,16 +31,17 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ArchiveListFragment : Fragment() {
 
     private var listener: OnListFragmentInteractionListener? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
+    private lateinit var activityScope: CoroutineScope
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -62,7 +63,7 @@ class ArchiveListFragment : Fragment() {
                 ) else LinearLayoutManager(context)
             }
             //layoutManager = GridLayoutManager(context, 2)
-            val temp = ArchiveRecyclerViewAdapter(listener)
+            val temp = ArchiveRecyclerViewAdapter(listener, activityScope)
             listAdapter = temp
             adapter = temp
         }
@@ -97,8 +98,9 @@ class ArchiveListFragment : Fragment() {
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
 
-        GlobalScope.launch(Dispatchers.Main) {
-            listAdapter.updateDataCopy(DatabaseReader.readArchiveList(context!!.filesDir))
+        activityScope.launch {
+            val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
+            listAdapter.updateDataCopy(updatedList)
         }
         return view
     }
@@ -115,6 +117,7 @@ class ArchiveListFragment : Fragment() {
         super.onAttach(context)
         if (context is OnListFragmentInteractionListener) {
             listener = context
+            activityScope = context as CoroutineScope
         } else {
             throw RuntimeException(context.toString() + " must implement OnListFragmentInteractionListener")
         }
@@ -126,8 +129,8 @@ class ArchiveListFragment : Fragment() {
     }
 
     private fun forceArchiveListUpdate() {
-        GlobalScope.launch(Dispatchers.Main) {
-            val newList = async { DatabaseReader.readArchiveList(context!!.filesDir, true) }.await()
+        activityScope.launch {
+            val newList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir, true) }
             val adapter = listView.adapter as ArchiveRecyclerViewAdapter
             adapter.updateDataCopy(newList)
             swipeRefreshLayout.isRefreshing = false

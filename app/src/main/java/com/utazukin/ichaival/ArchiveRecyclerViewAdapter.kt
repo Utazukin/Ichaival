@@ -31,7 +31,8 @@ import kotlinx.android.synthetic.main.fragment_archive.view.*
 import kotlinx.coroutines.*
 
 class ArchiveRecyclerViewAdapter(
-    private val mListener: OnListFragmentInteractionListener?
+    private val mListener: OnListFragmentInteractionListener?,
+    private val scope: CoroutineScope
 ) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
 
     private val mOnClickListener: View.OnClickListener
@@ -69,8 +70,8 @@ class ArchiveRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = mValues[position]
         holder.archiveName.text = item.title
-        val job = GlobalScope.launch(Dispatchers.Main) {
-            val image = async { DatabaseReader.getArchiveImage(item, holder.mContentView.context.filesDir)}.await()
+        val job = scope.launch(Dispatchers.Main) {
+            val image = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(item, holder.mContentView.context.filesDir)}
             holder.archiveImage.setImageBitmap(image)
         }
         thumbLoadingJobs[holder] = job

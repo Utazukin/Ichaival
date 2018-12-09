@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -30,10 +31,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 private const val ARCHIVE_ID = "arcid"
@@ -42,6 +43,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
     private var archiveId: String? = null
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
+    private lateinit var activityScope: CoroutineScope
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,12 +59,17 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_gallery_preview, container, false)
 
-        GlobalScope.launch(Dispatchers.Main) {
-            archive = async { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }.await()
+        activityScope.launch {
+            archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }
             setGalleryView(view)
         }
 
         return view
+    }
+
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+        activityScope = context as CoroutineScope
     }
 
     override fun onDetach() {
@@ -82,7 +89,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(listener, Glide.with(activity!!), archive!!)
+            thumbAdapter = ThumbRecyclerViewAdapter(listener, Glide.with(activity!!), activityScope, archive!!)
             adapter = thumbAdapter
             addOnScrollListener(object: RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
