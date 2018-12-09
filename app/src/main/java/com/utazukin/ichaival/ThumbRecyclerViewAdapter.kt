@@ -23,6 +23,7 @@ import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -32,7 +33,6 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
-import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.*
 
 class ThumbRecyclerViewAdapter(
@@ -133,7 +133,7 @@ class ThumbRecyclerViewAdapter(
     }
 
     inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-        val thumbView: PhotoView = view.findViewById(R.id.small_thumb)
+        val thumbView: ImageView = view.findViewById(R.id.small_thumb)
         val pageNumView: TextView = view.findViewById(R.id.page_num)
         val progressBar: ProgressBar = view.findViewById(R.id.progressBar)
     }
