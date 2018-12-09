@@ -17,39 +17,34 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                   xmlns:tools="http://schemas.android.com/tools"
-                                                   android:layout_width="match_parent"
-                                                   android:layout_height="wrap_content"
-        >
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_marginTop="5dp"
+              android:layout_marginBottom="5dp">
 
     <TextView
-            android:layout_width="0dp"
             android:id="@+id/archive_title"
-            tools:text="Title"
             android:layout_height="wrap_content"
             android:textStyle="bold"
-            android:paddingTop="10dp"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/archive_page"
-            android:layout_marginEnd="16dp"/>
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            tools:text="Title"
+            android:paddingEnd="8dp"
+            android:paddingStart="8dp"
+            android:layout_weight="8"
+            android:layout_width="0dp"/>
 
     <TextView
-            android:layout_width="0dp"
             android:id="@+id/archive_page"
-            tools:text="1"
             android:textAlignment="textEnd"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginEnd="8dp"
-            android:layout_marginTop="16dp"
-            android:paddingTop="10dp"
-            />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            tools:text="220"
+            android:paddingEnd="8dp"
+            android:layout_weight="1"
+            android:layout_width="wrap_content"/>
+    </LinearLayout>
