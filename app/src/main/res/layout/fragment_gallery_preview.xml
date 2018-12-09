@@ -36,14 +36,24 @@
 
     <androidx.recyclerview.widget.RecyclerView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
             android:id="@+id/thumb_list"
             android:layout_marginTop="8dp"
-            tools:listitem="@layout/thumb_layout">
+            tools:listitem="@layout/thumb_layout"
+            android:layout_weight="30"
+            android:layout_height="0dp">
 
     </androidx.recyclerview.widget.RecyclerView>
 
-    </LinearLayout>
+    <ProgressBar
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:id="@+id/thumb_load_progress"
+            android:indeterminate="true"
+            android:layout_weight="1"
+            android:layout_height="0dp"
+            android:visibility="gone"/>
+
+</LinearLayout>
 <!--/android.support.v4.widget.NestedScrollView-->

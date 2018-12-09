@@ -25,16 +25,14 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 
 private const val ARCHIVE_ID = "arcid"
@@ -44,6 +42,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
     private lateinit var activityScope: CoroutineScope
+    private lateinit var progress: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +57,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_gallery_preview, container, false)
+        progress = view.findViewById(R.id.thumb_load_progress)
 
         activityScope.launch {
             archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }
@@ -94,8 +94,14 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
             addOnScrollListener(object: RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     super.onScrollStateChanged(recyclerView, newState)
-                    if (!listView.canScrollVertically(1) && thumbAdapter.hasMorePreviews)
+                    if (!listView.canScrollVertically(1) && thumbAdapter.hasMorePreviews) {
                         thumbAdapter.increasePreviewCount()
+                        activityScope.launch {
+                            progress.visibility = View.VISIBLE
+                            delay(1000)
+                            progress.visibility = View.GONE
+                        }
+                    }
                 }
             })
         }
