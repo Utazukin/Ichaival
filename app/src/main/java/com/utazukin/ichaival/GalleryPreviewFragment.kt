@@ -36,6 +36,7 @@ import kotlinx.coroutines.*
 
 
 private const val ARCHIVE_ID = "arcid"
+private const val MAX_PAGES = "max pages"
 
 class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
     private var archiveId: String? = null
@@ -43,6 +44,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
     private lateinit var activityScope: CoroutineScope
     private lateinit var progress: ProgressBar
+    private var savedPageCount = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +79,19 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
         Glide.get(activity!!).clearMemory()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(MAX_PAGES, thumbAdapter.maxThumbnails)
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        savedInstanceState?.let {
+            val maxPages = it.getInt(MAX_PAGES, -1)
+            savedPageCount = maxPages
+        }
+    }
+
     private fun setGalleryView(view: View) {
         val listener: ThumbInteractionListener = this
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
@@ -90,6 +105,8 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
                 ) else LinearLayoutManager(context)
             }
             thumbAdapter = ThumbRecyclerViewAdapter(listener, Glide.with(activity!!), activityScope, archive!!)
+            if (savedPageCount > 0)
+                thumbAdapter.maxThumbnails = savedPageCount
             adapter = thumbAdapter
             addOnScrollListener(object: RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {

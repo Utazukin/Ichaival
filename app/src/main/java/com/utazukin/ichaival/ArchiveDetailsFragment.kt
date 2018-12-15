@@ -47,6 +47,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     private lateinit var tagLayout: LinearLayout
     private lateinit var bookmarkButton: Button
     private var thumbLoadJob: Job? = null
+    private lateinit var scope: CoroutineScope
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,8 +64,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         val view = inflater.inflate(R.layout.fragment_archive_details, container, false)
         tagLayout = view.findViewById(R.id.tag_layout)
 
-        GlobalScope.launch(Dispatchers.Main) {
-            archive = async { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }.await()
+        scope.launch {
+            archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }
             setUpDetailView(view)
         }
         return view
@@ -73,6 +74,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     override fun onAttach(context: Context?) {
         super.onAttach(context)
         ReaderTabHolder.registerRemoveListener(this)
+        scope = context as CoroutineScope
     }
 
     override fun onDetach() {
@@ -155,14 +157,14 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive?.title
 
-        thumbLoadJob = GlobalScope.launch(Dispatchers.Main) {
+        thumbLoadJob = scope.launch(Dispatchers.Main) {
             val thumbView: ImageView = view.findViewById(R.id.cover)
-            val thumb = async { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }.await()
+            val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }
             val request = Glide.with(thumbView).asBitmap().load(thumb)
             request.into(thumbView)
 
             //Replace the thumbnail with the full size image.
-            val image = async(Dispatchers.Default) { archive?.getPageImage(0) }.await()
+            val image = withContext(Dispatchers.Default) { archive?.getPageImage(0) }
             Glide.with(thumbView).asBitmap().load(image).thumbnail(request).into(thumbView)
         }
     }

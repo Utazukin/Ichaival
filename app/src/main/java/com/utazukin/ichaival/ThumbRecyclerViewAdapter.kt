@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
@@ -43,7 +42,7 @@ class ThumbRecyclerViewAdapter(
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val onClickListener: View.OnClickListener
-    private var maxThumbnails = 10
+    var maxThumbnails = 10
     private val thumbIncrease = 10
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
