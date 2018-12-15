@@ -30,6 +30,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -70,6 +71,9 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener)
+
+            val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
+            addItemDecoration(dividerDecoration)
         }
 
         val closeButton: TextView = findViewById(R.id.clear_bookmark)
