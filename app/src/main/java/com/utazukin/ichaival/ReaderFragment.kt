@@ -55,6 +55,10 @@ class ReaderFragment : Fragment() {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_reader, container, false)
 
+        arguments?.let {
+            page = it.getInt(PAGE_NUM)
+        }
+
         mainImage = view.findViewById(R.id.main_image)
         mainImage.setOnPhotoTapListener { _, _, _ -> listener?.onFragmentTap() }
         mainImage.setOnOutsidePhotoTapListener{ listener?.onFragmentTap() }
@@ -152,4 +156,15 @@ class ReaderFragment : Fragment() {
         fun onImageLoadError()
     }
 
+    companion object {
+        private const val PAGE_NUM = "page"
+
+        @JvmStatic
+        fun createInstance(page: Int) =
+            ReaderFragment().apply {
+                arguments = Bundle().apply {
+                    putInt(PAGE_NUM, page)
+                }
+            }
+    }
 }

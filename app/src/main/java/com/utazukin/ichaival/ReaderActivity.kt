@@ -325,7 +325,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
 
         override fun getItem(position: Int): Fragment {
-            val fragment = ReaderFragment()
+            val fragment = ReaderFragment.createInstance(position)
             launch {
                 val image = withContext(Dispatchers.Default) { archive?.getPageImage(position) }
                 fragment.displayImage(image, position)
