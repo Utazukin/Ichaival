@@ -27,6 +27,7 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -140,6 +141,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener)
+
+            val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
+            addItemDecoration(dividerDecoration)
         }
 
         val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
