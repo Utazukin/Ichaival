@@ -33,6 +33,8 @@ object ReaderTabHolder {
 
     private val addListeners = mutableSetOf<TabAddedListener>()
 
+    private var needsReload = true
+
     fun getCurrentPage(id: String?) : Int {
         return if (id != null && openTabs.containsKey(id)) openTabs[id]!!.page else 0
     }
@@ -95,15 +97,18 @@ object ReaderTabHolder {
     }
 
     fun restoreTabs(savedInstance: Bundle?) {
-        savedInstance?.let {
-            val ids = it.getStringArrayList(idKey) ?: return
-            val titles = it.getStringArrayList(titleKey) ?: return
-            val pages = it.getIntArray(pageKey) ?: return
+        if (needsReload) {
+            savedInstance?.let {
+                val ids = it.getStringArrayList(idKey) ?: return
+                val titles = it.getStringArrayList(titleKey) ?: return
+                val pages = it.getIntArray(pageKey) ?: return
 
-            for (i in 0..(ids.size - 1)) {
-                openTabs[ids[i]] = ReaderTab(ids[i], titles[i], pages[i])
+                for (i in 0..(ids.size - 1)) {
+                    openTabs[ids[i]] = ReaderTab(ids[i], titles[i], pages[i])
+                }
+                updateListeners()
             }
-            updateListeners()
+            needsReload = false
         }
     }
 
