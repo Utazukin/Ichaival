@@ -88,8 +88,6 @@ class ThumbRecyclerViewAdapter(
             }
 
             val options = RequestOptions()
-            options.encodeFormat(Bitmap.CompressFormat.JPEG)
-            options.encodeQuality(80)
             options.override(getDpAdjusted(200), getDpAdjusted(200))
             glide.load(image)
                 .apply(options)
