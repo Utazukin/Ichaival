@@ -57,7 +57,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:name="com.utazukin.ichaival.ArchiveListFragment"
-                android:id="@+id/fragment"
+                android:id="@+id/list_fragment"
                 tools:layout="@layout/fragment_archive_list"
                 />
     </LinearLayout>

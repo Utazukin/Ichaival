@@ -52,10 +52,16 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
             when(key) {
                 getString(R.string.server_address_preference) -> {
                     val location = p.getString(key, "") as String
+                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
                     DatabaseReader.updateServerLocation(location)
                     handleSetupText(location.isEmpty())
+                    listFragment?.forceArchiveListUpdate()
                 }
-                getString((R.string.api_key_pref)) -> DatabaseReader.updateApiKey(p.getString(key, "") as String)
+                getString((R.string.api_key_pref)) -> {
+                    DatabaseReader.updateApiKey(p.getString(key, "") as String)
+                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+                    listFragment?.forceArchiveListUpdate()
+                }
             }
         }
 

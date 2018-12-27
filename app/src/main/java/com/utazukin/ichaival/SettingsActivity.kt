@@ -23,6 +23,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.media.RingtoneManager
+import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -71,11 +72,13 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener 
     override fun onStart() {
         super.onStart()
         DatabaseReader.listener = this
+        DatabaseReader.connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
     override fun onPause() {
         super.onPause()
         DatabaseReader.listener = null
+        DatabaseReader.connectivityManager = null
     }
 
     override fun onError(error: String) {

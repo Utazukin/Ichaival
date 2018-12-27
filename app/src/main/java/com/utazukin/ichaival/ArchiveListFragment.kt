@@ -128,7 +128,7 @@ class ArchiveListFragment : Fragment() {
         listener = null
     }
 
-    private fun forceArchiveListUpdate() {
+    fun forceArchiveListUpdate() {
         activityScope.launch {
             val newList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir, true) }
             val adapter = listView.adapter as ArchiveRecyclerViewAdapter
