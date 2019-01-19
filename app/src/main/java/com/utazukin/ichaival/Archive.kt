@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,20 +18,33 @@
 
 package com.utazukin.ichaival
 
-import androidx.annotation.UiThread
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.actor
 import org.json.JSONObject
 
 class Archive(json: JSONObject) {
     val title: String = json.getString("title")
     val id: String = json.getString("arcid")
     val tags: Map<String, List<String>>
-    private val imageUrls = mutableListOf<String>()
-    private var loadedUrls = false
-    private val mutex: Mutex by lazy { Mutex(false) }
     val numPages: Int
-        get() = imageUrls.size
+        get() = DatabaseReader.getPageCount(id)
+
+    private val extractActor by lazy {
+        GlobalScope.actor<ExtractMsg>(Dispatchers.Default, capacity = Channel.UNLIMITED) {
+            val pages: MutableList<String> = mutableListOf()
+            for (msg in channel) {
+                when (msg) {
+                    is QueueExtract -> {
+                        if (pages.isEmpty())
+                            pages.addAll(msg.action(msg.id))
+                    }
+                    is GetPages -> msg.response.complete(pages)
+                }
+            }
+        }
+    }
 
     init {
         val tagString: String = json.getString("tags")
@@ -54,42 +67,23 @@ class Archive(json: JSONObject) {
         tags = mutableTags
     }
 
-    suspend fun loadImageUrls() {
-        if (loadedUrls)
-            return
-
-        mutex.withLock {
-            if (loadedUrls)
-                return
-
-            val jsonPages = DatabaseReader.extractArchive(id)?.getJSONArray("pages") ?: return
-
-            val count = jsonPages.length()
-            for (i in 0..(count - 1)) {
-                var path = jsonPages.getString(i)
-                path = path.substring(1)
-                imageUrls.add(path)
-            }
-            loadedUrls = true
-        }
-    }
+    suspend fun extract() = DatabaseReader.getPageList(id, extractActor)
 
     fun invalidateCache() {
-        imageUrls.clear()
-        loadedUrls = false
+        DatabaseReader.invalidateImageCache(id)
     }
 
     fun hasPage(page: Int) : Boolean {
-        return !loadedUrls || (page >= 0 && page < imageUrls.size)
+        return numPages < 0 || (page in 0..(numPages - 1))
     }
-    @UiThread
+
     suspend fun getPageImage(page: Int) : String? {
         return downloadPage(page)
     }
 
     private suspend fun downloadPage(page: Int) : String? {
-        loadImageUrls()
-        return if (page < imageUrls.size) DatabaseReader.getRawImageUrl(imageUrls[page]) else null
+        val pages = DatabaseReader.getPageList(id, extractActor)
+        return if (page < pages.size) DatabaseReader.getRawImageUrl(pages[page]) else null
     }
 
     fun containsTag(tag: String) : Boolean {

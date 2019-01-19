@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,10 +22,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.preference.Preference
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.SendChannel
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -39,6 +37,10 @@ import java.net.URL
 import java.nio.charset.Charset
 import java.util.*
 
+sealed class ExtractMsg
+class QueueExtract(val id: String, val action: (id: String) -> List<String>) : ExtractMsg()
+class GetPages(val response: CompletableDeferred<List<String>>) : ExtractMsg()
+
 object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val jsonLocation: String = "archives.json"
     private const val apiPath: String = "/api"
@@ -51,6 +53,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private var serverLocation: String = ""
     private var isDirty = false
     private var apiKey: String = ""
+    private val archivePageMap = mutableMapOf<String, List<String>>()
     var listener: DatabaseMessageListener? = null
     var connectivityManager: ConnectivityManager? = null
 
@@ -70,7 +73,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     readArchiveList(archiveJson)
                 }
             }
-            archiveList = archiveList.sortedBy { archive -> archive.title.toLowerCase() }
+            archiveList = archiveList.sortedBy { it.title.toLowerCase() }
             isDirty = false
         }
         return archiveList
@@ -82,6 +85,36 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     fun updateApiKey(key: String) {
         apiKey = key
+    }
+
+    suspend fun getPageList(id: String, extractActor: SendChannel<ExtractMsg>) : List<String> {
+        fun getPages(id: String): List<String> {
+            return if (!archivePageMap.containsKey(id)) {
+                val pages = getPageList(extractArchive(id))
+                archivePageMap[id] = pages
+                pages
+            } else
+                archivePageMap[id]!!
+        }
+
+        return if (!archivePageMap.containsKey(id)) {
+            runBlocking { extractActor.send(QueueExtract(id, ::getPages)) }
+            val response = CompletableDeferred<List<String>>()
+            extractActor.send(GetPages(response))
+            response.await()
+        } else archivePageMap[id]!!
+    }
+
+    fun getPageCount(id: String) : Int = archivePageMap[id]?.size ?: -1
+
+    fun invalidateImageCache(id: String) {
+        archivePageMap.remove(id)
+    }
+
+    private fun getPageList(response: JSONObject?) : List<String> {
+        val jsonPages = response?.getJSONArray("pages") ?: return listOf()
+        val count = jsonPages.length()
+        return MutableList(count) { jsonPages.getString(it).substring(1) }
     }
 
     private fun getApiKey(multiParam: Boolean) : String {
@@ -132,7 +165,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         return serverLocation + path
     }
 
-    fun extractArchive(id: String) : JSONObject? {
+    private fun extractArchive(id: String) : JSONObject? {
         if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
             notifyError("No network connection!")
             return null

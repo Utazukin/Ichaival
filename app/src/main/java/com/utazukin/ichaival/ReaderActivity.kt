@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,7 +35,10 @@ import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -303,7 +306,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
 
     override fun onImageLoadError() {
         archive?.invalidateCache()
-        GlobalScope.launch {  archive?.loadImageUrls() }
+        launch {  archive?.extract() }
     }
 
     companion object {
