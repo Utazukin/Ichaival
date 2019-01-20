@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,6 +40,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlin.coroutines.CoroutineContext
+
+const val OPEN_DETAILS_REQUEST = 1
+const val TAG_SEARCH = "tag"
 
 abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener,
     CoroutineScope {
@@ -173,6 +176,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val bundle = Bundle()
         bundle.putString("id", id)
         intent.putExtras(bundle)
-        startActivity(intent)
+        startActivityForResult(intent, OPEN_DETAILS_REQUEST)
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     private lateinit var bookmarkButton: Button
     private var thumbLoadJob: Job? = null
     private lateinit var scope: CoroutineScope
+    private var tagListener: TagInteractionListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +76,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         super.onAttach(context)
         ReaderTabHolder.registerRemoveListener(this)
         scope = context as CoroutineScope
+        tagListener = context as TagInteractionListener?
     }
 
     override fun onDetach() {
@@ -110,6 +112,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
             for (tag in pair.value) {
                 val tagView = createTagView(tag)
                 namespaceLayout.addView(tagView)
+                tagView.setOnClickListener { tagListener?.onTagInteraction(tag) }
             }
         }
     }
@@ -167,6 +170,10 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
             val image = withContext(Dispatchers.Default) { archive?.getPageImage(0) }
             Glide.with(thumbView).asBitmap().load(image).thumbnail(request).into(thumbView)
         }
+    }
+
+    interface TagInteractionListener {
+        fun onTagInteraction(tag: String)
     }
 
     companion object {

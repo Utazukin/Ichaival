@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,13 +18,16 @@
 
 package com.utazukin.ichaival
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import androidx.viewpager.widget.ViewPager
+import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
 
-class ArchiveDetails : BaseActivity() {
+class ArchiveDetails : BaseActivity(), TagInteractionListener {
     private var archiveId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +60,13 @@ class ArchiveDetails : BaseActivity() {
             }
 
         })
+    }
+
+    override fun onTagInteraction(tag: String) {
+        val intent = Intent()
+        intent.putExtra(TAG_SEARCH, tag.replace(' ', '_'))
+        setResult(Activity.RESULT_OK, intent)
+        finish()
     }
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,6 +42,8 @@ class ArchiveListFragment : Fragment() {
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var activityScope: CoroutineScope
+    lateinit var searchView: SearchView
+        private set
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -68,7 +70,7 @@ class ArchiveListFragment : Fragment() {
             adapter = temp
         }
 
-        val searchView: SearchView = view.findViewById(R.id.archive_search)
+        searchView = view.findViewById(R.id.archive_search)
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 listAdapter.filter(p0)
@@ -80,6 +82,7 @@ class ArchiveListFragment : Fragment() {
                 return true
             }
         })
+        searchView.clearFocus()
 
         val randomButton: Button = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener { v ->
