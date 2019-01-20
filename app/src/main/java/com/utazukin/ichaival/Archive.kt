@@ -33,14 +33,15 @@ class Archive(json: JSONObject) {
 
     private val extractActor by lazy {
         GlobalScope.actor<ExtractMsg>(Dispatchers.Default, capacity = Channel.UNLIMITED) {
-            val pages: MutableList<String> = mutableListOf()
+            val emptyList = listOf<String>()
+            var pages: List<String>? = null
             for (msg in channel) {
-                when (msg) {
-                    is QueueExtract -> {
-                        if (pages.isEmpty())
-                            pages.addAll(msg.action(msg.id))
+                pages = when (msg) {
+                    is QueueExtract -> msg.action(msg.id)
+                    is GetPages -> {
+                        msg.response.complete(pages ?: emptyList)
+                        null
                     }
-                    is GetPages -> msg.response.complete(pages)
                 }
             }
         }
