@@ -108,6 +108,7 @@ class ArchiveListFragment : Fragment() {
         activityScope.launch {
             val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
             listAdapter.updateDataCopy(updatedList)
+            listAdapter.filter(searchView.query, newCheckBox.isChecked)
         }
         return view
     }
