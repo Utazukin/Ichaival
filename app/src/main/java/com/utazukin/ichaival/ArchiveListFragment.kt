@@ -25,6 +25,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
@@ -71,14 +72,17 @@ class ArchiveListFragment : Fragment() {
         }
 
         searchView = view.findViewById(R.id.archive_search)
+        val newCheckBox: CheckBox = view.findViewById(R.id.new_checkbox)
+        newCheckBox.setOnCheckedChangeListener { _, checked -> listAdapter.filter(searchView.query, checked) }
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
-                listAdapter.filter(p0)
+                listAdapter.filter(p0, newCheckBox.isChecked)
                 return true
             }
 
             override fun onQueryTextChange(p0: String?): Boolean {
-                listAdapter.filter(p0)
+                listAdapter.filter(p0, newCheckBox.isChecked)
                 return true
             }
         })

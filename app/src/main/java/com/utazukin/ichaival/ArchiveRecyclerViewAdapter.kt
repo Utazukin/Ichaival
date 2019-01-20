@@ -101,23 +101,29 @@ class ArchiveRecyclerViewAdapter(
         return if (mValues.any()) mValues.random() else null
     }
 
-    fun filter(filter: String?) {
+    fun filter(filter: CharSequence?, onlyNew: Boolean) {
         if (filter == null)
             return
 
+        fun addIfNew(archive: Archive) {
+            if (!onlyNew || archive.isNew)
+                mValues.add(archive)
+        }
+
         mValues.clear()
         if (filter.isEmpty())
-            mValues.addAll(mValuesCopy)
+            mValues.addAll(if (onlyNew) mValuesCopy.filter { it.isNew } else mValuesCopy)
         else {
-            val normalized = filter.toLowerCase()
+            val normalized = filter.toString().toLowerCase()
+            val spaceRegex by lazy { Regex("\\s") }
             for (archive in mValuesCopy) {
                 if (archive.title.toLowerCase().contains(normalized) && !mValues.contains(archive))
-                    mValues.add(archive)
+                    addIfNew(archive)
                 else {
-                   val terms = filter.split(Regex("\\s"))
+                   val terms = filter.split(spaceRegex)
                     for (term in terms) {
                         if (archive.containsTag(term) && !mValues.contains(archive))
-                            mValues.add(archive)
+                            addIfNew(archive)
                     }
                 }
             }

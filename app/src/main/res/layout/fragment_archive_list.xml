@@ -36,10 +36,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/archive_search"
-                android:layout_weight="1"
+                android:layout_weight="2.5"
                 android:iconifiedByDefault="false">
 
         </SearchView>
+
+        <CheckBox
+                android:text="@string/new_checkbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/new_checkbox"
+                android:layout_weight=".005"/>
 
         <Button
                 android:text="@string/random"

@@ -92,6 +92,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             return if (!archivePageMap.containsKey(id)) {
                 val pages = getPageList(extractArchive(id))
                 archivePageMap[id] = pages
+                getArchive(id)?.isNew = false //Set to false since its been opened.
+                //TODO update the json file.
                 pages
             } else
                 archivePageMap[id]!!

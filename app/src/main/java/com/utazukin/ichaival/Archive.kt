@@ -28,6 +28,7 @@ class Archive(json: JSONObject) {
     val title: String = json.getString("title")
     val id: String = json.getString("arcid")
     val tags: Map<String, List<String>>
+    var isNew = false
     val numPages: Int
         get() = DatabaseReader.getPageCount(id)
 
@@ -66,6 +67,8 @@ class Archive(json: JSONObject) {
             }
         }
         tags = mutableTags
+
+        isNew = json.getString("isnew") == "block"
     }
 
     suspend fun extract() = DatabaseReader.getPageList(id, extractActor)

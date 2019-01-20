@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2018 Utazukin
+  ~ Copyright (C) 2019 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -125,4 +125,5 @@
     <string name="thumbnail_summary">Tap to delete thumbnail cache</string>
     <string name="press_for_tags">Long press for tags</string>
     <string name="first_time_text">Tap to set up server settings.</string>
+    <string name="new_checkbox">New</string>
 </resources>
