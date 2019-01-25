@@ -33,7 +33,7 @@
 
 
     <ImageView
-            android:layout_width="200dp"
+            android:layout_width="wrap_content"
             tools:srcCompat="@tools:sample/backgrounds/scenic"
             android:id="@+id/cover"
             app:layout_constraintStart_toStartOf="parent"
@@ -43,7 +43,9 @@
             android:layout_height="240dp"
             android:scaleType="fitStart"
             app:layout_constraintEnd_toStartOf="@id/title"
-            android:adjustViewBounds="true"/>
+            android:adjustViewBounds="true"
+            android:maxWidth="200dp"
+            android:minWidth="200dp"/>
 
     <TextView
             android:layout_width="0dp"
