@@ -121,10 +121,16 @@ class ArchiveRecyclerViewAdapter(
                     addIfNew(archive)
                 else {
                    val terms = filter.split(spaceRegex)
+                    var hasAll = true
                     for (term in terms) {
-                        if (archive.containsTag(term) && !mValues.contains(archive))
-                            addIfNew(archive)
+                        if (!archive.containsTag(term)) {
+                            hasAll = false
+                            break
+                        }
                     }
+
+                    if (hasAll && !mValues.contains(archive))
+                        addIfNew(archive)
                 }
             }
         }
