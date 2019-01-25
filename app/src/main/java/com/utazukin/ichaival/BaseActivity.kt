@@ -167,18 +167,18 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val bundle = Bundle()
         bundle.putString("id", id)
         intent.putExtras(bundle)
-        addIntentFlags(intent)
+        addIntentFlags(intent, id)
         startActivity(intent)
     }
 
-    protected open fun addIntentFlags(intent: Intent) { }
+    protected open fun addIntentFlags(intent: Intent, id: String) { }
 
     protected fun startDetailsActivity(id: String){
         val intent = Intent(this, ArchiveDetails::class.java)
         val bundle = Bundle()
         bundle.putString("id", id)
         intent.putExtras(bundle)
-        addIntentFlags(intent)
+        addIntentFlags(intent, id)
         startActivity(intent)
     }
 }

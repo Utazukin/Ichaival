@@ -88,9 +88,10 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
         finish()
     }
 
-    override fun addIntentFlags(intent: Intent) {
-        super.addIntentFlags(intent)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+    override fun addIntentFlags(intent: Intent, id: String) {
+        super.addIntentFlags(intent, id)
+        if (id != archiveId)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
 
     inner class DetailsPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager) {
