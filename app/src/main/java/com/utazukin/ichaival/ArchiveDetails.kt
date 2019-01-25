@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -25,6 +26,8 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
+
+const val SEARCH_REQUEST = 1
 
 class ArchiveDetails : BaseActivity(), TagInteractionListener {
     private var archiveId: String? = null
@@ -66,12 +69,28 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
         val bundle = Bundle()
         bundle.putString(TAG_SEARCH, tag.replace(' ', '_'))
         intent.putExtras(bundle)
-        startActivity(intent)
+        startActivityForResult(intent, SEARCH_REQUEST)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when (requestCode) {
+            SEARCH_REQUEST -> {
+                when (resultCode) {
+                    Activity.RESULT_OK -> finish()
+                }
+            }
+        }
     }
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
         super.onTabInteraction(tab, longPress)
         finish()
+    }
+
+    override fun addIntentFlags(intent: Intent) {
+        super.addIntentFlags(intent)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
 
     inner class DetailsPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager) {

@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.app.Activity
 import android.os.Bundle
 import android.view.View
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
@@ -25,8 +26,10 @@ import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListen
 class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
 
     override fun onListFragmentInteraction(archive: Archive?) {
-        if (archive != null)
+        if (archive != null) {
+            setResult(Activity.RESULT_OK)
             startDetailsActivity(archive.id)
+        }
     }
 
     override fun onFragmentLongPress(archive: Archive?, view: View) : Boolean {
@@ -53,6 +56,7 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
         super.onTabInteraction(tab, longPress)
+        setResult(Activity.RESULT_OK)
         finish()
     }
 
