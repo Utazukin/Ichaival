@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2018 Utazukin
+  ~ Copyright (C) 2019 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -40,6 +40,11 @@
                 android:id="@+id/toolbar"
                 android:elevation="4dp"
                 app:title="@string/details_title"/>
+
+        <com.google.android.material.tabs.TabLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/details_tabs"/>
 
         <androidx.viewpager.widget.ViewPager
                 android:layout_width="match_parent"

@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import androidx.viewpager.widget.ViewPager
+import com.google.android.material.tabs.TabLayout
 import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
 
 const val SEARCH_REQUEST = 1
@@ -62,6 +63,9 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
             }
 
         })
+
+        val tabLayout: TabLayout = findViewById(R.id.details_tabs)
+        tabLayout.setupWithViewPager(pager)
     }
 
     override fun onTagInteraction(tag: String) {
@@ -100,6 +104,14 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
                 0 -> ArchiveDetailsFragment.createInstance(archiveId!!)
                 1 -> GalleryPreviewFragment.createInstance(archiveId!!)
                 else -> throw IllegalArgumentException("position")
+            }
+        }
+
+        override fun getPageTitle(position: Int): CharSequence? {
+            return when(position){
+                0 -> getString(R.string.details_title)
+                1 -> getString(R.string.thumbs_title)
+                else -> null
             }
         }
 
