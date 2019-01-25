@@ -41,7 +41,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlin.coroutines.CoroutineContext
 
-const val OPEN_DETAILS_REQUEST = 1
 const val TAG_SEARCH = "tag"
 
 abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener,
@@ -176,6 +175,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val bundle = Bundle()
         bundle.putString("id", id)
         intent.putExtras(bundle)
-        startActivityForResult(intent, OPEN_DETAILS_REQUEST)
+        startActivity(intent)
     }
 }

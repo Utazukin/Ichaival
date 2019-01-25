@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -63,10 +62,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
     }
 
     override fun onTagInteraction(tag: String) {
-        val intent = Intent()
-        intent.putExtra(TAG_SEARCH, tag.replace(' ', '_'))
-        setResult(Activity.RESULT_OK, intent)
-        finish()
+        val intent = Intent(this, ArchiveSearch::class.java)
+        val bundle = Bundle()
+        bundle.putString(TAG_SEARCH, tag.replace(' ', '_'))
+        intent.putExtras(bundle)
+        startActivity(intent)
     }
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {

@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceActivity
@@ -84,22 +83,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
                     true
                 }
                 else -> false
-            }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            OPEN_DETAILS_REQUEST -> {
-                if (resultCode == Activity.RESULT_OK) {
-                    data?.run {
-                        val listFragment: ArchiveListFragment? =
-                            supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
-                        val tag = getStringExtra(TAG_SEARCH)
-                        listFragment?.searchView?.setQuery(tag, true)
-                    }
-                }
             }
         }
     }

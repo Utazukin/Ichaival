@@ -43,6 +43,8 @@ class ArchiveListFragment : Fragment() {
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var activityScope: CoroutineScope
+    private lateinit var newCheckBox: CheckBox
+    private lateinit var randomButton: Button
     lateinit var searchView: SearchView
         private set
 
@@ -53,7 +55,6 @@ class ArchiveListFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
-
 
         // Set the adapter
         with(listView) {
@@ -72,7 +73,7 @@ class ArchiveListFragment : Fragment() {
         }
 
         searchView = view.findViewById(R.id.archive_search)
-        val newCheckBox: CheckBox = view.findViewById(R.id.new_checkbox)
+        newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked -> listAdapter.filter(searchView.query, checked) }
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -88,7 +89,7 @@ class ArchiveListFragment : Fragment() {
         })
         searchView.clearFocus()
 
-        val randomButton: Button = view.findViewById(R.id.random_button)
+        randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener { v ->
             val archive = listAdapter.getRandomArchive()
             if (archive != null)
@@ -111,6 +112,16 @@ class ArchiveListFragment : Fragment() {
             listAdapter.filter(searchView.query, newCheckBox.isChecked)
         }
         return view
+    }
+
+    fun showOnlySearch(show: Boolean){
+        if (show) {
+            randomButton.visibility = View.GONE
+            newCheckBox.visibility = View.GONE
+        } else {
+            randomButton.visibility = View.VISIBLE
+            newCheckBox.visibility = View.VISIBLE
+        }
     }
 
     private fun startDetailsActivity(id: String, context:Context?){
