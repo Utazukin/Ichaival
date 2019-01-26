@@ -123,7 +123,6 @@ class ArchiveRecyclerViewAdapter(
                    val terms = filter.split(spaceRegex)
                     var hasAll = true
                     var skip = 0
-                    //for (term in terms) {
                     for (i in 0..(terms.size - 1)) {
                         if (skip > 0) {
                             --skip
@@ -133,19 +132,21 @@ class ArchiveRecyclerViewAdapter(
                         var term = terms[i]
                         if (term.startsWith("\"")) {
                             val builder = StringBuilder(term)
-                            var k = i + 1
-                            while (k < terms.size && !terms[k].endsWith("\"")) {
-                                builder.append(" ")
-                                builder.append(terms[k])
-                                ++k
-                            }
+                            if (!term.endsWith("\"")) {
+                                var k = i + 1
+                                while (k < terms.size && !terms[k].endsWith("\"")) {
+                                    builder.append(" ")
+                                    builder.append(terms[k])
+                                    ++k
+                                }
 
-                            if (k < terms.size && terms[k].endsWith("\"")) {
-                                builder.append(" ")
-                                builder.append(terms[k])
+                                if (k < terms.size && terms[k].endsWith("\"")) {
+                                    builder.append(" ")
+                                    builder.append(terms[k])
+                                }
+                                skip = k - i
                             }
                             term = builder.removeSurrounding("\"").toString()
-                            skip = k - i
                         }
 
                         val containsTag = archive.containsTag(term.removePrefix("-"))
