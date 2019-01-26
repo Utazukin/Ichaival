@@ -101,9 +101,9 @@ class ArchiveRecyclerViewAdapter(
         return if (mValues.any()) mValues.random() else null
     }
 
-    fun filter(filter: CharSequence?, onlyNew: Boolean) {
+    fun filter(filter: CharSequence?, onlyNew: Boolean) : Int {
         if (filter == null)
-            return
+            return mValues.size
 
         fun addIfNew(archive: Archive) {
             if (!onlyNew || archive.isNew)
@@ -163,6 +163,7 @@ class ArchiveRecyclerViewAdapter(
             }
         }
         notifyDataSetChanged()
+        return mValues.size
     }
 
     override fun getItemCount(): Int = mValues.size

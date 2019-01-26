@@ -27,6 +27,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.SearchView
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -55,6 +56,7 @@ class ArchiveListFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
+        val countText: TextView = view.findViewById(R.id.list_count)
 
         // Set the adapter
         with(listView) {
@@ -66,24 +68,37 @@ class ArchiveListFragment : Fragment() {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            //layoutManager = GridLayoutManager(context, 2)
             val temp = ArchiveRecyclerViewAdapter(listener, activityScope)
             listAdapter = temp
             adapter = temp
+
+            addOnScrollListener(object: RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    super.onScrollStateChanged(recyclerView, newState)
+                    val hideCount = listView.canScrollVertically(-1)
+                    countText.visibility = if (hideCount) View.GONE else View.VISIBLE
+                }
+            })
         }
 
         searchView = view.findViewById(R.id.archive_search)
         newCheckBox = view.findViewById(R.id.new_checkbox)
-        newCheckBox.setOnCheckedChangeListener { _, checked -> listAdapter.filter(searchView.query, checked) }
+        newCheckBox.setOnCheckedChangeListener { _, checked ->
+            val count = listAdapter.filter(searchView.query, checked)
+            countText.text = String.format(getString(R.string.archive_count), count)
+        }
 
+        countText.visibility = View.INVISIBLE
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
-                listAdapter.filter(p0, newCheckBox.isChecked)
+                val count = listAdapter.filter(p0, newCheckBox.isChecked)
+                countText.text = String.format(getString(R.string.archive_count), count)
                 return true
             }
 
             override fun onQueryTextChange(p0: String?): Boolean {
-                listAdapter.filter(p0, newCheckBox.isChecked)
+                val count = listAdapter.filter(p0, newCheckBox.isChecked)
+                countText.text = String.format(getString(R.string.archive_count), count)
                 return true
             }
         })
@@ -109,7 +124,9 @@ class ArchiveListFragment : Fragment() {
         activityScope.launch {
             val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
             listAdapter.updateDataCopy(updatedList)
-            listAdapter.filter(searchView.query, newCheckBox.isChecked)
+            val count = listAdapter.filter(searchView.query, newCheckBox.isChecked)
+            countText.text = String.format(getString(R.string.archive_count), count)
+            countText.visibility = View.VISIBLE
         }
         return view
     }
