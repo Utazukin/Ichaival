@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
@@ -37,6 +38,12 @@ import com.bumptech.glide.request.target.Target
 import com.github.chrisbanes.photoview.PhotoView
 import java.io.FileNotFoundException
 
+enum class TouchZone {
+    Left,
+    Right,
+    Center
+}
+
 
 class ReaderFragment : Fragment() {
     private var listener: OnFragmentInteractionListener? = null
@@ -48,6 +55,7 @@ class ReaderFragment : Fragment() {
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -60,9 +68,7 @@ class ReaderFragment : Fragment() {
         }
 
         mainImage = view.findViewById(R.id.main_image)
-        mainImage.setOnPhotoTapListener { _, _, _ -> listener?.onFragmentTap() }
-        mainImage.setOnOutsidePhotoTapListener{ listener?.onFragmentTap() }
-
+        mainImage.setOnViewTapListener{ _, x, _ -> listener?.onFragmentTap(getTouchZone(x))}
 
         pageNum = view.findViewById(R.id.page_num)
         pageNum.text = (page + 1).toString()
@@ -114,6 +120,18 @@ class ReaderFragment : Fragment() {
         }
     }
 
+    private fun getTouchZone(x: Float) : TouchZone {
+        val location = x / mainImage.width
+
+        if (location <= 0.4)
+            return TouchZone.Left
+
+        if (location >= 0.6)
+            return TouchZone.Right
+
+        return TouchZone.Center
+    }
+
     override fun onDetach() {
         super.onDetach()
         isAttached = false
@@ -151,7 +169,7 @@ class ReaderFragment : Fragment() {
     }
 
     interface OnFragmentInteractionListener {
-        fun onFragmentTap()
+        fun onFragmentTap(zone: TouchZone)
 
         fun onImageLoadError()
     }

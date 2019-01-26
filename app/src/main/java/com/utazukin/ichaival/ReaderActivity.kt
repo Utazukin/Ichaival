@@ -300,8 +300,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         mHideHandler.postDelayed(mHideRunnable, delayMillis.toLong())
     }
 
-    override fun onFragmentTap() {
-        toggle()
+    override fun onFragmentTap(zone: TouchZone) {
+        when (zone) {
+            TouchZone.Center -> toggle()
+            TouchZone.Left -> image_pager.setCurrentItem(image_pager.currentItem - 1, false)
+            TouchZone.Right -> image_pager.setCurrentItem(image_pager.currentItem + 1, false)
+        }
     }
 
     override fun onImageLoadError() {
