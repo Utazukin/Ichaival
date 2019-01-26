@@ -118,9 +118,11 @@ class ArchiveListFragment : Fragment() {
         if (show) {
             randomButton.visibility = View.GONE
             newCheckBox.visibility = View.GONE
+            swipeRefreshLayout.isEnabled = false
         } else {
             randomButton.visibility = View.VISIBLE
             newCheckBox.visibility = View.VISIBLE
+            swipeRefreshLayout.isEnabled = true
         }
     }
 
