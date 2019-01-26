@@ -123,7 +123,9 @@ class ArchiveRecyclerViewAdapter(
                    val terms = filter.split(spaceRegex)
                     var hasAll = true
                     for (term in terms) {
-                        if (!archive.containsTag(term)) {
+                        val containsTag = archive.containsTag(term.removePrefix("-"))
+                        val isNegative = term.startsWith("-")
+                        if (containsTag == isNegative) {
                             hasAll = false
                             break
                         }
