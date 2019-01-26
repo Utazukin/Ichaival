@@ -71,7 +71,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
     override fun onTagInteraction(tag: String) {
         val intent = Intent(this, ArchiveSearch::class.java)
         val bundle = Bundle()
-        bundle.putString(TAG_SEARCH, tag.replace(' ', '_'))
+        bundle.putString(TAG_SEARCH, tag)
         intent.putExtras(bundle)
         startActivityForResult(intent, SEARCH_REQUEST)
     }

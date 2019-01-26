@@ -120,7 +120,7 @@ class ArchiveRecyclerViewAdapter(
                 if (archive.title.toLowerCase().contains(normalized) && !mValues.contains(archive))
                     addIfNew(archive)
                 else {
-                   val terms = filter.split(spaceRegex)
+                    val terms = filter.split(spaceRegex)
                     var hasAll = true
                     var skip = 0
                     for (i in 0..(terms.size - 1)) {
@@ -130,7 +130,9 @@ class ArchiveRecyclerViewAdapter(
                         }
 
                         var term = terms[i]
-                        if (term.startsWith("\"")) {
+                        val colonIndex = term.indexOf(':')
+                        if (term.startsWith("\"")
+                            || (colonIndex in 0..(term.length - 2) && term[colonIndex + 1] == '"')) {
                             val builder = StringBuilder(term)
                             if (!term.endsWith("\"")) {
                                 var k = i + 1

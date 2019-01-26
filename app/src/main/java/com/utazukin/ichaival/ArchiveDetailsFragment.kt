@@ -112,7 +112,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
             for (tag in pair.value) {
                 val tagView = createTagView(tag)
                 namespaceLayout.addView(tagView)
-                val searchTag = if (namespace == "Other:") tag else "$namespace$tag"
+                val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
                 tagView.setOnClickListener { tagListener?.onTagInteraction(searchTag) }
             }
         }
