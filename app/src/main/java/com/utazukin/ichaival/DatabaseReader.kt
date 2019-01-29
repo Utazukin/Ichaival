@@ -30,10 +30,7 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.SocketException
-import java.net.SocketTimeoutException
-import java.net.URL
+import java.net.*
 import java.nio.charset.Charset
 import java.util.*
 
@@ -202,7 +199,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             }
         } catch (e: Exception) {
             when (e) {
-                is SocketException, is SocketTimeoutException -> {
+                is SocketException, is SocketTimeoutException, is UnknownHostException -> {
                     notifyError("Failed to extract archive!")
                     return null
                 }
@@ -242,7 +239,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         try {
             with(connection) {
                 connectTimeout = timeout
-                if (responseCode != 200) {
+                if (responseCode != HttpURLConnection.HTTP_OK) {
                     notifyError("Failed to connect to server!")
                     return null
                 }
