@@ -42,10 +42,10 @@
             app:layout_constraintTop_toTopOf="parent"
             android:layout_height="240dp"
             android:scaleType="fitStart"
-            app:layout_constraintEnd_toStartOf="@id/title"
             android:adjustViewBounds="true"
             android:maxWidth="200dp"
-            android:minWidth="200dp"/>
+            android:minWidth="200dp"
+            />
 
     <TextView
             android:layout_width="0dp"
@@ -62,7 +62,7 @@
             app:layout_constraintBottom_toTopOf="@+id/read_button"
             app:autoSizeTextType="uniform"
             app:autoSizeMinTextSize="12sp"
-            app:autoSizeMaxTextSize="72sp"
+            app:autoSizeMaxTextSize="36sp"
             android:layout_marginEnd="8dp"/>
 
     <Button
@@ -76,6 +76,7 @@
             app:layout_constraintStart_toEndOf="@id/cover"
             android:layout_marginStart="8dp"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintWidth_max="200dp"
             android:layout_marginEnd="8dp"/>
 
     <Button
@@ -87,6 +88,7 @@
             android:layout_marginStart="8dp"
             app:layout_constraintBottom_toTopOf="@id/bookmark_button"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintWidth_max="200dp"
             android:layout_marginEnd="8dp"/>
 
     <LinearLayout
