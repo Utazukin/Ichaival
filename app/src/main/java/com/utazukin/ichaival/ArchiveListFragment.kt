@@ -46,6 +46,7 @@ class ArchiveListFragment : Fragment() {
     private lateinit var activityScope: CoroutineScope
     private lateinit var newCheckBox: CheckBox
     private lateinit var randomButton: Button
+    private lateinit var countText: TextView
     lateinit var searchView: SearchView
         private set
 
@@ -56,7 +57,7 @@ class ArchiveListFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
-        val countText: TextView = view.findViewById(R.id.list_count)
+        countText = view.findViewById(R.id.list_count)
 
         // Set the adapter
         with(listView) {
@@ -172,6 +173,7 @@ class ArchiveListFragment : Fragment() {
             val adapter = listView.adapter as ArchiveRecyclerViewAdapter
             adapter.updateDataCopy(newList)
             swipeRefreshLayout.isRefreshing = false
+            countText.text = String.format(getString(R.string.archive_count), newList.size)
         }
     }
 

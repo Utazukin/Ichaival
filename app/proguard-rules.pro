@@ -28,3 +28,5 @@
 -keepclassmembernames class kotlinx.** {
     volatile <fields>;
 }
+
+-dontobfuscate
