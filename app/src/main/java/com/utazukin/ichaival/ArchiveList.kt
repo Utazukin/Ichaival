@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
@@ -26,7 +27,7 @@ import android.view.View
 import android.widget.TextView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
-class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
+class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private lateinit var setupText: TextView
 
     override fun onListFragmentInteraction(archive: Archive?) {
@@ -48,22 +49,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
         setSupportActionBar(findViewById(R.id.toolbar))
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        prefs.registerOnSharedPreferenceChangeListener { p, key ->
-            when(key) {
-                getString(R.string.server_address_preference) -> {
-                    val location = p.getString(key, "") as String
-                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
-                    DatabaseReader.updateServerLocation(location)
-                    handleSetupText(location.isEmpty())
-                    listFragment?.forceArchiveListUpdate()
-                }
-                getString((R.string.api_key_pref)) -> {
-                    DatabaseReader.updateApiKey(p.getString(key, "") as String)
-                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
-                    listFragment?.forceArchiveListUpdate()
-                }
-            }
-        }
+        prefs.registerOnSharedPreferenceChangeListener(this)
 
         val serverSetting = prefs.getString(getString(R.string.server_address_preference), "") as String
         setupText = findViewById(R.id.first_time_text)
@@ -71,6 +57,25 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener {
 
         DatabaseReader.updateServerLocation(serverSetting)
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "") as String)
+    }
+
+    override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String) {
+        when (key) {
+            getString(R.string.server_address_preference) -> {
+                val location = pref.getString(key, "") as String
+                val listFragment: ArchiveListFragment? =
+                    supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+                DatabaseReader.updateServerLocation(location)
+                handleSetupText(location.isEmpty())
+                listFragment?.forceArchiveListUpdate()
+            }
+            getString((R.string.api_key_pref)) -> {
+                DatabaseReader.updateApiKey(pref.getString(key, "") as String)
+                val listFragment: ArchiveListFragment? =
+                    supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+                listFragment?.forceArchiveListUpdate()
+            }
+        }
     }
 
     override fun onCreateDrawer() {
