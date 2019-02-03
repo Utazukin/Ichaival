@@ -24,7 +24,7 @@ import android.net.ConnectivityManager
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.view.MenuItem
-import android.widget.TextView
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -78,7 +78,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
             addItemDecoration(dividerDecoration)
         }
 
-        val closeButton: TextView = findViewById(R.id.clear_bookmark)
+        val closeButton: ImageView = findViewById(R.id.clear_bookmark)
         closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
         val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
