@@ -122,6 +122,10 @@ class ThumbRecyclerViewAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         imageLoadingJobs[holder]?.cancel()
         imageLoadingJobs.remove(holder)
+
+        holder.pageNumView.visibility = View.VISIBLE
+        holder.progressBar.visibility = View.VISIBLE
+
         super.onViewRecycled(holder)
     }
 
