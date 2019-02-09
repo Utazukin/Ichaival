@@ -134,6 +134,7 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener 
                     .withLicenseShown(true)
                     .withAboutIconShown(true)
                     .withAboutVersionShownName(true)
+                    .withLibraries("flexboxLayout", "glide", "constraintlayout")
                     .start(activity)
                 true
             }
