@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import android.text.TextUtils
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.core.app.NavUtils
-import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
+import com.mikepenz.aboutlibraries.LibsBuilder
 
 /**
  * A [PreferenceActivity] that presents a set of application settings. On
@@ -130,7 +130,11 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener 
 
             val licensePref = findPreference(getString(R.string.license_key))
             licensePref.setOnPreferenceClickListener {
-                startActivity(Intent(activity, OssLicensesMenuActivity::class.java))
+                LibsBuilder()
+                    .withLicenseShown(true)
+                    .withAboutIconShown(true)
+                    .withAboutVersionShownName(true)
+                    .start(activity)
                 true
             }
 

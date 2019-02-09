@@ -28,3 +28,8 @@
 -keepclassmembernames class kotlinx.** {
     volatile <fields>;
 }
+
+-keep class .R
+-keep class **.R$* {
+    <fields>;
+}
