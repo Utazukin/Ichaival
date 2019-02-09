@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
         return view
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
         activityScope = context as CoroutineScope
     }

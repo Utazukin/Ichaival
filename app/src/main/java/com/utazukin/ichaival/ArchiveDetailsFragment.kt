@@ -72,7 +72,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         return view
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
         ReaderTabHolder.registerRemoveListener(this)
         scope = context as CoroutineScope

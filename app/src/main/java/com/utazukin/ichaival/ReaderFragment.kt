@@ -137,7 +137,7 @@ class ReaderFragment : Fragment() {
         isAttached = false
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnFragmentInteractionListener) {
             isAttached = true
