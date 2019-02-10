@@ -123,6 +123,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
                     currentPage = page
                     loadImage(page)
                     image_pager.setCurrentItem(page, false)
+                    val bookmarker = optionsMenu.findItem(R.id.bookmark_archive)
+                    setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(arcid))
                 }
             }
         }
