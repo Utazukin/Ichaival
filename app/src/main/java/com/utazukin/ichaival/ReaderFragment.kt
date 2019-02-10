@@ -87,6 +87,7 @@ class ReaderFragment : Fragment() {
            imageToDisplay = image
         else {
             imagePath = image
+            val fragment = this
             Glide.with(activity!!).asBitmap().load(image)
                 .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
                 .addListener(object: RequestListener<Bitmap>{
@@ -97,7 +98,7 @@ class ReaderFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         if (e?.rootCauses?.any { x -> x is FileNotFoundException} == true) {
-                            listener?.onImageLoadError()
+                            listener?.onImageLoadError(fragment)
                             return true
                         }
                         return false
@@ -118,6 +119,11 @@ class ReaderFragment : Fragment() {
                 })
                 .into(mainImage)
         }
+    }
+
+    fun reloadImage() {
+       if (imagePath != null)
+           displayImage(imagePath, page)
     }
 
     private fun getTouchZone(x: Float) : TouchZone {
@@ -171,7 +177,7 @@ class ReaderFragment : Fragment() {
     interface OnFragmentInteractionListener {
         fun onFragmentTap(zone: TouchZone)
 
-        fun onImageLoadError()
+        fun onImageLoadError(fragment: ReaderFragment)
     }
 
     companion object {

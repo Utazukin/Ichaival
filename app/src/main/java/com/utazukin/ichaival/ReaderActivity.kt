@@ -35,10 +35,7 @@ import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -308,9 +305,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         }
     }
 
-    override fun onImageLoadError() {
-        archive?.invalidateCache()
-        launch {  archive?.extract() }
+    override fun onImageLoadError(fragment: ReaderFragment) {
+        archive?.let {
+            it.invalidateCache()
+            launch {
+                runBlocking(Dispatchers.Default) { it.extract() }
+                fragment.reloadImage()
+            }
+        }
     }
 
     companion object {
