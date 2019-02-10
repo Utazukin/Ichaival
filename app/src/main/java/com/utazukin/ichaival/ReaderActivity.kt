@@ -24,6 +24,7 @@ import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
@@ -147,6 +148,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)
         }
+
+        val closeButton: ImageView = findViewById(R.id.clear_bookmark)
+        closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
         val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
             override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
