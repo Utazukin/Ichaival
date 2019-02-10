@@ -164,12 +164,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         thumbLoadJob = scope.launch(Dispatchers.Main) {
             val thumbView: ImageView = view.findViewById(R.id.cover)
             val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }
-            val request = Glide.with(thumbView).asBitmap().load(thumb)
+            val request = Glide.with(thumbView).load(thumb)
             request.into(thumbView)
 
             //Replace the thumbnail with the full size image.
             val image = withContext(Dispatchers.Default) { archive?.getPageImage(0) }
-            Glide.with(thumbView).asBitmap().load(image).thumbnail(request).into(thumbView)
+            Glide.with(thumbView).load(image).thumbnail(request).into(thumbView)
         }
     }
 

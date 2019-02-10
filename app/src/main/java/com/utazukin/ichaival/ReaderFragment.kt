@@ -21,7 +21,7 @@ package com.utazukin.ichaival
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -55,6 +55,36 @@ class ReaderFragment : Fragment() {
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
 
+    private val drawableListener: RequestListener<Drawable> by lazy {
+        val fragment = this
+        object : RequestListener<Drawable> {
+            override fun onLoadFailed(
+                e: GlideException?,
+                model: Any?,
+                target: Target<Drawable>?,
+                isFirstResource: Boolean
+            ): Boolean {
+                if (e?.rootCauses?.any { x -> x is FileNotFoundException } == true) {
+                    listener?.onImageLoadError(fragment)
+                    return true
+                }
+                return false
+            }
+
+            override fun onResourceReady(
+                resource: Drawable?,
+                model: Any?,
+                target: Target<Drawable>?,
+                dataSource: DataSource?,
+                isFirstResource: Boolean
+            ): Boolean {
+                pageNum.visibility = View.GONE
+                progressBar.visibility = View.GONE
+                return false
+            }
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -87,36 +117,9 @@ class ReaderFragment : Fragment() {
            imageToDisplay = image
         else {
             imagePath = image
-            val fragment = this
-            Glide.with(activity!!).asBitmap().load(image)
+            Glide.with(activity!!).load(image)
                 .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                .addListener(object: RequestListener<Bitmap>{
-                    override fun onLoadFailed(
-                        e: GlideException?,
-                        model: Any?,
-                        target: Target<Bitmap>?,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        if (e?.rootCauses?.any { x -> x is FileNotFoundException} == true) {
-                            listener?.onImageLoadError(fragment)
-                            return true
-                        }
-                        return false
-                    }
-
-                    override fun onResourceReady(
-                        resource: Bitmap?,
-                        model: Any?,
-                        target: Target<Bitmap>?,
-                        dataSource: DataSource?,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        pageNum.visibility = View.GONE
-                        progressBar.visibility = View.GONE
-                        return false
-                    }
-
-                })
+                .addListener(drawableListener)
                 .into(mainImage)
         }
     }
@@ -155,7 +158,7 @@ class ReaderFragment : Fragment() {
                 displayImage(image, page)
             }
         } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener")
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
         }
     }
 
