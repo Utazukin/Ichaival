@@ -57,6 +57,9 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
         DatabaseReader.updateServerLocation(serverSetting)
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "") as String)
+
+        //Restore tabs here so the bool gets initialized
+        ReaderTabHolder.restoreTabs(savedInstanceState)
     }
 
     override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String) {
