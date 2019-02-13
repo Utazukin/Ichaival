@@ -123,7 +123,7 @@ class ArchiveRecyclerViewAdapter(
                     val terms = filter.split(spaceRegex)
                     var hasAll = true
                     var skip = 0
-                    for (i in 0..(terms.size - 1)) {
+                    for (i in 0 until terms.size) {
                         if (skip > 0) {
                             --skip
                             continue

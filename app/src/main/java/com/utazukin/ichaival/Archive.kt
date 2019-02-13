@@ -78,7 +78,7 @@ class Archive(json: JSONObject) {
     }
 
     fun hasPage(page: Int) : Boolean {
-        return numPages < 0 || (page in 0..(numPages - 1))
+        return numPages < 0 || (page in 0 until numPages)
     }
 
     suspend fun getPageImage(page: Int) : String? {

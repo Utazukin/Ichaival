@@ -326,7 +326,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
         var image: File? = File(thumbDir, "$id.jpg")
         if (image != null && !image.exists())
-            image = GlobalScope.async { downloadThumb(id, thumbDir) }.await()
+            image = withContext(Dispatchers.Default) { downloadThumb(id, thumbDir) }
 
         return if (image != null) BitmapFactory.decodeFile(image.path) else null
     }

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ object ReaderTabHolder {
                 val titles = it.getStringArrayList(titleKey) ?: return
                 val pages = it.getIntArray(pageKey) ?: return
 
-                for (i in 0..(ids.size - 1)) {
+                for (i in 0 until ids.size) {
                     openTabs[ids[i]] = ReaderTab(ids[i], titles[i], pages[i])
                 }
                 updateListeners()
