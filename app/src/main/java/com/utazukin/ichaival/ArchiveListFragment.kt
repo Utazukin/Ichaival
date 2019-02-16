@@ -122,7 +122,7 @@ class ArchiveListFragment : Fragment() {
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
 
-        activityScope.launch {
+        activityScope.launch(Dispatchers.Main) {
             val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
             listAdapter.updateDataCopy(updatedList)
             val count = listAdapter.filter(searchView.query, newCheckBox.isChecked)
