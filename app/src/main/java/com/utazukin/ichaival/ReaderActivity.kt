@@ -79,7 +79,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     private var archive: Archive? = null
     private var currentPage = 0
     private val loadedPages = mutableListOf<Boolean>()
-    private lateinit var optionsMenu: Menu
+    private var optionsMenu: Menu? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,7 +124,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
                     currentPage = page
                     loadImage(page)
                     image_pager.setCurrentItem(page, false)
-                    val bookmarker = optionsMenu.findItem(R.id.bookmark_archive)
+
+                    val bookmarker = optionsMenu?.findItem(R.id.bookmark_archive)
                     setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(arcid))
                 }
             }
@@ -160,7 +161,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
             override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
                 val adapter = tabView.adapter as ReaderTabViewAdapter
                 adapter.removeTab(holder.adapterPosition)
-                val bookmarker = optionsMenu.findItem(R.id.bookmark_archive)
+                val bookmarker = optionsMenu?.findItem(R.id.bookmark_archive)
                 setTabbedIcon(bookmarker, false)
             }
         }
@@ -206,8 +207,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.reader_menu, menu)
-        optionsMenu = menu!!
-        val bookmarker = menu.findItem(R.id.bookmark_archive)
+        optionsMenu = menu
+        val bookmarker = menu?.findItem(R.id.bookmark_archive)
         setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(archive?.id))
         return super.onCreateOptionsMenu(menu)
     }
