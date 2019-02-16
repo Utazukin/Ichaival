@@ -21,21 +21,17 @@ package com.utazukin.ichaival
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
-import com.github.chrisbanes.photoview.PhotoView
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+import com.github.piasy.biv.loader.ImageLoader
+import com.github.piasy.biv.view.BigImageView
+import com.github.piasy.biv.view.GlideImageViewFactory
+import java.io.File
 import java.io.FileNotFoundException
 
 enum class TouchZone {
@@ -51,36 +47,37 @@ class ReaderFragment : Fragment() {
     private var isAttached = false
     private var page = 0
     private var imagePath: String? = null
-    private lateinit var mainImage: PhotoView
+    private lateinit var mainImage: BigImageView
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
 
-    private val drawableListener: RequestListener<Drawable> by lazy {
+    private val drawableLoaderCallback by lazy {
         val fragment = this
-        object : RequestListener<Drawable> {
-            override fun onLoadFailed(
-                e: GlideException?,
-                model: Any?,
-                target: Target<Drawable>?,
-                isFirstResource: Boolean
-            ): Boolean {
-                if (e?.rootCauses?.any { x -> x is FileNotFoundException } == true) {
-                    listener?.onImageLoadError(fragment)
-                    return true
-                }
-                return false
+        object : ImageLoader.Callback {
+            override fun onFinish() {
             }
 
-            override fun onResourceReady(
-                resource: Drawable?,
-                model: Any?,
-                target: Target<Drawable>?,
-                dataSource: DataSource?,
-                isFirstResource: Boolean
-            ): Boolean {
+            override fun onSuccess(image: File?) {
                 pageNum.visibility = View.GONE
                 progressBar.visibility = View.GONE
-                return false
+                setupImageTapEvents()
+            }
+
+            override fun onFail(error: Exception?) {
+                if (error is FileNotFoundException)
+                    listener?.onImageLoadError(fragment)
+            }
+
+            override fun onCacheHit(imageType: Int, image: File?) {
+            }
+
+            override fun onCacheMiss(imageType: Int, image: File?) {
+            }
+
+            override fun onProgress(progress: Int) {
+            }
+
+            override fun onStart() {
             }
         }
     }
@@ -98,7 +95,9 @@ class ReaderFragment : Fragment() {
         }
 
         mainImage = view.findViewById(R.id.main_image)
-        mainImage.setOnViewTapListener{ _, x, _ -> listener?.onFragmentTap(getTouchZone(x))}
+        mainImage.setInitScaleType(BigImageView.INIT_SCALE_TYPE_CENTER_INSIDE)
+        mainImage.setImageLoaderCallback(drawableLoaderCallback)
+        mainImage.setImageViewFactory(GlideImageViewFactory())
 
         pageNum = view.findViewById(R.id.page_num)
         pageNum.text = (page + 1).toString()
@@ -110,6 +109,20 @@ class ReaderFragment : Fragment() {
         return view
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupImageTapEvents() {
+        val ssiv: SubsamplingScaleImageView? = mainImage.ssiv
+        val gestureDetector = GestureDetector(context, object: GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+                if (ssiv?.isReady == true && e != null)
+                   listener?.onFragmentTap(getTouchZone(e.x))
+                return true
+            }
+        })
+
+        ssiv?.setOnTouchListener { _ , e -> gestureDetector.onTouchEvent(e)}
+    }
+
     fun displayImage(image: String?, page: Int) {
         this.page = page
         pageNum.text = (page + 1).toString()
@@ -117,10 +130,7 @@ class ReaderFragment : Fragment() {
            imageToDisplay = image
         else {
             imagePath = image
-            Glide.with(activity!!).load(image)
-                .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                .addListener(drawableListener)
-                .into(mainImage)
+            mainImage.showImage(Uri.parse(image))
         }
     }
 
