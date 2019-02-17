@@ -35,14 +35,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             startDetailsActivity(archive.id)
     }
 
-    override fun onFragmentLongPress(archive: Archive?, view: View) : Boolean {
-        archive?.run {
-            val tagFragment = TagDialogFragment.newInstance(id)
-            tagFragment.show(supportFragmentManager, "tag_popup")
-        }
-        return true
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_list)

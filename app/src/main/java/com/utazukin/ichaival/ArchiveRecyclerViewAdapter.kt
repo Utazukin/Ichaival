@@ -32,6 +32,7 @@ import kotlinx.coroutines.*
 
 class ArchiveRecyclerViewAdapter(
     private val mListener: OnListFragmentInteractionListener?,
+    private val longListener: ((a: Archive) -> Boolean)?,
     private val scope: CoroutineScope
 ) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
 
@@ -55,7 +56,7 @@ class ArchiveRecyclerViewAdapter(
 
         onLongClickListener = View.OnLongClickListener { v ->
             val item = v.tag as Archive
-            mListener?.onFragmentLongPress(item, v) == true
+            longListener?.invoke(item) == true
         }
 
         mValuesCopy = mValues.toList()

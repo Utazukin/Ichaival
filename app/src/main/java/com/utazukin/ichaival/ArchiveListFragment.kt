@@ -69,7 +69,7 @@ class ArchiveListFragment : Fragment() {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            val temp = ArchiveRecyclerViewAdapter(listener, activityScope)
+            val temp = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, activityScope)
             listAdapter = temp
             adapter = temp
 
@@ -132,6 +132,19 @@ class ArchiveListFragment : Fragment() {
         return view
     }
 
+    private fun handleArchiveLongPress(archive: Archive) : Boolean {
+        fragmentManager?.let {
+            val tagFragment = TagDialogFragment.newInstance(archive.id)
+            tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
+            tagFragment.setTagLongPressListener { tag ->
+                searchView.setQuery("${searchView.query} $tag", true)
+                true
+            }
+            tagFragment.show(it, "tag_popup")
+        }
+        return true
+    }
+
     fun showOnlySearch(show: Boolean){
         if (show) {
             randomButton.visibility = View.GONE
@@ -158,7 +171,7 @@ class ArchiveListFragment : Fragment() {
             listener = context
             activityScope = context as CoroutineScope
         } else {
-            throw RuntimeException(context.toString() + " must implement OnListFragmentInteractionListener")
+            throw RuntimeException("$context must implement OnListFragmentInteractionListener")
         }
     }
 
@@ -179,7 +192,5 @@ class ArchiveListFragment : Fragment() {
 
     interface OnListFragmentInteractionListener {
         fun onListFragmentInteraction(archive: Archive?)
-
-        fun onFragmentLongPress(archive: Archive?, view: View) : Boolean
     }
 }

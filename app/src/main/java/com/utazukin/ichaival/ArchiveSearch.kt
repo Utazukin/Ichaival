@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 import android.app.Activity
 import android.os.Bundle
-import android.view.View
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 
 class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
@@ -30,14 +29,6 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
             setResult(Activity.RESULT_OK)
             startDetailsActivity(archive.id)
         }
-    }
-
-    override fun onFragmentLongPress(archive: Archive?, view: View) : Boolean {
-        archive?.run {
-            val tagFragment = TagDialogFragment.newInstance(id)
-            tagFragment.show(supportFragmentManager, "tag_popup")
-        }
-        return true
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

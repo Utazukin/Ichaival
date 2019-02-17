@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,6 +41,8 @@ private const val ARCHIVE_PARAM = "archive"
 class TagDialogFragment : DialogFragment() {
     private var archive: Archive? = null
     private lateinit var tagLayout: LinearLayout
+    private var tagPressListener: ((tag: String) -> Unit)? = null
+    private var tagLongPressListener: ((tag: String) -> Boolean)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +86,13 @@ class TagDialogFragment : DialogFragment() {
 
                 for (tag in pair.value) {
                     val tagView = createTagView(tag)
+                    val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
+                    tagView.setOnClickListener { tagPressListener?.invoke(searchTag); dismiss() }
+                    tagView.setOnLongClickListener {
+                        val response = tagLongPressListener?.invoke(searchTag)
+                        dismiss()
+                        response == true
+                    }
                     namespaceLayout.addView(tagView)
                 }
             }
@@ -98,10 +107,17 @@ class TagDialogFragment : DialogFragment() {
         val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         layoutParams.setMargins(10, 10, 10, 10)
         tagView.layoutParams = layoutParams
+
         return tagView
     }
 
+    fun setTagPressListener(listener: ((tag: String) -> Unit)?) {
+        tagPressListener = listener
+    }
 
+    fun setTagLongPressListener(listener: ((tag: String) -> Boolean)?) {
+        tagLongPressListener = listener
+    }
 
     companion object {
         @JvmStatic
