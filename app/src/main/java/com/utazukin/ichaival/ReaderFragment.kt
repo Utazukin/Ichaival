@@ -28,9 +28,9 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+import com.github.chrisbanes.photoview.PhotoView
 import com.github.piasy.biv.loader.ImageLoader
 import com.github.piasy.biv.view.BigImageView
-import com.github.piasy.biv.view.GlideImageViewFactory
 import java.io.File
 import java.io.FileNotFoundException
 
@@ -50,6 +50,7 @@ class ReaderFragment : Fragment() {
     private lateinit var mainImage: BigImageView
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
+    private lateinit var imageLoader: GlidePhotoViewFactory
 
     private val drawableLoaderCallback by lazy {
         val fragment = this
@@ -97,7 +98,9 @@ class ReaderFragment : Fragment() {
         mainImage = view.findViewById(R.id.main_image)
         mainImage.setInitScaleType(BigImageView.INIT_SCALE_TYPE_CENTER_INSIDE)
         mainImage.setImageLoaderCallback(drawableLoaderCallback)
-        mainImage.setImageViewFactory(GlideImageViewFactory())
+
+        imageLoader = GlidePhotoViewFactory()
+        mainImage.setImageViewFactory(imageLoader)
 
         pageNum = view.findViewById(R.id.page_num)
         pageNum.text = (page + 1).toString()
@@ -111,16 +114,21 @@ class ReaderFragment : Fragment() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupImageTapEvents() {
-        val ssiv: SubsamplingScaleImageView? = mainImage.ssiv
-        val gestureDetector = GestureDetector(context, object: GestureDetector.SimpleOnGestureListener() {
-            override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-                if (ssiv?.isReady == true && e != null)
-                   listener?.onFragmentTap(getTouchZone(e.x))
-                return true
-            }
-        })
+        val view: View? = mainImage.ssiv ?: imageLoader.photoView
+        if (view is SubsamplingScaleImageView) {
+            val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+                    if (view.isReady && e != null)
+                        listener?.onFragmentTap(getTouchZone(e.x))
+                    return true
+                }
+            })
 
-        ssiv?.setOnTouchListener { _ , e -> gestureDetector.onTouchEvent(e)}
+            view.setOnTouchListener { _, e -> gestureDetector.onTouchEvent(e) }
+        }
+        else if (view is PhotoView) {
+            view.setOnViewTapListener { _, x, _ -> listener?.onFragmentTap(getTouchZone(x)) }
+        }
     }
 
     fun displayImage(image: String?, page: Int) {
@@ -130,7 +138,9 @@ class ReaderFragment : Fragment() {
            imageToDisplay = image
         else {
             imagePath = image
-            mainImage.showImage(Uri.parse(image))
+
+            if (image != null)
+                mainImage.showImage(Uri.parse(image))
         }
     }
 
