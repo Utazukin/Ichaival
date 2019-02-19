@@ -186,7 +186,8 @@ class ArchiveListFragment : Fragment() {
             val adapter = listView.adapter as ArchiveRecyclerViewAdapter
             adapter.updateDataCopy(newList)
             swipeRefreshLayout.isRefreshing = false
-            countText.text = String.format(getString(R.string.archive_count), newList.size)
+            val count = adapter.filter(searchView.query, newCheckBox.isChecked)
+            countText.text = String.format(getString(R.string.archive_count), count)
         }
     }
 
