@@ -131,7 +131,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     private fun checkDirty(fileDir: File) : Boolean {
         val jsonCache = File(fileDir, jsonLocation)
-        val dayInMill = 1000 * 60 * 60 * 60 * 24L
+        val dayInMill = 1000 * 60 * 60 * 24L
         return isDirty || !jsonCache.exists() || Calendar.getInstance().timeInMillis - jsonCache.lastModified() >  dayInMill
     }
 
