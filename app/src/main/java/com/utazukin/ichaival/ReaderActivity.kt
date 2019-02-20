@@ -40,10 +40,6 @@ import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.*
 
-/**
- * An example full-screen activity that shows and hides the system UI (i.e.
- * status bar and navigation/system bar) with user interaction.
- */
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
@@ -66,17 +62,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     }
     private var mVisible: Boolean = false
     private val mHideRunnable = Runnable { hide() }
-    /**
-     * Touch listener to use for in-layout UI controls to delay hiding the
-     * system UI. This is to prevent the jarring behavior of controls going away
-     * while interacting with activity UI.
-     */
-    private val mDelayHideTouchListener = View.OnTouchListener { _, _ ->
-        if (AUTO_HIDE) {
-            delayedHide(AUTO_HIDE_DELAY_MILLIS)
-        }
-        false
-    }
 
     private var archive: Archive? = null
     private var currentPage = 0
@@ -296,6 +281,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         // Schedule a runnable to display UI elements after a delay
         mHideHandler.removeCallbacks(mHidePart2Runnable)
         mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY.toLong())
+
+        if (AUTO_HIDE)
+            delayedHide(AUTO_HIDE_DELAY_MILLIS)
     }
 
     /**
@@ -336,7 +324,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
          * If [AUTO_HIDE] is set, the number of milliseconds to wait after
          * user interaction before hiding the system UI.
          */
-        private val AUTO_HIDE_DELAY_MILLIS = 3000
+        private val AUTO_HIDE_DELAY_MILLIS = 5000
 
         /**
          * Some older devices needs a small delay between UI widget updates
