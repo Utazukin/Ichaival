@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.view.Menu
@@ -219,27 +218,24 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         val id = item.itemId
         when (id) {
             R.id.bookmark_archive -> {
-                val copy = archive
-                if (copy != null) {
-                    if (!ReaderTabHolder.isTabbed(copy.id)) {
-                        ReaderTabHolder.addTab(copy, currentPage)
+                archive?.let {
+                    if (!ReaderTabHolder.isTabbed(it.id)) {
+                        ReaderTabHolder.addTab(it, currentPage)
                         setTabbedIcon(item, true)
                     }
                     else {
-                        ReaderTabHolder.removeTab(copy.id)
+                        ReaderTabHolder.removeTab(it.id)
                         setTabbedIcon(item, false)
                     }
                     return true
                 }
             }
             R.id.detail_menu -> {
-                val intent = Intent(this, ArchiveDetails::class.java)
-                val bundle = Bundle()
-                bundle.putString("id", archive?.id)
-                intent.putExtras(bundle)
-                startActivity(intent)
-                finish()
-                return true
+                archive?.let {
+                    startDetailsActivity(it.id)
+                    finish()
+                    return true
+                }
             }
         }
         return super.onOptionsItemSelected(item)
