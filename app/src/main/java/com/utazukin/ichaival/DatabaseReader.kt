@@ -113,7 +113,12 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     private fun getPageList(response: JSONObject?) : List<String> {
-        val jsonPages = response?.getJSONArray("pages") ?: return listOf()
+        val jsonPages = response?.optJSONArray("pages")
+        if (jsonPages == null) {
+            notifyError(response?.keys()?.next() ?: "Failed to extract archive")
+            return listOf()
+        }
+
         val count = jsonPages.length()
         return MutableList(count) { jsonPages.getString(it).substring(1) }
     }
@@ -135,12 +140,12 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         return isDirty || !jsonCache.exists() || Calendar.getInstance().timeInMillis - jsonCache.lastModified() >  dayInMill
     }
 
-    override fun onPreferenceChange(pref: Preference?, newValue: Any?): Boolean {
-        if ((newValue as String?)?.isEmpty() == true)
+    override fun onPreferenceChange(pref: Preference, newValue: Any): Boolean {
+        if ((newValue as String).isEmpty())
             return false
 
         return try { //TODO use something better for validation
-            val url = URL(newValue as String)
+            val url = URL(newValue)
             if (serverLocation != newValue) {
                 serverLocation = newValue
                 isDirty = true
