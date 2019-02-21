@@ -24,6 +24,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
@@ -66,6 +67,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     private var currentPage = 0
     private val loadedPages = mutableListOf<Boolean>()
     private var optionsMenu: Menu? = null
+    private lateinit var failedMessage: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,6 +95,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
             }
 
         } )
+
+        failedMessage = findViewById(R.id.failed_message)
+        failedMessage.setOnClickListener { toggle() }
 
         val bundle = intent.extras
         val arcid = bundle?.getString("id") ?: savedInstanceState?.getString("id")
@@ -168,8 +173,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     }
 
     private fun loadImage(page: Int, preload: Boolean = true) {
-        if (!archive!!.hasPage(page))
+        if (!archive!!.hasPage(page)) {
+            if (archive!!.numPages == 0)
+                failedMessage.visibility = View.VISIBLE
             return
+        }
+        failedMessage.visibility = View.GONE
 
         if (adjustLoadedPages(page))
             image_pager.adapter?.notifyDataSetChanged()
