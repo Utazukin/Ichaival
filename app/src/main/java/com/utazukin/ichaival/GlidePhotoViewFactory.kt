@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.view.View
 import com.bumptech.glide.Glide
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.github.piasy.biv.metadata.ImageInfoExtractor
 import com.github.piasy.biv.view.BigImageView
@@ -47,5 +48,10 @@ class GlidePhotoViewFactory : GlideImageViewFactory() {
         }
         photoView = view as PhotoView
         return view
+    }
+
+    override fun createStillImageView(context: Context?): SubsamplingScaleImageView {
+        photoView = null
+        return super.createStillImageView(context)
     }
 }

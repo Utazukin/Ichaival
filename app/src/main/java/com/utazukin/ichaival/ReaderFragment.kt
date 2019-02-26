@@ -164,6 +164,7 @@ class ReaderFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         isAttached = false
+        mainImage.ssiv?.recycle()
     }
 
     override fun onAttach(context: Context) {
