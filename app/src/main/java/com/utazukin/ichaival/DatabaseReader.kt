@@ -120,7 +120,13 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         }
 
         val count = jsonPages.length()
-        return MutableList(count) { jsonPages.getString(it).substring(1) }
+        return MutableList(count) {
+            val pagePath = jsonPages.getString(it)
+            if (pagePath.startsWith("./"))
+                pagePath.substring(1)
+            else
+                "/$pagePath"
+        }
     }
 
     private fun getApiKey(multiParam: Boolean) : String {
