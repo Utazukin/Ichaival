@@ -30,9 +30,9 @@ import androidx.fragment.app.Fragment
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.github.piasy.biv.loader.ImageLoader
+import com.github.piasy.biv.loader.glide.GlideLoaderException
 import com.github.piasy.biv.view.BigImageView
 import java.io.File
-import java.io.FileNotFoundException
 
 enum class TouchZone {
     Left,
@@ -65,7 +65,7 @@ class ReaderFragment : Fragment() {
             }
 
             override fun onFail(error: Exception?) {
-                if (error is FileNotFoundException)
+                if (error is GlideLoaderException)
                     listener?.onImageLoadError(fragment)
             }
 
