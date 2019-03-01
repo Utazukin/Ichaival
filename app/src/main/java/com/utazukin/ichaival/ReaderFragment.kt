@@ -51,6 +51,7 @@ class ReaderFragment : Fragment() {
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var imageLoader: GlidePhotoViewFactory
+    private var retryCount = 0
 
     private val drawableLoaderCallback by lazy {
         val fragment = this
@@ -62,11 +63,14 @@ class ReaderFragment : Fragment() {
                 pageNum.visibility = View.GONE
                 progressBar.visibility = View.GONE
                 setupImageTapEvents()
+                retryCount = 0
             }
 
             override fun onFail(error: Exception?) {
-                if (error is GlideLoaderException)
+                if (error is GlideLoaderException && retryCount < 3) {
                     listener?.onImageLoadError(fragment)
+                    ++retryCount
+                }
             }
 
             override fun onCacheHit(imageType: Int, image: File?) {
@@ -98,6 +102,7 @@ class ReaderFragment : Fragment() {
         mainImage = view.findViewById(R.id.main_image)
         mainImage.setInitScaleType(BigImageView.INIT_SCALE_TYPE_CENTER_INSIDE)
         mainImage.setImageLoaderCallback(drawableLoaderCallback)
+        retryCount = 0
 
         imageLoader = GlidePhotoViewFactory()
         mainImage.setImageViewFactory(imageLoader)
