@@ -126,6 +126,9 @@
     <string name="press_for_tags">Long press for tags</string>
     <string name="first_time_text">Tap to set up server settings.</string>
     <string name="new_checkbox">New</string>
-    <string name="archive_count">%d archives</string>
+    <plurals name="archive_count">
+        <item quantity="one">%d archive</item>
+        <item quantity="other">%d archives</item>
+    </plurals>
     <string name="failed_image">Failed to Load</string>
 </resources>

@@ -86,20 +86,20 @@ class ArchiveListFragment : Fragment() {
         newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked ->
             val count = listAdapter.filter(searchView.query, checked)
-            countText.text = String.format(getString(R.string.archive_count), count)
+            countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
         }
 
         countText.visibility = View.INVISIBLE
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 val count = listAdapter.filter(p0, newCheckBox.isChecked)
-                countText.text = String.format(getString(R.string.archive_count), count)
+                countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
                 return true
             }
 
             override fun onQueryTextChange(p0: String?): Boolean {
                 val count = listAdapter.filter(p0, newCheckBox.isChecked)
-                countText.text = String.format(getString(R.string.archive_count), count)
+                countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
                 return true
             }
         })
@@ -126,7 +126,7 @@ class ArchiveListFragment : Fragment() {
             val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
             listAdapter.updateDataCopy(updatedList)
             val count = listAdapter.filter(searchView.query, newCheckBox.isChecked)
-            countText.text = String.format(getString(R.string.archive_count), count)
+            countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
             countText.visibility = View.VISIBLE
         }
         return view
@@ -187,7 +187,7 @@ class ArchiveListFragment : Fragment() {
             adapter.updateDataCopy(newList)
             swipeRefreshLayout.isRefreshing = false
             val count = adapter.filter(searchView.query, newCheckBox.isChecked)
-            countText.text = String.format(getString(R.string.archive_count), count)
+            countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
         }
     }
 

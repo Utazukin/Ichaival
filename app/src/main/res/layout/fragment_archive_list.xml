@@ -63,7 +63,7 @@
             android:id="@+id/list_count"
             android:textAlignment="center"
             android:textSize="18sp"
-            android:text="@string/archive_count"/>
+            android:text="@plurals/archive_count"/>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe_refresh"
