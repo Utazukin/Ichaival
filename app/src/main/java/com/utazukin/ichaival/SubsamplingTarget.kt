@@ -53,5 +53,8 @@ class SubsamplingTarget(private val target: SubsamplingScaleImageView) : Target<
 
     override fun onStart() { }
 
-    override fun onDestroy() { }
+    override fun onDestroy() {
+        request?.clear()
+        target.recycle()
+    }
 }
