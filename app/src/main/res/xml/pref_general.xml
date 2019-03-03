@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2018 Utazukin
+  ~ Copyright (C) 2019 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -38,6 +38,11 @@
             android:title="@string/api_key_pref_name"
             android:key="@string/api_key_pref"/>
 
+    <SwitchPreference
+            android:defaultValue="false"
+            android:title="@string/verbose_pref_name"
+            android:key="@string/verbose_pref"
+            android:summary="@string/verbose_pref_summary"/>
     <Preference
             android:title="@string/thumbnail_setting"
             android:key="@string/thumbnail_pref"

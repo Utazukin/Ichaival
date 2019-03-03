@@ -33,6 +33,11 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.core.app.NavUtils
 import com.mikepenz.aboutlibraries.LibsBuilder
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 /**
  * A [PreferenceActivity] that presents a set of application settings. On
@@ -44,7 +49,10 @@ import com.mikepenz.aboutlibraries.LibsBuilder
  * for design guidelines and the [Settings API Guide](http://developer.android.com/guide/topics/ui/settings.html)
  * for more information on developing a Settings UI.
  */
-class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener {
+class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener, CoroutineScope {
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
+    private val job: Job by lazy { Job() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,8 +89,14 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener 
         DatabaseReader.connectivityManager = null
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
+    }
+
     override fun onError(error: String) {
-        Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+        val context = this
+        launch { Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show() }
     }
 
     override fun onExtract(title: String) {}

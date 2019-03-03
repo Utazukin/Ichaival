@@ -39,6 +39,7 @@ import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 const val TAG_SEARCH = "tag"
@@ -129,11 +130,13 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     override fun onError(error: String) {
-        Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+        val context = this
+        launch { Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show() }
     }
 
     override fun onExtract(title: String) {
-        Toast.makeText(this, "Extracting...", Toast.LENGTH_LONG).show()
+        val context = this
+        launch { Toast.makeText(context, "Extracting...", Toast.LENGTH_LONG).show() }
     }
 
     override fun onTabAdded(index: Int, id: String) {

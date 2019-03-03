@@ -42,16 +42,20 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         prefs.registerOnSharedPreferenceChangeListener(this)
+        updatePreferences(prefs)
 
+        //Restore tabs here so the bool gets initialized
+        ReaderTabHolder.restoreTabs(savedInstanceState)
+    }
+
+    private fun updatePreferences(prefs: SharedPreferences) {
         val serverSetting = prefs.getString(getString(R.string.server_address_preference), "") as String
         setupText = findViewById(R.id.first_time_text)
         handleSetupText(serverSetting.isEmpty())
 
         DatabaseReader.updateServerLocation(serverSetting)
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "") as String)
-
-        //Restore tabs here so the bool gets initialized
-        ReaderTabHolder.restoreTabs(savedInstanceState)
+        DatabaseReader.verboseMessages = prefs.getBoolean(getString(R.string.verbose_pref), false)
     }
 
     override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String) {
@@ -64,12 +68,13 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 handleSetupText(location.isEmpty())
                 listFragment?.forceArchiveListUpdate()
             }
-            getString((R.string.api_key_pref)) -> {
+            getString(R.string.api_key_pref) -> {
                 DatabaseReader.updateApiKey(pref.getString(key, "") as String)
                 val listFragment: ArchiveListFragment? =
                     supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
                 listFragment?.forceArchiveListUpdate()
             }
+            getString(R.string.verbose_pref) -> DatabaseReader.verboseMessages = pref.getBoolean(key, false)
         }
     }
 

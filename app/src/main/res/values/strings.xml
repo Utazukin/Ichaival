@@ -131,4 +131,7 @@
         <item quantity="other">%d archives</item>
     </plurals>
     <string name="failed_image">Failed to Load</string>
+    <string name="verbose_pref">verbose_key</string>
+    <string name="verbose_pref_name">Verbose Messages</string>
+    <string name="verbose_pref_summary">Enable more verbose error messages</string>
 </resources>

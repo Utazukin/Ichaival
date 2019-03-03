@@ -22,15 +22,19 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.preference.Preference
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.net.*
+import java.net.HttpURLConnection
+import java.net.URL
 import java.nio.charset.Charset
 import java.util.*
 
@@ -53,6 +57,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private val archivePageMap = mutableMapOf<String, List<String>>()
     var listener: DatabaseMessageListener? = null
     var connectivityManager: ConnectivityManager? = null
+    var verboseMessages = false
 
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
         if (!this::archiveList.isInitialized || forceUpdate) {
@@ -62,7 +67,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             else if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
                 if (this::archiveList.isInitialized) archiveList else listOf()
             } else {
-                val archiveJson = GlobalScope.async(Dispatchers.Default) { downloadArchiveList() }.await()
+                val archiveJson = withContext(Dispatchers.Default) { downloadArchiveList() }
                 if (archiveJson == null)
                     if (this::archiveList.isInitialized) archiveList else listOf()
                 else {
@@ -190,7 +195,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         connection.connectTimeout = timeout
         try {
             with(connection) {
-                if (responseCode != 200)
+                if (responseCode != HttpURLConnection.HTTP_OK)
                     return null
 
                 BufferedReader(InputStreamReader(inputStream)).use {
@@ -211,13 +216,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                 }
             }
         } catch (e: Exception) {
-            when (e) {
-                is SocketException, is SocketTimeoutException, is UnknownHostException -> {
-                    notifyError("Failed to extract archive!")
-                    return null
-                }
-                else -> throw e
-            }
+            DatabaseReader.handleErrorMessage(e, "Failed to extract archive!")
+            return null
         }
         finally {
             connection.disconnect()
@@ -225,7 +225,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     private fun notifyError(error: String) {
-        GlobalScope.launch(Dispatchers.Main) { listener?.onError(error) }
+        listener?.onError(error)
     }
 
     private fun getArchive(id: String) : Archive? {
@@ -235,7 +235,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private fun notifyExtract(id: String) {
         val title = getArchive(id)?.title
         if (title != null)
-            GlobalScope.launch(Dispatchers.Main) { listener?.onExtract(title) }
+            listener?.onExtract(title)
     }
 
     private fun downloadArchiveList() : JSONArray? {
@@ -253,7 +253,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             with(connection) {
                 connectTimeout = timeout
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    notifyError("Failed to connect to server!")
+                    handleErrorMessage(responseCode, "Failed to connect to server!")
                     return null
                 }
 
@@ -275,11 +275,19 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                 }
             }
         } catch (e: Exception) {
-            notifyError("Failed to connect to server!")
+            handleErrorMessage(e, "Failed to connect to server!")
             return null
         } finally {
             connection.disconnect()
         }
+    }
+
+    private fun handleErrorMessage(e: Exception, defaultMessage: String) {
+        notifyError(if (verboseMessages) e.localizedMessage else defaultMessage)
+    }
+
+    private fun handleErrorMessage(responseCode: Int, defaultMessage: String) {
+        notifyError(if (verboseMessages) "$defaultMessage Response Code: $responseCode" else defaultMessage)
     }
 
     private fun readArchiveList(json: JSONArray) : List<Archive> {
@@ -295,8 +303,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         val url = URL("$serverLocation$thumbPath?id=$id${getApiKey(true)}")
 
         with(url.openConnection() as HttpURLConnection) {
-            if (responseCode != 200) {
-                notifyError("Failed to download thumbnail!")
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                handleErrorMessage(responseCode, "Failed to download thumbnail!")
                 return null
             }
 
