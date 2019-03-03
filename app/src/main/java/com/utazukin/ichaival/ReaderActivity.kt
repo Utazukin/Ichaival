@@ -34,8 +34,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
-import com.github.piasy.biv.BigImageViewer
-import com.github.piasy.biv.loader.glide.GlideImageLoader
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.*
@@ -76,7 +74,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
         setSupportActionBar(findViewById(R.id.reader_toolbar))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
-        BigImageViewer.initialize(GlideImageLoader.with(this))
 
         mVisible = true
 

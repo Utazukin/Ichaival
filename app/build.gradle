@@ -71,8 +71,6 @@ dependencies {
     implementation 'com.google.android.material:material:1.1.0-alpha03'
     implementation 'com.google.android:flexbox:1.1.0'
     implementation "com.mikepenz:aboutlibraries:6.2.3"
-    implementation 'com.github.piasy:BigImageViewer:1.5.6'
-    implementation 'com.github.piasy:GlideImageLoader:1.5.6'
-    implementation 'com.github.piasy:GlideImageViewFactory:1.5.6'
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
 }

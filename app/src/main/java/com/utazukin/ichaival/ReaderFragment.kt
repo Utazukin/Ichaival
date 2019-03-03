@@ -21,18 +21,20 @@ package com.utazukin.ichaival
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.net.Uri
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
-import com.github.piasy.biv.loader.ImageLoader
-import com.github.piasy.biv.loader.glide.GlideLoaderException
-import com.github.piasy.biv.view.BigImageView
-import java.io.File
+import java.io.FileNotFoundException
 
 enum class TouchZone {
     Left,
@@ -47,45 +49,11 @@ class ReaderFragment : Fragment() {
     private var isAttached = false
     private var page = 0
     private var imagePath: String? = null
-    private lateinit var mainImage: BigImageView
+    private lateinit var mainImage: SubsamplingScaleImageView
+    private lateinit var mainImageGif: PhotoView
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
-    private lateinit var imageLoader: GlidePhotoViewFactory
     private var retryCount = 0
-
-    private val drawableLoaderCallback by lazy {
-        val fragment = this
-        object : ImageLoader.Callback {
-            override fun onFinish() {
-            }
-
-            override fun onSuccess(image: File?) {
-                pageNum.visibility = View.GONE
-                progressBar.visibility = View.GONE
-                setupImageTapEvents()
-                retryCount = 0
-            }
-
-            override fun onFail(error: Exception?) {
-                if (error is GlideLoaderException && retryCount < 3) {
-                    listener?.onImageLoadError(fragment)
-                    ++retryCount
-                }
-            }
-
-            override fun onCacheHit(imageType: Int, image: File?) {
-            }
-
-            override fun onCacheMiss(imageType: Int, image: File?) {
-            }
-
-            override fun onProgress(progress: Int) {
-            }
-
-            override fun onStart() {
-            }
-        }
-    }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(
@@ -100,12 +68,10 @@ class ReaderFragment : Fragment() {
         }
 
         mainImage = view.findViewById(R.id.main_image)
-        mainImage.setInitScaleType(BigImageView.INIT_SCALE_TYPE_CENTER_INSIDE)
-        mainImage.setImageLoaderCallback(drawableLoaderCallback)
+        mainImageGif = view.findViewById(R.id.main_image_gif)
         retryCount = 0
 
-        imageLoader = GlidePhotoViewFactory()
-        mainImage.setImageViewFactory(imageLoader)
+        mainImage.setMinimumTileDpi(160)
 
         pageNum = view.findViewById(R.id.page_num)
         pageNum.text = (page + 1).toString()
@@ -118,8 +84,7 @@ class ReaderFragment : Fragment() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupImageTapEvents() {
-        val view: View? = mainImage.ssiv ?: imageLoader.photoView
+    private fun setupImageTapEvents(view: View?) {
         if (view is SubsamplingScaleImageView) {
             val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                 override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
@@ -144,8 +109,60 @@ class ReaderFragment : Fragment() {
         else {
             imagePath = image
 
-            if (image != null)
-                mainImage.showImage(Uri.parse(image))
+            if (image != null) {
+                //TODO use something better to detect this.
+                if (image.endsWith(".gif")) {
+                    mainImageGif.visibility = View.VISIBLE
+                    mainImage.visibility = View.GONE
+                    Glide.with(activity!!)
+                        .load(image)
+                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                        .addListener(getListener())
+                        .into(mainImageGif)
+                    setupImageTapEvents(mainImageGif)
+                } else {
+                    mainImageGif.visibility = View.GONE
+                    mainImage.visibility = View.VISIBLE
+                    Glide.with(activity!!)
+                        .downloadOnly()
+                        .load(image)
+                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                        .addListener(getListener())
+                        .into(SubsamplingTarget(mainImage))
+                    setupImageTapEvents(mainImage)
+                }
+            }
+        }
+    }
+
+    private fun <T> getListener() : RequestListener<T> {
+        val fragment = this
+        return object: RequestListener<T> {
+            override fun onLoadFailed(
+                e: GlideException?,
+                model: Any?,
+                target: Target<T>?,
+                isFirstResource: Boolean
+            ): Boolean {
+                if (e?.rootCauses?.any { x -> x is FileNotFoundException } == true && retryCount < 3) {
+                    listener?.onImageLoadError(fragment)
+                    ++retryCount
+                    return true
+                }
+                return false
+            }
+
+            override fun onResourceReady(
+                resource: T?,
+                model: Any?,
+                target: Target<T>?,
+                dataSource: DataSource?,
+                isFirstResource: Boolean
+            ): Boolean {
+                pageNum.visibility = View.GONE
+                progressBar.visibility = View.GONE
+                return false
+            }
         }
     }
 
@@ -169,7 +186,7 @@ class ReaderFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         isAttached = false
-        mainImage.ssiv?.recycle()
+        mainImage.recycle()
     }
 
     override fun onAttach(context: Context) {
