@@ -21,22 +21,9 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                tools:context=".ReaderFragment">
-
-    <com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/main_image"
-            android:background="@android:color/black"
-            tools:src="@tools:sample/backgrounds/scenic"/>
-
-    <com.github.chrisbanes.photoview.PhotoView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/main_image_gif"
-            android:background="@android:color/black"
-            tools:src="@tools:sample/backgrounds/scenic"
-            android:visibility="gone"/>
+                tools:context=".ReaderFragment"
+                android:background="@android:color/black"
+                android:id="@+id/reader_layout">
 
     <TextView
             android:layout_width="wrap_content"

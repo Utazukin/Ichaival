@@ -24,6 +24,7 @@ import android.content.Context
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
@@ -49,10 +50,10 @@ class ReaderFragment : Fragment() {
     private var isAttached = false
     private var page = 0
     private var imagePath: String? = null
-    private lateinit var mainImage: SubsamplingScaleImageView
-    private lateinit var mainImageGif: PhotoView
+    private var mainImage: View? = null
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
+    private lateinit var topLayout: RelativeLayout
     private var retryCount = 0
 
     @SuppressLint("ClickableViewAccessibility")
@@ -67,12 +68,8 @@ class ReaderFragment : Fragment() {
             page = it.getInt(PAGE_NUM)
         }
 
-        mainImage = view.findViewById(R.id.main_image)
-        mainImageGif = view.findViewById(R.id.main_image_gif)
         retryCount = 0
-
-        mainImage.setMinimumTileDpi(160)
-
+        topLayout = view.findViewById(R.id.reader_layout)
         pageNum = view.findViewById(R.id.page_num)
         pageNum.text = (page + 1).toString()
         pageNum.visibility = View.VISIBLE
@@ -84,21 +81,20 @@ class ReaderFragment : Fragment() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupImageTapEvents(view: View?) {
+    private fun setupImageTapEvents(view: View) {
         if (view is SubsamplingScaleImageView) {
             val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                 override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
                     if (view.isReady && e != null)
-                        listener?.onFragmentTap(getTouchZone(e.x))
+                        listener?.onFragmentTap(getTouchZone(e.x, view))
                     return true
                 }
             })
 
             view.setOnTouchListener { _, e -> gestureDetector.onTouchEvent(e) }
         }
-        else if (view is PhotoView) {
-            view.setOnViewTapListener { _, x, _ -> listener?.onFragmentTap(getTouchZone(x)) }
-        }
+        else if (view is PhotoView)
+            view.setOnViewTapListener { _, x, _ -> listener?.onFragmentTap(getTouchZone(x, view)) }
     }
 
     fun displayImage(image: String?, page: Int) {
@@ -112,27 +108,38 @@ class ReaderFragment : Fragment() {
             if (image != null) {
                 //TODO use something better to detect this.
                 if (image.endsWith(".gif")) {
-                    mainImageGif.visibility = View.VISIBLE
-                    mainImage.visibility = View.GONE
-                    Glide.with(activity!!)
-                        .load(image)
-                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                        .addListener(getListener())
-                        .into(mainImageGif)
-                    setupImageTapEvents(mainImageGif)
+                    mainImage = PhotoView(activity).also {
+                        initializeView(it)
+                        Glide.with(activity!!)
+                            .load(image)
+                            .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                            .addListener(getListener())
+                            .into(it)
+                        setupImageTapEvents(it)
+                    }
                 } else {
-                    mainImageGif.visibility = View.GONE
-                    mainImage.visibility = View.VISIBLE
-                    Glide.with(activity!!)
-                        .downloadOnly()
-                        .load(image)
-                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                        .addListener(getListener())
-                        .into(SubsamplingTarget(mainImage))
-                    setupImageTapEvents(mainImage)
+                    mainImage = SubsamplingScaleImageView(activity).also {
+                        initializeView(it)
+                        it.setMinimumTileDpi(160)
+                        Glide.with(activity!!)
+                            .downloadOnly()
+                            .load(image)
+                            .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                            .addListener(getListener())
+                            .into(SubsamplingTarget(it))
+                            setupImageTapEvents(it)
+                    }
                 }
             }
         }
+    }
+
+    private fun initializeView(view: View) {
+        view.background = resources.getDrawable(android.R.color.black)
+        val layoutParams = RelativeLayout
+            .LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
+        view.layoutParams = layoutParams
+        topLayout.addView(view)
     }
 
     private fun <T> getListener() : RequestListener<T> {
@@ -171,8 +178,8 @@ class ReaderFragment : Fragment() {
            displayImage(imagePath, page)
     }
 
-    private fun getTouchZone(x: Float) : TouchZone {
-        val location = x / mainImage.width
+    private fun getTouchZone(x: Float, view: View) : TouchZone {
+        val location = x / view.width
 
         if (location <= 0.4)
             return TouchZone.Left
@@ -186,7 +193,7 @@ class ReaderFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         isAttached = false
-        mainImage.recycle()
+        (mainImage as? SubsamplingScaleImageView)?.recycle()
     }
 
     override fun onAttach(context: Context) {
