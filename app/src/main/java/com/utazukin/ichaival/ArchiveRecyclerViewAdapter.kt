@@ -36,6 +36,7 @@ class ArchiveRecyclerViewAdapter(
     private val scope: CoroutineScope
 ) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
 
+    private var sortMethod: SortMethod = SortMethod.Alpha
     private val mOnClickListener: View.OnClickListener
 
     private val onLongClickListener: View.OnLongClickListener
@@ -91,11 +92,25 @@ class ArchiveRecyclerViewAdapter(
         super.onViewRecycled(holder)
     }
 
+    private fun updateSort(method: SortMethod, force: Boolean) {
+        if (method != sortMethod || force) {
+            sortMethod = method
+
+            when(method) {
+                SortMethod.Alpha -> mValues.sortBy { it.title.toLowerCase() }
+                SortMethod.Date -> mValues.sortByDescending { it.dateAdded }
+            }
+            notifyDataSetChanged()
+        }
+    }
+
+    fun updateSort(method: SortMethod) = updateSort(method, false)
+
     fun updateDataCopy(list: List<Archive>) {
         mValues.clear()
         mValues.addAll(list)
         mValuesCopy = mValues.toList()
-        notifyDataSetChanged()
+        updateSort(sortMethod, true)
     }
 
     fun getRandomArchive() : Archive? {
@@ -165,7 +180,7 @@ class ArchiveRecyclerViewAdapter(
                 }
             }
         }
-        notifyDataSetChanged()
+        updateSort(sortMethod, true)
         return mValues.size
     }
 

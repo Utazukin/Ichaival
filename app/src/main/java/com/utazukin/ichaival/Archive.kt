@@ -29,6 +29,8 @@ class Archive(json: JSONObject) {
     val id: String = json.getString("arcid")
     val tags: Map<String, List<String>>
     var isNew = false
+    var dateAdded = 0
+        private set
     val numPages: Int
         get() = DatabaseReader.getPageCount(id)
 
@@ -56,9 +58,14 @@ class Archive(json: JSONObject) {
             val trimmed = tag.trim()
             if (trimmed.contains(":")) {
                 val split = trimmed.split(":")
-                if (!mutableTags.containsKey(split[0]))
-                    mutableTags[split[0]] = mutableListOf()
-                mutableTags[split[0]]?.add(split[1])
+                val namespace = split[0]
+                if (namespace == "date_added")
+                    dateAdded = split[1].toInt()
+                else {
+                    if (!mutableTags.containsKey(namespace))
+                        mutableTags[namespace] = mutableListOf()
+                    mutableTags[namespace]?.add(split[1])
+                }
             }
             else if (!tag.isEmpty()) {
                 if (!mutableTags.containsKey("global"))

@@ -21,9 +21,7 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.SearchView
@@ -40,6 +38,7 @@ import kotlinx.coroutines.withContext
 
 class ArchiveListFragment : Fragment() {
 
+    private var sortMethod = SortMethod.Alpha
     private var listener: OnListFragmentInteractionListener? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
@@ -58,6 +57,7 @@ class ArchiveListFragment : Fragment() {
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
         countText = view.findViewById(R.id.list_count)
+        setHasOptionsMenu(true)
 
         // Set the adapter
         with(listView) {
@@ -132,6 +132,24 @@ class ArchiveListFragment : Fragment() {
         return view
     }
 
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.archive_list_menu, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.sort_menu -> {
+                fragmentManager?.let {
+                    val sortDialogFragment = SortDialogFragment.createInstance(sortMethod)
+                    sortDialogFragment.setSortChangeListener(::updateSortMethod)
+                    sortDialogFragment.show(it, "sort_popup")
+                    true
+                } ?: false
+            }
+            else -> false
+        }
+    }
+
     private fun handleArchiveLongPress(archive: Archive) : Boolean {
         fragmentManager?.let {
             val tagFragment = TagDialogFragment.newInstance(archive.id)
@@ -143,6 +161,12 @@ class ArchiveListFragment : Fragment() {
             tagFragment.show(it, "tag_popup")
         }
         return true
+    }
+
+    private fun updateSortMethod(method: SortMethod) {
+        sortMethod = method
+        val listAdapter = listView.adapter as? ArchiveRecyclerViewAdapter
+        listAdapter?.updateSort(method)
     }
 
     fun showOnlySearch(show: Boolean){
