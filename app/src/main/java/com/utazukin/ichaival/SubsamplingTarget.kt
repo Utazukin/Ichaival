@@ -25,10 +25,24 @@ import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.OnImageEventListener
 import java.io.File
 
-class SubsamplingTarget(private val target: SubsamplingScaleImageView) : Target<File> {
+class SubsamplingTarget(private val target: SubsamplingScaleImageView
+                        , private val resourceListener: (() -> Unit)? = null) : Target<File> {
     private var request: Request? = null
+    private val imageEventListener: OnImageEventListener = object: OnImageEventListener {
+        override fun onImageLoaded() {
+            resourceListener?.invoke()
+        }
+
+        override fun onReady() { }
+        override fun onTileLoadError(e: Exception?) { }
+        override fun onPreviewReleased() { }
+        override fun onPreviewLoadError(e: Exception?) { }
+        override fun onImageLoadError(e: Exception?) { }
+    }
+
     override fun onLoadStarted(placeholder: Drawable?) { }
 
     override fun onLoadFailed(errorDrawable: Drawable?) { }
@@ -48,6 +62,7 @@ class SubsamplingTarget(private val target: SubsamplingScaleImageView) : Target<
     override fun onLoadCleared(placeholder: Drawable?) { }
 
     override fun onResourceReady(resource: File, transition: Transition<in File>?) {
+        target.setOnImageEventListener(imageEventListener)
         target.setImage(ImageSource.uri(resource.absolutePath))
     }
 

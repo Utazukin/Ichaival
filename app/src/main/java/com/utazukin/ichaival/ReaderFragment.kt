@@ -125,8 +125,11 @@ class ReaderFragment : Fragment() {
                             .downloadOnly()
                             .load(image)
                             .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                            .addListener(getListener())
-                            .into(SubsamplingTarget(it))
+                            .addListener(getListener(false))
+                            .into(SubsamplingTarget(it) {
+                                pageNum.visibility = View.GONE
+                                progressBar.visibility = View.GONE
+                            })
                             setupImageTapEvents(it)
                     }
                 }
@@ -142,7 +145,7 @@ class ReaderFragment : Fragment() {
         topLayout.addView(view)
     }
 
-    private fun <T> getListener() : RequestListener<T> {
+    private fun <T> getListener(clearOnReady: Boolean = true) : RequestListener<T> {
         val fragment = this
         return object: RequestListener<T> {
             override fun onLoadFailed(
@@ -166,8 +169,10 @@ class ReaderFragment : Fragment() {
                 dataSource: DataSource?,
                 isFirstResource: Boolean
             ): Boolean {
-                pageNum.visibility = View.GONE
-                progressBar.visibility = View.GONE
+                if (clearOnReady) {
+                    pageNum.visibility = View.GONE
+                    progressBar.visibility = View.GONE
+                }
                 return false
             }
         }
