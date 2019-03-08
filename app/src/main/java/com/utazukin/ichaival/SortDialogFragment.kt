@@ -23,6 +23,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.RadioGroup
 import androidx.fragment.app.DialogFragment
 
@@ -63,6 +64,11 @@ class SortDialogFragment : DialogFragment() {
             }
         }
         return view
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.run { window?.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT) }
     }
 
     private fun getMethodFromId(id: Int) : SortMethod {
