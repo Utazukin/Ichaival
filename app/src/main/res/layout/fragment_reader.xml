@@ -31,8 +31,7 @@
             android:id="@+id/page_num"
             tools:text="25"
             android:textSize="36sp"
-            android:layout_centerHorizontal="true"
-            android:layout_above="@+id/progressBar"
+            android:layout_centerInParent="true"
             android:textColor="@android:color/darker_gray"
             android:textAlignment="center"/>
 
@@ -42,6 +41,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/progressBar"
             android:layout_centerInParent="true"
+            android:layout_below="@+id/page_num"
             android:indeterminate="true"/>
 
 </RelativeLayout>

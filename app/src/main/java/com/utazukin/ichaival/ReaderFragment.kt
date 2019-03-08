@@ -55,6 +55,8 @@ class ReaderFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
     private var retryCount = 0
+    private var layoutWidth: Int = -1
+    private var layoutHeight: Int = -1
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(
@@ -76,6 +78,11 @@ class ReaderFragment : Fragment() {
 
         progressBar = view.findViewById(R.id.progressBar)
         progressBar.visibility = View.VISIBLE
+
+        view.post {
+            layoutHeight = view.measuredHeight
+            layoutWidth = view.measuredWidth
+        }
 
         return view
     }
@@ -120,11 +127,14 @@ class ReaderFragment : Fragment() {
                 } else {
                     mainImage = SubsamplingScaleImageView(activity).also {
                         initializeView(it)
+
+                        if (layoutHeight >= 0 && layoutWidth >= 0)
+                            it.setMaxTileSize(layoutWidth, layoutHeight)
+
                         it.setMinimumTileDpi(160)
                         Glide.with(activity!!)
                             .downloadOnly()
                             .load(image)
-                            .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
                             .addListener(getListener(false))
                             .into(SubsamplingTarget(it) {
                                 pageNum.visibility = View.GONE
@@ -169,10 +179,9 @@ class ReaderFragment : Fragment() {
                 dataSource: DataSource?,
                 isFirstResource: Boolean
             ): Boolean {
-                if (clearOnReady) {
+                if (clearOnReady)
                     pageNum.visibility = View.GONE
-                    progressBar.visibility = View.GONE
-                }
+                progressBar.visibility = View.GONE
                 return false
             }
         }

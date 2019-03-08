@@ -47,7 +47,7 @@ class SubsamplingTarget(private val target: SubsamplingScaleImageView
 
     override fun onLoadFailed(errorDrawable: Drawable?) { }
 
-    override fun getSize(cb: SizeReadyCallback) { }
+    override fun getSize(cb: SizeReadyCallback) = cb.onSizeReady(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
 
     override fun getRequest(): Request? = request
 
