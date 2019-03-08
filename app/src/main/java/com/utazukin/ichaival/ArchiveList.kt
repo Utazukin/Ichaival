@@ -115,4 +115,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         super.onStop()
         ReaderTabHolder.unregisterAddListener(this)
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        prefs.unregisterOnSharedPreferenceChangeListener(this)
+    }
 }

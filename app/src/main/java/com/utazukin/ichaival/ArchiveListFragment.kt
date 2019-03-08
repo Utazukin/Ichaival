@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.view.*
 import android.widget.Button
 import android.widget.CheckBox
@@ -125,6 +126,11 @@ class ArchiveListFragment : Fragment() {
         activityScope.launch(Dispatchers.Main) {
             val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
             listAdapter.updateDataCopy(updatedList)
+
+            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+            val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
+            updateSortMethod(method)
+
             val count = listAdapter.filter(searchView.query, newCheckBox.isChecked)
             countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
             countText.visibility = View.VISIBLE
@@ -164,9 +170,15 @@ class ArchiveListFragment : Fragment() {
     }
 
     private fun updateSortMethod(method: SortMethod) {
-        sortMethod = method
-        val listAdapter = listView.adapter as? ArchiveRecyclerViewAdapter
-        listAdapter?.updateSort(method)
+        if (sortMethod != method) {
+            sortMethod = method
+
+            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+            prefs.edit().putInt(getString(R.string.sort_pref), sortMethod.value).apply()
+
+            val listAdapter = listView.adapter as? ArchiveRecyclerViewAdapter
+            listAdapter?.updateSort(method)
+        }
     }
 
     fun showOnlySearch(show: Boolean){

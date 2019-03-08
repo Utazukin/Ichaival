@@ -139,4 +139,5 @@
     <string name="sort_date">By Date Added</string>
     <string name="save_button">Save</string>
     <string name="sort_menu">Sort</string>
+    <string name="sort_pref">sort_pref</string>
 </resources>
