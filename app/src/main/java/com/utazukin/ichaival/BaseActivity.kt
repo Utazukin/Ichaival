@@ -34,6 +34,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.coroutines.CoroutineScope
@@ -50,7 +51,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         get() = Dispatchers.Main + job
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
-    protected val job: Job by lazy { Job() }
+    private lateinit var tabView: RecyclerView
+    private val job: Job by lazy { Job() }
 
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
@@ -69,11 +71,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         drawerLayout = findViewById(R.id.drawer_layout)
         navView = drawerLayout.findViewById(R.id.nav_view)
         val context = this
-        val tabView: RecyclerView = findViewById(R.id.tab_view)
+        tabView = findViewById(R.id.tab_view)
         val listener = this
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener)
+            adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener, listener, Glide.with(listener))
 
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)
@@ -141,6 +143,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     override fun onTabAdded(index: Int, id: String) {
         drawerLayout.openDrawer(navView, true)
+        tabView.scrollToPosition(index)
     }
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {

@@ -26,6 +26,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.RequestManager
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.android.synthetic.main.fragment_archive.view.*
 import kotlinx.coroutines.*
@@ -33,7 +34,8 @@ import kotlinx.coroutines.*
 class ArchiveRecyclerViewAdapter(
     private val mListener: OnListFragmentInteractionListener?,
     private val longListener: ((a: Archive) -> Boolean)?,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val glideManager: RequestManager
 ) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
 
     private var sortMethod: SortMethod = SortMethod.Alpha
@@ -74,7 +76,7 @@ class ArchiveRecyclerViewAdapter(
         holder.archiveName.text = item.title
         val job = scope.launch(Dispatchers.Main) {
             val image = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(item, holder.mContentView.context.filesDir)}
-            holder.archiveImage.setImageBitmap(image)
+            glideManager.load(image).into(holder.archiveImage)
         }
         thumbLoadingJobs[holder] = job
 

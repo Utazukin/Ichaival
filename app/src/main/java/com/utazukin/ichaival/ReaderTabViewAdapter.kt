@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,15 +18,22 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.RequestManager
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import kotlinx.coroutines.*
 
 class ReaderTabViewAdapter (
     private var openTabs: List<ReaderTab>,
-    private val listener: OnTabInteractionListener?
+    private val listener: OnTabInteractionListener?,
+    private val activityScope: CoroutineScope,
+    private val glideManager: RequestManager
 ) : RecyclerView.Adapter<ReaderTabViewAdapter.ViewHolder>(), TabUpdateListener {
 
     override fun getItemCount() = openTabs.size
@@ -34,6 +41,8 @@ class ReaderTabViewAdapter (
     private val onClickListener: View.OnClickListener
 
     private val onLongClickListener: View.OnLongClickListener
+
+    private val jobs: MutableMap<ViewHolder, Job> = mutableMapOf()
 
     init {
         onClickListener = View.OnClickListener { v ->
@@ -52,6 +61,16 @@ class ReaderTabViewAdapter (
         val item = openTabs[position]
         holder.titleView.text = item.title
         holder.pageView.text = (item.page + 1).toString()
+        jobs[holder] = activityScope.launch {
+            val thumb = withContext(Dispatchers.Default) {
+                val context = activityScope as Context
+                DatabaseReader.getArchiveImage(item.id, context.filesDir)
+            }
+            glideManager
+                .load(thumb)
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .into(holder.thumbView)
+        }
 
         with(holder.view) {
             tag = item
@@ -62,6 +81,12 @@ class ReaderTabViewAdapter (
 
     fun removeTab(position: Int) {
         ReaderTabHolder.removeTab(openTabs[position].id)
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        super.onViewRecycled(holder)
+        jobs[holder]?.cancel()
+        jobs.remove(holder)
     }
 
     override fun onTabListUpdate(tabList: List<ReaderTab>) {
@@ -88,6 +113,7 @@ class ReaderTabViewAdapter (
     inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val titleView: TextView = view.findViewById(R.id.archive_title)
         val pageView: TextView = view.findViewById(R.id.archive_page)
+        val thumbView: ImageView = view.findViewById(R.id.reader_thumb)
     }
 
     interface OnTabInteractionListener {

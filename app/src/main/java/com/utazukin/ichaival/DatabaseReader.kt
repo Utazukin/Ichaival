@@ -18,8 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.preference.Preference
 import kotlinx.coroutines.CompletableDeferred
@@ -339,14 +337,15 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             thumbDir.deleteRecursively()
     }
 
-    suspend fun getArchiveImage(archive: Archive, filesDir: File) : Bitmap? {
-        val id = archive.id
+    suspend fun getArchiveImage(archive: Archive, filesDir: File) = DatabaseReader.getArchiveImage(archive.id, filesDir)
+
+    suspend fun getArchiveImage(id: String, filesDir: File) : String? {
         val thumbDir = getThumbDir(filesDir)
 
         var image: File? = File(thumbDir, "$id.jpg")
         if (image != null && !image.exists())
             image = withContext(Dispatchers.Default) { downloadThumb(id, thumbDir) }
 
-        return if (image != null) BitmapFactory.decodeFile(image.path) else null
+        return image?.path
     }
 }

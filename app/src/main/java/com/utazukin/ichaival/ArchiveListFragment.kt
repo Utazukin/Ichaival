@@ -32,6 +32,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.bumptech.glide.Glide
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,7 +71,7 @@ class ArchiveListFragment : Fragment() {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            val temp = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, activityScope)
+            val temp = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, activityScope, Glide.with(context))
             listAdapter = temp
             adapter = temp
 
