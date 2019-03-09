@@ -35,7 +35,9 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.FileNotFoundException
 
 enum class TouchZone {
@@ -53,6 +55,7 @@ class ReaderFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
     private var retryCount = 0
+    private var createViewCalled = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -74,10 +77,8 @@ class ReaderFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBar)
         progressBar.visibility = View.VISIBLE
 
-        view.post {
-            imagePath?.let(::displayImage)
-        }
-
+        imagePath?.let(::displayImage)
+        createViewCalled = true
         return view
     }
 
@@ -188,6 +189,7 @@ class ReaderFragment : Fragment() {
 
     override fun onDetach() {
         super.onDetach()
+        createViewCalled = false
         (mainImage as? SubsamplingScaleImageView)?.recycle()
     }
 
@@ -198,8 +200,10 @@ class ReaderFragment : Fragment() {
 
         arguments?.run {
             val page = getInt(PAGE_NUM)
-            activity.launch {
-                imagePath = activity.archive?.getPageImage(page)
+            activity.launch(Dispatchers.Main) {
+                val image = withContext(Dispatchers.Default) { activity.archive?.getPageImage(page) }
+                if (createViewCalled && image != null)
+                    displayImage(image)
             }
         }
     }
@@ -215,9 +219,7 @@ class ReaderFragment : Fragment() {
 
         savedInstanceState?.run {
             page = getInt("page")
-            val image = getString("pagePath")
-            if (image != null)
-                displayImage(image)
+            imagePath = getString("pagePath")
         }
     }
 
