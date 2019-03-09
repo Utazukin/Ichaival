@@ -18,22 +18,19 @@
 
 package com.utazukin.ichaival
 
-import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
 import kotlinx.coroutines.*
+
+private const val thumbIncrease = 10
 
 class ThumbRecyclerViewAdapter(
     private val listener: ThumbInteractionListener?,
@@ -44,7 +41,6 @@ class ThumbRecyclerViewAdapter(
 
     private val onClickListener: View.OnClickListener
     var maxThumbnails = 10
-    private val thumbIncrease = 10
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
     private val imageLoadingJobs: MutableMap<ViewHolder, Job> = mutableMapOf()
@@ -90,33 +86,11 @@ class ThumbRecyclerViewAdapter(
 
             val options = RequestOptions()
             options.override(getDpAdjusted(200), getDpAdjusted(200))
+            options.diskCacheStrategy(DiskCacheStrategy.ALL)
             glide.load(image)
                 .apply(options)
                 .transition(DrawableTransitionOptions.withCrossFade())
-                .addListener(object : RequestListener<Drawable>{
-                    override fun onLoadFailed(
-                        e: GlideException?,
-                        model: Any?,
-                        target: Target<Drawable>?,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        holder.progressBar.visibility = View.GONE
-                        return false
-                    }
-
-                    override fun onResourceReady(
-                        resource: Drawable?,
-                        model: Any?,
-                        target: Target<Drawable>?,
-                        dataSource: DataSource?,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        holder.pageNumView.visibility = View.GONE
-                        holder.progressBar.visibility = View.GONE
-                        return false
-                    }
-
-                }).into(holder.thumbView)
+                .into(holder.thumbView)
         }
         imageLoadingJobs[holder] = job
     }
@@ -124,9 +98,6 @@ class ThumbRecyclerViewAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         imageLoadingJobs[holder]?.cancel()
         imageLoadingJobs.remove(holder)
-
-        holder.pageNumView.visibility = View.VISIBLE
-        holder.progressBar.visibility = View.VISIBLE
 
         super.onViewRecycled(holder)
     }
@@ -138,6 +109,5 @@ class ThumbRecyclerViewAdapter(
     inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         val thumbView: ImageView = view.findViewById(R.id.small_thumb)
         val pageNumView: TextView = view.findViewById(R.id.page_num)
-        val progressBar: ProgressBar = view.findViewById(R.id.progressBar)
     }
 }
