@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,13 +19,17 @@
 package com.utazukin.ichaival
 
 interface TabUpdateListener {
-    fun onTabListUpdate(tabList: List<ReaderTab>)
+    fun onTabListUpdate(tabList: List<ReaderTab>, restored: Boolean)
 }
 
 interface TabRemovedListener {
-    fun onTabRemoved(id: String)
+    fun onTabRemoved(index: Int, id: String)
 }
 
 interface TabAddedListener {
     fun onTabAdded(index: Int, id: String)
+}
+
+interface TabChangedListener {
+    fun onTabChanged(index: Int)
 }

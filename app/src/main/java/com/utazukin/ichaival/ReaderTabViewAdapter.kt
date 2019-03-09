@@ -34,7 +34,7 @@ class ReaderTabViewAdapter (
     private val listener: OnTabInteractionListener?,
     private val activityScope: CoroutineScope,
     private val glideManager: RequestManager
-) : RecyclerView.Adapter<ReaderTabViewAdapter.ViewHolder>(), TabUpdateListener {
+) : RecyclerView.Adapter<ReaderTabViewAdapter.ViewHolder>(), TabUpdateListener, TabRemovedListener, TabAddedListener, TabChangedListener {
 
     override fun getItemCount() = openTabs.size
 
@@ -79,19 +79,28 @@ class ReaderTabViewAdapter (
         }
     }
 
-    fun removeTab(position: Int) {
-        ReaderTabHolder.removeTab(openTabs[position].id)
-    }
-
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
         jobs[holder]?.cancel()
         jobs.remove(holder)
     }
 
-    override fun onTabListUpdate(tabList: List<ReaderTab>) {
+    override fun onTabListUpdate(tabList: List<ReaderTab>, restored: Boolean) {
         openTabs = tabList
-        notifyDataSetChanged()
+        if (restored)
+            notifyDataSetChanged()
+    }
+
+    override fun onTabAdded(index: Int, id: String) {
+        notifyItemInserted(index)
+    }
+
+    override fun onTabRemoved(index: Int, id: String) {
+        notifyItemRemoved(index)
+    }
+
+    override fun onTabChanged(index: Int) {
+        notifyItemChanged(index)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -103,11 +112,17 @@ class ReaderTabViewAdapter (
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
         ReaderTabHolder.registerTabListener(this)
+        ReaderTabHolder.registerAddListener(this)
+        ReaderTabHolder.registerRemoveListener(this)
+        ReaderTabHolder.registerChangeListener(this)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         ReaderTabHolder.unregisterTabListener(this)
+        ReaderTabHolder.unregisterRemoveListener(this)
+        ReaderTabHolder.unregisterAddListener(this)
+        ReaderTabHolder.unregisterChangeListener(this)
     }
 
     inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {

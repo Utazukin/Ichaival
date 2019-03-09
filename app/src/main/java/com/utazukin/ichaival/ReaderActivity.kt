@@ -148,10 +148,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
             }
 
             override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
-                val adapter = tabView.adapter as ReaderTabViewAdapter
-                adapter.removeTab(holder.adapterPosition)
-                val bookmarker = optionsMenu?.findItem(R.id.bookmark_archive)
-                setTabbedIcon(bookmarker, false)
+                val tab = holder.itemView.tag as? ReaderTab
+                if (tab != null) {
+                    ReaderTabHolder.removeTab(tab.id)
+
+                    if (tab.id == archive?.id) {
+                        val bookmarker = optionsMenu?.findItem(R.id.bookmark_archive)
+                        setTabbedIcon(bookmarker, false)
+                    }
+                }
             }
         }
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)

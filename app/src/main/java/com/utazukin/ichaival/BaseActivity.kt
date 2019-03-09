@@ -90,8 +90,9 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
             }
 
             override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
-                val adapter = tabView.adapter as ReaderTabViewAdapter
-                adapter.removeTab(holder.adapterPosition)
+                val tab = holder.itemView.tag as? ReaderTab
+                if (tab != null)
+                    ReaderTabHolder.removeTab(tab.id)
             }
         }
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)

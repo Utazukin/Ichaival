@@ -84,7 +84,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
         ReaderTabHolder.unregisterRemoveListener(this)
     }
 
-    override fun onTabRemoved(id: String) {
+    override fun onTabRemoved(index: Int, id: String) {
         if (id == archiveId)
             bookmarkButton.text = getString(R.string.bookmark)
     }
