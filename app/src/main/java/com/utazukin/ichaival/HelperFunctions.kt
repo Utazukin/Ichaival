@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2019 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@
 package com.utazukin.ichaival
 
 import android.content.res.Resources
+import javax.microedition.khronos.egl.EGL10
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.egl.EGLContext
 
 fun getDpWidth(pxWidth: Int) : Int {
     val metrics = Resources.getSystem().displayMetrics
@@ -28,4 +31,39 @@ fun getDpWidth(pxWidth: Int) : Int {
 fun getDpAdjusted(pxSize: Int) : Int {
     val metrics = Resources.getSystem().displayMetrics
     return (pxSize * metrics.density).toInt()
+}
+
+private var mMaxTextureSize = -1
+//Converted to Kotlin from
+//https://stackoverflow.com/questions/7428996/hw-accelerated-activity-how-to-get-opengl-texture-size-limit/26823288#26823288
+fun getMaxTextureSize() : Int {
+    if (mMaxTextureSize > 0)
+        return mMaxTextureSize
+
+    val IMAGE_MAX_BITMAP_DIMENSION = 2048
+    val egl: EGL10 = EGLContext.getEGL() as EGL10
+    val display = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY)
+
+    val version = IntArray(2)
+    egl.eglInitialize(display, version)
+
+    val totalConfigurations = IntArray(1)
+    egl.eglGetConfigs(display, null, 0, totalConfigurations)
+
+    val configurationsList = Array<EGLConfig?>(totalConfigurations[0]) { null }
+    egl.eglGetConfigs(display, configurationsList, totalConfigurations[0], totalConfigurations)
+
+    val textureSize = IntArray(1)
+    var maxTextureSize = 0
+
+    for (configuration in configurationsList) {
+        egl.eglGetConfigAttrib(display, configuration, EGL10.EGL_MAX_PBUFFER_WIDTH, textureSize)
+
+        if (maxTextureSize < textureSize[0])
+            maxTextureSize = textureSize[0]
+    }
+
+    egl.eglTerminate(display)
+    mMaxTextureSize = Math.max(maxTextureSize, IMAGE_MAX_BITMAP_DIMENSION)
+    return maxTextureSize
 }

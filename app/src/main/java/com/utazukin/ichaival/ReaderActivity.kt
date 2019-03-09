@@ -25,7 +25,6 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -61,7 +60,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
     private var mVisible: Boolean = false
     private val mHideRunnable = Runnable { hide() }
 
-    private var archive: Archive? = null
+    var archive: Archive? = null
+        private set
     private var currentPage = 0
     private val loadedPages = mutableListOf<Boolean>()
     private var optionsMenu: Menu? = null
@@ -337,14 +337,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
 
     private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
 
-        override fun getItem(position: Int): Fragment {
-            val fragment = ReaderFragment.createInstance(position)
-            launch {
-                val image = withContext(Dispatchers.Default) { archive?.getPageImage(position) }
-                fragment.displayImage(image, position)
-            }
-            return fragment
-        }
+        override fun getItem(position: Int) = ReaderFragment.createInstance(position)
 
         override fun getCount(): Int = loadedPages.size
     }

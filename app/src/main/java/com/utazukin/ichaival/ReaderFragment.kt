@@ -35,6 +35,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
+import kotlinx.coroutines.launch
 import java.io.FileNotFoundException
 
 enum class TouchZone {
@@ -43,11 +44,8 @@ enum class TouchZone {
     Center
 }
 
-
 class ReaderFragment : Fragment() {
     private var listener: OnFragmentInteractionListener? = null
-    private var imageToDisplay: String? = null
-    private var isAttached = false
     private var page = 0
     private var imagePath: String? = null
     private var mainImage: View? = null
@@ -55,10 +53,7 @@ class ReaderFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
     private var retryCount = 0
-    private var layoutWidth: Int = -1
-    private var layoutHeight: Int = -1
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -66,8 +61,8 @@ class ReaderFragment : Fragment() {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_reader, container, false)
 
-        arguments?.let {
-            page = it.getInt(PAGE_NUM)
+        arguments?.run {
+            page = getInt(PAGE_NUM)
         }
 
         retryCount = 0
@@ -80,8 +75,7 @@ class ReaderFragment : Fragment() {
         progressBar.visibility = View.VISIBLE
 
         view.post {
-            layoutHeight = view.measuredHeight
-            layoutWidth = view.measuredWidth
+            imagePath?.let(::displayImage)
         }
 
         return view
@@ -104,47 +98,36 @@ class ReaderFragment : Fragment() {
             view.setOnViewTapListener { _, x, _ -> listener?.onFragmentTap(getTouchZone(x, view)) }
     }
 
-    fun displayImage(image: String?, page: Int) {
-        this.page = page
-        pageNum.text = (page + 1).toString()
-        if (!isAttached)
-           imageToDisplay = image
-        else {
-            imagePath = image
+    private fun displayImage(image: String) {
+        imagePath = image
 
-            if (image != null) {
-                //TODO use something better to detect this.
-                if (image.endsWith(".gif")) {
-                    mainImage = PhotoView(activity).also {
-                        initializeView(it)
-                        Glide.with(activity!!)
-                            .load(image)
-                            .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                            .addListener(getListener())
-                            .into(it)
-                        setupImageTapEvents(it)
-                    }
-                } else {
-                    mainImage = SubsamplingScaleImageView(activity).also {
-                        initializeView(it)
-
-                        if (layoutHeight >= 0 && layoutWidth >= 0)
-                            it.setMaxTileSize(layoutWidth, layoutHeight)
-
-                        it.setMinimumTileDpi(160)
-                        Glide.with(activity!!)
-                            .downloadOnly()
-                            .load(image)
-                            .addListener(getListener(false))
-                            .into(SubsamplingTarget(it) {
-                                pageNum.visibility = View.GONE
-                                progressBar.visibility = View.GONE
-                            })
-                            setupImageTapEvents(it)
-                    }
-                }
+        //TODO use something better to detect this.
+        mainImage = if (image.endsWith(".gif")) {
+            PhotoView(activity).also {
+                initializeView(it)
+                Glide.with(activity!!)
+                    .load(image)
+                    .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                    .addListener(getListener())
+                    .into(it)
             }
-        }
+        } else {
+            SubsamplingScaleImageView(activity).also {
+                initializeView(it)
+
+                it.setMaxTileSize(getMaxTextureSize())
+                it.setMinimumTileDpi(160)
+
+                Glide.with(activity!!)
+                    .downloadOnly()
+                    .load(image)
+                    .addListener(getListener(false))
+                    .into (SubsamplingTarget(it) {
+                        pageNum.visibility = View.GONE
+                        progressBar.visibility = View.GONE
+                    })
+            }
+        }.also { setupImageTapEvents(it) }
     }
 
     private fun initializeView(view: View) {
@@ -188,8 +171,7 @@ class ReaderFragment : Fragment() {
     }
 
     fun reloadImage() {
-       if (imagePath != null)
-           displayImage(imagePath, page)
+        imagePath?.let { displayImage(it) }
     }
 
     private fun getTouchZone(x: Float, view: View) : TouchZone {
@@ -206,23 +188,19 @@ class ReaderFragment : Fragment() {
 
     override fun onDetach() {
         super.onDetach()
-        isAttached = false
         (mainImage as? SubsamplingScaleImageView)?.recycle()
     }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            isAttached = true
-            listener = context
+        val activity = context as ReaderActivity
+        listener = activity
 
-            if (imageToDisplay != null) {
-                val image = imageToDisplay
-                imageToDisplay = null
-                displayImage(image, page)
+        arguments?.run {
+            val page = getInt(PAGE_NUM)
+            activity.launch {
+                imagePath = activity.archive?.getPageImage(page)
             }
-        } else {
-            throw RuntimeException("$context must implement OnFragmentInteractionListener")
         }
     }
 
@@ -237,7 +215,9 @@ class ReaderFragment : Fragment() {
 
         savedInstanceState?.run {
             page = getInt("page")
-            displayImage(getString("pagePath"), page)
+            val image = getString("pagePath")
+            if (image != null)
+                displayImage(image)
         }
     }
 
