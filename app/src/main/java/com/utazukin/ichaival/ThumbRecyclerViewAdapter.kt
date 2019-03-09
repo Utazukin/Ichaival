@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
@@ -91,6 +92,7 @@ class ThumbRecyclerViewAdapter(
             options.override(getDpAdjusted(200), getDpAdjusted(200))
             glide.load(image)
                 .apply(options)
+                .transition(DrawableTransitionOptions.withCrossFade())
                 .addListener(object : RequestListener<Drawable>{
                     override fun onLoadFailed(
                         e: GlideException?,

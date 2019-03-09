@@ -33,11 +33,11 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import kotlinx.coroutines.*
-
 
 private const val ARCHIVE_ID = "arcid"
 
@@ -95,25 +95,28 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     }
 
     private fun setUpTags() {
-        val archiveCopy = archive ?: return
+        archive?.let {
+            for (pair in it.tags) {
+                if (pair.value.isEmpty())
+                    continue
 
-        for (pair in archiveCopy.tags) {
-            if (pair.value.isEmpty())
-                continue
+                val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
+                val namespaceLayout = FlexboxLayout(context)
+                namespaceLayout.flexWrap = FlexWrap.WRAP
+                namespaceLayout.flexDirection = FlexDirection.ROW
+                tagLayout.addView(
+                    namespaceLayout,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                val namespaceView = createTagView(namespace)
+                namespaceLayout.addView(namespaceView)
 
-            val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
-            val namespaceLayout = FlexboxLayout(context)
-            namespaceLayout.flexWrap = FlexWrap.WRAP
-            namespaceLayout.flexDirection = FlexDirection.ROW
-            tagLayout.addView(namespaceLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            val namespaceView = createTagView(namespace)
-            namespaceLayout.addView(namespaceView)
-
-            for (tag in pair.value) {
-                val tagView = createTagView(tag)
-                namespaceLayout.addView(tagView)
-                val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
-                tagView.setOnClickListener { tagListener?.onTagInteraction(searchTag) }
+                for (tag in pair.value) {
+                    val tagView = createTagView(tag)
+                    namespaceLayout.addView(tagView)
+                    val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
+                    tagView.setOnClickListener { tagListener?.onTagInteraction(searchTag) }
+                }
             }
         }
     }
@@ -165,7 +168,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
             val thumbView: ImageView = view.findViewById(R.id.cover)
             val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }
             val request = Glide.with(thumbView).load(thumb)
-            request.into(thumbView)
+            request.transition(DrawableTransitionOptions.withCrossFade()).into(thumbView)
 
             //Replace the thumbnail with the full size image.
             val image = withContext(Dispatchers.Default) { archive?.getPageImage(0) }
