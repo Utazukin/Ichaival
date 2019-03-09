@@ -18,8 +18,8 @@
 
 package com.utazukin.ichaival
 
-interface TabUpdateListener {
-    fun onTabListUpdate(tabList: List<ReaderTab>, restored: Boolean)
+interface TabsRestoredListener {
+    fun onTabsRestored()
 }
 
 interface TabRemovedListener {
@@ -33,3 +33,10 @@ interface TabAddedListener {
 interface TabChangedListener {
     fun onTabChanged(index: Int)
 }
+
+interface TabsClearedListener {
+    fun onTabsCleared(oldSize: Int)
+}
+
+interface ReaderTabListener
+    : TabsRestoredListener, TabRemovedListener, TabAddedListener, TabChangedListener, TabsClearedListener

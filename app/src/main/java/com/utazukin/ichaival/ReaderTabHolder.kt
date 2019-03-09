@@ -27,7 +27,7 @@ object ReaderTabHolder {
 
     private val openTabs = mutableMapOf<String, ReaderTab>()
 
-    private val listeners = mutableSetOf<TabUpdateListener>()
+    private val restoreListeners = mutableSetOf<TabsRestoredListener>()
 
     private val removeListeners = mutableSetOf<TabRemovedListener>()
 
@@ -35,10 +35,15 @@ object ReaderTabHolder {
 
     private val changeListeners = mutableSetOf<TabChangedListener>()
 
+    private val clearListeners = mutableSetOf<TabsClearedListener>()
+
     private var needsReload = true
 
-    fun getCurrentPage(id: String?) : Int {
-        return if (id != null && openTabs.containsKey(id)) openTabs[id]!!.page else 0
+    private val _tabs = mutableListOf<ReaderTab>()
+    val tabs: List<ReaderTab> = _tabs
+
+    fun getCurrentPage(id: String) : Int {
+        return openTabs[id]?.page ?: 0
     }
 
     fun updatePageIfTabbed(id: String, page: Int) {
@@ -46,15 +51,14 @@ object ReaderTabHolder {
 
         if (tab != null) {
             tab.page = page
-            val index = openTabs.keys.indexOf(id)
-            updateListeners()
+            val index = tabs.indexOf(tab)
             updateChangeListeners(index)
         }
     }
 
-    fun registerTabListener(listener: TabUpdateListener) = listeners.add(listener)
+    fun registerRestoreListener(listener: TabsRestoredListener) = restoreListeners.add(listener)
 
-    fun unregisterTabListener(listener: TabUpdateListener) = listeners.remove(listener)
+    fun unregisterRestoreListener(listener: TabsRestoredListener) = restoreListeners.remove(listener)
 
     fun registerRemoveListener(listener: TabRemovedListener) = removeListeners.add(listener)
 
@@ -68,10 +72,33 @@ object ReaderTabHolder {
 
     fun unregisterChangeListener(listener: TabChangedListener) = changeListeners.remove(listener)
 
+    fun registerClearListener(listener: TabsClearedListener) = clearListeners.add(listener)
+
+    fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
+
+    fun registerListener(listener: ReaderTabListener) {
+        registerAddListener(listener)
+        registerRemoveListener(listener)
+        registerChangeListener(listener)
+        registerRestoreListener(listener)
+        registerClearListener(listener)
+    }
+
+    fun unregisterListener(listener: ReaderTabListener) {
+        unregisterAddListener(listener)
+        unregisterRemoveListener(listener)
+        unregisterChangeListener(listener)
+        unregisterRestoreListener(listener)
+        unregisterClearListener(listener)
+    }
+
     fun addTab(archive: Archive, page: Int) {
-        openTabs[archive.id] = ReaderTab(archive, page)
-        updateListeners()
-        updateAddListeners(archive.id)
+        if (!openTabs.containsKey(archive.id)) {
+            val tab = ReaderTab(archive, page)
+            openTabs[archive.id] = tab
+            _tabs.add(tab)
+            updateAddListeners(archive.id)
+        }
     }
 
     fun isTabbed(id: String?) : Boolean {
@@ -79,15 +106,19 @@ object ReaderTabHolder {
     }
 
     fun removeTab(id: String) {
-        val index = openTabs.keys.indexOf(id)
-        openTabs.remove(id)
-        updateListeners()
-        updateRemoveListeners(index, id)
+        val tabIndex = tabs.indexOfFirst { it.id == id }
+        if (tabIndex >= 0) {
+            openTabs.remove(id)
+            _tabs.removeAt(tabIndex)
+            updateRemoveListeners(tabIndex, id)
+        }
     }
 
     fun removeAll() {
+        val size = openTabs.size
         openTabs.clear()
-        updateListeners(true)
+        _tabs.clear()
+        updateClearListeners(size)
     }
 
     fun restoreTabs(savedInstance: Bundle?) {
@@ -97,10 +128,13 @@ object ReaderTabHolder {
                 val titles = it.getStringArrayList(titleKey) ?: return
                 val pages = it.getIntArray(pageKey) ?: return
 
+                _tabs.clear()
                 for (i in 0 until ids.size) {
-                    openTabs[ids[i]] = ReaderTab(ids[i], titles[i], pages[i])
+                    val tab = ReaderTab(ids[i], titles[i], pages[i])
+                    openTabs[ids[i]] = tab
+                    _tabs.add(tab)
                 }
-                updateListeners(true)
+                updateRestoreListeners()
             }
             needsReload = false
         }
@@ -134,10 +168,9 @@ object ReaderTabHolder {
             listener.onTabAdded(index, id)
     }
 
-    private fun updateListeners(restored: Boolean = false) {
-        val updatedList = getTabList()
-        for (listener in listeners)
-            listener.onTabListUpdate(updatedList, restored)
+    private fun updateRestoreListeners() {
+        for (listener in restoreListeners)
+            listener.onTabsRestored()
     }
 
     private fun updateChangeListeners(index: Int) {
@@ -145,8 +178,9 @@ object ReaderTabHolder {
             listener.onTabChanged(index)
     }
 
-    fun getTabList() : List<ReaderTab> {
-        return openTabs.values.toList()
+    private fun updateClearListeners(oldSize: Int) {
+        for (listener in clearListeners)
+            listener.onTabsCleared(oldSize)
     }
 }
 

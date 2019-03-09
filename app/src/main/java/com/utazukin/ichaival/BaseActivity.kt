@@ -75,7 +75,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val listener = this
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(ReaderTabHolder.getTabList(), listener, listener, Glide.with(listener))
+            adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener))
 
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)

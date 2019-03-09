@@ -30,13 +30,12 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import kotlinx.coroutines.*
 
 class ReaderTabViewAdapter (
-    private var openTabs: List<ReaderTab>,
     private val listener: OnTabInteractionListener?,
     private val activityScope: CoroutineScope,
     private val glideManager: RequestManager
-) : RecyclerView.Adapter<ReaderTabViewAdapter.ViewHolder>(), TabUpdateListener, TabRemovedListener, TabAddedListener, TabChangedListener {
+) : RecyclerView.Adapter<ReaderTabViewAdapter.ViewHolder>(), ReaderTabListener {
 
-    override fun getItemCount() = openTabs.size
+    override fun getItemCount() = ReaderTabHolder.tabs.size
 
     private val onClickListener: View.OnClickListener
 
@@ -58,7 +57,7 @@ class ReaderTabViewAdapter (
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = openTabs[position]
+        val item = ReaderTabHolder.tabs[position]
         holder.titleView.text = item.title
         holder.pageView.text = (item.page + 1).toString()
         jobs[holder] = activityScope.launch {
@@ -85,10 +84,8 @@ class ReaderTabViewAdapter (
         jobs.remove(holder)
     }
 
-    override fun onTabListUpdate(tabList: List<ReaderTab>, restored: Boolean) {
-        openTabs = tabList
-        if (restored)
-            notifyDataSetChanged()
+    override fun onTabsRestored() {
+        notifyDataSetChanged()
     }
 
     override fun onTabAdded(index: Int, id: String) {
@@ -103,6 +100,10 @@ class ReaderTabViewAdapter (
         notifyItemChanged(index)
     }
 
+    override fun onTabsCleared(oldSize: Int) {
+        notifyItemRangeRemoved(0, oldSize)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.reader_tab, parent, false)
@@ -111,18 +112,12 @@ class ReaderTabViewAdapter (
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
-        ReaderTabHolder.registerTabListener(this)
-        ReaderTabHolder.registerAddListener(this)
-        ReaderTabHolder.registerRemoveListener(this)
-        ReaderTabHolder.registerChangeListener(this)
+        ReaderTabHolder.registerListener(this)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
-        ReaderTabHolder.unregisterTabListener(this)
-        ReaderTabHolder.unregisterRemoveListener(this)
-        ReaderTabHolder.unregisterAddListener(this)
-        ReaderTabHolder.unregisterChangeListener(this)
+        ReaderTabHolder.unregisterListener(this)
     }
 
     inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
