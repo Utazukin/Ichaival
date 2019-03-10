@@ -18,16 +18,22 @@
 
 package com.utazukin.ichaival
 
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
+import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.Target
 import kotlinx.coroutines.*
 
 private const val thumbIncrease = 10
@@ -85,11 +91,32 @@ class ThumbRecyclerViewAdapter(
             }
 
             val options = RequestOptions()
-            options.override(getDpAdjusted(200), getDpAdjusted(200))
+            options.override(getDpAdjusted(200))
             options.diskCacheStrategy(DiskCacheStrategy.ALL)
             glide.load(image)
                 .apply(options)
                 .transition(DrawableTransitionOptions.withCrossFade())
+                .addListener(object: RequestListener<Drawable>{
+                    override fun onLoadFailed(e: GlideException?,
+                                              model: Any?,
+                                              target: Target<Drawable>?,
+                                              isFirstResource: Boolean): Boolean {
+                        return false
+                    }
+
+                    override fun onResourceReady(resource: Drawable?,
+                                                 model: Any?,
+                                                 target: Target<Drawable>?,
+                                                 dataSource: DataSource?,
+                                                 isFirstResource: Boolean): Boolean {
+                        val params = holder.thumbView.layoutParams
+                        params.height = RelativeLayout.LayoutParams.WRAP_CONTENT
+                        holder.thumbView.layoutParams = params
+                        holder.thumbView.adjustViewBounds = true
+                        return false
+                    }
+
+                })
                 .into(holder.thumbView)
         }
         imageLoadingJobs[holder] = job
@@ -98,6 +125,11 @@ class ThumbRecyclerViewAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         imageLoadingJobs[holder]?.cancel()
         imageLoadingJobs.remove(holder)
+
+        val params = holder.thumbView.layoutParams
+        params.height = getDpAdjusted(200)
+        holder.thumbView.adjustViewBounds = false
+        holder.thumbView.layoutParams = params
 
         super.onViewRecycled(holder)
     }
