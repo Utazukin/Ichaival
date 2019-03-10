@@ -37,7 +37,7 @@ import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.*
 
-class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
+class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -114,8 +114,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
                     loadImage(page)
                     image_pager.setCurrentItem(page, false)
 
-                    val bookmarker = optionsMenu?.findItem(R.id.bookmark_archive)
-                    setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(arcid))
+                    setTabbedIcon(ReaderTabHolder.isTabbed(arcid))
                 }
             }
         }
@@ -149,18 +148,21 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener {
 
             override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
                 val tab = holder.itemView.tag as? ReaderTab
-                if (tab != null) {
+                if (tab != null)
                     ReaderTabHolder.removeTab(tab.id)
-
-                    if (tab.id == archive?.id) {
-                        val bookmarker = optionsMenu?.findItem(R.id.bookmark_archive)
-                        setTabbedIcon(bookmarker, false)
-                    }
-                }
             }
         }
         ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
     }
+
+    override fun onTabRemoved(index: Int, id: String) {
+        if (id == archive?.id)
+            setTabbedIcon(false)
+    }
+
+    override fun onTabsCleared(oldSize: Int) = setTabbedIcon(false)
+
+    private fun setTabbedIcon(tabbed: Boolean) = setTabbedIcon(optionsMenu?.findItem(R.id.bookmark_archive), tabbed)
 
     private fun adjustLoadedPages(page: Int) : Boolean {
         if (page >= loadedPages.size) {

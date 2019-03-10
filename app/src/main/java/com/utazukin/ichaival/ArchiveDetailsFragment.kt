@@ -41,7 +41,7 @@ import kotlinx.coroutines.*
 
 private const val ARCHIVE_ID = "arcid"
 
-class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
+class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener {
     private var archiveId: String? = null
     private var archive: Archive? = null
     private lateinit var tagLayout: LinearLayout
@@ -87,6 +87,10 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener {
     override fun onTabRemoved(index: Int, id: String) {
         if (id == archiveId)
             bookmarkButton.text = getString(R.string.bookmark)
+    }
+
+    override fun onTabsCleared(oldSize: Int) {
+        bookmarkButton.text = getString(R.string.bookmark)
     }
 
     override fun onDestroy() {
