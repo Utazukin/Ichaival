@@ -28,12 +28,11 @@
 <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
         tools:context=".ArchiveDetailsFragment">
 
 
     <ImageView
-            android:layout_width="wrap_content"
+            android:layout_width="175dp"
             tools:srcCompat="@tools:sample/backgrounds/scenic"
             android:id="@+id/cover"
             app:layout_constraintStart_toStartOf="parent"
@@ -52,8 +51,6 @@
             android:layout_height="0dp"
             android:id="@+id/title"
             android:textSize="24sp"
-            app:layout_constraintStart_toEndOf="@id/cover"
-            android:layout_marginStart="8dp"
             tools:text="Title"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="8dp"
@@ -62,8 +59,10 @@
             app:layout_constraintBottom_toTopOf="@+id/read_button"
             app:autoSizeTextType="uniform"
             app:autoSizeMinTextSize="12sp"
-            app:autoSizeMaxTextSize="36sp"
-            android:layout_marginEnd="8dp"/>
+            app:autoSizeMaxTextSize="24sp"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintStart_toEndOf="@+id/cover"
+            android:layout_marginStart="8dp"/>
 
     <Button
             android:text="@string/bookmark"
@@ -90,6 +89,16 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintWidth_max="200dp"
             android:layout_marginEnd="8dp"/>
+
+    <View
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintTop_toBottomOf="@id/cover"
+            android:layout_marginTop="16dp"
+            app:layout_constraintBottom_toTopOf="@+id/tag_layout"
+            android:layout_marginBottom="8dp"/>
 
     <LinearLayout
             android:orientation="vertical"
