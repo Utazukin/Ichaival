@@ -34,7 +34,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:checkedButton="@+id/rad_alpha"
-            android:id="@+id/sort_group">
+            android:id="@+id/sort_group"
+            >
 
         <RadioButton
                 android:text="@string/alpha_sort"
@@ -53,10 +54,46 @@
                 android:textSize="18sp"/>
     </RadioGroup>
 
+    <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            />
+
     <Space
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"/>
+
+    <TextView
+            android:text="@string/sort_direction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"/>
+
+    <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/direction_group"
+            android:paddingBottom="20dp"
+            android:checkedButton="@+id/rad_asc">
+
+        <RadioButton
+                android:text="@string/sort_asc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/rad_asc"
+                android:layout_weight="1"
+                android:textSize="18sp"/>
+
+        <RadioButton
+                android:text="@string/sort_desc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/rad_desc"
+                android:layout_weight="1"
+                android:textSize="18sp"/>
+    </RadioGroup>
 
     <Button
             android:text="@string/save_button"

@@ -28,6 +28,7 @@ import android.widget.RadioGroup
 import androidx.fragment.app.DialogFragment
 
 private const val SORT_KEY = "sort_method"
+private const val DIR_KEY = "sort_direction"
 
 enum class SortMethod(val value: Int) {
     Alpha(1),
@@ -40,28 +41,35 @@ enum class SortMethod(val value: Int) {
 }
 
 class SortDialogFragment : DialogFragment() {
-    private lateinit var sortGroup: RadioGroup
-    private lateinit var saveButton: Button
-    private var sortMethod: SortMethod = SortMethod.Alpha
-    private var changeListener: ((method: SortMethod) -> Unit)? = null
+    private var changeListener: ((method: SortMethod, desc: Boolean) -> Unit)? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.sort_popup_layout, container, false)
 
-        arguments?.run { sortMethod = SortMethod.fromInt(getInt(SORT_KEY, 1)) ?: SortMethod.Alpha }
+        var sortMethod = SortMethod.Alpha
+        var descending = false
+        arguments?.run {
+            sortMethod = SortMethod.fromInt(getInt(SORT_KEY, 1)) ?: SortMethod.Alpha
+            descending = getBoolean(DIR_KEY, false)
+        }
 
         view?.run {
-            sortGroup = findViewById(R.id.sort_group)
+            val sortGroup: RadioGroup = findViewById(R.id.sort_group)
 
             sortGroup.setOnCheckedChangeListener { _, id -> sortMethod = getMethodFromId(id) }
 
-            saveButton = findViewById(R.id.save_button)
-            saveButton.setOnClickListener { changeListener?.invoke(sortMethod); dismiss() }
+            val dirGroup: RadioGroup = findViewById(R.id.direction_group)
+            dirGroup.setOnCheckedChangeListener { _, id -> descending = getDirectionFromId(id) }
+
+            val saveButton: Button = findViewById(R.id.save_button)
+            saveButton.setOnClickListener { changeListener?.invoke(sortMethod, descending); dismiss() }
 
             when(sortMethod) {
                 SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
                 SortMethod.Date -> sortGroup.check(R.id.rad_date)
             }
+
+            dirGroup.check(if (descending) R.id.rad_desc else R.id.rad_asc)
         }
         return view
     }
@@ -79,15 +87,26 @@ class SortDialogFragment : DialogFragment() {
         }
     }
 
-    fun setSortChangeListener(listener: (method: SortMethod) -> Unit) {
+    private fun getDirectionFromId(id: Int) : Boolean {
+        return when(id) {
+            R.id.rad_asc -> false
+            R.id.rad_desc -> true
+            else -> false
+        }
+    }
+
+    fun setSortChangeListener(listener: (method: SortMethod, desc: Boolean) -> Unit) {
         changeListener = listener
     }
 
     companion object {
         @JvmStatic
-        fun createInstance(currentSort: SortMethod) : SortDialogFragment {
+        fun createInstance(currentSort: SortMethod, descending: Boolean) : SortDialogFragment {
             return SortDialogFragment().apply {
-                arguments = Bundle().apply {putInt(SORT_KEY, currentSort.value)}
+                arguments = Bundle().apply {
+                    putInt(SORT_KEY, currentSort.value)
+                    putBoolean(DIR_KEY, descending)
+                }
             }
         }
     }

@@ -39,6 +39,7 @@ class ArchiveRecyclerViewAdapter(
 ) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
 
     private var sortMethod: SortMethod = SortMethod.Alpha
+    private var descending = false
     private val mOnClickListener: View.OnClickListener
 
     private val onLongClickListener: View.OnLongClickListener
@@ -94,19 +95,30 @@ class ArchiveRecyclerViewAdapter(
         super.onViewRecycled(holder)
     }
 
-    private fun updateSort(method: SortMethod, force: Boolean) {
-        if (method != sortMethod || force) {
+    private fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
+        if (method != sortMethod || descending != desc || force) {
             sortMethod = method
+            descending = desc
 
             when(method) {
-                SortMethod.Alpha -> mValues.sortBy { it.title.toLowerCase() }
-                SortMethod.Date -> mValues.sortByDescending { it.dateAdded }
+                SortMethod.Alpha -> {
+                    if (descending)
+                        mValues.sortByDescending { it.title.toLowerCase() }
+                    else
+                        mValues.sortBy { it.title.toLowerCase() }
+                }
+                SortMethod.Date -> {
+                    if (descending)
+                        mValues.sortByDescending { it.dateAdded }
+                    else
+                        mValues.sortBy { it.dateAdded }
+                }
             }
             notifyDataSetChanged()
         }
     }
 
-    fun updateSort(method: SortMethod) = updateSort(method, false)
+    fun updateSort(method: SortMethod, descending: Boolean) = updateSort(method, descending, false)
 
     fun updateDataCopy(list: List<Archive>) {
         mValues.clear()
@@ -182,7 +194,7 @@ class ArchiveRecyclerViewAdapter(
                 }
             }
         }
-        updateSort(sortMethod, true)
+        updateSort(sortMethod, descending, true)
         return mValues.size
     }
 

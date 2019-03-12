@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.view.*
@@ -41,6 +42,7 @@ import kotlinx.coroutines.withContext
 class ArchiveListFragment : Fragment() {
 
     private var sortMethod = SortMethod.Alpha
+    private var descending = false
     private var listener: OnListFragmentInteractionListener? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
@@ -130,7 +132,9 @@ class ArchiveListFragment : Fragment() {
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
-            updateSortMethod(method)
+
+            val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
+            updateSortMethod(method, descending, prefs)
 
             val count = listAdapter.filter(searchView.query, newCheckBox.isChecked)
             countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
@@ -147,8 +151,9 @@ class ArchiveListFragment : Fragment() {
         return when (item.itemId) {
             R.id.sort_menu -> {
                 fragmentManager?.let {
-                    val sortDialogFragment = SortDialogFragment.createInstance(sortMethod)
-                    sortDialogFragment.setSortChangeListener(::updateSortMethod)
+                    val sortDialogFragment = SortDialogFragment.createInstance(sortMethod, descending)
+                    val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+                    sortDialogFragment.setSortChangeListener { method, desc -> updateSortMethod(method, desc, prefs) }
                     sortDialogFragment.show(it, "sort_popup")
                     true
                 } ?: false
@@ -170,15 +175,24 @@ class ArchiveListFragment : Fragment() {
         return true
     }
 
-    private fun updateSortMethod(method: SortMethod) {
+    private fun updateSortMethod(method: SortMethod, desc: Boolean, prefs: SharedPreferences) {
+        var updated = false
         if (sortMethod != method) {
             sortMethod = method
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
             prefs.edit().putInt(getString(R.string.sort_pref), sortMethod.value).apply()
+            updated = true
+        }
 
+        if (desc != descending) {
+            descending = desc
+            prefs.edit().putBoolean(getString(R.string.desc_pref), descending).apply()
+            updated = true
+        }
+
+        if (updated) {
             val listAdapter = listView.adapter as? ArchiveRecyclerViewAdapter
-            listAdapter?.updateSort(method)
+            listAdapter?.updateSort(sortMethod, descending)
         }
     }
 
