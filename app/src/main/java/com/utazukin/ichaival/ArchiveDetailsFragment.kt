@@ -172,7 +172,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             val thumbView: ImageView = view.findViewById(R.id.cover)
             val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }
             val request = Glide.with(thumbView).load(thumb)
-            request.transition(DrawableTransitionOptions.withCrossFade()).into(thumbView)
+            request.into(thumbView)
 
             //Replace the thumbnail with the full size image.
             val image = withContext(Dispatchers.Default) { archive?.getPageImage(0) }
