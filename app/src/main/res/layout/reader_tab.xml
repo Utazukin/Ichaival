@@ -36,24 +36,24 @@
 
     <TextView
             android:id="@+id/archive_title"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:textStyle="bold"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp"
             tools:text="Title"
-            android:paddingEnd="8dp"
             android:layout_weight="8"
-            android:layout_width="0dp"/>
+            android:layout_width="0dp"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:ellipsize="end"
+            android:maxLines="4"/>
 
     <TextView
             android:id="@+id/archive_page"
-            android:textAlignment="textEnd"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:textStyle="bold"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp"
             tools:text="220"
-            android:paddingEnd="8dp"
             android:layout_weight="1"
-            android:layout_width="wrap_content"/>
+            android:layout_width="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:gravity="center_vertical|end"
+            android:paddingEnd="8dp"/>
 </LinearLayout>
