@@ -88,8 +88,10 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
     }
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
-        super.onTabInteraction(tab, longPress)
-        finish()
+        if (!longPress || tab.id != archiveId) {
+            super.onTabInteraction(tab, longPress)
+            finish()
+        }
     }
 
     override fun addIntentFlags(intent: Intent, id: String) {
