@@ -38,7 +38,7 @@ import kotlinx.coroutines.*
 private const val ARCHIVE_ID = "arcid"
 private const val MAX_PAGES = "max pages"
 
-class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
+class GalleryPreviewFragment : Fragment() {
     private var archiveId: String? = null
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
@@ -93,7 +93,6 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
     }
 
     private fun setGalleryView(view: View) {
-        val listener: ThumbInteractionListener = this
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
         with(listView) {
             post {
@@ -104,7 +103,7 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(listener, Glide.with(activity!!), activityScope, archive!!)
+            thumbAdapter = ThumbRecyclerViewAdapter(activity as? ThumbInteractionListener, Glide.with(activity!!), activityScope, archive!!)
             if (savedPageCount > 0)
                 thumbAdapter.maxThumbnails = savedPageCount
             adapter = thumbAdapter
@@ -122,15 +121,6 @@ class GalleryPreviewFragment : Fragment(), ThumbInteractionListener {
                 }
             })
         }
-    }
-
-    override fun onThumbSelection(page: Int) {
-        val intent = Intent(activity, ReaderActivity::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", archiveId)
-        bundle.putInt("page", page)
-        intent.putExtras(bundle)
-        startActivity(intent)
     }
 
     companion object {

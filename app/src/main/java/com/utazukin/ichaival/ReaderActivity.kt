@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.app.Activity
 import android.os.Bundle
 import android.os.Handler
 import android.view.Menu
@@ -256,6 +257,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
         if (tab.id != archive?.id || longPress) {
+            setResult(Activity.RESULT_OK)
             super.onTabInteraction(tab, longPress)
             finish()
         } else

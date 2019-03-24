@@ -27,10 +27,12 @@ import androidx.fragment.app.FragmentPagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
 import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
+import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
 
 const val SEARCH_REQUEST = 1
+const val BOOKMARK_REQUEST = 2
 
-class ArchiveDetails : BaseActivity(), TagInteractionListener {
+class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener {
     private var archiveId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,13 +80,26 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            SEARCH_REQUEST -> {
-                when (resultCode) {
-                    Activity.RESULT_OK -> finish()
-                }
-            }
+        if (requestCode == SEARCH_REQUEST || requestCode == BOOKMARK_REQUEST) {
+            if (resultCode == Activity.RESULT_OK)
+                finish()
         }
+    }
+
+    override fun onThumbSelection(page: Int) {
+        startReaderActivityForResult(page)
+    }
+
+    fun startReaderActivityForResult(page: Int = -1) {
+        val intent = Intent(this, ReaderActivity::class.java)
+        val bundle = Bundle()
+        bundle.putString("id", archiveId)
+
+        if (page >= 0)
+            bundle.putInt("page", page)
+
+        intent.putExtras(bundle)
+        startActivityForResult(intent, BOOKMARK_REQUEST)
     }
 
     override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {

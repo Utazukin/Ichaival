@@ -157,13 +157,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         setUpTags()
 
         val readButton: Button = view.findViewById(R.id.read_button)
-        readButton.setOnClickListener {
-            val intent = Intent(activity, ReaderActivity::class.java)
-            val bundle = Bundle()
-            bundle.putString("id", archiveId)
-            intent.putExtras(bundle)
-            startActivity(intent)
-        }
+        readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive?.title
