@@ -66,8 +66,13 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                 if (this::archiveList.isInitialized) archiveList else listOf()
             } else {
                 val archiveJson = withContext(Dispatchers.Default) { downloadArchiveList() }
-                if (archiveJson == null)
-                    if (this::archiveList.isInitialized) archiveList else listOf()
+                if (archiveJson == null) {
+                    when {
+                        this::archiveList.isInitialized -> archiveList
+                        jsonFile.exists() -> readArchiveList(JSONArray(jsonFile.readText()))
+                        else -> listOf()
+                    }
+                }
                 else {
                     jsonFile.writeText(archiveJson.toString())
                     readArchiveList(archiveJson)
