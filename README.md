@@ -12,6 +12,10 @@ Requires Android 5.0+
 * Bookmark archives to keep track of your current page
 * Sort archives by date (requires archives to be tagged with the DateAdded plugin)
 
+<a href="https://f-droid.org/repository/browse/?fdid=com.utazukin.ichaival">
+  <img height="44" width="auto" src='https://upload.wikimedia.org/wikipedia/commons/0/0d/Get_it_on_F-Droid.svg'></img>
+</a>
+
 # Screenshots
 ## Phone
 * [Main screen](https://user-images.githubusercontent.com/45130999/52095317-27802400-2588-11e9-99f2-68189754966b.png)
