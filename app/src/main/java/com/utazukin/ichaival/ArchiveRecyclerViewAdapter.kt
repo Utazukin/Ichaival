@@ -152,13 +152,8 @@ class ArchiveRecyclerViewAdapter(
                 else {
                     val terms = filter.split(spaceRegex)
                     var hasAll = true
-                    var skip = 0
-                    for (i in 0 until terms.size) {
-                        if (skip > 0) {
-                            --skip
-                            continue
-                        }
-
+                    var i = 0
+                    while (i < terms.size) {
                         var term = terms[i]
                         val colonIndex = term.indexOf(':')
                         if (term.startsWith("\"")
@@ -176,7 +171,7 @@ class ArchiveRecyclerViewAdapter(
                                     builder.append(" ")
                                     builder.append(terms[k])
                                 }
-                                skip = k - i
+                                i = k
                             }
                             term = builder.removeSurrounding("\"").toString()
                         }
@@ -187,6 +182,7 @@ class ArchiveRecyclerViewAdapter(
                             hasAll = false
                             break
                         }
+                        ++i
                     }
 
                     if (hasAll && !mValues.contains(archive))
