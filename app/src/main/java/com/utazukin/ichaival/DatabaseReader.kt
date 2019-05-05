@@ -189,7 +189,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     fun generateSuggestionList() {
-        if (tagSuggestions.isNotEmpty() || connectivityManager?.activeNetworkInfo?.isConnected != true)
+        if (tagSuggestions.isNotEmpty() || serverLocation.isEmpty() || connectivityManager?.activeNetworkInfo?.isConnected != true)
             return
 
         val url = URL("$serverLocation$tagsPath${getApiKey(false)}")
