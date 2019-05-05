@@ -3,6 +3,10 @@
 
 Android client for the [LANraragi](https://github.com/Difegue/LANraragi) manga/doujinshi web manager.
 
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+     alt="Get it on F-Droid"
+     height="70">](https://f-droid.org/packages/com.utazukin.ichaival/)
+
 Requires Android 5.0+
 
 # Features
@@ -11,10 +15,6 @@ Requires Android 5.0+
 * Read archives
 * Bookmark archives to keep track of your current page
 * Sort archives by date (requires archives to be tagged with the DateAdded plugin)
-
-<a href="https://f-droid.org/repository/browse/?fdid=com.utazukin.ichaival">
-  <img height="44" width="auto" src='https://upload.wikimedia.org/wikipedia/commons/0/0d/Get_it_on_F-Droid.svg'></img>
-</a>
 
 # Screenshots
 ## Phone
