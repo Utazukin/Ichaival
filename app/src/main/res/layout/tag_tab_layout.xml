@@ -22,8 +22,7 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:orientation="vertical"
               android:layout_width="match_parent"
-              android:layout_height="match_parent"
-        >
+              android:layout_height="match_parent">
 
     <LinearLayout
             android:orientation="horizontal"
@@ -31,7 +30,7 @@
             android:layout_height="wrap_content">
 
         <TextView
-                android:text="@string/bookmark_label"
+                android:text="@string/tag_menu"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?android:colorBackground"
@@ -44,12 +43,12 @@
         <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_clear_black_24dp"
+                app:srcCompat="@drawable/ic_expand_more_black_24dp"
                 android:paddingEnd="8dp"
                 android:paddingTop="8dp"
                 android:paddingBottom="7dp"
                 android:background="?android:colorBackground"
-                android:id="@+id/clear_bookmark"
+                android:id="@+id/expand_tags"
                 android:layout_weight="0.1"
                 android:scaleType="fitEnd"/>
 
@@ -57,8 +56,8 @@
 
     <androidx.recyclerview.widget.RecyclerView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/tab_view"
-            tools:listitem="@layout/reader_tab"
-            />
+            android:layout_height="wrap_content"
+            tools:listitem="@layout/tag_list_item"
+            android:id="@+id/tag_view"/>
+
 </LinearLayout>

@@ -24,11 +24,22 @@ import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private lateinit var setupText: TextView
+    lateinit var tagView: RecyclerView
+        private set
+    lateinit var tagListLabel: TextView
+        private set
+    lateinit var tagListIcon: ImageView
+        private set
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
@@ -90,6 +101,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 else -> false
             }
         }
+
+        tagView = findViewById(R.id.tag_view)
+        tagListLabel = findViewById(R.id.tag_label)
+        tagListIcon = findViewById(R.id.expand_tags)
     }
 
     private fun handleSetupText(setup: Boolean) {
@@ -109,6 +124,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onStart() {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
+        launch {
+            withContext(Dispatchers.Default) { DatabaseReader.generateSuggestionList() }
+            tagView.adapter?.notifyDataSetChanged()
+        }
     }
 
     override fun onStop() {

@@ -46,6 +46,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val archiveListPath = "$apiPath/archivelist"
     private const val thumbPath = "$apiPath/thumbnail"
     private const val extractPath = "$apiPath/extract"
+    private const val tagsPath = "$apiPath/tagstats"
     private const val timeout = 5000 //ms
 
     private lateinit var archiveList: List<Archive>
@@ -56,6 +57,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     var listener: DatabaseMessageListener? = null
     var connectivityManager: ConnectivityManager? = null
     var verboseMessages = false
+    var tagSuggestions : Array<String> = arrayOf()
+        private set
 
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
         if (!this::archiveList.isInitialized || forceUpdate) {
@@ -185,6 +188,45 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         return serverLocation + path
     }
 
+    fun generateSuggestionList() {
+        if (tagSuggestions.isNotEmpty() || connectivityManager?.activeNetworkInfo?.isConnected != true)
+            return
+
+        val url = URL("$serverLocation$tagsPath${getApiKey(false)}")
+
+        val connection = url.openConnection() as HttpURLConnection
+        connection.connectTimeout = timeout
+        try {
+            with(connection) {
+                if (responseCode != HttpURLConnection.HTTP_OK)
+                    return
+
+                BufferedReader(InputStreamReader(inputStream)).use {
+                    val response = StringBuffer()
+
+                    var inputLine = it.readLine()
+                    while (inputLine != null) {
+                        response.append(inputLine)
+                        inputLine = it.readLine()
+                    }
+                    val tagJsonArray = parseJsonArray(response.toString())
+                    if (tagJsonArray != null) {
+                        val tagArray = Array<Pair<String, Int>>(tagJsonArray.length()) { i ->
+                            val item = tagJsonArray.getJSONObject(i)
+                            Pair(item.getString("text"), item.getInt("weight"))
+                        }
+                        tagArray.sortByDescending { tag -> tag.second }
+                        tagSuggestions = Array(tagArray.size) { i -> tagArray[i].first.toLowerCase() }
+                    }
+                }
+            }
+        }
+        catch(e: Exception) { }
+        finally {
+            connection.disconnect()
+        }
+    }
+
     private fun extractArchive(id: String) : JSONObject? {
         if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
             notifyError("No network connection!")
@@ -219,7 +261,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                 }
             }
         } catch (e: Exception) {
-            DatabaseReader.handleErrorMessage(e, "Failed to extract archive!")
+            handleErrorMessage(e, "Failed to extract archive!")
             return null
         }
         finally {
@@ -295,7 +337,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     private fun readArchiveList(json: JSONArray) : List<Archive> {
         val archiveList = mutableListOf<Archive>()
-        for (i in 0..(json.length() - 1)) {
+        for (i in 0 until json.length()) {
             archiveList.add(Archive(json.getJSONObject(i)))
         }
 
