@@ -226,23 +226,18 @@ class ArchiveListFragment : Fragment() {
         }
     }
 
-    private fun setupTagList(activity: ArchiveList) {
-        val tagAdapter = TagSuggestionViewAdapter { tag, add ->
-            searchView.setQuery(if (add) "${searchView.query} \"$tag\"" else "\"$tag\"", true)
+    private fun setupTagList(tagHolder: TagListHolder?) {
+        tagHolder?.run {
+            val tagAdapter = TagSuggestionViewAdapter { tag, add ->
+                searchView.setQuery(if (add) "${searchView.query} \"$tag\"" else "\"$tag\"", true)
+            }
+            setupTagList(tagAdapter)
         }
-        with (activity.tagView) {
-            layoutManager = LinearLayoutManager(context)
-            adapter = tagAdapter
-        }
-
-        activity.tagListIcon.setOnClickListener { tagAdapter.toggle() }
-        activity.tagListLabel.setOnClickListener { tagAdapter.toggle() }
-        tagAdapter.notifyDataSetChanged()
     }
 
     override fun onStart() {
         super.onStart()
-        setupTagList(context as ArchiveList)
+        setupTagList(context as? TagListHolder)
     }
 
     override fun onDetach() {

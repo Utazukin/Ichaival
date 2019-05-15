@@ -26,24 +26,33 @@ import android.preference.PreferenceManager
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, TagListHolder {
     private lateinit var setupText: TextView
-    lateinit var tagView: RecyclerView
-        private set
-    lateinit var tagListLabel: TextView
-        private set
-    lateinit var tagListIcon: ImageView
-        private set
+    private lateinit var tagView: RecyclerView
+    private lateinit var tagListLabel: TextView
+    private lateinit var tagListIcon: ImageView
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
             startDetailsActivity(archive.id)
+    }
+
+    override fun setupTagList(tagAdapter: TagSuggestionViewAdapter) {
+        with (tagView) {
+            layoutManager = LinearLayoutManager(context)
+            adapter = tagAdapter
+        }
+
+        tagListIcon.setOnClickListener { tagAdapter.toggle() }
+        tagListLabel.setOnClickListener { tagAdapter.toggle() }
+        tagAdapter.notifyDataSetChanged()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
