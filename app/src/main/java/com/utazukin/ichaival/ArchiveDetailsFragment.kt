@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -33,7 +32,6 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
@@ -140,13 +138,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {
-                val copy = archive
-                if (copy != null) {
-                    if (ReaderTabHolder.isTabbed(copy.id)) {
-                        ReaderTabHolder.removeTab(copy.id)
+                archive?.let {
+                    if (ReaderTabHolder.isTabbed(it.id)) {
+                        ReaderTabHolder.removeTab(it.id)
                         text = getString(R.string.bookmark)
                     } else {
-                        ReaderTabHolder.addTab(copy, 0)
+                        ReaderTabHolder.addTab(it, 0)
                         text = getString(R.string.unbookmark)
                     }
                 }
@@ -165,12 +162,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         thumbLoadJob = scope.launch(Dispatchers.Main) {
             val thumbView: ImageView = view.findViewById(R.id.cover)
             val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }
-            val request = Glide.with(thumbView).load(thumb)
+            val request = Glide.with(thumbView).load(thumb).dontTransform()
             request.into(thumbView)
 
             //Replace the thumbnail with the full size image.
             val image = withContext(Dispatchers.Default) { archive?.getPageImage(0) }
-            Glide.with(thumbView).load(image).thumbnail(request).into(thumbView)
+            Glide.with(thumbView).load(image).dontTransform().thumbnail(request).into(thumbView)
         }
     }
 

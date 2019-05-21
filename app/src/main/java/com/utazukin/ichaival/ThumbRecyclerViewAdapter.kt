@@ -32,7 +32,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import kotlinx.coroutines.*
 
@@ -90,11 +89,10 @@ class ThumbRecyclerViewAdapter(
                 setOnClickListener(onClickListener)
             }
 
-            val options = RequestOptions()
-            options.override(getDpAdjusted(200))
-            options.diskCacheStrategy(DiskCacheStrategy.ALL)
             glide.load(image)
-                .apply(options)
+                .dontTransform()
+                .override(getDpAdjusted(200))
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .addListener(object: RequestListener<Drawable>{
                     override fun onLoadFailed(e: GlideException?,
