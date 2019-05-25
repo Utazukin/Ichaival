@@ -39,6 +39,7 @@
                 android:minHeight="?attr/actionBarSize"
                 android:id="@+id/toolbar"
                 android:elevation="4dp"
+                android:animateLayoutChanges="true"
                 app:title="@string/details_title"/>
 
         <com.google.android.material.tabs.TabLayout

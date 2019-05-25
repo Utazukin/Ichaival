@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.animation.LayoutTransition
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -28,29 +29,47 @@ import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
 import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 const val SEARCH_REQUEST = 1
 const val BOOKMARK_REQUEST = 2
 
 class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener {
     private var archiveId: String? = null
+    private var pageCount = -1
+    private lateinit var pager: ViewPager
+    private lateinit var toolbar: androidx.appcompat.widget.Toolbar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_details)
-        setSupportActionBar(findViewById(R.id.toolbar))
+        toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
-        val bundle = intent.extras
-        if (bundle != null) {
-            archiveId = bundle.getString("id")
+        intent.extras?.run {
+            archiveId = getString("id")
             setUpDetailView()
+
+            launch(Dispatchers.Default) {
+                val archive = DatabaseReader.getArchive(archiveId!!, filesDir)
+                archive?.run {
+                    extract()
+                    withContext(Dispatchers.Main) {
+                        pageCount = numPages
+                        if (pager.currentItem == 1)
+                            supportActionBar?.subtitle = "$pageCount pages"
+                    }
+                }
+            }
         }
     }
 
     private fun setUpDetailView() {
-        val pager: ViewPager = findViewById(R.id.details_pager)
+        pager = findViewById(R.id.details_pager)
         pager.adapter = DetailsPagerAdapter(supportFragmentManager)
-        pager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener{
+        pager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
             override fun onPageScrollStateChanged(state: Int) {
             }
 
@@ -58,9 +77,16 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             }
 
             override fun onPageSelected(position: Int) {
-                when(position) {
-                    0 -> supportActionBar?.title = getString(R.string.details_title)
-                    1 -> supportActionBar?.title = getString(R.string.thumbs_title)
+                when (position) {
+                    0 -> supportActionBar?.run {
+                        title = getString(R.string.details_title)
+                        subtitle = null
+                        toolbar.layoutTransition = LayoutTransition()
+                    }
+                    1 -> supportActionBar?.run {
+                        title = getString(R.string.thumbs_title)
+                        subtitle = if (pageCount >= 0) "$pageCount pages" else null
+                    }
                 }
             }
 
