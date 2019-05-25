@@ -38,6 +38,10 @@ import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.coroutines.*
 
+private const val ID_STRING = "id"
+private const val PAGE_ID = "page"
+private const val CURRENT_PAGE_ID = "currentPage"
+
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
@@ -67,6 +71,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private val loadedPages = mutableListOf<Boolean>()
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
+    private lateinit var imagePager: ViewPager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,8 +83,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         mVisible = true
 
-        image_pager.adapter = ReaderFragmentAdapter(supportFragmentManager)
-        image_pager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener{
+        imagePager = findViewById(R.id.image_pager)
+        imagePager.adapter = ReaderFragmentAdapter(supportFragmentManager)
+        imagePager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener{
             override fun onPageScrollStateChanged(page: Int) {
             }
 
@@ -90,6 +96,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 currentPage = page
                 ReaderTabHolder.updatePageIfTabbed(archive!!.id, page)
                 loadImage(currentPage)
+                supportActionBar?.subtitle = "Page ${currentPage + 1}"
             }
 
         } )
@@ -98,14 +105,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         failedMessage.setOnClickListener { toggle() }
 
         val bundle = intent.extras
-        val arcid = bundle?.getString("id") ?: savedInstanceState?.getString("id")
+        val arcid = bundle?.getString(ID_STRING) ?: savedInstanceState?.getString(ID_STRING)
         val savedPage = when {
-            savedInstanceState?.containsKey("currentPage") == true -> savedInstanceState.getInt("currentPage")
-            bundle?.containsKey("page") == true -> bundle.getInt("page")
+            savedInstanceState?.containsKey(CURRENT_PAGE_ID) == true -> savedInstanceState.getInt(CURRENT_PAGE_ID)
+            bundle?.containsKey(PAGE_ID) == true -> bundle.getInt(PAGE_ID)
             else -> null
         }
         if (arcid != null) {
-            launch(Dispatchers.Main) {
+            launch {
                 archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(arcid, applicationContext.filesDir) }
                 archive?.let {
                     supportActionBar?.title = it.title
@@ -113,7 +120,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     val page = savedPage ?: ReaderTabHolder.getCurrentPage(arcid)
                     currentPage = page
                     loadImage(page)
-                    image_pager.setCurrentItem(page, false)
+                    imagePager.setCurrentItem(page, false)
+                    supportActionBar?.subtitle = "Page ${currentPage + 1}"
 
                     setTabbedIcon(ReaderTabHolder.isTabbed(arcid))
                 }
@@ -123,8 +131,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt("currentPage", currentPage)
-        outState.putString("id", archive?.id)
+        outState.putInt(CURRENT_PAGE_ID, currentPage)
+        outState.putString(PAGE_ID, archive?.id)
     }
 
     override fun onCreateDrawer() {
@@ -186,7 +194,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         failedMessage.visibility = View.GONE
 
         if (adjustLoadedPages(page))
-            image_pager.adapter?.notifyDataSetChanged()
+            imagePager.adapter?.notifyDataSetChanged()
 
         if (preload) {
             for (i in (-1..1)) {
@@ -284,7 +292,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun show() {
         // Show the system bar
-        image_pager.systemUiVisibility =
+        imagePager.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         mVisible = true
