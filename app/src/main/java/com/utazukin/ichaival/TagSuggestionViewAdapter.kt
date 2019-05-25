@@ -25,15 +25,20 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
+typealias TagListener = (String, Boolean) -> Unit
+
 class TagSuggestionViewAdapter(
-    private val tagListener: ((tag: String, add: Boolean) -> Unit)?
+    private val tagListener: TagListener?
 ) : RecyclerView.Adapter<TagSuggestionViewAdapter.ViewHolder>() {
     private var hidden = true
+    private val listeners = mutableListOf<TagListener>()
 
     private fun show(show: Boolean) {
         hidden = !show
         notifyDataSetChanged()
     }
+
+    fun addListener(listener: TagListener) = listeners.add(listener)
 
     fun toggle() = show(hidden)
 
@@ -43,8 +48,15 @@ class TagSuggestionViewAdapter(
         val item = DatabaseReader.tagSuggestions[position]
 
         holder.tagView.text = item
-        holder.tagView.setOnClickListener { tagListener?.invoke(item, false) }
-        holder.addView.setOnClickListener { tagListener?.invoke(item, true) }
+        holder.tagView.setOnClickListener { onTagClicked(item, false) }
+        holder.addView.setOnClickListener { onTagClicked(item, true) }
+    }
+
+    private fun onTagClicked(item: String, add: Boolean) {
+        tagListener?.invoke(item, add)
+
+        for (listener in listeners)
+            listener(item, add)
     }
 
     override fun onViewRecycled(holder: ViewHolder) {

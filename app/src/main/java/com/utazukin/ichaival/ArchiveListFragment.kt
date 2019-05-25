@@ -24,10 +24,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.view.*
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.SearchView
-import android.widget.TextView
+import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -229,6 +226,9 @@ class ArchiveListFragment : Fragment() {
     private fun setupTagList(tagHolder: TagListHolder?) {
         tagHolder?.run {
             val tagAdapter = TagSuggestionViewAdapter { tag, add ->
+                if (add)
+                    Toast.makeText(context, "Added $tag", Toast.LENGTH_SHORT).show()
+
                 searchView.setQuery(if (add) "${searchView.query} \"$tag\"" else "\"$tag\"", true)
             }
             setupTagList(tagAdapter)

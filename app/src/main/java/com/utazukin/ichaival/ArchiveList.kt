@@ -50,6 +50,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             adapter = tagAdapter
         }
 
+        tagAdapter.addListener { _, add -> if (!add) drawerLayout.closeDrawers() }
         tagListIcon.setOnClickListener { tagAdapter.toggle() }
         tagListLabel.setOnClickListener { tagAdapter.toggle() }
         tagAdapter.notifyDataSetChanged()
