@@ -24,7 +24,11 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.view.*
-import android.widget.*
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.SearchView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -46,7 +50,6 @@ class ArchiveListFragment : Fragment() {
     private lateinit var activityScope: CoroutineScope
     private lateinit var newCheckBox: CheckBox
     private lateinit var randomButton: Button
-    private lateinit var countText: TextView
     lateinit var searchView: SearchView
         private set
 
@@ -57,7 +60,6 @@ class ArchiveListFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
-        countText = view.findViewById(R.id.list_count)
         setHasOptionsMenu(true)
 
         // Set the adapter
@@ -73,34 +75,25 @@ class ArchiveListFragment : Fragment() {
             val temp = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, activityScope, Glide.with(context))
             listAdapter = temp
             adapter = temp
-
-            addOnScrollListener(object: RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    super.onScrollStateChanged(recyclerView, newState)
-                    val hideCount = listView.canScrollVertically(-1)
-                    countText.visibility = if (hideCount) View.GONE else View.VISIBLE
-                }
-            })
         }
 
         searchView = view.findViewById(R.id.archive_search)
         newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked ->
             val count = listAdapter.filter(searchView.query, checked)
-            countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
+            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
         }
 
-        countText.visibility = View.INVISIBLE
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 val count = listAdapter.filter(p0, newCheckBox.isChecked)
-                countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
+                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
                 return true
             }
 
             override fun onQueryTextChange(p0: String?): Boolean {
                 val count = listAdapter.filter(p0, newCheckBox.isChecked)
-                countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
+                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
                 return true
             }
         })
@@ -134,8 +127,7 @@ class ArchiveListFragment : Fragment() {
             updateSortMethod(method, descending, prefs)
 
             val count = listAdapter.filter(searchView.query, newCheckBox.isChecked)
-            countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
-            countText.visibility = View.VISIBLE
+            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
         }
         return view
     }
@@ -252,7 +244,7 @@ class ArchiveListFragment : Fragment() {
             adapter.updateDataCopy(newList)
             swipeRefreshLayout.isRefreshing = false
             val count = adapter.filter(searchView.query, newCheckBox.isChecked)
-            countText.text = resources.getQuantityString(R.plurals.archive_count, count, count)
+            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
         }
     }
 

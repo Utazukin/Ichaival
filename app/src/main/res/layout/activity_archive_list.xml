@@ -40,6 +40,7 @@
                 android:minHeight="?attr/actionBarSize"
                 android:id="@+id/toolbar"
                 android:elevation="4dp"
+                android:animateLayoutChanges="true"
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
                 android:layout_height="?attr/actionBarSize"/>
 
