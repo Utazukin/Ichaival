@@ -51,17 +51,18 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         intent.extras?.run {
             archiveId = getString("id")
             setUpDetailView()
+        }
 
-            launch(Dispatchers.Default) {
-                val archive = DatabaseReader.getArchive(archiveId!!, filesDir)
-                archive?.run {
-                    extract()
-                    withContext(Dispatchers.Main) {
-                        pageCount = numPages
-                        if (pager.currentItem == 1)
-                            supportActionBar?.subtitle = "$pageCount pages"
-                    }
-                }
+        launch {
+            val archive = withContext(Dispatchers.Default) {
+                val a = DatabaseReader.getArchive(archiveId!!, filesDir)
+                a?.extract()
+                a
+            }
+            archive?.run {
+                pageCount = numPages
+                if (pager.currentItem == 1)
+                    supportActionBar?.subtitle = "$pageCount pages"
             }
         }
     }

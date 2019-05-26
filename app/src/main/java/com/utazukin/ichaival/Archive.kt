@@ -78,7 +78,9 @@ class Archive(json: JSONObject) {
         isNew = json.getString("isnew") == "block"
     }
 
-    suspend fun extract() = DatabaseReader.getPageList(id, extractActor)
+    suspend fun extract() {
+        DatabaseReader.getPageList(id, extractActor)
+    }
 
     fun invalidateCache() {
         DatabaseReader.invalidateImageCache(id)
