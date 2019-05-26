@@ -151,9 +151,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
         val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
-            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
-                return false
-            }
+            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder) = false
 
             override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
                 val tab = holder.itemView.tag as? ReaderTab
@@ -254,6 +252,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
             R.id.detail_menu -> {
                 archive?.let {
+                    setResult(Activity.RESULT_OK)
                     startDetailsActivity(it.id)
                     finish()
                     return true
