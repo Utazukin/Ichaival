@@ -145,4 +145,5 @@
     <string name="sort_direction">Direction</string>
     <string name="desc_pref">desc_pref</string>
     <string name="tag_menu">Tags</string>
+    <string name="goto_page">Go to Page</string>
 </resources>
