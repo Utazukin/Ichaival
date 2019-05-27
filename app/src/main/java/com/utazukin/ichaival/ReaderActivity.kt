@@ -150,16 +150,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         val closeButton: ImageView = findViewById(R.id.clear_bookmark)
         closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
-        val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
-            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder) = false
-
-            override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
-                val tab = holder.itemView.tag as? ReaderTab
-                if (tab != null)
-                    ReaderTabHolder.removeTab(tab.id)
-            }
+        val touchHelper = BookmarkTouchHelper(this)
+        touchHelper.leftSwipeListener = { id, _ ->
+            setResult(Activity.RESULT_OK)
+            startDetailsActivity(id)
+            finish()
         }
-        ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
+        ItemTouchHelper(touchHelper).attachToRecyclerView(tabView)
     }
 
     override fun onTabRemoved(index: Int, id: String) {
@@ -274,10 +271,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
-        if (tab.id != archive?.id || longPress) {
+    override fun onTabInteraction(tab: ReaderTab) {
+        if (tab.id != archive?.id) {
             setResult(Activity.RESULT_OK)
-            super.onTabInteraction(tab, longPress)
+            super.onTabInteraction(tab)
             finish()
         } else
             drawerLayout.closeDrawers()

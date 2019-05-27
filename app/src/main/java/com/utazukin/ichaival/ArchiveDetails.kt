@@ -129,11 +129,16 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         startActivityForResult(intent, BOOKMARK_REQUEST)
     }
 
-    override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
-        if (!longPress || tab.id != archiveId) {
-            super.onTabInteraction(tab, longPress)
+    override fun onTabInteraction(tab: ReaderTab) {
+        if (tab.id != archiveId) {
+            super.onTabInteraction(tab)
             finish()
         }
+    }
+
+    override fun startDetailsActivity(id: String) {
+        if (id != archiveId)
+            super.startDetailsActivity(id)
     }
 
     override fun addIntentFlags(intent: Intent, id: String) {

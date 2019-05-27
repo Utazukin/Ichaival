@@ -39,20 +39,12 @@ class ReaderTabViewAdapter (
 
     private val onClickListener: View.OnClickListener
 
-    private val onLongClickListener: View.OnLongClickListener
-
     private val jobs: MutableMap<ViewHolder, Job> = mutableMapOf()
 
     init {
         onClickListener = View.OnClickListener { v ->
             val item = v.tag as ReaderTab
-            listener?.onTabInteraction(item, false)
-        }
-
-        onLongClickListener = View.OnLongClickListener { v ->
-            val item = v.tag as ReaderTab
-            listener?.onTabInteraction(item, true)
-            true
+            listener?.onTabInteraction(item)
         }
     }
 
@@ -74,7 +66,6 @@ class ReaderTabViewAdapter (
         with(holder.view) {
             tag = item
             setOnClickListener(onClickListener)
-            setOnLongClickListener(onLongClickListener)
         }
     }
 
@@ -127,6 +118,6 @@ class ReaderTabViewAdapter (
     }
 
     interface OnTabInteractionListener {
-        fun onTabInteraction(tab: ReaderTab, longPress: Boolean)
+        fun onTabInteraction(tab: ReaderTab)
     }
 }

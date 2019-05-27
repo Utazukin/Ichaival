@@ -84,18 +84,12 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val closeButton: ImageView = findViewById(R.id.clear_bookmark)
         closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
-        val swipeHandler = object: ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
-            override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
-                return false
-            }
-
-            override fun onSwiped(holder: RecyclerView.ViewHolder, p1: Int) {
-                val tab = holder.itemView.tag as? ReaderTab
-                if (tab != null)
-                    ReaderTabHolder.removeTab(tab.id)
-            }
+        val touchHelper = BookmarkTouchHelper(this)
+        touchHelper.leftSwipeListener = { id, position ->
+            tabView.adapter?.notifyItemChanged(position)
+            startDetailsActivity(id)
         }
-        ItemTouchHelper(swipeHandler).attachToRecyclerView(tabView)
+        ItemTouchHelper(touchHelper).attachToRecyclerView(tabView)
     }
 
     override fun onStart() {
@@ -147,12 +141,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         tabView.scrollToPosition(index)
     }
 
-    override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
-        if (longPress)
-            startDetailsActivity(tab.id)
-        else
-            startReaderActivity(tab.id)
-    }
+    override fun onTabInteraction(tab: ReaderTab) = startReaderActivity(tab.id)
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -180,7 +169,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     protected open fun addIntentFlags(intent: Intent, id: String) { }
 
-    protected fun startDetailsActivity(id: String){
+    protected open fun startDetailsActivity(id: String){
         val intent = Intent(this, ArchiveDetails::class.java)
         val bundle = Bundle()
         bundle.putString("id", id)

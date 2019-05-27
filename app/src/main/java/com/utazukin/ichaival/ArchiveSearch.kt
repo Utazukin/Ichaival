@@ -45,8 +45,8 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         }
     }
 
-    override fun onTabInteraction(tab: ReaderTab, longPress: Boolean) {
-        super.onTabInteraction(tab, longPress)
+    override fun onTabInteraction(tab: ReaderTab) {
+        super.onTabInteraction(tab)
         setResult(Activity.RESULT_OK)
         finish()
     }
