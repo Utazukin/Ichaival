@@ -35,13 +35,15 @@ enum class SortMethod(val value: Int) {
     Date(2);
 
     companion object {
-        private val map by lazy { SortMethod.values().associateBy(SortMethod::value)}
+        private val map by lazy { values().associateBy(SortMethod::value)}
         fun fromInt(type: Int) = map[type]
     }
 }
 
+typealias ChangeListener = (SortMethod, Boolean) -> Unit
+
 class SortDialogFragment : DialogFragment() {
-    private var changeListener: ((method: SortMethod, desc: Boolean) -> Unit)? = null
+    private var changeListener: ChangeListener? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.sort_popup_layout, container, false)
@@ -95,7 +97,7 @@ class SortDialogFragment : DialogFragment() {
         }
     }
 
-    fun setSortChangeListener(listener: (method: SortMethod, desc: Boolean) -> Unit) {
+    fun setSortChangeListener(listener: ChangeListener) {
         changeListener = listener
     }
 

@@ -38,11 +38,14 @@ import kotlinx.coroutines.withContext
 
 private const val ARCHIVE_PARAM = "archive"
 
+typealias TagPressListener = (String) -> Unit
+typealias TagLongPressListener = (String) -> Boolean
+
 class TagDialogFragment : DialogFragment() {
     private var archive: Archive? = null
     private lateinit var tagLayout: LinearLayout
-    private var tagPressListener: ((tag: String) -> Unit)? = null
-    private var tagLongPressListener: ((tag: String) -> Boolean)? = null
+    private var tagPressListener: TagPressListener? = null
+    private var tagLongPressListener: TagLongPressListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

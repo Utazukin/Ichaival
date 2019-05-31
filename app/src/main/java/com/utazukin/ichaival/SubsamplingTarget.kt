@@ -28,8 +28,10 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.OnImageEventListener
 import java.io.File
 
+typealias ResourceListener = () -> Unit
+
 class SubsamplingTarget(private val target: SubsamplingScaleImageView
-                        , private val resourceListener: (() -> Unit)? = null) : Target<File> {
+                        , private val resourceListener: ResourceListener? = null) : Target<File> {
     private var request: Request? = null
     private val imageEventListener: OnImageEventListener = object: OnImageEventListener {
         override fun onImageLoaded() {
