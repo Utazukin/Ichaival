@@ -347,19 +347,24 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private fun downloadThumb(id: String, thumbDir: File) : File? {
         val url = URL("$serverLocation$thumbPath?id=$id${getApiKey(true)}")
 
-        with(url.openConnection() as HttpURLConnection) {
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                handleErrorMessage(responseCode, "Failed to download thumbnail!")
-                return null
-            }
+        try {
+            with(url.openConnection() as HttpURLConnection) {
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    handleErrorMessage(responseCode, "Failed to download thumbnail!")
+                    return null
+                }
 
-            BufferedReader(InputStreamReader(inputStream)).use {
-                val bytes = inputStream.readBytes()
+                BufferedReader(InputStreamReader(inputStream)).use {
+                    val bytes = inputStream.readBytes()
 
-                val thumbFile = File(thumbDir, "$id.jpg")
-                thumbFile.writeBytes(bytes)
-                return thumbFile
+                    val thumbFile = File(thumbDir, "$id.jpg")
+                    thumbFile.writeBytes(bytes)
+                    return thumbFile
+                }
             }
+        }
+        catch(e: Exception) {
+           return null
         }
     }
 
@@ -384,7 +389,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             thumbDir.deleteRecursively()
     }
 
-    suspend fun getArchiveImage(archive: Archive, filesDir: File) = DatabaseReader.getArchiveImage(archive.id, filesDir)
+    suspend fun getArchiveImage(archive: Archive, filesDir: File) = getArchiveImage(archive.id, filesDir)
 
     suspend fun getArchiveImage(id: String, filesDir: File) : String? {
         val thumbDir = getThumbDir(filesDir)
