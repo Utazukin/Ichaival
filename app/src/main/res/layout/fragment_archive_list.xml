@@ -57,14 +57,6 @@
 
     </LinearLayout>
 
-    <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/list_count"
-            android:textAlignment="center"
-            android:textSize="18sp"
-            android:text="@plurals/archive_count"/>
-
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe_refresh"
             android:layout_width="match_parent"
