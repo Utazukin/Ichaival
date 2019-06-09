@@ -49,7 +49,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val tagsPath = "$apiPath/tagstats"
     private const val timeout = 5000 //ms
 
-    private lateinit var archiveList: List<Archive>
+    private var archiveList: List<Archive>? = null
     private var serverLocation: String = ""
     private var isDirty = false
     private var apiKey: String = ""
@@ -62,17 +62,17 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         private set
 
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
-        if (!this::archiveList.isInitialized || forceUpdate) {
+        if (archiveList == null || forceUpdate) {
             val jsonFile = File(cacheDir, jsonLocation)
             archiveList = if (!forceUpdate && !checkDirty(cacheDir))
                 readArchiveList(JSONArray(jsonFile.readText()))
             else if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
-                if (this::archiveList.isInitialized) archiveList else listOf()
+                if (archiveList != null) archiveList else listOf()
             } else {
                 val archiveJson = withContext(Dispatchers.Default) { downloadArchiveList() }
                 if (archiveJson == null) {
                     when {
-                        this::archiveList.isInitialized -> archiveList
+                        archiveList != null -> archiveList
                         jsonFile.exists() -> readArchiveList(JSONArray(jsonFile.readText()))
                         else -> listOf()
                     }
@@ -82,10 +82,10 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     readArchiveList(archiveJson)
                 }
             }
-            archiveList = archiveList.sortedBy { it.title.toLowerCase() }
+            archiveList = archiveList!!.sortedBy { it.title.toLowerCase() }
             isDirty = false
         }
-        return archiveList
+        return archiveList!!
     }
 
     fun updateServerLocation(location: String) {
@@ -184,9 +184,9 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     suspend fun getArchive(id: String, fileDir: File) : Archive? {
-        readArchiveList(fileDir)
+        val archives = readArchiveList(fileDir)
 
-        for (archive: Archive in archiveList) {
+        for (archive: Archive in archives) {
             if (archive.id == id)
                 return archive
         }
@@ -282,9 +282,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         listener?.onError(error)
     }
 
-    private fun getArchive(id: String) : Archive? {
-        return if (this::archiveList.isInitialized) archiveList.find { x -> x.id == id } else null
-    }
+    private fun getArchive(id: String) = archiveList?.find { x -> x.id == id }
 
     private fun notifyExtract(id: String) {
         val title = getArchive(id)?.title
