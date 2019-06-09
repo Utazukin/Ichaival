@@ -56,6 +56,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     private val archivePageMap = mutableMapOf<String, List<String>>()
     var listener: DatabaseMessageListener? = null
+    var refreshListener: DatabaseRefreshListener? = null
     var connectivityManager: ConnectivityManager? = null
     var verboseMessages = false
     var tagSuggestions : Array<String> = arrayOf()
@@ -63,6 +64,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
         if (archiveList == null || forceUpdate) {
+            refreshListener?.isRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
             archiveList = if (!forceUpdate && !checkDirty(cacheDir))
                 readArchiveList(JSONArray(jsonFile.readText()))
@@ -82,6 +84,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     readArchiveList(archiveJson)
                 }
             }
+            refreshListener?.isRefreshing(false)
             archiveList = archiveList!!.sortedBy { it.title.toLowerCase() }
             isDirty = false
         }

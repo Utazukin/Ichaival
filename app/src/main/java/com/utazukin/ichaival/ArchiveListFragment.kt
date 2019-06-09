@@ -40,7 +40,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ArchiveListFragment : Fragment() {
+class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
     private var sortMethod = SortMethod.Alpha
     private var descending = false
@@ -207,6 +207,7 @@ class ArchiveListFragment : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
+        DatabaseReader.refreshListener = this
         if (context is OnListFragmentInteractionListener) {
             listener = context
             activityScope = context as CoroutineScope
@@ -235,6 +236,7 @@ class ArchiveListFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         listener = null
+        DatabaseReader.refreshListener = null
     }
 
     fun forceArchiveListUpdate() {
@@ -242,10 +244,13 @@ class ArchiveListFragment : Fragment() {
             val newList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir, true) }
             val adapter = listView.adapter as ArchiveRecyclerViewAdapter
             adapter.updateDataCopy(newList)
-            swipeRefreshLayout.isRefreshing = false
             val count = adapter.filter(searchView.query, newCheckBox.isChecked)
             (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
         }
+    }
+
+    override fun isRefreshing(refreshing: Boolean) {
+        activityScope.launch { swipeRefreshLayout.isRefreshing = refreshing }
     }
 
     interface OnListFragmentInteractionListener {
