@@ -21,6 +21,8 @@ package com.utazukin.ichaival
 
 import android.graphics.Color
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,7 +44,6 @@ typealias TagPressListener = (String) -> Unit
 typealias TagLongPressListener = (String) -> Boolean
 
 class TagDialogFragment : DialogFragment() {
-    private var archive: Archive? = null
     private lateinit var tagLayout: LinearLayout
     private var tagPressListener: TagPressListener? = null
     private var tagLongPressListener: TagLongPressListener? = null
@@ -53,8 +54,9 @@ class TagDialogFragment : DialogFragment() {
             val archiveId = it.getString(ARCHIVE_PARAM)
             archiveId?.let {
                 GlobalScope.launch(Dispatchers.Main) {
-                    archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId, activity!!.filesDir) }
-                    setUpTags()
+                    val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId, activity!!.filesDir) }
+                    if (archive != null)
+                        setUpTags(archive)
                 }
             }
         }
@@ -69,26 +71,27 @@ class TagDialogFragment : DialogFragment() {
         return view
     }
 
-    private fun setUpTags() {
-        archive?.run {
-            for (pair in tags) {
-                if (pair.value.isEmpty())
-                    continue
+    private fun setUpTags(archive: Archive) {
+        for (pair in archive.tags) {
+            if (pair.value.isEmpty())
+                continue
 
-                val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
-                val namespaceLayout = FlexboxLayout(context)
-                namespaceLayout.flexWrap = FlexWrap.WRAP
-                namespaceLayout.flexDirection = FlexDirection.ROW
-                tagLayout.addView(
-                    namespaceLayout,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                val namespaceView = createTagView(namespace)
-                namespaceLayout.addView(namespaceView)
+            val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
+            val namespaceLayout = FlexboxLayout(context)
+            namespaceLayout.flexWrap = FlexWrap.WRAP
+            namespaceLayout.flexDirection = FlexDirection.ROW
+            tagLayout.addView(
+                namespaceLayout,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            val namespaceView = createTagView(namespace)
+            namespaceLayout.addView(namespaceView)
 
-                for (tag in pair.value) {
-                    val tagView = createTagView(tag)
+            val isSource = namespace == "source:"
+            for (tag in pair.value) {
+                val tagView = createTagView(tag)
+                if (!isSource) {
                     val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
                     tagView.setOnClickListener { tagPressListener?.invoke(searchTag); dismiss() }
                     tagView.setOnLongClickListener {
@@ -96,8 +99,12 @@ class TagDialogFragment : DialogFragment() {
                         dismiss()
                         response == true
                     }
-                    namespaceLayout.addView(tagView)
+                } else {
+                    Linkify.addLinks(tagView, Linkify.WEB_URLS)
+                    tagView.linksClickable = true
+                    tagView.movementMethod = LinkMovementMethod.getInstance()
                 }
+                namespaceLayout.addView(tagView)
             }
         }
     }
@@ -114,11 +121,11 @@ class TagDialogFragment : DialogFragment() {
         return tagView
     }
 
-    fun setTagPressListener(listener: ((tag: String) -> Unit)?) {
+    fun setTagPressListener(listener: TagPressListener?) {
         tagPressListener = listener
     }
 
-    fun setTagLongPressListener(listener: ((tag: String) -> Boolean)?) {
+    fun setTagLongPressListener(listener: TagLongPressListener?) {
         tagLongPressListener = listener
     }
 

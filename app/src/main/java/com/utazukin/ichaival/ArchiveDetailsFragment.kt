@@ -22,6 +22,8 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
+import android.text.util.Linkify
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,7 +43,6 @@ private const val ARCHIVE_ID = "arcid"
 
 class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener {
     private var archiveId: String? = null
-    private var archive: Archive? = null
     private lateinit var tagLayout: LinearLayout
     private lateinit var bookmarkButton: Button
     private var thumbLoadJob: Job? = null
@@ -64,8 +65,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         tagLayout = view.findViewById(R.id.tag_layout)
 
         scope.launch {
-            archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }
-            setUpDetailView(view)
+            val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }
+            setUpDetailView(view, archive)
         }
         return view
     }
@@ -96,28 +97,34 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         super.onDestroy()
     }
 
-    private fun setUpTags() {
-        archive?.let {
-            for (pair in it.tags) {
-                if (pair.value.isEmpty())
-                    continue
+    private fun setUpTags(archive: Archive) {
+        for (pair in archive.tags) {
+            if (pair.value.isEmpty())
+                continue
 
-                val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
-                val namespaceLayout = FlexboxLayout(context)
-                namespaceLayout.flexWrap = FlexWrap.WRAP
-                namespaceLayout.flexDirection = FlexDirection.ROW
-                tagLayout.addView(
-                    namespaceLayout,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT)
-                val namespaceView = createTagView(namespace)
-                namespaceLayout.addView(namespaceView)
+            val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
+            val namespaceLayout = FlexboxLayout(context)
+            namespaceLayout.flexWrap = FlexWrap.WRAP
+            namespaceLayout.flexDirection = FlexDirection.ROW
+            tagLayout.addView(
+                namespaceLayout,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+            val namespaceView = createTagView(namespace)
+            namespaceLayout.addView(namespaceView)
 
-                for (tag in pair.value) {
-                    val tagView = createTagView(tag)
-                    namespaceLayout.addView(tagView)
+            val isSource = namespace == "source:"
+            for (tag in pair.value) {
+                val tagView = createTagView(tag)
+                namespaceLayout.addView(tagView)
+
+                if (!isSource) {
                     val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
                     tagView.setOnClickListener { tagListener?.onTagInteraction(searchTag) }
+                } else {
+                    tagView.linksClickable = true
+                    Linkify.addLinks(tagView, Linkify.WEB_URLS)
+                    tagView.movementMethod = LinkMovementMethod.getInstance()
                 }
             }
         }
@@ -134,7 +141,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         return tagView
     }
 
-    private fun setUpDetailView(view: View) {
+    private fun setUpDetailView(view: View, archive: Archive?) {
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {
@@ -151,23 +158,26 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             text = getString(if (ReaderTabHolder.isTabbed(archive?.id)) R.string.unbookmark else R.string.bookmark)
         }
 
-        setUpTags()
-
         val readButton: Button = view.findViewById(R.id.read_button)
         readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
-        val titleView: TextView = view.findViewById(R.id.title)
-        titleView.text = archive?.title
+        if (archive != null) {
+            setUpTags(archive)
 
-        thumbLoadJob = scope.launch(Dispatchers.Main) {
-            val thumbView: ImageView = view.findViewById(R.id.cover)
-            val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive!!, context!!.filesDir) }
-            val request = Glide.with(thumbView).load(thumb).dontTransform()
-            request.into(thumbView)
+            val titleView: TextView = view.findViewById(R.id.title)
+            titleView.text = archive.title
 
-            //Replace the thumbnail with the full size image.
-            val image = withContext(Dispatchers.Default) { archive?.getPageImage(0) }
-            Glide.with(thumbView).load(image).dontTransform().thumbnail(request).into(thumbView)
+            thumbLoadJob = scope.launch(Dispatchers.Main) {
+                val thumbView: ImageView = view.findViewById(R.id.cover)
+                val thumb =
+                    withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, context!!.filesDir) }
+                val request = Glide.with(thumbView).load(thumb).dontTransform()
+                request.into(thumbView)
+
+                //Replace the thumbnail with the full size image.
+                val image = withContext(Dispatchers.Default) { archive.getPageImage(0) }
+                Glide.with(thumbView).load(image).dontTransform().thumbnail(request).into(thumbView)
+            }
         }
     }
 
