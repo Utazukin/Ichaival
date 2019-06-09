@@ -53,6 +53,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private var serverLocation: String = ""
     private var isDirty = false
     private var apiKey: String = ""
+    private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     private val archivePageMap = mutableMapOf<String, List<String>>()
     var listener: DatabaseMessageListener? = null
     var connectivityManager: ConnectivityManager? = null
@@ -161,16 +162,24 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         if ((newValue as String).isEmpty())
             return false
 
-        return try { //TODO use something better for validation
-            val url = URL(newValue)
-            if (serverLocation != newValue) {
+        if (serverLocation == newValue)
+            return true
+
+        if (urlRegex.matches(newValue)) {
+            isDirty = true
+            if (newValue.startsWith("http") || newValue.startsWith("https")) {
                 serverLocation = newValue
-                isDirty = true
+                return true
             }
-            true
-        } catch (e: Exception) {
+
+            //assume http if not present
+            serverLocation = "http://$newValue"
+            pref.editor.putString(pref.key, serverLocation).apply()
+            pref.summary = serverLocation
+            return false
+        } else {
             notifyError("Invalid URL!")
-            false
+            return false
         }
     }
 
