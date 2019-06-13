@@ -22,6 +22,7 @@ import android.animation.LayoutTransition
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
@@ -53,17 +54,20 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             setUpDetailView()
         }
 
-        launch {
-            val archive = withContext(Dispatchers.Default) {
-                val a = DatabaseReader.getArchive(archiveId!!, filesDir)
-                a?.extract()
-                a
-            }
-            archive?.run {
-                pageCount = numPages
-                if (pager.currentItem == 1)
-                    supportActionBar?.subtitle = "$pageCount pages"
-            }
+        archiveId?.let { launch { extractArchive(it) } }
+    }
+
+    private suspend fun extractArchive(id: String) {
+        val archive = withContext(Dispatchers.Default) {
+            val a = DatabaseReader.getArchive(id, filesDir)
+            a?.extract()
+            a
+        }
+
+        archive?.run {
+            pageCount = numPages
+            if (pager.currentItem == 1)
+                supportActionBar?.subtitle = "$pageCount pages"
         }
     }
 
@@ -113,6 +117,22 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         }
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh_item -> {
+                archiveId?.let {
+                    DatabaseReader.invalidateImageCache(it)
+                    launch {
+                        extractArchive(it)
+                        val adapter = pager.adapter as DetailsPagerAdapter
+                        adapter.thumbFragment?.refreshThumbnails()
+                    }
+                }
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
     override fun onThumbSelection(page: Int) {
         startReaderActivityForResult(page)
     }
@@ -148,10 +168,24 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     }
 
     inner class DetailsPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager) {
+        var detailsFragment: ArchiveDetailsFragment? = null
+            private set
+
+        var thumbFragment: GalleryPreviewFragment? = null
+            private set
+
         override fun getItem(position: Int): Fragment {
             return when(position) {
-                0 -> ArchiveDetailsFragment.createInstance(archiveId!!)
-                1 -> GalleryPreviewFragment.createInstance(archiveId!!)
+                0 -> {
+                    val fragment = ArchiveDetailsFragment.createInstance(archiveId!!)
+                    detailsFragment = fragment
+                    fragment
+                }
+                1 -> {
+                    val fragment = GalleryPreviewFragment.createInstance(archiveId!!)
+                    thumbFragment = fragment
+                    fragment
+                }
                 else -> throw IllegalArgumentException("position")
             }
         }

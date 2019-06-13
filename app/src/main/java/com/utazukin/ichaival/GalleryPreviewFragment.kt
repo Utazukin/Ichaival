@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -33,7 +32,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
 import kotlinx.coroutines.*
-
 
 private const val ARCHIVE_ID = "arcid"
 private const val MAX_PAGES = "max pages"
@@ -91,6 +89,8 @@ class GalleryPreviewFragment : Fragment() {
             savedPageCount = maxPages
         }
     }
+
+    fun refreshThumbnails() = thumbAdapter.notifyDataSetChanged()
 
     private fun setGalleryView(view: View) {
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)

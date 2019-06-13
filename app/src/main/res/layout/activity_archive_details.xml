@@ -24,7 +24,8 @@
                                            android:layout_height="match_parent"
                                            tools:context=".ArchiveDetails"
                                            android:id="@+id/drawer_layout"
-                                           android:fitsSystemWindows="false">
+                                           android:fitsSystemWindows="false"
+                                           tools:menu="@menu/archive_details_menu">
 
     <LinearLayout
             android:orientation="vertical"
