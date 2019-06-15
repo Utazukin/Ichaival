@@ -36,7 +36,10 @@ import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.android.synthetic.main.activity_reader.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
@@ -232,8 +235,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        when (id) {
+        when (item.itemId) {
             R.id.bookmark_archive -> {
                 archive?.let {
                     if (!ReaderTabHolder.isTabbed(it.id)) {
@@ -264,6 +266,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                             imagePager.setCurrentItem(value, false)
                         }
                         dialog.show(supportFragmentManager, "page_picker")
+                    }
+                }
+            }
+            R.id.refresh_item -> {
+                archive?.run {
+                    invalidateCache()
+                    launch {
+                        withContext(Dispatchers.Default) { extract() }
+                        loadedPages.clear()
+                        loadImage(currentPage)
                     }
                 }
             }
@@ -331,10 +343,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onImageLoadError(fragment: ReaderFragment) {
-        archive?.let {
-            it.invalidateCache()
+        archive?.run {
+            invalidateCache()
             launch {
-                runBlocking(Dispatchers.Default) { it.extract() }
+                withContext(Dispatchers.Default) { extract() }
                 fragment.reloadImage()
             }
         }

@@ -34,4 +34,7 @@
             android:title="@string/goto_page"
             app:showAsAction="never"
             android:id="@+id/goto_menu"/>
+    <item
+            android:title="@string/refresh_menu_item"
+            android:id="@+id/refresh_item"/>
 </menu>
