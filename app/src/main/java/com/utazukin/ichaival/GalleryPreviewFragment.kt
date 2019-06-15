@@ -21,9 +21,7 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
@@ -49,6 +47,8 @@ class GalleryPreviewFragment : Fragment() {
         arguments?.let {
             archiveId = it.getString(ARCHIVE_ID)
         }
+
+        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -65,6 +65,25 @@ class GalleryPreviewFragment : Fragment() {
         }
 
         return view
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.archive_details_menu, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh_item -> {
+                archiveId?.let {
+                    DatabaseReader.invalidateImageCache(it)
+                    activityScope.launch {
+                        (activity as ArchiveDetails).extractArchive(it)
+                        thumbAdapter.notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onAttach(context: Context) {
@@ -89,8 +108,6 @@ class GalleryPreviewFragment : Fragment() {
             savedPageCount = maxPages
         }
     }
-
-    fun refreshThumbnails() = thumbAdapter.notifyDataSetChanged()
 
     private fun setGalleryView(view: View) {
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)

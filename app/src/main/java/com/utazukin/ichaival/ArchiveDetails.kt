@@ -22,7 +22,6 @@ import android.animation.LayoutTransition
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
@@ -57,7 +56,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         archiveId?.let { launch { extractArchive(it) } }
     }
 
-    private suspend fun extractArchive(id: String) {
+    suspend fun extractArchive(id: String) {
         val archive = withContext(Dispatchers.Default) {
             val a = DatabaseReader.getArchive(id, filesDir)
             a?.extract()
@@ -115,22 +114,6 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             if (resultCode == Activity.RESULT_OK)
                 finish()
         }
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.refresh_item -> {
-                archiveId?.let {
-                    DatabaseReader.invalidateImageCache(it)
-                    launch {
-                        extractArchive(it)
-                        val adapter = pager.adapter as DetailsPagerAdapter
-                        adapter.thumbFragment?.refreshThumbnails()
-                    }
-                }
-            }
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     override fun onThumbSelection(page: Int) {
