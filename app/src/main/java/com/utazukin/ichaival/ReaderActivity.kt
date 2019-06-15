@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.app.Activity
 import android.os.Bundle
 import android.os.Handler
+import android.preference.PreferenceManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -71,6 +72,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     var archive: Archive? = null
         private set
     private var currentPage = 0
+    private var rtol = false
     private val loadedPages = mutableListOf<Boolean>()
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
@@ -84,6 +86,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
 
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        rtol = prefs.getBoolean(getString(R.string.rtol_pref_key), false)
+
         mVisible = true
 
         imagePager = findViewById(R.id.image_pager)
@@ -96,9 +101,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
 
             override fun onPageSelected(page: Int) {
-                currentPage = page
-                ReaderTabHolder.updatePageIfTabbed(archive!!.id, page)
-                loadImage(currentPage)
+                currentPage = getAdjustedPage(page)
+                ReaderTabHolder.updatePageIfTabbed(archive!!.id, currentPage)
+                loadImage(page)
                 supportActionBar?.subtitle = "Page ${currentPage + 1}"
             }
 
@@ -121,9 +126,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     supportActionBar?.title = it.title
                     //Use the page from the thumbnail over the bookmark
                     val page = savedPage ?: ReaderTabHolder.getCurrentPage(arcid)
+                    val adjustedPage = getAdjustedPage(page)
                     currentPage = page
-                    loadImage(page)
-                    imagePager.setCurrentItem(page, false)
+                    loadImage(adjustedPage)
+                    imagePager.setCurrentItem(adjustedPage, false)
                     supportActionBar?.subtitle = "Page ${currentPage + 1}"
 
                     setTabbedIcon(ReaderTabHolder.isTabbed(arcid))
@@ -170,6 +176,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onTabsCleared(oldSize: Int) = setTabbedIcon(false)
 
     private fun setTabbedIcon(tabbed: Boolean) = setTabbedIcon(optionsMenu?.findItem(R.id.bookmark_archive), tabbed)
+
+    private fun getAdjustedPage(page: Int) = if (rtol) archive!!.numPages - page - 1 else page
 
     private fun adjustLoadedPages(page: Int) : Boolean {
         if (page >= loadedPages.size) {
@@ -337,8 +345,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onFragmentTap(zone: TouchZone) {
         when (zone) {
             TouchZone.Center -> toggle()
-            TouchZone.Left -> image_pager.setCurrentItem(image_pager.currentItem - 1, false)
-            TouchZone.Right -> image_pager.setCurrentItem(image_pager.currentItem + 1, false)
+            TouchZone.Left -> imagePager.setCurrentItem(imagePager.currentItem - 1, false)
+            TouchZone.Right -> imagePager.setCurrentItem(imagePager.currentItem + 1, false)
         }
     }
 
@@ -357,24 +365,24 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
          * Whether or not the system UI should be auto-hidden after
          * [AUTO_HIDE_DELAY_MILLIS] milliseconds.
          */
-        private val AUTO_HIDE = true
+        private const val AUTO_HIDE = true
 
         /**
          * If [AUTO_HIDE] is set, the number of milliseconds to wait after
          * user interaction before hiding the system UI.
          */
-        private val AUTO_HIDE_DELAY_MILLIS = 5000
+        private const val AUTO_HIDE_DELAY_MILLIS = 5000
 
         /**
          * Some older devices needs a small delay between UI widget updates
          * and a change of the status and navigation bar.
          */
-        private val UI_ANIMATION_DELAY = 300
+        private const val UI_ANIMATION_DELAY = 300
     }
 
     private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
 
-        override fun getItem(position: Int) = ReaderFragment.createInstance(position)
+        override fun getItem(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
 
         override fun getCount(): Int = loadedPages.size
     }

@@ -40,6 +40,10 @@
 
     <SwitchPreference
             android:defaultValue="false"
+            android:title="@string/rtol_pref_name"
+            android:key="@string/rtol_pref_key"/>
+    <SwitchPreference
+            android:defaultValue="false"
             android:title="@string/verbose_pref_name"
             android:key="@string/verbose_pref"
             android:summary="@string/verbose_pref_summary"/>

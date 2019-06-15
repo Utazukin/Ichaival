@@ -147,4 +147,6 @@
     <string name="tag_menu">Tags</string>
     <string name="goto_page">Go to Page</string>
     <string name="refresh_menu_item">Force Refresh</string>
+    <string name="rtol_pref_key">right to left pref</string>
+    <string name="rtol_pref_name">Right to Left Reader</string>
 </resources>
