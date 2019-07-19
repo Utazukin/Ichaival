@@ -149,4 +149,6 @@
     <string name="refresh_menu_item">Force Refresh</string>
     <string name="rtol_pref_key">right to left pref</string>
     <string name="rtol_pref_name">Right to Left Reader</string>
+    <string name="reader_pref_header">Reader</string>
+    <string name="source_pref_header">Source</string>
 </resources>

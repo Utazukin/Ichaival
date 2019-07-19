@@ -26,44 +26,54 @@
          dismiss it. -->
     <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
 
-    <EditTextPreference
-            android:selectAllOnFocus="true"
-            android:title="@string/server_location_name"
-            android:key="@string/server_address_preference"
-            android:singleLine="true"
-            />
-    <EditTextPreference
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="@string/api_key_pref_name"
-            android:key="@string/api_key_pref"/>
+    <PreferenceCategory
+            android:title="@string/pref_header_general">
 
-    <SwitchPreference
-            android:defaultValue="false"
-            android:title="@string/rtol_pref_name"
-            android:key="@string/rtol_pref_key"/>
-    <SwitchPreference
-            android:defaultValue="false"
-            android:title="@string/verbose_pref_name"
-            android:key="@string/verbose_pref"
-            android:summary="@string/verbose_pref_summary"/>
-    <Preference
-            android:title="@string/thumbnail_setting"
-            android:key="@string/thumbnail_pref"
-            android:summary="@string/thumbnail_summary"/>
+        <EditTextPreference
+                android:selectAllOnFocus="true"
+                android:title="@string/server_location_name"
+                android:key="@string/server_address_preference"
+                android:singleLine="true"
+                />
+        <EditTextPreference
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:title="@string/api_key_pref_name"
+                android:key="@string/api_key_pref"/>
+        <SwitchPreference
+                android:defaultValue="false"
+                android:title="@string/verbose_pref_name"
+                android:key="@string/verbose_pref"
+                android:summary="@string/verbose_pref_summary"/>
+    </PreferenceCategory>
 
-    <Preference
-            android:title="View on GitHub"
-            android:key="@string/git_key"
-            android:summary="View source on GitHub"/>
+    <PreferenceCategory
+            android:title="@string/reader_pref_header">
 
-    <Preference
-            android:title="Licensed under GPLv3"
-            android:key="@string/gpl_key"
-            android:summary="Tap to view"/>
-    <Preference
-            android:title="Open Source Licenses"
-            android:key="@string/license_key"
-            android:summary="Licences used by this app"/>
+        <SwitchPreference
+                android:defaultValue="false"
+                android:title="@string/rtol_pref_name"
+                android:key="@string/rtol_pref_key"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+            android:title="@string/source_pref_header">
+
+        <Preference
+                android:title="@string/thumbnail_setting"
+                android:key="@string/thumbnail_pref"
+                android:summary="@string/thumbnail_summary"/>
+        <Preference
+                android:title="Open Source Licenses"
+                android:key="@string/license_key"
+                android:summary="Licences used by this app"/>
+        <Preference
+                android:title="Licensed under GPLv3"
+                android:key="@string/gpl_key"
+                android:summary="Tap to view"/>
+        <Preference
+                android:title="View on GitHub"
+                android:key="@string/git_key"
+                android:summary="View source on GitHub"/>
+    </PreferenceCategory>
 
 </PreferenceScreen>
