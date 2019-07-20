@@ -77,6 +77,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager
+    private val subtitle: String
+        get() {
+            val arc = archive
+            return if (arc != null && arc.numPages > 0)
+                "Page ${currentPage + 1}/${arc.numPages}"
+            else
+                "Page ${currentPage + 1}"
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,7 +112,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 currentPage = getAdjustedPage(page)
                 ReaderTabHolder.updatePageIfTabbed(archive!!.id, currentPage)
                 loadImage(page)
-                supportActionBar?.subtitle = "Page ${currentPage + 1}"
+                supportActionBar?.subtitle = subtitle
             }
 
         } )
@@ -130,7 +138,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     currentPage = page
                     loadImage(adjustedPage)
                     imagePager.setCurrentItem(adjustedPage, false)
-                    supportActionBar?.subtitle = "Page ${currentPage + 1}"
+                    supportActionBar?.subtitle = subtitle
 
                     setTabbedIcon(ReaderTabHolder.isTabbed(arcid))
                 }
