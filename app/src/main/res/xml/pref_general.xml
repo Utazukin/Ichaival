@@ -45,6 +45,10 @@
                 android:title="@string/verbose_pref_name"
                 android:key="@string/verbose_pref"
                 android:summary="@string/verbose_pref_summary"/>
+        <Preference
+                android:title="@string/thumbnail_setting"
+                android:key="@string/thumbnail_pref"
+                android:summary="@string/thumbnail_summary"/>
     </PreferenceCategory>
 
     <PreferenceCategory
@@ -58,10 +62,6 @@
     <PreferenceCategory
             android:title="@string/source_pref_header">
 
-        <Preference
-                android:title="@string/thumbnail_setting"
-                android:key="@string/thumbnail_pref"
-                android:summary="@string/thumbnail_summary"/>
         <Preference
                 android:title="Open Source Licenses"
                 android:key="@string/license_key"
