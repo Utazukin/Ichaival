@@ -64,18 +64,19 @@ class Archive(json: JSONObject) {
                 else {
                     if (!mutableTags.containsKey(namespace))
                         mutableTags[namespace] = mutableListOf()
-                    mutableTags[namespace]?.add(split[1])
+                    mutableTags[namespace]!!.add(split[1])
                 }
             }
-            else if (!tag.isEmpty()) {
+            else if (tag.isNotEmpty()) {
                 if (!mutableTags.containsKey("global"))
                     mutableTags["global"] = mutableListOf()
-                mutableTags["global"]?.add(trimmed)
+                mutableTags["global"]!!.add(trimmed)
             }
         }
         tags = mutableTags
 
-        isNew = json.getString("isnew") == "block"
+        val isNewString = json.getString("isnew")
+        isNew = isNewString == "block" || isNewString == "true"
     }
 
     suspend fun extract() {
