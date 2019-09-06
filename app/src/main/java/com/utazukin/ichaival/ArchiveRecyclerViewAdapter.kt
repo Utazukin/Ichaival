@@ -33,7 +33,7 @@ import kotlinx.coroutines.*
 
 class ArchiveRecyclerViewAdapter(
     private val mListener: OnListFragmentInteractionListener?,
-    private val longListener: ((a: Archive) -> Boolean)?,
+    private val longListener: ((a: ArchiveBase) -> Boolean)?,
     private val scope: CoroutineScope,
     private val glideManager: RequestManager
 ) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
@@ -44,22 +44,22 @@ class ArchiveRecyclerViewAdapter(
 
     private val onLongClickListener: View.OnLongClickListener
 
-    private var mValuesCopy: List<Archive>
+    private var mValuesCopy: List<ArchiveBase>
 
-    private val mValues: MutableList<Archive> = mutableListOf()
+    private val mValues: MutableList<ArchiveBase> = mutableListOf()
 
     private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
 
     init {
         mOnClickListener = View.OnClickListener { v ->
-            val item = v.tag as Archive
+            val item = v.tag as ArchiveBase
             // Notify the active callbacks interface (the activity, if the fragment is attached to
             // one) that an item has been selected.
             mListener?.onListFragmentInteraction(item)
         }
 
         onLongClickListener = View.OnLongClickListener { v ->
-            val item = v.tag as Archive
+            val item = v.tag as ArchiveBase
             longListener?.invoke(item) == true
         }
 
@@ -120,14 +120,14 @@ class ArchiveRecyclerViewAdapter(
 
     fun updateSort(method: SortMethod, descending: Boolean) = updateSort(method, descending, false)
 
-    fun updateDataCopy(list: List<Archive>) {
+    fun updateDataCopy(list: List<ArchiveBase>) {
         mValues.clear()
         mValues.addAll(list)
         mValuesCopy = mValues.toList()
         updateSort(sortMethod, true)
     }
 
-    fun getRandomArchive() : Archive? {
+    fun getRandomArchive() : ArchiveBase? {
         return if (mValues.any()) mValues.random() else null
     }
 
@@ -135,7 +135,7 @@ class ArchiveRecyclerViewAdapter(
         if (filter == null)
             return mValues.size
 
-        fun addIfNew(archive: Archive) {
+        fun addIfNew(archive: ArchiveBase) {
             if (!onlyNew || archive.isNew)
                 mValues.add(archive)
         }

@@ -18,37 +18,83 @@
 
 package com.utazukin.ichaival
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.actor
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import org.json.JSONObject
 
-class Archive(json: JSONObject) {
-    val title: String = json.getString("title")
-    val id: String = json.getString("arcid")
-    val tags: Map<String, List<String>>
-    var isNew = false
-    var dateAdded = 0
-        private set
+@Entity
+data class DataArchive(
+    @PrimaryKey override val id: String,
+    @ColumnInfo override val title: String,
+    @ColumnInfo override var dateAdded: Int,
+    @ColumnInfo override var isNew: Boolean,
+    @ColumnInfo override val tags: Map<String, List<String>>
+) : ArchiveBase()
+
+abstract class ArchiveBase {
+    abstract val title: String
+    abstract val id: String
+    abstract val tags: Map<String, List<String>>
+    abstract var isNew: Boolean
+    abstract var dateAdded: Int
+        protected set
     val numPages: Int
         get() = DatabaseReader.getPageCount(id)
 
-    private val extractActor by lazy {
-        GlobalScope.actor<ExtractMsg>(Dispatchers.Default, capacity = Channel.UNLIMITED) {
-            val emptyList = listOf<String>()
-            var pages: List<String>? = null
-            for (msg in channel) {
-                pages = when (msg) {
-                    is QueueExtract -> msg.action(msg.id)
-                    is GetPages -> {
-                        msg.response.complete(pages ?: emptyList)
-                        null
-                    }
-                }
+    suspend fun extract() {
+        DatabaseReader.getPageList(id)
+    }
+
+    fun invalidateCache() {
+        DatabaseReader.invalidateImageCache(id)
+    }
+
+    fun hasPage(page: Int) : Boolean {
+        return numPages < 0 || (page in 0 until numPages)
+    }
+
+    suspend fun getPageImage(page: Int) : String? {
+        return downloadPage(page)
+    }
+
+    private suspend fun downloadPage(page: Int) : String? {
+        val pages = DatabaseReader.getPageList(id)
+        return if (page < pages.size) DatabaseReader.getRawImageUrl(pages[page]) else null
+    }
+
+    fun containsTag(tag: String) : Boolean {
+        if (tag.contains(":")) {
+            val split = tag.split(":")
+            val namespace = split[0].trim()
+            var normalized = split[1].trim().replace("_", " ").toLowerCase()
+            val exact = normalized.startsWith("\"") && normalized.endsWith("\"")
+            if (exact)
+                normalized = normalized.removeSurrounding("\"")
+            val nTags = getTags(namespace)
+            return nTags != null && nTags.any { if (exact) it.toLowerCase() == normalized else it.toLowerCase().contains(normalized) }
+        }
+        else {
+            val normalized = tag.trim().replace("_", " ").toLowerCase()
+            for (pair in tags) {
+                if (pair.value.any { it.toLowerCase().contains(normalized)})
+                    return true
             }
         }
+        return false
     }
+
+    private fun getTags(namespace: String) : List<String>? {
+        return if (tags.containsKey(namespace)) tags[namespace] else null
+    }
+}
+
+class Archive(json: JSONObject) : ArchiveBase() {
+    override val title: String = json.getString("title")
+    override val id: String = json.getString("arcid")
+    override val tags: Map<String, List<String>>
+    override var isNew = false
+    override var dateAdded = 0
 
     init {
         val tagString: String = json.getString("tags")
@@ -79,49 +125,4 @@ class Archive(json: JSONObject) {
         isNew = isNewString == "block" || isNewString == "true"
     }
 
-    suspend fun extract() {
-        DatabaseReader.getPageList(id, extractActor)
-    }
-
-    fun invalidateCache() {
-        DatabaseReader.invalidateImageCache(id)
-    }
-
-    fun hasPage(page: Int) : Boolean {
-        return numPages < 0 || (page in 0 until numPages)
-    }
-
-    suspend fun getPageImage(page: Int) : String? {
-        return downloadPage(page)
-    }
-
-    private suspend fun downloadPage(page: Int) : String? {
-        val pages = DatabaseReader.getPageList(id, extractActor)
-        return if (page < pages.size) DatabaseReader.getRawImageUrl(pages[page]) else null
-    }
-
-    fun containsTag(tag: String) : Boolean {
-        if (tag.contains(":")) {
-            val split = tag.split(":")
-            val namespace = split[0].trim()
-            var normalized = split[1].trim().replace("_", " ").toLowerCase()
-            val exact = normalized.startsWith("\"") && normalized.endsWith("\"")
-            if (exact)
-                normalized = normalized.removeSurrounding("\"")
-            val nTags = getTags(namespace)
-            return nTags != null && nTags.any { if (exact) it.toLowerCase() == normalized else it.toLowerCase().contains(normalized) }
-        }
-        else {
-            val normalized = tag.trim().replace("_", " ").toLowerCase()
-            for (pair in tags) {
-                if (pair.value.any { it.toLowerCase().contains(normalized)})
-                    return true
-            }
-        }
-        return false
-    }
-
-    private fun getTags(namespace: String) : List<String>? {
-        return if (tags.containsKey(namespace)) tags[namespace] else null
-    }
 }

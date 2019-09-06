@@ -36,7 +36,7 @@ private const val MAX_PAGES = "max pages"
 
 class GalleryPreviewFragment : Fragment() {
     private var archiveId: String? = null
-    private var archive: Archive? = null
+    private var archive: ArchiveBase? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
     private lateinit var activityScope: CoroutineScope
     private lateinit var progress: ProgressBar
@@ -60,7 +60,7 @@ class GalleryPreviewFragment : Fragment() {
         progress = view.findViewById(R.id.thumb_load_progress)
 
         activityScope.launch {
-            archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }
+            archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
             setGalleryView(view)
         }
 

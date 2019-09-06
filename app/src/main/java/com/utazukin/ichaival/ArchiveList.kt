@@ -39,7 +39,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     private lateinit var tagListLabel: TextView
     private lateinit var tagListIcon: ImageView
 
-    override fun onListFragmentInteraction(archive: Archive?) {
+    override fun onListFragmentInteraction(archive: ArchiveBase?) {
         if (archive != null)
             startDetailsActivity(archive.id)
     }

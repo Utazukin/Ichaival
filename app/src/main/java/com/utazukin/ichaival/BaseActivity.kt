@@ -22,6 +22,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.preference.PreferenceManager
 import android.view.MenuItem
 import android.widget.ImageView
@@ -65,6 +66,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
             setDisplayHomeAsUpEnabled(true)
             setHomeAsUpIndicator(R.drawable.ic_menu)
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
+        super.onCreate(savedInstanceState, persistentState)
+        DatabaseReader.init(applicationContext)
     }
 
     protected open fun onCreateDrawer() {

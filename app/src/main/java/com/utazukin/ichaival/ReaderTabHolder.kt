@@ -92,7 +92,7 @@ object ReaderTabHolder {
         unregisterClearListener(listener)
     }
 
-    fun addTab(archive: Archive, page: Int) {
+    fun addTab(archive: ArchiveBase, page: Int) {
         if (!openTabs.containsKey(archive.id)) {
             val tab = ReaderTab(archive, page)
             openTabs[archive.id] = tab
@@ -185,6 +185,6 @@ object ReaderTabHolder {
 }
 
 data class ReaderTab(val id: String, val title: String, var page: Int) {
-    constructor(archive: Archive, page: Int) : this(archive.id, archive.title, page)
+    constructor(archive: ArchiveBase, page: Int) : this(archive.id, archive.title, page)
 }
 

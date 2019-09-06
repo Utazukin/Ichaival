@@ -41,7 +41,7 @@ class ThumbRecyclerViewAdapter(
     private val listener: ThumbInteractionListener?,
     private val glide: RequestManager,
     private val scope: CoroutineScope,
-    private val archive: Archive)
+    private val archive: ArchiveBase)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val onClickListener: View.OnClickListener

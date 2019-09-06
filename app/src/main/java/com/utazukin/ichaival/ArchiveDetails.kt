@@ -58,7 +58,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     suspend fun extractArchive(id: String) {
         val archive = withContext(Dispatchers.Default) {
-            val a = DatabaseReader.getArchive(id, filesDir)
+            val a = DatabaseReader.getArchive(id)
             a?.extract()
             a
         }

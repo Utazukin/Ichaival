@@ -18,13 +18,13 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import android.net.ConnectivityManager
 import android.preference.Preference
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
+import androidx.room.Room
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.channels.actor
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -47,14 +47,16 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val thumbPath = "$apiPath/thumbnail"
     private const val extractPath = "$apiPath/extract"
     private const val tagsPath = "$apiPath/tagstats"
+    private const val clearNewPath = "$apiPath/clear_new"
     private const val timeout = 5000 //ms
 
-    private var archiveList: List<Archive>? = null
     private var serverLocation: String = ""
     private var isDirty = false
     private var apiKey: String = ""
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     private val archivePageMap = mutableMapOf<String, List<String>>()
+    private val archiveActorMap = mutableMapOf<String, SendChannel<ExtractMsg>>()
+    private lateinit var database: ArchiveDatabase
     var listener: DatabaseMessageListener? = null
     var refreshListener: DatabaseRefreshListener? = null
     var connectivityManager: ConnectivityManager? = null
@@ -62,33 +64,29 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     var tagSuggestions : Array<String> = arrayOf()
         private set
 
-    suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<Archive> {
-        if (archiveList == null || forceUpdate) {
+    fun init(context: Context) {
+        if (!this::database.isInitialized)
+            database = Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db").build()
+    }
+
+    suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<ArchiveBase> {
+        if (forceUpdate || checkDirty(cacheDir)) {
             refreshListener?.isRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
-            archiveList = if (!forceUpdate && !checkDirty(cacheDir))
-                readArchiveList(JSONArray(jsonFile.readText()))
-            else if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
-                if (archiveList != null) archiveList else listOf()
-            } else {
-                val archiveJson = withContext(Dispatchers.Default) { downloadArchiveList() }
-                if (archiveJson == null) {
-                    when {
-                        archiveList != null -> archiveList
-                        jsonFile.exists() -> readArchiveList(JSONArray(jsonFile.readText()))
-                        else -> listOf()
-                    }
-                }
-                else {
-                    jsonFile.writeText(archiveJson.toString())
-                    readArchiveList(archiveJson)
-                }
+            val archiveJson = withContext(Dispatchers.Default) { downloadArchiveList() }
+            archiveJson?.let {
+                jsonFile.writeText(it.toString())
+                val serverArchives = readArchiveList(it)
+                updateDatabase(serverArchives)
             }
             refreshListener?.isRefreshing(false)
-            archiveList = archiveList!!.sortedBy { it.title.toLowerCase() }
             isDirty = false
         }
-        return archiveList!!
+        return database.getAll(SortMethod.Alpha, true)
+    }
+
+    private fun updateDatabase(jsonArchives: List<Archive>) {
+        database.insertOrUpdate(jsonArchives)
     }
 
     fun updateServerLocation(location: String) {
@@ -99,7 +97,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         apiKey = key
     }
 
-    suspend fun getPageList(id: String, extractActor: SendChannel<ExtractMsg>) : List<String> {
+    private suspend fun getPageList(id: String, extractActor: SendChannel<ExtractMsg>) : List<String> {
         fun getPages(id: String): List<String> {
             return if (!archivePageMap.containsKey(id)) {
                 val pages = getPageList(extractArchive(id))
@@ -119,6 +117,32 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             extractActor.send(GetPages(response))
             response.await()
         } else archivePageMap[id]!!
+    }
+
+    suspend fun getPageList(id: String) : List<String> {
+        val actor = GlobalScope.getArchiveActor(id)
+        return getPageList(id, actor)
+    }
+
+    private fun CoroutineScope.getArchiveActor(id: String) : SendChannel<ExtractMsg> {
+        var archiveActor = archiveActorMap[id]
+        if (archiveActor == null) {
+            archiveActor = actor {
+                var pages: List<String>? = null
+                for (msg in channel) {
+                    pages = when (msg) {
+                        is QueueExtract -> msg.action(msg.id)
+                        is GetPages -> {
+                            msg.response.complete(pages ?: emptyList())
+                            null
+                        }
+                    }
+                }
+            }
+            archiveActorMap[id] = archiveActor
+        }
+
+        return archiveActor
     }
 
     fun getPageCount(id: String) : Int = archivePageMap[id]?.size ?: -1
@@ -184,16 +208,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             notifyError("Invalid URL!")
             return false
         }
-    }
-
-    suspend fun getArchive(id: String, fileDir: File) : Archive? {
-        val archives = readArchiveList(fileDir)
-
-        for (archive: Archive in archives) {
-            if (archive.id == id)
-                return archive
-        }
-        return null
     }
 
     fun getRawImageUrl(path: String) : String {
@@ -285,7 +299,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         listener?.onError(error)
     }
 
-    private fun getArchive(id: String) = archiveList?.find { x -> x.id == id }
+    fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
     private fun notifyExtract(id: String) {
         val title = getArchive(id)?.title
@@ -399,7 +413,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             thumbDir.deleteRecursively()
     }
 
-    suspend fun getArchiveImage(archive: Archive, filesDir: File) = getArchiveImage(archive.id, filesDir)
+    suspend fun getArchiveImage(archive: ArchiveBase, filesDir: File) = getArchiveImage(archive.id, filesDir)
 
     suspend fun getArchiveImage(id: String, filesDir: File) : String? {
         val thumbDir = getThumbDir(filesDir)

@@ -116,6 +116,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
 
+        DatabaseReader.init(activity!!.applicationContext)
         activityScope.launch(Dispatchers.Main) {
             val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
             listAdapter.updateDataCopy(updatedList)
@@ -151,7 +152,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         }
     }
 
-    private fun handleArchiveLongPress(archive: Archive) : Boolean {
+    private fun handleArchiveLongPress(archive: ArchiveBase) : Boolean {
         fragmentManager?.let {
             val tagFragment = TagDialogFragment.newInstance(archive.id)
             tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
@@ -254,6 +255,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
     }
 
     interface OnListFragmentInteractionListener {
-        fun onListFragmentInteraction(archive: Archive?)
+        fun onListFragmentInteraction(archive: ArchiveBase?)
     }
 }

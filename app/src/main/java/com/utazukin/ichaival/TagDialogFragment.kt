@@ -54,7 +54,7 @@ class TagDialogFragment : DialogFragment() {
             val archiveId = it.getString(ARCHIVE_PARAM)
             archiveId?.let {
                 GlobalScope.launch(Dispatchers.Main) {
-                    val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId, activity!!.filesDir) }
+                    val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId) }
                     if (archive != null)
                         setUpTags(archive)
                 }
@@ -71,7 +71,7 @@ class TagDialogFragment : DialogFragment() {
         return view
     }
 
-    private fun setUpTags(archive: Archive) {
+    private fun setUpTags(archive: ArchiveBase) {
         for (pair in archive.tags) {
             if (pair.value.isEmpty())
                 continue

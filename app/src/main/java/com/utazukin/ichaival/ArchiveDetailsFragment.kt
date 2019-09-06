@@ -65,7 +65,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         tagLayout = view.findViewById(R.id.tag_layout)
 
         scope.launch {
-            val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!, context!!.filesDir) }
+            val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
             setUpDetailView(view, archive)
         }
         return view
@@ -97,7 +97,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         super.onDestroy()
     }
 
-    private fun setUpTags(archive: Archive) {
+    private fun setUpTags(archive: ArchiveBase) {
         for (pair in archive.tags) {
             if (pair.value.isEmpty())
                 continue
@@ -141,7 +141,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         return tagView
     }
 
-    private fun setUpDetailView(view: View, archive: Archive?) {
+    private fun setUpDetailView(view: View, archive: ArchiveBase?) {
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {

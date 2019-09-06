@@ -69,7 +69,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var mVisible: Boolean = false
     private val mHideRunnable = Runnable { hide() }
 
-    var archive: Archive? = null
+    var archive: ArchiveBase? = null
         private set
     private var currentPage = 0
     private var rtol = false
@@ -129,7 +129,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
         if (arcid != null) {
             launch {
-                archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(arcid, applicationContext.filesDir) }
+                archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(arcid) }
                 archive?.let {
                     supportActionBar?.title = it.title
                     //Use the page from the thumbnail over the bookmark
