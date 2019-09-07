@@ -74,19 +74,19 @@ interface ArchiveDao {
     @Query("Select id from archive")
     fun getAllIds() : List<String>
 
-    @Query("Select currentPage from archive where id = :id and isBookmarked = 1 limit 1")
+    @Query("Select currentPage from archive where id = :id and currentPage >= 0 limit 1")
     fun getBookmarkedPage(id: String) : Int?
 
-    @Query("Update archive set currentPage = :page, isBookmarked = 1 where id = :id")
+    @Query("Update archive set currentPage = :page where id = :id")
     fun updateBookmark(id: String, page: Int)
 
-    @Query("Update archive set currentPage = -1, isBookmarked = 0 where id = :id")
+    @Query("Update archive set currentPage = -1 where id = :id")
     fun removeBookmark(id: String)
 
-    @Query("Update archive set currentPage = -1, isBookmarked = 0 where id in (:ids)")
+    @Query("Update archive set currentPage = -1 where id in (:ids)")
     fun removeAllBookmarks(ids: List<String>)
 
-    @Query("Select id, title, currentPage from archive where isBookmarked = 1")
+    @Query("Select id, title, currentPage from archive where currentPage >= 0")
     fun getBookmarks() : List<ReaderTab>
 
     @Query("Delete from archive where id = :id")

@@ -30,12 +30,11 @@ data class Archive (
     @ColumnInfo var dateAdded: Int,
     @ColumnInfo var isNew: Boolean,
     @ColumnInfo val tags: Map<String, List<String>>,
-    @ColumnInfo var isBookmarked: Boolean,
     @ColumnInfo var currentPage: Int
 ) {
 
     constructor(id: String, title: String, dateAdded: Int, isNew: Boolean, tags: Map<String, List<String>>)
-            : this(id, title, dateAdded, isNew, tags, false, 0)
+            : this(id, title, dateAdded, isNew, tags, -1)
 
     val numPages: Int
         get() = DatabaseReader.getPageCount(id)
