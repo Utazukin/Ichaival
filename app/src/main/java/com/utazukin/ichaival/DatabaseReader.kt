@@ -70,7 +70,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             database = Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db").build()
     }
 
-    suspend fun readArchiveList(cacheDir: File, forceUpdate: Boolean = false): List<ArchiveBase> {
+    suspend fun updateArchiveList(cacheDir: File, forceUpdate: Boolean = false) {
         if (forceUpdate || checkDirty(cacheDir)) {
             refreshListener?.isRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
@@ -83,7 +83,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             refreshListener?.isRefreshing(false)
             isDirty = false
         }
-        return database.getAll(SortMethod.Alpha, true)
     }
 
     private fun updateDatabase(jsonArchives: List<Archive>) {
@@ -103,10 +102,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             return if (!archivePageMap.containsKey(id)) {
                 val pages = getPageList(extractArchive(id))
                 archivePageMap[id] = pages
-
-                if (pages.isNotEmpty())
-                    getArchive(id)?.isNew = false //Set to false since its been opened.
-                    //TODO update the json file.
                 pages
             } else
                 archivePageMap[id]!!
@@ -216,7 +211,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     fun generateSuggestionList() {
-        if (tagSuggestions.isNotEmpty() || serverLocation.isEmpty() || connectivityManager?.activeNetworkInfo?.isConnected != true)
+        if (tagSuggestions.isNotEmpty() || !canConnect(true))
             return
 
         val url = URL("$serverLocation$tagsPath${getApiKey(false)}")
@@ -255,10 +250,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     private fun extractArchive(id: String) : JSONObject? {
-        if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
-            notifyError("No network connection!")
+        if (!canConnect())
             return null
-        }
 
         val url = URL("$serverLocation$extractPath?id=$id${getApiKey(true)}")
         notifyExtract(id)
@@ -302,20 +295,49 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
+    suspend fun setArchiveNewFlag(id: String, isNew: Boolean) {
+        database.archiveDao().updateNewFlag(id, isNew)
+
+        if (!canConnect(true))
+            return
+
+        val url = URL("$serverLocation$clearNewPath?id=$id${getApiKey(true)}")
+        val connection = url.openConnection() as HttpURLConnection
+        try {
+            with(connection) {
+                connectTimeout = timeout
+                if (responseCode != HttpURLConnection.HTTP_OK)
+                    return
+            }
+        }
+        catch (e: Exception) {}
+        finally {
+            connection.disconnect()
+        }
+    }
+
     private fun notifyExtract(id: String) {
-        val title = getArchive(id)?.title
+        val title = database.archiveDao().getArchiveTitle(id)
         if (title != null)
             listener?.onExtract(title)
     }
 
-    private fun downloadArchiveList() : JSONArray? {
+    private fun canConnect(silent: Boolean = false) : Boolean {
         if (serverLocation.isEmpty())
-            return null
+            return false
 
         if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
-            notifyError("No network connection!")
-            return null
+            if (!silent)
+                notifyError("No network connection!")
+            return false
         }
+
+        return true
+    }
+
+    private fun downloadArchiveList() : JSONArray? {
+        if (!canConnect())
+            return null
 
         val url = URL("$serverLocation$archiveListPath?${getApiKey(false)}")
         val connection = url.openConnection() as HttpURLConnection

@@ -118,7 +118,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
         DatabaseReader.init(activity!!.applicationContext)
         activityScope.launch(Dispatchers.Main) {
-            withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
+            withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir) }
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
@@ -244,7 +244,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
     fun forceArchiveListUpdate() {
         activityScope.launch {
-            withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir, true) }
+            withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir, true) }
             viewModel.filter(searchView.query, newCheckBox.isChecked)
         }
     }

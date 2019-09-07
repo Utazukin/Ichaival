@@ -110,7 +110,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
             override fun onPageSelected(page: Int) {
                 currentPage = getAdjustedPage(page)
-                ReaderTabHolder.updatePageIfTabbed(archive!!.id, currentPage)
+                archive?.let {
+                    ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)
+                    launch(Dispatchers.Default) {
+                        if (currentPage == it.numPages)
+                            DatabaseReader.setArchiveNewFlag(it.id, false)
+                    }
+                }
+
                 loadImage(page)
                 supportActionBar?.subtitle = subtitle
             }

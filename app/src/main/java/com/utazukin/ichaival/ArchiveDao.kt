@@ -65,6 +65,12 @@ interface ArchiveDao {
     @Query("Select * from dataarchive where id = :id limit 1")
     fun getArchive(id: String) : DataArchive?
 
+    @Query("Select title from dataarchive where id = :id limit 1")
+    fun getArchiveTitle(id: String) : String?
+
+    @Query("Update dataarchive set isNew = :isNew where id = :id")
+    fun updateNewFlag(id: String, isNew: Boolean)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(vararg archives: DataArchive)
 
