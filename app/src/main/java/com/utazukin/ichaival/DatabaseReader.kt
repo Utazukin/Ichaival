@@ -56,7 +56,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     private val archivePageMap = mutableMapOf<String, List<String>>()
     private val archiveActorMap = mutableMapOf<String, SendChannel<ExtractMsg>>()
-    private lateinit var database: ArchiveDatabase
+    lateinit var database: ArchiveDatabase
+        private set
     var listener: DatabaseMessageListener? = null
     var refreshListener: DatabaseRefreshListener? = null
     var connectivityManager: ConnectivityManager? = null

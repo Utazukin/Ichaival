@@ -81,4 +81,8 @@ dependencies {
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     implementation 'androidx.room:room-runtime:2.1.0'
     kapt 'androidx.room:room-compiler:2.1.0'
+    implementation "androidx.paging:paging-runtime:2.1.0"
+    implementation "android.arch.lifecycle:extensions:1.1.1"
+    implementation "android.arch.lifecycle:viewmodel:1.1.1"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.2.0-alpha04"
 }

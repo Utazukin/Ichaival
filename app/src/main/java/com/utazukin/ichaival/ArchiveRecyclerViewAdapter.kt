@@ -25,6 +25,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.paging.PagedListAdapter
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
@@ -36,17 +38,11 @@ class ArchiveRecyclerViewAdapter(
     private val longListener: ((a: ArchiveBase) -> Boolean)?,
     private val scope: CoroutineScope,
     private val glideManager: RequestManager
-) : RecyclerView.Adapter<ArchiveRecyclerViewAdapter.ViewHolder>() {
+) : PagedListAdapter<DataArchive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
-    private var sortMethod: SortMethod = SortMethod.Alpha
-    private var descending = false
     private val mOnClickListener: View.OnClickListener
 
     private val onLongClickListener: View.OnLongClickListener
-
-    private var mValuesCopy: List<ArchiveBase>
-
-    private val mValues: MutableList<ArchiveBase> = mutableListOf()
 
     private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
 
@@ -62,8 +58,6 @@ class ArchiveRecyclerViewAdapter(
             val item = v.tag as ArchiveBase
             longListener?.invoke(item) == true
         }
-
-        mValuesCopy = mValues.toList()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -73,18 +67,23 @@ class ArchiveRecyclerViewAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = mValues[position]
-        holder.archiveName.text = item.title
-        val job = scope.launch(Dispatchers.Main) {
-            val image = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(item, holder.mContentView.context.filesDir)}
-            glideManager.load(image).into(holder.archiveImage)
-        }
-        thumbLoadingJobs[holder] = job
+        getItem(position)?.let {
+            holder.archiveName.text = it.title
+            val job = scope.launch(Dispatchers.Main) {
+                val image = withContext(Dispatchers.Default) {
+                    DatabaseReader.getArchiveImage(
+                        it,
+                        holder.mContentView.context.filesDir)
+                }
+                glideManager.load(image).into(holder.archiveImage)
+            }
+            thumbLoadingJobs[holder] = job
 
-        with(holder.mView) {
-            tag = item
-            setOnClickListener(mOnClickListener)
-            setOnLongClickListener(onLongClickListener)
+            with(holder.mView) {
+                tag = it
+                setOnClickListener(mOnClickListener)
+                setOnLongClickListener(onLongClickListener)
+            }
         }
     }
 
@@ -95,106 +94,11 @@ class ArchiveRecyclerViewAdapter(
         super.onViewRecycled(holder)
     }
 
-    private fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
-        if (method != sortMethod || descending != desc || force) {
-            sortMethod = method
-            descending = desc
-
-            when(method) {
-                SortMethod.Alpha -> {
-                    if (descending)
-                        mValues.sortByDescending { it.title.toLowerCase() }
-                    else
-                        mValues.sortBy { it.title.toLowerCase() }
-                }
-                SortMethod.Date -> {
-                    if (descending)
-                        mValues.sortByDescending { it.dateAdded }
-                    else
-                        mValues.sortBy { it.dateAdded }
-                }
-            }
-            notifyDataSetChanged()
-        }
-    }
-
-    fun updateSort(method: SortMethod, descending: Boolean) = updateSort(method, descending, false)
-
-    fun updateDataCopy(list: List<ArchiveBase>) {
-        mValues.clear()
-        mValues.addAll(list)
-        mValuesCopy = mValues.toList()
-        updateSort(sortMethod, true)
-    }
-
     fun getRandomArchive() : ArchiveBase? {
-        return if (mValues.any()) mValues.random() else null
+        //TODO find out why this doesn't work on first press.
+        val random = (0 until itemCount).random()
+        return getItem(random)
     }
-
-    fun filter(filter: CharSequence?, onlyNew: Boolean) : Int {
-        if (filter == null)
-            return mValues.size
-
-        fun addIfNew(archive: ArchiveBase) {
-            if (!onlyNew || archive.isNew)
-                mValues.add(archive)
-        }
-
-        mValues.clear()
-        if (filter.isEmpty())
-            mValues.addAll(if (onlyNew) mValuesCopy.filter { it.isNew } else mValuesCopy)
-        else {
-            val normalized = filter.toString().toLowerCase()
-            val spaceRegex by lazy { Regex("\\s") }
-            for (archive in mValuesCopy) {
-                if (archive.title.toLowerCase().contains(normalized) && !mValues.contains(archive))
-                    addIfNew(archive)
-                else {
-                    val terms = filter.split(spaceRegex)
-                    var hasAll = true
-                    var i = 0
-                    while (i < terms.size) {
-                        var term = terms[i]
-                        val colonIndex = term.indexOf(':')
-                        if (term.startsWith("\"")
-                            || (colonIndex in 0..(term.length - 2) && term[colonIndex + 1] == '"')) {
-                            val builder = StringBuilder(term)
-                            if (!term.endsWith("\"")) {
-                                var k = i + 1
-                                while (k < terms.size && !terms[k].endsWith("\"")) {
-                                    builder.append(" ")
-                                    builder.append(terms[k])
-                                    ++k
-                                }
-
-                                if (k < terms.size && terms[k].endsWith("\"")) {
-                                    builder.append(" ")
-                                    builder.append(terms[k])
-                                }
-                                i = k
-                            }
-                            term = builder.removeSurrounding("\"").toString()
-                        }
-
-                        val containsTag = archive.containsTag(term.removePrefix("-"))
-                        val isNegative = term.startsWith("-")
-                        if (containsTag == isNegative) {
-                            hasAll = false
-                            break
-                        }
-                        ++i
-                    }
-
-                    if (hasAll && !mValues.contains(archive))
-                        addIfNew(archive)
-                }
-            }
-        }
-        updateSort(sortMethod, descending, true)
-        return mValues.size
-    }
-
-    override fun getItemCount(): Int = mValues.size
 
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView) {
         val mContentView: CardView = mView.archive_card
@@ -203,6 +107,13 @@ class ArchiveRecyclerViewAdapter(
 
         override fun toString(): String {
             return super.toString() + " '" + archiveName + "'"
+        }
+    }
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<DataArchive>() {
+            override fun areItemsTheSame(oldItem: DataArchive, newItem: DataArchive) = oldItem.id == newItem.id
+            override fun areContentsTheSame(oldItem: DataArchive, newItem: DataArchive) = oldItem == newItem
         }
     }
 }

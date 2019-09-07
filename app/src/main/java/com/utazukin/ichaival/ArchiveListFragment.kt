@@ -30,6 +30,8 @@ import android.widget.SearchView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -39,6 +41,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.floor
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
@@ -50,6 +53,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
     private lateinit var activityScope: CoroutineScope
     private lateinit var newCheckBox: CheckBox
     private lateinit var randomButton: Button
+    private lateinit var viewModel: ArchiveViewModel
     lateinit var searchView: SearchView
         private set
 
@@ -61,12 +65,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
         setHasOptionsMenu(true)
+        viewModel = ViewModelProviders.of(this).get(ArchiveViewModel::class.java)
 
         // Set the adapter
         with(listView) {
             post {
                 val dpWidth = getDpWidth(width)
-                val columns = Math.floor(dpWidth / 300.0).toInt()
+                val columns = floor(dpWidth / 300.0).toInt()
                 layoutManager = if (columns > 1) GridLayoutManager(
                     context,
                     columns
@@ -79,21 +84,16 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
         searchView = view.findViewById(R.id.archive_search)
         newCheckBox = view.findViewById(R.id.new_checkbox)
-        newCheckBox.setOnCheckedChangeListener { _, checked ->
-            val count = listAdapter.filter(searchView.query, checked)
-            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
-        }
+        newCheckBox.setOnCheckedChangeListener { _, checked -> viewModel.filter(searchView.query, checked) }
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
-                val count = listAdapter.filter(p0, newCheckBox.isChecked)
-                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
+                viewModel.filter(p0, newCheckBox.isChecked)
                 return true
             }
 
             override fun onQueryTextChange(p0: String?): Boolean {
-                val count = listAdapter.filter(p0, newCheckBox.isChecked)
-                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
+                viewModel.filter(p0, newCheckBox.isChecked)
                 return true
             }
         })
@@ -118,17 +118,21 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
         DatabaseReader.init(activity!!.applicationContext)
         activityScope.launch(Dispatchers.Main) {
-            val updatedList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
-            listAdapter.updateDataCopy(updatedList)
+            withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir) }
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
 
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
+            viewModel.init(DatabaseReader.database.archiveDao(), method, descending, searchView.query, newCheckBox.isChecked)
+            viewModel.archiveList.observe(this@ArchiveListFragment, Observer {
+                listAdapter.submitList(it)
+                val size = it.size
+                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
+            })
             updateSortMethod(method, descending, prefs)
 
-            val count = listAdapter.filter(searchView.query, newCheckBox.isChecked)
-            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
+            viewModel.filter(searchView.query, newCheckBox.isChecked)
         }
         return view
     }
@@ -180,10 +184,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
             updated = true
         }
 
-        if (updated) {
-            val listAdapter = listView.adapter as? ArchiveRecyclerViewAdapter
-            listAdapter?.updateSort(sortMethod, descending)
-        }
+        if (updated)
+            viewModel.updateSort(method, descending)
     }
 
     fun showOnlySearch(show: Boolean){
@@ -242,11 +244,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
     fun forceArchiveListUpdate() {
         activityScope.launch {
-            val newList = withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir, true) }
-            val adapter = listView.adapter as ArchiveRecyclerViewAdapter
-            adapter.updateDataCopy(newList)
-            val count = adapter.filter(searchView.query, newCheckBox.isChecked)
-            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, count, count)
+            withContext(Dispatchers.Default) { DatabaseReader.readArchiveList(context!!.filesDir, true) }
+            viewModel.filter(searchView.query, newCheckBox.isChecked)
         }
     }
 
