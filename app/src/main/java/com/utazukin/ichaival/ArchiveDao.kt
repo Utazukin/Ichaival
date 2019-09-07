@@ -29,56 +29,77 @@ import org.json.JSONObject
 
 @Dao
 interface ArchiveDao {
-    @Query("Select * from dataarchive")
-    fun getAll() : List<DataArchive>
+    @Query("Select * from archive")
+    fun getAll() : List<Archive>
 
-    @Query("Select * from dataarchive order by :sortField collate nocase desc")
-    fun getAllDescending(sortField: String) : List<DataArchive>
+    @Query("Select * from archive order by :sortField collate nocase desc")
+    fun getAllDescending(sortField: String) : List<Archive>
 
-    @Query("Select * from dataarchive order by :sortField collate nocase asc")
-    fun getAllAscending(sortField: String) : List<DataArchive>
+    @Query("Select * from archive order by :sortField collate nocase asc")
+    fun getAllAscending(sortField: String) : List<Archive>
 
-    @Query("Select * from dataarchive order by dateAdded desc")
-    fun getDataDateDescending() : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive order by dateAdded desc")
+    fun getDataDateDescending() : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive where id in (:ids) order by dateAdded desc")
-    fun getDataDateDescending(ids: List<String>) : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive where id in (:ids) order by dateAdded desc")
+    fun getDataDateDescending(ids: List<String>) : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive order by title collate nocase desc")
-    fun getDataTitleDescending() : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive order by title collate nocase desc")
+    fun getDataTitleDescending() : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive where id in (:ids) order by title collate nocase desc")
-    fun getDataTitleDescending(ids: List<String>) : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive where id in (:ids) order by title collate nocase desc")
+    fun getDataTitleDescending(ids: List<String>) : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive order by dateAdded asc")
-    fun getDataDateAscending() : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive order by dateAdded asc")
+    fun getDataDateAscending() : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive where id in (:ids) order by dateAdded asc")
-    fun getDataDateAscending(ids: List<String>) : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive where id in (:ids) order by dateAdded asc")
+    fun getDataDateAscending(ids: List<String>) : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive order by title collate nocase asc")
-    fun getDataTitleAscending() : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive order by title collate nocase asc")
+    fun getDataTitleAscending() : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive where id in (:ids) order by title collate nocase asc")
-    fun getDataTitleAscending(ids: List<String>) : DataSource.Factory<Int, DataArchive>
+    @Query("Select * from archive where id in (:ids) order by title collate nocase asc")
+    fun getDataTitleAscending(ids: List<String>) : DataSource.Factory<Int, Archive>
 
-    @Query("Select * from dataarchive where id = :id limit 1")
-    fun getArchive(id: String) : DataArchive?
+    @Query("Select * from archive where id = :id limit 1")
+    fun getArchive(id: String) : Archive?
 
-    @Query("Select title from dataarchive where id = :id limit 1")
+    @Query("Select title from archive where id = :id limit 1")
     fun getArchiveTitle(id: String) : String?
 
-    @Query("Update dataarchive set isNew = :isNew where id = :id")
+    @Query("Update archive set isNew = :isNew where id = :id")
     fun updateNewFlag(id: String, isNew: Boolean)
 
+    @Query("Select id from archive")
+    fun getAllIds() : List<String>
+
+    @Query("Select currentPage from archive where id = :id and isBookmarked = 1 limit 1")
+    fun getBookmarkedPage(id: String) : Int?
+
+    @Query("Update archive set currentPage = :page, isBookmarked = 1 where id = :id")
+    fun updateBookmark(id: String, page: Int)
+
+    @Query("Update archive set currentPage = -1, isBookmarked = 0 where id = :id")
+    fun removeBookmark(id: String)
+
+    @Query("Update archive set currentPage = -1, isBookmarked = 0 where id in (:ids)")
+    fun removeAllBookmarks(ids: List<String>)
+
+    @Query("Select id, title, currentPage from archive where isBookmarked = 1")
+    fun getBookmarks() : List<ReaderTab>
+
+    @Query("Delete from archive where id = :id")
+    fun removeArchive(id: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(vararg archives: DataArchive)
+    fun insertAll(vararg archives: Archive)
 
     @Delete
-    fun removeArchive(archive: DataArchive)
+    fun removeArchive(archive: Archive)
 
     @Update
-    fun updateArchive(archive: DataArchive)
+    fun updateArchive(archive: Archive)
 }
 
 class DatabaseTypeConverters {
@@ -106,38 +127,29 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [DataArchive::class], version = 1, exportSchema = false)
+@Database(entities = [Archive::class], version = 1, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
-    fun getAll(method: SortMethod, descending: Boolean) : List<ArchiveBase> {
-        val sortField = when (method) {
-            SortMethod.Date -> "dateAdded"
-            SortMethod.Alpha -> "title"
-        }
-
-        return if (descending) archiveDao().getAllDescending(sortField) else archiveDao().getAllAscending(sortField)
-    }
-
-    fun insertOrUpdate(archives: List<Archive>) {
+    fun insertOrUpdate(archives: List<ArchiveJson>) {
         for (archive in archives) {
             val dataArchive = archiveDao().getArchive(archive.id)
             if (dataArchive == null)
                 convertFromArchive(archive)
             else {
-                val converted = DataArchive(archive.id, archive.title, archive.dateAdded, archive.isNew, archive.tags)
+                val converted = Archive(archive.id, archive.title, archive.dateAdded, archive.isNew, archive.tags)
                 archiveDao().updateArchive(converted)
             }
         }
 
-        val toRemove = archiveDao().getAll().filter { !archives.any { a -> a.id == it.id } }
-        for (archive in toRemove)
-            archiveDao().removeArchive(archive)
+        val toRemove = archiveDao().getAllIds().filter { !archives.any { a -> a.id == it } }
+        for (id in toRemove)
+            archiveDao().removeArchive(id)
     }
 
-    private fun convertFromArchive(archive: Archive) {
-        val converted = DataArchive(archive.id, archive.title, archive.dateAdded, archive.isNew, archive.tags)
+    private fun convertFromArchive(archive: ArchiveJson) {
+        val converted = Archive(archive.id, archive.title, archive.dateAdded, archive.isNew, archive.tags)
         archiveDao().insertAll(converted)
     }
 }
@@ -145,13 +157,19 @@ abstract class ArchiveDatabase : RoomDatabase() {
 private fun <T, TT> DataSource.Factory<T, TT>.toLiveData() = LivePagedListBuilder(this, 50).build()
 
 class ArchiveViewModel : ViewModel() {
-    lateinit var archiveList: LiveData<PagedList<DataArchive>>
+    lateinit var archiveList: LiveData<PagedList<Archive>>
     private val mutableSortData = MutableLiveData<Pair<Pair<SortMethod, Boolean>, Pair<CharSequence, Boolean>>>()
     private var sortMethod: SortMethod = SortMethod.Alpha
     private var descending: Boolean = true
     private var sortFilter: CharSequence = ""
     private var onlyNew = false
     private lateinit var archiveDao: ArchiveDao
+
+    fun getRandom() : Archive? {
+        val data = internalFilter(sortFilter, onlyNew) ?: archiveDao.getAllIds()
+        val randId = data.random()
+        return archiveDao.getArchive(randId)
+    }
 
     fun init(archiveDao: ArchiveDao, method: SortMethod = SortMethod.Alpha, desc: Boolean = false, filter: CharSequence = "", onlyNew: Boolean) {
         if (!this::archiveList.isInitialized) {
@@ -205,7 +223,7 @@ class ArchiveViewModel : ViewModel() {
         if (filter == null)
             return mValues
 
-        fun addIfNew(archive: ArchiveBase) {
+        fun addIfNew(archive: Archive) {
             if (!onlyNew || archive.isNew)
                 mValues.add(archive.id)
         }

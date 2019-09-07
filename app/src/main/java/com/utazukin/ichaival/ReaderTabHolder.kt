@@ -19,6 +19,9 @@
 package com.utazukin.ichaival
 
 import android.os.Bundle
+import androidx.room.ColumnInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
     private const val titleKey = "tabTitles"
@@ -51,6 +54,7 @@ object ReaderTabHolder {
 
         if (tab != null) {
             tab.page = page
+            DatabaseReader.updateBookmark(id, page)
             val index = tabs.indexOf(tab)
             updateChangeListeners(index)
         }
@@ -92,13 +96,28 @@ object ReaderTabHolder {
         unregisterClearListener(listener)
     }
 
-    fun addTab(archive: ArchiveBase, page: Int) {
-        if (!openTabs.containsKey(archive.id)) {
-            val tab = ReaderTab(archive, page)
-            openTabs[archive.id] = tab
+    fun addTab(archive: Archive, page: Int) = addTab(archive.id, archive.title, page)
+
+    private fun addTab(id: String, title: String, page: Int) {
+        if (!openTabs.containsKey(id)) {
+            val tab = ReaderTab(id, title, page)
+            openTabs[id] = tab
+
+            DatabaseReader.updateBookmark(id, page)
             _tabs.add(tab)
-            updateAddListeners(archive.id)
+
+            updateAddListeners(id)
         }
+    }
+
+    suspend fun initialize() {
+        val bookmarks = withContext(Dispatchers.Default) { DatabaseReader.database.archiveDao().getBookmarks() }
+        for(bookmark in bookmarks) {
+            openTabs[bookmark.id] = bookmark
+            if (!_tabs.contains(bookmark))
+                _tabs.add(bookmark)
+        }
+        updateRestoreListeners()
     }
 
     fun isTabbed(id: String?) : Boolean {
@@ -109,6 +128,7 @@ object ReaderTabHolder {
         val tabIndex = tabs.indexOfFirst { it.id == id }
         if (tabIndex >= 0) {
             openTabs.remove(id)
+            DatabaseReader.removeBookmark(id)
             _tabs.removeAt(tabIndex)
             updateRemoveListeners(tabIndex, id)
         }
@@ -116,6 +136,7 @@ object ReaderTabHolder {
 
     fun removeAll() {
         val size = openTabs.size
+        DatabaseReader.clearBookmarks(openTabs.values.map { it.id })
         openTabs.clear()
         _tabs.clear()
         updateClearListeners(size)
@@ -184,7 +205,8 @@ object ReaderTabHolder {
     }
 }
 
-data class ReaderTab(val id: String, val title: String, var page: Int) {
-    constructor(archive: ArchiveBase, page: Int) : this(archive.id, archive.title, page)
-}
+data class ReaderTab(
+    @ColumnInfo val id: String,
+    @ColumnInfo val title: String,
+    @ColumnInfo(name = "currentPage") var page: Int)
 

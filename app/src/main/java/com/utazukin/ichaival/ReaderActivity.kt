@@ -69,7 +69,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var mVisible: Boolean = false
     private val mHideRunnable = Runnable { hide() }
 
-    var archive: ArchiveBase? = null
+    var archive: Archive? = null
         private set
     private var currentPage = 0
     private var rtol = false

@@ -36,7 +36,7 @@ private const val MAX_PAGES = "max pages"
 
 class GalleryPreviewFragment : Fragment() {
     private var archiveId: String? = null
-    private var archive: ArchiveBase? = null
+    private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
     private lateinit var activityScope: CoroutineScope
     private lateinit var progress: ProgressBar

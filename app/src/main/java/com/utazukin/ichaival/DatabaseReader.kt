@@ -85,7 +85,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         }
     }
 
-    private fun updateDatabase(jsonArchives: List<Archive>) {
+    private fun updateDatabase(jsonArchives: List<ArchiveJson>) {
         database.insertOrUpdate(jsonArchives)
     }
 
@@ -295,7 +295,19 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
-    suspend fun setArchiveNewFlag(id: String, isNew: Boolean) {
+    fun updateBookmark(id: String, page: Int) {
+        GlobalScope.launch(Dispatchers.IO) { database.archiveDao().updateBookmark(id, page) }
+    }
+
+    fun removeBookmark(id: String) {
+        GlobalScope.launch(Dispatchers.IO) { database.archiveDao().removeBookmark(id) }
+    }
+
+    fun clearBookmarks(ids: List<String>) {
+        GlobalScope.launch(Dispatchers.IO) { database.archiveDao().removeAllBookmarks(ids) }
+    }
+
+    fun setArchiveNewFlag(id: String, isNew: Boolean) {
         database.archiveDao().updateNewFlag(id, isNew)
 
         if (!canConnect(true))
@@ -382,10 +394,10 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         notifyError(if (verboseMessages) "$defaultMessage Response Code: $responseCode" else defaultMessage)
     }
 
-    private fun readArchiveList(json: JSONArray) : List<Archive> {
-        val archiveList = mutableListOf<Archive>()
+    private fun readArchiveList(json: JSONArray) : List<ArchiveJson> {
+        val archiveList = mutableListOf<ArchiveJson>()
         for (i in 0 until json.length()) {
-            archiveList.add(Archive(json.getJSONObject(i)))
+            archiveList.add(ArchiveJson(json.getJSONObject(i)))
         }
 
         return archiveList
@@ -436,7 +448,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             thumbDir.deleteRecursively()
     }
 
-    suspend fun getArchiveImage(archive: ArchiveBase, filesDir: File) = getArchiveImage(archive.id, filesDir)
+    suspend fun getArchiveImage(archive: Archive, filesDir: File) = getArchiveImage(archive.id, filesDir)
 
     suspend fun getArchiveImage(id: String, filesDir: File) : String? {
         val thumbDir = getThumbDir(filesDir)

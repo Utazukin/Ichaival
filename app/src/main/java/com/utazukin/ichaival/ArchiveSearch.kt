@@ -24,7 +24,7 @@ import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListen
 
 class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
 
-    override fun onListFragmentInteraction(archive: ArchiveBase?) {
+    override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null) {
             setResult(Activity.RESULT_OK)
             startDetailsActivity(archive.id)

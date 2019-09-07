@@ -24,21 +24,19 @@ import androidx.room.PrimaryKey
 import org.json.JSONObject
 
 @Entity
-data class DataArchive(
-    @PrimaryKey override val id: String,
-    @ColumnInfo override val title: String,
-    @ColumnInfo override var dateAdded: Int,
-    @ColumnInfo override var isNew: Boolean,
-    @ColumnInfo override val tags: Map<String, List<String>>
-) : ArchiveBase()
+data class Archive (
+    @PrimaryKey val id: String,
+    @ColumnInfo val title: String,
+    @ColumnInfo var dateAdded: Int,
+    @ColumnInfo var isNew: Boolean,
+    @ColumnInfo val tags: Map<String, List<String>>,
+    @ColumnInfo var isBookmarked: Boolean,
+    @ColumnInfo var currentPage: Int
+) {
 
-abstract class ArchiveBase {
-    abstract val title: String
-    abstract val id: String
-    abstract val tags: Map<String, List<String>>
-    abstract var isNew: Boolean
-    abstract var dateAdded: Int
-        protected set
+    constructor(id: String, title: String, dateAdded: Int, isNew: Boolean, tags: Map<String, List<String>>)
+            : this(id, title, dateAdded, isNew, tags, false, 0)
+
     val numPages: Int
         get() = DatabaseReader.getPageCount(id)
 
@@ -89,12 +87,12 @@ abstract class ArchiveBase {
     }
 }
 
-class Archive(json: JSONObject) : ArchiveBase() {
-    override val title: String = json.getString("title")
-    override val id: String = json.getString("arcid")
-    override val tags: Map<String, List<String>>
-    override var isNew = false
-    override var dateAdded = 0
+class ArchiveJson(json: JSONObject) {
+    val title: String = json.getString("title")
+    val id: String = json.getString("arcid")
+    val tags: Map<String, List<String>>
+    var isNew = false
+    var dateAdded = 0
 
     init {
         val tagString: String = json.getString("tags")

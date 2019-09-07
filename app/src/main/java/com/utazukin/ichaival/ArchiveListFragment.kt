@@ -101,15 +101,19 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener { v ->
-            val archive = listAdapter.getRandomArchive()
-            if (archive != null)
-                startDetailsActivity(archive.id, v?.context)
+            activityScope.launch {
+                val archive = withContext(Dispatchers.IO) { viewModel.getRandom() }
+                if (archive != null)
+                    startDetailsActivity(archive.id, v?.context)
+            }
         }
 
         randomButton.setOnLongClickListener {
-            val archive = listAdapter.getRandomArchive()
-            if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
-                ReaderTabHolder.addTab(archive, 0)
+            activityScope.launch {
+                val archive = withContext(Dispatchers.IO) { viewModel.getRandom() }
+                if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
+                    ReaderTabHolder.addTab(archive, 0)
+            }
             true
         }
 
@@ -156,7 +160,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         }
     }
 
-    private fun handleArchiveLongPress(archive: ArchiveBase) : Boolean {
+    private fun handleArchiveLongPress(archive: Archive) : Boolean {
         fragmentManager?.let {
             val tagFragment = TagDialogFragment.newInstance(archive.id)
             tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
@@ -254,6 +258,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
     }
 
     interface OnListFragmentInteractionListener {
-        fun onListFragmentInteraction(archive: ArchiveBase?)
+        fun onListFragmentInteraction(archive: Archive?)
     }
 }

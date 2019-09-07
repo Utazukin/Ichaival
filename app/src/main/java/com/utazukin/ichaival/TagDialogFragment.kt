@@ -71,7 +71,7 @@ class TagDialogFragment : DialogFragment() {
         return view
     }
 
-    private fun setUpTags(archive: ArchiveBase) {
+    private fun setUpTags(archive: Archive) {
         for (pair in archive.tags) {
             if (pair.value.isEmpty())
                 continue

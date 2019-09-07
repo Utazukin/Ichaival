@@ -97,7 +97,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         super.onDestroy()
     }
 
-    private fun setUpTags(archive: ArchiveBase) {
+    private fun setUpTags(archive: Archive) {
         for (pair in archive.tags) {
             if (pair.value.isEmpty())
                 continue
@@ -141,7 +141,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         return tagView
     }
 
-    private fun setUpDetailView(view: View, archive: ArchiveBase?) {
+    private fun setUpDetailView(view: View, archive: Archive?) {
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {

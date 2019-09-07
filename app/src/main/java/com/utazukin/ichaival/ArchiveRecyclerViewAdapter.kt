@@ -35,10 +35,10 @@ import kotlinx.coroutines.*
 
 class ArchiveRecyclerViewAdapter(
     private val mListener: OnListFragmentInteractionListener?,
-    private val longListener: ((a: ArchiveBase) -> Boolean)?,
+    private val longListener: ((a: Archive) -> Boolean)?,
     private val scope: CoroutineScope,
     private val glideManager: RequestManager
-) : PagedListAdapter<DataArchive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK) {
+) : PagedListAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     private val mOnClickListener: View.OnClickListener
 
@@ -48,14 +48,14 @@ class ArchiveRecyclerViewAdapter(
 
     init {
         mOnClickListener = View.OnClickListener { v ->
-            val item = v.tag as ArchiveBase
+            val item = v.tag as Archive
             // Notify the active callbacks interface (the activity, if the fragment is attached to
             // one) that an item has been selected.
             mListener?.onListFragmentInteraction(item)
         }
 
         onLongClickListener = View.OnLongClickListener { v ->
-            val item = v.tag as ArchiveBase
+            val item = v.tag as Archive
             longListener?.invoke(item) == true
         }
     }
@@ -94,12 +94,6 @@ class ArchiveRecyclerViewAdapter(
         super.onViewRecycled(holder)
     }
 
-    fun getRandomArchive() : ArchiveBase? {
-        //TODO find out why this doesn't work on first press.
-        val random = (0 until itemCount).random()
-        return getItem(random)
-    }
-
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView) {
         val mContentView: CardView = mView.archive_card
         val archiveName: TextView = mContentView.findViewById(R.id.archive_label)
@@ -111,9 +105,9 @@ class ArchiveRecyclerViewAdapter(
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<DataArchive>() {
-            override fun areItemsTheSame(oldItem: DataArchive, newItem: DataArchive) = oldItem.id == newItem.id
-            override fun areContentsTheSame(oldItem: DataArchive, newItem: DataArchive) = oldItem == newItem
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Archive>() {
+            override fun areItemsTheSame(oldItem: Archive, newItem: Archive) = oldItem.id == newItem.id
+            override fun areContentsTheSame(oldItem: Archive, newItem: Archive) = oldItem == newItem
         }
     }
 }
