@@ -107,8 +107,14 @@ interface ArchiveDao {
     @Update
     fun updateArchive(archive: Archive)
 
-    @Update
-    fun updateArchives(archives: List<Archive>)
+    @Query("Update archive set title = :title, tags = :tags, isNew = :isNew, dateAdded = :dateAdded where id = :id")
+    fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Int, tags: Map<String, List<String>>)
+
+    @Transaction
+    fun updateFromJson(archives: Collection<ArchiveJson>) {
+        for (archive in archives)
+            updateFromJson(archive.id, archive.title, archive.isNew, archive.dateAdded, archive.tags)
+    }
 }
 
 class DatabaseTypeConverters {
@@ -144,7 +150,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
     fun insertOrUpdate(archives: Map<String, ArchiveJson>) {
         val currentIds = archiveDao().getAllIds()
         val allIds = currentIds.union(archives.keys)
-        archiveDao().updateArchives(archives.values.map { Archive(it) })
+        archiveDao().updateFromJson(archives.values)
         val toAdd = archives.keys.minus(currentIds).map { Archive(archives.getValue(it)) }
         archiveDao().insertAll(toAdd)
 
@@ -177,15 +183,15 @@ class ArchiveViewModel : ViewModel() {
             archiveList = Transformations.switchMap(mutableSortData) {
                 liveData(Dispatchers.IO) {
                     val ids = internalFilter(it.second.first, it.second.second)
-                     val data = when (it.first.first) {
+                    val data = when (it.first.first) {
                         SortMethod.Alpha -> {
                             if (it.first.second) {
-                                if (ids?.any() == true)
+                                if (ids != null)
                                     archiveDao.getDataTitleDescending(ids).toLiveData()
                                 else
                                     archiveDao.getDataTitleDescending().toLiveData()
                             } else {
-                                if (ids?.any() == true)
+                                if (ids != null)
                                     archiveDao.getDataTitleAscending(ids).toLiveData()
                                 else
                                     archiveDao.getDataTitleAscending().toLiveData()
@@ -193,12 +199,12 @@ class ArchiveViewModel : ViewModel() {
                         }
                         SortMethod.Date -> {
                             if (it.first.second) {
-                                if (ids?.any() == true)
+                                if (ids != null)
                                     archiveDao.getDataDateDescending(ids).toLiveData()
                                 else
                                     archiveDao.getDataDateDescending().toLiveData()
                             } else {
-                                if (ids?.any() == true)
+                                if (ids != null)
                                     archiveDao.getDataDateAscending(ids).toLiveData()
                                 else
                                     archiveDao.getDataDateAscending().toLiveData()
