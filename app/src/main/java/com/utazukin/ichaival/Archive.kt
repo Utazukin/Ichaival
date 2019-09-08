@@ -36,6 +36,9 @@ data class Archive (
     constructor(id: String, title: String, dateAdded: Int, isNew: Boolean, tags: Map<String, List<String>>)
             : this(id, title, dateAdded, isNew, tags, -1)
 
+    constructor(jsonArchive: ArchiveJson)
+            : this(jsonArchive.id, jsonArchive.title, jsonArchive.dateAdded, jsonArchive.isNew, jsonArchive.tags)
+
     val numPages: Int
         get() = DatabaseReader.getPageCount(id)
 

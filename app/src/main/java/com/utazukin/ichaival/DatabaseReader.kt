@@ -23,8 +23,10 @@ import android.net.ConnectivityManager
 import android.preference.Preference
 import androidx.room.Room
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
+import kotlinx.coroutines.channels.produce
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -78,15 +80,11 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             archiveJson?.let {
                 jsonFile.writeText(it.toString())
                 val serverArchives = readArchiveList(it)
-                updateDatabase(serverArchives)
+                database.insertOrUpdate(serverArchives)
             }
             refreshListener?.isRefreshing(false)
             isDirty = false
         }
-    }
-
-    private fun updateDatabase(jsonArchives: List<ArchiveJson>) {
-        database.insertOrUpdate(jsonArchives)
     }
 
     fun updateServerLocation(location: String) {
@@ -394,10 +392,11 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         notifyError(if (verboseMessages) "$defaultMessage Response Code: $responseCode" else defaultMessage)
     }
 
-    private fun readArchiveList(json: JSONArray) : List<ArchiveJson> {
-        val archiveList = mutableListOf<ArchiveJson>()
+    private fun readArchiveList(json: JSONArray) : Map<String, ArchiveJson> {
+        val archiveList = mutableMapOf<String, ArchiveJson>()
         for (i in 0 until json.length()) {
-            archiveList.add(ArchiveJson(json.getJSONObject(i)))
+            val archive = ArchiveJson(json.getJSONObject(i))
+            archiveList[archive.id] = archive
         }
 
         return archiveList

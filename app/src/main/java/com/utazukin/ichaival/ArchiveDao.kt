@@ -92,14 +92,23 @@ interface ArchiveDao {
     @Query("Delete from archive where id = :id")
     fun removeArchive(id: String)
 
+    @Query("Delete from archive where id in (:ids)")
+    fun removeArchives(ids: List<String>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(vararg archives: Archive)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(archives: List<Archive>)
 
     @Delete
     fun removeArchive(archive: Archive)
 
     @Update
     fun updateArchive(archive: Archive)
+
+    @Update
+    fun updateArchives(archives: List<Archive>)
 }
 
 class DatabaseTypeConverters {
@@ -132,25 +141,15 @@ class DatabaseTypeConverters {
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
-    fun insertOrUpdate(archives: List<ArchiveJson>) {
-        for (archive in archives) {
-            val dataArchive = archiveDao().getArchive(archive.id)
-            if (dataArchive == null)
-                convertFromArchive(archive)
-            else {
-                val converted = Archive(archive.id, archive.title, archive.dateAdded, archive.isNew, archive.tags)
-                archiveDao().updateArchive(converted)
-            }
-        }
+    fun insertOrUpdate(archives: Map<String, ArchiveJson>) {
+        val currentIds = archiveDao().getAllIds()
+        val allIds = currentIds.union(archives.keys)
+        archiveDao().updateArchives(archives.values.map { Archive(it) })
+        val toAdd = archives.keys.minus(currentIds).map { Archive(archives.getValue(it)) }
+        archiveDao().insertAll(toAdd)
 
-        val toRemove = archiveDao().getAllIds().filter { !archives.any { a -> a.id == it } }
-        for (id in toRemove)
-            archiveDao().removeArchive(id)
-    }
-
-    private fun convertFromArchive(archive: ArchiveJson) {
-        val converted = Archive(archive.id, archive.title, archive.dateAdded, archive.isNew, archive.tags)
-        archiveDao().insertAll(converted)
+        val toRemove = allIds.subtract(archives.keys).toList()
+        archiveDao().removeArchives(toRemove)
     }
 }
 
