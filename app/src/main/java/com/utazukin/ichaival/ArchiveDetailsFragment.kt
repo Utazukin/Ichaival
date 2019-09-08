@@ -74,6 +74,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     override fun onAttach(context: Context) {
         super.onAttach(context)
         ReaderTabHolder.registerRemoveListener(this)
+        ReaderTabHolder.registerClearListener(this)
         scope = context as CoroutineScope
         tagListener = context as TagInteractionListener?
     }
@@ -81,6 +82,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     override fun onDetach() {
         super.onDetach()
         ReaderTabHolder.unregisterRemoveListener(this)
+        ReaderTabHolder.unregisterClearListener(this)
     }
 
     override fun onTabRemoved(index: Int, id: String) {

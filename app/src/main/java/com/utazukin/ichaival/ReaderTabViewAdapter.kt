@@ -35,7 +35,7 @@ class ReaderTabViewAdapter (
     private val glideManager: RequestManager
 ) : RecyclerView.Adapter<ReaderTabViewAdapter.ViewHolder>(), ReaderTabListener {
 
-    override fun getItemCount() = ReaderTabHolder.tabs.size
+    override fun getItemCount() = ReaderTabHolder.tabCount
 
     private val onClickListener: View.OnClickListener
 
@@ -49,7 +49,7 @@ class ReaderTabViewAdapter (
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = ReaderTabHolder.tabs[position]
+        val item = ReaderTabHolder.getTab(position)
         holder.titleView.text = item.title
         holder.pageView.text = (item.page + 1).toString()
         jobs[holder] = activityScope.launch {

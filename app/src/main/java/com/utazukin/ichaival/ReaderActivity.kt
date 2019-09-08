@@ -41,6 +41,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.max
 
 private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
@@ -140,7 +141,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     supportActionBar?.title = it.title
                     //Use the page from the thumbnail over the bookmark
-                    val page = savedPage ?: ReaderTabHolder.getCurrentPage(arcid)
+                    val page = savedPage ?: max(it.currentPage, 0)
                     val adjustedPage = getAdjustedPage(page)
                     currentPage = page
                     loadImage(adjustedPage)
@@ -181,6 +182,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             finish()
         }
         ItemTouchHelper(touchHelper).attachToRecyclerView(tabView)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ReaderTabHolder.registerRemoveListener(this)
+        ReaderTabHolder.registerClearListener(this)
     }
 
     override fun onTabRemoved(index: Int, id: String) {
@@ -255,6 +262,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onStop() {
         super.onStop()
         Glide.get(this).clearMemory()
+        ReaderTabHolder.unregisterRemoveListener(this)
+        ReaderTabHolder.unregisterAddListener(this)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

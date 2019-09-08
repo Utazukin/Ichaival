@@ -42,12 +42,12 @@ object ReaderTabHolder {
 
     private var needsReload = true
 
-    private val _tabs = mutableListOf<ReaderTab>()
-    val tabs: List<ReaderTab> = _tabs
+    private val tabs = mutableListOf<ReaderTab>()
 
-    fun getCurrentPage(id: String) : Int {
-        return openTabs[id]?.page ?: 0
-    }
+    val tabCount
+        get() = tabs.size
+
+    fun getTab(index: Int) = tabs[index]
 
     fun updatePageIfTabbed(id: String, page: Int) {
         val tab = openTabs[id]
@@ -104,7 +104,7 @@ object ReaderTabHolder {
             openTabs[id] = tab
 
             DatabaseReader.updateBookmark(id, page)
-            _tabs.add(tab)
+            tabs.add(tab)
 
             updateAddListeners(id)
         }
@@ -114,8 +114,8 @@ object ReaderTabHolder {
         val bookmarks = withContext(Dispatchers.Default) { DatabaseReader.database.archiveDao().getBookmarks() }
         for(bookmark in bookmarks) {
             openTabs[bookmark.id] = bookmark
-            if (!_tabs.contains(bookmark))
-                _tabs.add(bookmark)
+            if (!tabs.contains(bookmark))
+                tabs.add(bookmark)
         }
         updateRestoreListeners()
     }
@@ -129,7 +129,7 @@ object ReaderTabHolder {
         if (tabIndex >= 0) {
             openTabs.remove(id)
             DatabaseReader.removeBookmark(id)
-            _tabs.removeAt(tabIndex)
+            tabs.removeAt(tabIndex)
             updateRemoveListeners(tabIndex, id)
         }
     }
@@ -138,7 +138,7 @@ object ReaderTabHolder {
         val size = openTabs.size
         DatabaseReader.clearBookmarks(openTabs.values.map { it.id })
         openTabs.clear()
-        _tabs.clear()
+        tabs.clear()
         updateClearListeners(size)
     }
 
@@ -149,11 +149,11 @@ object ReaderTabHolder {
                 val titles = it.getStringArrayList(titleKey) ?: return
                 val pages = it.getIntArray(pageKey) ?: return
 
-                _tabs.clear()
+                tabs.clear()
                 for (i in 0 until ids.size) {
                     val tab = ReaderTab(ids[i], titles[i], pages[i])
                     openTabs[ids[i]] = tab
-                    _tabs.add(tab)
+                    tabs.add(tab)
                 }
                 updateRestoreListeners()
             }
