@@ -58,6 +58,12 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     private val archivePageMap = mutableMapOf<String, List<String>>()
     private val archiveActorMap = mutableMapOf<String, SendChannel<ExtractMsg>>()
+    private val idChannel = Channel<String>()
+    private val actorReceiver =  GlobalScope.produce {
+        for (id in idChannel)
+            send(getArchiveActor(id))
+    }
+
     lateinit var database: ArchiveDatabase
         private set
     var listener: DatabaseMessageListener? = null
@@ -114,7 +120,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     suspend fun getPageList(id: String) : List<String> {
-        val actor = GlobalScope.getArchiveActor(id)
+        idChannel.send(id)
+        val actor = actorReceiver.receive()
         return getPageList(id, actor)
     }
 
