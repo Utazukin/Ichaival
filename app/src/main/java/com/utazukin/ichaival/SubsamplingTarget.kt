@@ -34,11 +34,11 @@ class SubsamplingTarget(private val target: SubsamplingScaleImageView
                         , private val resourceListener: ResourceListener? = null) : Target<File> {
     private var request: Request? = null
     private val imageEventListener: OnImageEventListener = object: OnImageEventListener {
-        override fun onImageLoaded() {
+        override fun onImageLoaded() {}
+
+        override fun onReady() {
             resourceListener?.invoke()
         }
-
-        override fun onReady() { }
         override fun onTileLoadError(e: Exception?) { }
         override fun onPreviewReleased() { }
         override fun onPreviewLoadError(e: Exception?) { }

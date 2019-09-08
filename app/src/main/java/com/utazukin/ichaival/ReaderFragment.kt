@@ -137,6 +137,8 @@ class ReaderFragment : Fragment() {
             .LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         view.layoutParams = layoutParams
         topLayout.addView(view)
+        pageNum.bringToFront()
+        progressBar.bringToFront()
     }
 
     private fun <T> getListener(clearOnReady: Boolean = true) : RequestListener<T> {
