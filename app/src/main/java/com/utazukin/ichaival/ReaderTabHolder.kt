@@ -20,6 +20,8 @@ package com.utazukin.ichaival
 
 import android.os.Bundle
 import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -54,7 +56,7 @@ object ReaderTabHolder {
 
         if (tab != null) {
             tab.page = page
-            DatabaseReader.updateBookmark(id, page)
+            DatabaseReader.updateBookmark(tab)
             val index = tabs.indexOf(tab)
             updateChangeListeners(index)
         }
@@ -100,10 +102,10 @@ object ReaderTabHolder {
 
     private fun addTab(id: String, title: String, page: Int) {
         if (!openTabs.containsKey(id)) {
-            val tab = ReaderTab(id, title, page)
+            val tab = ReaderTab(id, title, tabs.size, page)
             openTabs[id] = tab
 
-            DatabaseReader.updateBookmark(id, page)
+            DatabaseReader.updateBookmark(tab)
             tabs.add(tab)
 
             updateAddListeners(id)
@@ -128,7 +130,7 @@ object ReaderTabHolder {
         val tabIndex = tabs.indexOfFirst { it.id == id }
         if (tabIndex >= 0) {
             openTabs.remove(id)
-            DatabaseReader.removeBookmark(id)
+            DatabaseReader.removeBookmark(tabs[tabIndex])
             tabs.removeAt(tabIndex)
             updateRemoveListeners(tabIndex, id)
         }
@@ -136,7 +138,7 @@ object ReaderTabHolder {
 
     fun removeAll() {
         val size = openTabs.size
-        DatabaseReader.clearBookmarks(openTabs.values.map { it.id })
+        DatabaseReader.clearBookmarks(openTabs.values.toList())
         openTabs.clear()
         tabs.clear()
         updateClearListeners(size)
@@ -151,7 +153,7 @@ object ReaderTabHolder {
 
                 tabs.clear()
                 for (i in 0 until ids.size) {
-                    val tab = ReaderTab(ids[i], titles[i], pages[i])
+                    val tab = ReaderTab(ids[i], titles[i], tabs.size, pages[i])
                     openTabs[ids[i]] = tab
                     tabs.add(tab)
                 }
@@ -205,8 +207,11 @@ object ReaderTabHolder {
     }
 }
 
+@Entity
 data class ReaderTab(
-    @ColumnInfo val id: String,
+    @PrimaryKey val id: String,
     @ColumnInfo val title: String,
+    @ColumnInfo val index: Int,
     @ColumnInfo(name = "currentPage") var page: Int)
+
 

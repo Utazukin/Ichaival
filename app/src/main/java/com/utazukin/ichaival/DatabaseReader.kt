@@ -300,16 +300,16 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
-    fun updateBookmark(id: String, page: Int) {
-        GlobalScope.launch(Dispatchers.IO) { database.archiveDao().updateBookmark(id, page) }
+    fun updateBookmark(tab: ReaderTab) {
+        GlobalScope.launch(Dispatchers.IO) { database.updateBookmark(tab) }
     }
 
-    fun removeBookmark(id: String) {
-        GlobalScope.launch(Dispatchers.IO) { database.archiveDao().removeBookmark(id) }
+    fun removeBookmark(tab: ReaderTab) {
+        GlobalScope.launch(Dispatchers.IO) { database.removeBookmark(tab) }
     }
 
-    fun clearBookmarks(ids: List<String>) {
-        GlobalScope.launch(Dispatchers.IO) { database.archiveDao().removeAllBookmarks(ids) }
+    fun clearBookmarks(tabs: List<ReaderTab>) {
+        GlobalScope.launch(Dispatchers.IO) { database.clearBookmarks(tabs) }
     }
 
     fun setArchiveNewFlag(id: String, isNew: Boolean) {

@@ -86,7 +86,7 @@ interface ArchiveDao {
     @Query("Update archive set currentPage = -1 where id in (:ids)")
     fun removeAllBookmarks(ids: List<String>)
 
-    @Query("Select id, title, currentPage from archive where currentPage >= 0")
+    @Query("Select * from readertab order by `index`")
     fun getBookmarks() : List<ReaderTab>
 
     @Query("Delete from archive where id = :id")
@@ -104,8 +104,17 @@ interface ArchiveDao {
     @Delete
     fun removeArchive(archive: Archive)
 
+    @Delete
+    fun removeBookmark(tab: ReaderTab)
+
+    @Delete
+    fun clearBookmarks(tabs: List<ReaderTab>)
+
     @Update
     fun updateArchive(archive: Archive)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun updateBookmark(tab: ReaderTab)
 
     @Query("Update archive set title = :title, tags = :tags, isNew = :isNew, dateAdded = :dateAdded where id = :id")
     fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Int, tags: Map<String, List<String>>)
@@ -142,7 +151,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class], version = 1, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class], version = 1, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
@@ -156,6 +165,24 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
         val toRemove = allIds.subtract(archives.keys).toList()
         archiveDao().removeArchives(toRemove)
+    }
+
+    @Transaction
+    fun updateBookmark(tab: ReaderTab) {
+        archiveDao().updateBookmark(tab)
+        archiveDao().updateBookmark(tab.id, tab.page)
+    }
+
+    @Transaction
+    fun removeBookmark(tab: ReaderTab) {
+        archiveDao().removeBookmark(tab.id)
+        archiveDao().removeBookmark(tab)
+    }
+
+    @Transaction
+    fun clearBookmarks(tabs: List<ReaderTab>) {
+        archiveDao().removeAllBookmarks(tabs.map { it.id } )
+        archiveDao().clearBookmarks(tabs)
     }
 }
 
