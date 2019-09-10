@@ -24,6 +24,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.paging.PagedListAdapter
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
@@ -33,9 +35,7 @@ class ReaderTabViewAdapter (
     private val listener: OnTabInteractionListener?,
     private val activityScope: CoroutineScope,
     private val glideManager: RequestManager
-) : RecyclerView.Adapter<ReaderTabViewAdapter.ViewHolder>(), ReaderTabListener {
-
-    override fun getItemCount() = ReaderTabHolder.tabCount
+) : PagedListAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     private val onClickListener: View.OnClickListener
 
@@ -49,23 +49,24 @@ class ReaderTabViewAdapter (
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = ReaderTabHolder.getTab(position)
-        holder.titleView.text = item.title
-        holder.pageView.text = (item.page + 1).toString()
-        jobs[holder] = activityScope.launch {
-            val thumb = withContext(Dispatchers.Default) {
-                val context = activityScope as Context
-                DatabaseReader.getArchiveImage(item.id, context.filesDir)
+        getItem(position)?.let { item ->
+            holder.titleView.text = item.title
+            holder.pageView.text = (item.page + 1).toString()
+            jobs[holder] = activityScope.launch {
+                val thumb = withContext(Dispatchers.Default) {
+                    val context = activityScope as Context
+                    DatabaseReader.getArchiveImage(item.id, context.filesDir)
+                }
+                glideManager
+                    .load(thumb)
+                    .transition(DrawableTransitionOptions.withCrossFade())
+                    .into(holder.thumbView)
             }
-            glideManager
-                .load(thumb)
-                .transition(DrawableTransitionOptions.withCrossFade())
-                .into(holder.thumbView)
-        }
 
-        with(holder.view) {
-            tag = item
-            setOnClickListener(onClickListener)
+            with(holder.view) {
+                tag = item
+                setOnClickListener(onClickListener)
+            }
         }
     }
 
@@ -73,42 +74,13 @@ class ReaderTabViewAdapter (
         super.onViewRecycled(holder)
         jobs[holder]?.cancel()
         jobs.remove(holder)
-    }
-
-    override fun onTabsRestored() {
-        notifyDataSetChanged()
-    }
-
-    override fun onTabAdded(index: Int, id: String) {
-        notifyItemInserted(index)
-    }
-
-    override fun onTabRemoved(index: Int, id: String) {
-        notifyItemRemoved(index)
-    }
-
-    override fun onTabChanged(index: Int) {
-        notifyItemChanged(index)
-    }
-
-    override fun onTabsCleared(oldSize: Int) {
-        notifyItemRangeRemoved(0, oldSize)
+        holder.thumbView.setImageBitmap(null)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.reader_tab, parent, false)
         return ViewHolder(view)
-    }
-
-    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
-        super.onAttachedToRecyclerView(recyclerView)
-        ReaderTabHolder.registerListener(this)
-    }
-
-    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
-        super.onDetachedFromRecyclerView(recyclerView)
-        ReaderTabHolder.unregisterListener(this)
     }
 
     inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
@@ -119,5 +91,13 @@ class ReaderTabViewAdapter (
 
     interface OnTabInteractionListener {
         fun onTabInteraction(tab: ReaderTab)
+    }
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ReaderTab>() {
+            override fun areItemsTheSame(oldItem: ReaderTab, newItem: ReaderTab) = oldItem.id == newItem.id
+
+            override fun areContentsTheSame(oldItem: ReaderTab, newItem: ReaderTab) = oldItem == newItem
+        }
     }
 }

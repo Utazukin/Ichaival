@@ -64,10 +64,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         prefs.registerOnSharedPreferenceChangeListener(this)
         updatePreferences(prefs)
-
-        //Restore tabs here so the bool gets initialized
-        ReaderTabHolder.restoreTabs(savedInstanceState)
-        launch { ReaderTabHolder.initialize() }
     }
 
     private fun updatePreferences(prefs: SharedPreferences) {

@@ -89,6 +89,9 @@ interface ArchiveDao {
     @Query("Select * from readertab order by `index`")
     fun getBookmarks() : List<ReaderTab>
 
+    @Query("Select * from readertab order by `index`")
+    fun getDataBookmarks() : DataSource.Factory<Int, ReaderTab>
+
     @Query("Delete from archive where id = :id")
     fun removeArchive(id: String)
 
@@ -115,6 +118,9 @@ interface ArchiveDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun updateBookmark(tab: ReaderTab)
+
+    @Update
+    fun updateBookmarks(tabs: List<ReaderTab>)
 
     @Query("Update archive set title = :title, tags = :tags, isNew = :isNew, dateAdded = :dateAdded where id = :id")
     fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Int, tags: Map<String, List<String>>)
@@ -174,9 +180,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     @Transaction
-    fun removeBookmark(tab: ReaderTab) {
+    fun removeBookmark(tab: ReaderTab, adjustedTabs: List<ReaderTab>) {
         archiveDao().removeBookmark(tab.id)
         archiveDao().removeBookmark(tab)
+        archiveDao().updateBookmarks(adjustedTabs)
     }
 
     @Transaction
@@ -186,7 +193,12 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 }
 
-private fun <T, TT> DataSource.Factory<T, TT>.toLiveData() = LivePagedListBuilder(this, 50).build()
+private fun <T, TT> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
+
+class ReaderTabViewModel : ViewModel() {
+    val bookmarks = DatabaseReader.database.archiveDao().getDataBookmarks().toLiveData(5)
+    val bookmarkMap = Transformations.map(bookmarks) {list -> list.associateBy { it.id } }
+}
 
 class ArchiveViewModel : ViewModel() {
     lateinit var archiveList: LiveData<PagedList<Archive>>

@@ -18,25 +18,14 @@
 
 package com.utazukin.ichaival
 
-interface TabsRestoredListener {
-    fun onTabsRestored()
-}
-
 interface TabRemovedListener {
-    fun onTabRemoved(index: Int, id: String)
+    fun onTabRemoved(id: String)
 }
 
 interface TabAddedListener {
-    fun onTabAdded(index: Int, id: String)
-}
-
-interface TabChangedListener {
-    fun onTabChanged(index: Int)
+    fun onTabAdded(id: String)
 }
 
 interface TabsClearedListener {
-    fun onTabsCleared(oldSize: Int)
+    fun onTabsCleared()
 }
-
-interface ReaderTabListener
-    : TabsRestoredListener, TabRemovedListener, TabAddedListener, TabChangedListener, TabsClearedListener

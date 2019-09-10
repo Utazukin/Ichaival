@@ -29,6 +29,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -164,9 +166,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         drawerLayout = findViewById(R.id.drawer_layout)
         val tabView: RecyclerView = findViewById(R.id.tab_view)
         val listener = this
+        val viewModel = ViewModelProviders.of(this).get(ReaderTabViewModel::class.java)
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener))
+            adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
+                viewModel.bookmarks.observe(this@ReaderActivity, Observer { list -> it.submitList(list) })
+            }
 
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)
@@ -190,12 +195,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         ReaderTabHolder.registerClearListener(this)
     }
 
-    override fun onTabRemoved(index: Int, id: String) {
+    override fun onTabRemoved(id: String) {
         if (id == archive?.id)
             setTabbedIcon(false)
     }
 
-    override fun onTabsCleared(oldSize: Int) = setTabbedIcon(false)
+    override fun onTabsCleared() = setTabbedIcon(false)
 
     private fun setTabbedIcon(tabbed: Boolean) = setTabbedIcon(optionsMenu?.findItem(R.id.bookmark_archive), tabbed)
 

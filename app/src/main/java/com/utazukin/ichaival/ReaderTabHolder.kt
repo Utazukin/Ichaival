@@ -18,53 +18,30 @@
 
 package com.utazukin.ichaival
 
-import android.os.Bundle
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModelProviders
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
-    private const val titleKey = "tabTitles"
-    private const val idKey = "tabIds"
-    private const val pageKey = "tabPages"
-
-    private val openTabs = mutableMapOf<String, ReaderTab>()
-
-    private val restoreListeners = mutableSetOf<TabsRestoredListener>()
+    private var openTabs: Map<String, ReaderTab>? = null
+    private var initialized = false
 
     private val removeListeners = mutableSetOf<TabRemovedListener>()
 
     private val addListeners = mutableSetOf<TabAddedListener>()
 
-    private val changeListeners = mutableSetOf<TabChangedListener>()
-
     private val clearListeners = mutableSetOf<TabsClearedListener>()
 
-    private var needsReload = true
-
-    private val tabs = mutableListOf<ReaderTab>()
-
-    val tabCount
-        get() = tabs.size
-
-    fun getTab(index: Int) = tabs[index]
-
     fun updatePageIfTabbed(id: String, page: Int) {
-        val tab = openTabs[id]
+        val tab = openTabs?.get(id)
 
         if (tab != null) {
             tab.page = page
             DatabaseReader.updateBookmark(tab)
-            val index = tabs.indexOf(tab)
-            updateChangeListeners(index)
         }
     }
-
-    fun registerRestoreListener(listener: TabsRestoredListener) = restoreListeners.add(listener)
-
-    fun unregisterRestoreListener(listener: TabsRestoredListener) = restoreListeners.remove(listener)
 
     fun registerRemoveListener(listener: TabRemovedListener) = removeListeners.add(listener)
 
@@ -74,136 +51,65 @@ object ReaderTabHolder {
 
     fun unregisterAddListener(listener: TabAddedListener) = addListeners.remove(listener)
 
-    fun registerChangeListener(listener: TabChangedListener) = changeListeners.add(listener)
-
-    fun unregisterChangeListener(listener: TabChangedListener) = changeListeners.remove(listener)
-
     fun registerClearListener(listener: TabsClearedListener) = clearListeners.add(listener)
 
     fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
 
-    fun registerListener(listener: ReaderTabListener) {
-        registerAddListener(listener)
-        registerRemoveListener(listener)
-        registerChangeListener(listener)
-        registerRestoreListener(listener)
-        registerClearListener(listener)
-    }
-
-    fun unregisterListener(listener: ReaderTabListener) {
-        unregisterAddListener(listener)
-        unregisterRemoveListener(listener)
-        unregisterChangeListener(listener)
-        unregisterRestoreListener(listener)
-        unregisterClearListener(listener)
-    }
-
     fun addTab(archive: Archive, page: Int) = addTab(archive.id, archive.title, page)
 
     private fun addTab(id: String, title: String, page: Int) {
-        if (!openTabs.containsKey(id)) {
-            val tab = ReaderTab(id, title, tabs.size, page)
-            openTabs[id] = tab
-
+        if (openTabs?.containsKey(id) != true) {
+            val tab = ReaderTab(id, title, openTabs?.size ?: 0, page)
             DatabaseReader.updateBookmark(tab)
-            tabs.add(tab)
-
             updateAddListeners(id)
         }
     }
 
-    suspend fun initialize() {
-        val bookmarks = withContext(Dispatchers.Default) { DatabaseReader.database.archiveDao().getBookmarks() }
-        for(bookmark in bookmarks) {
-            openTabs[bookmark.id] = bookmark
-            if (!tabs.contains(bookmark))
-                tabs.add(bookmark)
+    fun initialize(context: FragmentActivity) {
+        if (!initialized) {
+            val viewModel = ViewModelProviders.of(context).get(ReaderTabViewModel::class.java)
+            viewModel.bookmarkMap.observeForever { openTabs = it }
+            initialized = true
         }
-        updateRestoreListeners()
     }
 
     fun isTabbed(id: String?) : Boolean {
-        return openTabs.containsKey(id)
+        return openTabs?.containsKey(id) == true
     }
 
     fun removeTab(id: String) {
-        val tabIndex = tabs.indexOfFirst { it.id == id }
-        if (tabIndex >= 0) {
-            openTabs.remove(id)
-            DatabaseReader.removeBookmark(tabs[tabIndex])
-            tabs.removeAt(tabIndex)
-            updateRemoveListeners(tabIndex, id)
+        val tabToRemove = openTabs?.get(id)
+        if (tabToRemove != null) {
+            openTabs?.values?.filter { it.index > tabToRemove.index }?.let {
+                for (tab in it)
+                    tab.index--
+
+                DatabaseReader.removeBookmark(tabToRemove, it)
+                updateRemoveListeners(id)
+            }
         }
     }
 
     fun removeAll() {
-        val size = openTabs.size
-        DatabaseReader.clearBookmarks(openTabs.values.toList())
-        openTabs.clear()
-        tabs.clear()
-        updateClearListeners(size)
-    }
-
-    fun restoreTabs(savedInstance: Bundle?) {
-        if (needsReload) {
-            savedInstance?.let {
-                val ids = it.getStringArrayList(idKey) ?: return
-                val titles = it.getStringArrayList(titleKey) ?: return
-                val pages = it.getIntArray(pageKey) ?: return
-
-                tabs.clear()
-                for (i in 0 until ids.size) {
-                    val tab = ReaderTab(ids[i], titles[i], tabs.size, pages[i])
-                    openTabs[ids[i]] = tab
-                    tabs.add(tab)
-                }
-                updateRestoreListeners()
-            }
-            needsReload = false
+        openTabs?.let {
+            DatabaseReader.clearBookmarks(it.values.toList())
+            updateClearListeners()
         }
     }
 
-    fun saveTabs(outState: Bundle) {
-        if (openTabs.any()) {
-            val ids = ArrayList<String>(openTabs.size)
-            val titles = ArrayList<String>(openTabs.size)
-            val pages = IntArray(openTabs.size)
-            for ((index, tab) in openTabs.values.withIndex()) {
-                ids.add(tab.id)
-                titles.add(tab.title)
-                pages[index] = tab.page
-            }
-
-            outState.putStringArrayList(titleKey, titles)
-            outState.putStringArrayList(idKey, ids)
-            outState.putIntArray(pageKey, pages)
-        }
-    }
-
-    private fun updateRemoveListeners(index: Int, id: String) {
+    private fun updateRemoveListeners(id: String) {
         for (listener in removeListeners)
-            listener.onTabRemoved(index, id)
+            listener.onTabRemoved(id)
     }
 
     private fun updateAddListeners(id: String){
-        val index = openTabs.size - 1
         for (listener in addListeners)
-            listener.onTabAdded(index, id)
+            listener.onTabAdded(id)
     }
 
-    private fun updateRestoreListeners() {
-        for (listener in restoreListeners)
-            listener.onTabsRestored()
-    }
-
-    private fun updateChangeListeners(index: Int) {
-        for (listener in changeListeners)
-            listener.onTabChanged(index)
-    }
-
-    private fun updateClearListeners(oldSize: Int) {
+    private fun updateClearListeners() {
         for (listener in clearListeners)
-            listener.onTabsCleared(oldSize)
+            listener.onTabsCleared()
     }
 }
 
@@ -211,7 +117,7 @@ object ReaderTabHolder {
 data class ReaderTab(
     @PrimaryKey val id: String,
     @ColumnInfo val title: String,
-    @ColumnInfo val index: Int,
+    @ColumnInfo var index: Int,
     @ColumnInfo(name = "currentPage") var page: Int)
 
 

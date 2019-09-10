@@ -22,7 +22,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.preference.PreferenceManager
 import android.view.MenuItem
 import android.widget.ImageView
@@ -31,6 +30,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -68,9 +69,10 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         DatabaseReader.init(applicationContext)
+        ReaderTabHolder.initialize(this)
     }
 
     protected open fun onCreateDrawer() {
@@ -79,9 +81,18 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val context = this
         tabView = findViewById(R.id.tab_view)
         val listener = this
+        val viewModel = ViewModelProviders.of(this).get(ReaderTabViewModel::class.java)
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener))
+            adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
+                viewModel.bookmarks.observe(this@BaseActivity, Observer { list ->
+                    val itemAdded = list.size > it.itemCount
+                    it.submitList(list)
+
+                    if (itemAdded)
+                        scrollToPosition(list.size - 1)
+                })
+            }
 
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)
@@ -128,8 +139,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
         @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
-
-        ReaderTabHolder.restoreTabs(savedInstanceState)
     }
 
     override fun onError(error: String) {
@@ -142,17 +151,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         launch { Toast.makeText(context, "Extracting...", Toast.LENGTH_LONG).show() }
     }
 
-    override fun onTabAdded(index: Int, id: String) {
+    override fun onTabAdded(id: String) {
         drawerLayout.openDrawer(navView, true)
-        tabView.scrollToPosition(index)
     }
 
     override fun onTabInteraction(tab: ReaderTab) = startReaderActivity(tab.id)
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        ReaderTabHolder.saveTabs(outState)
-    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when(item.itemId) {

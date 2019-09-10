@@ -304,8 +304,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         GlobalScope.launch(Dispatchers.IO) { database.updateBookmark(tab) }
     }
 
-    fun removeBookmark(tab: ReaderTab) {
-        GlobalScope.launch(Dispatchers.IO) { database.removeBookmark(tab) }
+    fun removeBookmark(tab: ReaderTab, adjustedTabs: List<ReaderTab>) {
+        GlobalScope.launch(Dispatchers.IO) { database.removeBookmark(tab, adjustedTabs) }
     }
 
     fun clearBookmarks(tabs: List<ReaderTab>) {
