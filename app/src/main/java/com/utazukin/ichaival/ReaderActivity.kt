@@ -116,7 +116,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)
                     launch(Dispatchers.Default) {
-                        if (currentPage == it.numPages)
+                        if (it.numPages > 0 && currentPage == it.numPages)
                             DatabaseReader.setArchiveNewFlag(it.id, false)
                     }
                 }
