@@ -58,8 +58,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     private val archivePageMap = mutableMapOf<String, List<String>>()
     private val archiveActorMap = mutableMapOf<String, SendChannel<ExtractMsg>>()
-    private val idChannel = Channel<String>()
-    private val actorReceiver =  GlobalScope.produce {
+    private val idChannel = Channel<String>(capacity = Channel.UNLIMITED)
+    private val actorReceiver =  GlobalScope.produce(capacity = Channel.UNLIMITED) {
         for (id in idChannel)
             send(getArchiveActor(id))
     }
@@ -128,7 +128,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private fun CoroutineScope.getArchiveActor(id: String) : SendChannel<ExtractMsg> {
         var archiveActor = archiveActorMap[id]
         if (archiveActor == null) {
-            archiveActor = actor {
+            archiveActor = actor(capacity = Channel.UNLIMITED) {
                 var pages: List<String>? = null
                 for (msg in channel) {
                     pages = when (msg) {
