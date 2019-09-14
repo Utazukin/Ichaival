@@ -47,6 +47,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
     private var sortMethod = SortMethod.Alpha
     private var descending = false
+    private var sortUpdated = false
     private var listener: OnListFragmentInteractionListener? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
@@ -72,10 +73,27 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
             post {
                 val dpWidth = getDpWidth(width)
                 val columns = floor(dpWidth / 300.0).toInt()
-                layoutManager = if (columns > 1) GridLayoutManager(
-                    context,
-                    columns
-                ) else LinearLayoutManager(context)
+                layoutManager = if (columns > 1) {
+                    object : GridLayoutManager(context, columns) {
+                        override fun onLayoutCompleted(state: RecyclerView.State?) {
+                            super.onLayoutCompleted(state)
+                            if (sortUpdated) {
+                                scrollToPosition(0)
+                                sortUpdated = false
+                            }
+                        }
+                    }
+                } else {
+                    object : LinearLayoutManager(context) {
+                        override fun onLayoutCompleted(state: RecyclerView.State?) {
+                            super.onLayoutCompleted(state)
+                            if (sortUpdated) {
+                                scrollToPosition(0)
+                                sortUpdated = false
+                            }
+                        }
+                    }
+                }
             }
             val temp = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, activityScope, Glide.with(context))
             listAdapter = temp
@@ -135,7 +153,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
                 (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
             })
             updateSortMethod(method, descending, prefs)
-
             viewModel.filter(searchView.query, newCheckBox.isChecked)
         }
         return view
@@ -188,8 +205,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
             updated = true
         }
 
-        if (updated)
+        if (updated) {
             viewModel.updateSort(method, descending)
+            sortUpdated = true
+        }
     }
 
     fun showOnlySearch(show: Boolean){
