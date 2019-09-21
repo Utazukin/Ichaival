@@ -22,6 +22,7 @@ import android.app.Activity
 import android.os.Bundle
 import android.os.Handler
 import android.preference.PreferenceManager
+import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -198,6 +199,20 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onTabRemoved(id: String) {
         if (id == archive?.id)
             setTabbedIcon(false)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return when(keyCode) {
+            KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                imagePager.setCurrentItem(currentPage + 1, false)
+                true
+            }
+            KeyEvent.KEYCODE_VOLUME_UP -> {
+                imagePager.setCurrentItem(currentPage - 1, false)
+                true
+            }
+            else -> super.onKeyDown(keyCode, event)
+        }
     }
 
     override fun onTabsCleared() = setTabbedIcon(false)
