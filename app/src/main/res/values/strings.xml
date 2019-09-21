@@ -151,4 +151,6 @@
     <string name="rtol_pref_name">Right to Left Reader</string>
     <string name="reader_pref_header">Reader</string>
     <string name="source_pref_header">Source</string>
+    <string name="vol_key_pref_name">Volume Key Navigation</string>
+    <string name="vol_key_pref_key">vol_key_pref</string>
 </resources>

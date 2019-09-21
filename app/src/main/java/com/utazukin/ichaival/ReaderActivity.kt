@@ -77,6 +77,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private set
     private var currentPage = 0
     private var rtol = false
+    private var volControl = false
     private val loadedPages = mutableListOf<Boolean>()
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
@@ -100,6 +101,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         rtol = prefs.getBoolean(getString(R.string.rtol_pref_key), false)
+        volControl = prefs.getBoolean(getString(R.string.vol_key_pref_key), false)
 
         mVisible = true
 
@@ -202,6 +204,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (!volControl)
+            return super.onKeyDown(keyCode, event)
+
         return when(keyCode) {
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
                 imagePager.setCurrentItem(currentPage + 1, false)
