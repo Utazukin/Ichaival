@@ -35,6 +35,9 @@
             app:showAsAction="never"
             android:id="@+id/goto_menu"/>
     <item
+            android:id="@+id/random_item"
+            android:title="@string/random_archive" />
+    <item
             android:title="@string/refresh_menu_item"
             android:id="@+id/refresh_item"/>
 </menu>

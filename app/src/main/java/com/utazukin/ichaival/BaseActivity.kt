@@ -167,7 +167,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         }
     }
 
-    private fun startReaderActivity(id: String) {
+    protected fun startReaderActivity(id: String) {
         val intent = Intent(this, ReaderActivity::class.java)
         val bundle = Bundle()
         bundle.putString("id", id)

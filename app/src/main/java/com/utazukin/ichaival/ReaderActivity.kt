@@ -336,6 +336,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     }
                 }
             }
+            R.id.random_item -> {
+                launch {
+                    val randArchive = DatabaseReader.getRandomArchive()
+                    if (randArchive != null) {
+                        startReaderActivity(randArchive.id)
+                        finish()
+                    }
+                }
+            }
         }
         return super.onOptionsItemSelected(item)
     }
