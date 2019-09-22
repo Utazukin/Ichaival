@@ -153,4 +153,5 @@
     <string name="source_pref_header">Source</string>
     <string name="vol_key_pref_name">Volume Key Navigation</string>
     <string name="vol_key_pref_key">vol_key_pref</string>
+    <string name="random_archive">View Random Archive</string>
 </resources>

@@ -300,6 +300,13 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
+    suspend fun getRandomArchive() : Archive? {
+        return withContext(Dispatchers.IO) {
+            val ids = database.archiveDao().getAllIds()
+            getArchive(ids.random())
+        }
+    }
+
     fun updateBookmark(tab: ReaderTab) {
         GlobalScope.launch(Dispatchers.IO) { database.updateBookmark(tab) }
     }

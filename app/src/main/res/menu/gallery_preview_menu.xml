@@ -20,6 +20,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-            android:id="@+id/random_item"
-            android:title="@string/random_archive" />
+            android:title="@string/refresh_menu_item"
+            android:id="@+id/refresh_item"/>
 </menu>

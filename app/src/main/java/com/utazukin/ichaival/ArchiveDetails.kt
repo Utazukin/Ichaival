@@ -22,6 +22,8 @@ import android.animation.LayoutTransition
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
@@ -54,6 +56,25 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         }
 
         archiveId?.let { launch { extractArchive(it) } }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.archive_details_menu, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.random_item -> {
+                launch {
+                    DatabaseReader.getRandomArchive()?.let {
+                        startDetailsActivity(it.id)
+                        finish()
+                    }
+                }
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     suspend fun extractArchive(id: String) {
