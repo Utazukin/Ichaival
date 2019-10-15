@@ -207,13 +207,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         if (!volControl)
             return super.onKeyDown(keyCode, event)
 
+        val pageAdjustment = if (rtol) -1 else 1
         return when(keyCode) {
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                imagePager.setCurrentItem(imagePager.currentItem + 1, false)
+                imagePager.setCurrentItem(imagePager.currentItem + pageAdjustment, false)
                 true
             }
             KeyEvent.KEYCODE_VOLUME_UP -> {
-                imagePager.setCurrentItem(imagePager.currentItem - 1, false)
+                imagePager.setCurrentItem(imagePager.currentItem - pageAdjustment, false)
                 true
             }
             else -> super.onKeyDown(keyCode, event)
