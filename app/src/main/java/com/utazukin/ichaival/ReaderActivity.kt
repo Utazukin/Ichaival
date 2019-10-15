@@ -209,11 +209,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         return when(keyCode) {
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                imagePager.setCurrentItem(currentPage + 1, false)
+                imagePager.setCurrentItem(imagePager.currentItem + 1, false)
                 true
             }
             KeyEvent.KEYCODE_VOLUME_UP -> {
-                imagePager.setCurrentItem(currentPage - 1, false)
+                imagePager.setCurrentItem(imagePager.currentItem - 1, false)
                 true
             }
             else -> super.onKeyDown(keyCode, event)
