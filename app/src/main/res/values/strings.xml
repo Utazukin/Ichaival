@@ -161,4 +161,7 @@
     <string name="search_delay_key">search_delay_key</string>
     <string name="search_delay_pref">Search Delay</string>
     <string name="search_delay_summary">Amount of time (in ms) to wait between key presses before making the search request. (Default 750 ms)</string>
+    <string name="refresh_archive_menu">Refresh Archives</string>
+    <string name="swipe_refresh_key">swipe_refresh_key</string>
+    <string name="swipe_refresh_pref">Enable Swipe to Refresh</string>
 </resources>

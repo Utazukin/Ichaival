@@ -45,6 +45,10 @@
                 android:title="@string/verbose_pref_name"
                 android:key="@string/verbose_pref"
                 android:summary="@string/verbose_pref_summary"/>
+        <SwitchPreference
+                android:defaultValue="true"
+                android:key="@string/swipe_refresh_key"
+                android:title="@string/swipe_refresh_pref" />
         <Preference
                 android:title="@string/thumbnail_setting"
                 android:key="@string/thumbnail_pref"

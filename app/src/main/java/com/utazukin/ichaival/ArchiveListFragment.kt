@@ -186,7 +186,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
 
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
+
+        val canSwipeRefresh = prefs.getBoolean(getString(R.string.swipe_refresh_key), true)
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
+        swipeRefreshLayout.isEnabled = canSwipeRefresh
 
         DatabaseReader.init(activity!!.applicationContext)
         activityScope.launch(Dispatchers.Main) {
@@ -227,6 +230,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     sortDialogFragment.show(it, "sort_popup")
                     true
                 } ?: false
+            }
+            R.id.refresh_archives -> {
+                forceArchiveListUpdate()
+                true
             }
             else -> false
         }
@@ -384,6 +391,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 val delayString = prefs?.getString(prefName, null)
                 searchDelay = delayString?.toLong() ?: 750
             }
+            getString(R.string.swipe_refresh_key) -> swipeRefreshLayout.isEnabled = prefs?.getBoolean(prefName, true) ?: true
         }
     }
 
