@@ -157,6 +157,12 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     override fun onTabInteraction(tab: ReaderTab) = startReaderActivity(tab.id)
 
+    override fun onLongPressTab(tab: ReaderTab): Boolean {
+        val tagFragment = TagDialogFragment.newInstance(tab.id)
+        tagFragment.show(supportFragmentManager, "tag_popup")
+        return true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when(item.itemId) {
             android.R.id.home -> {

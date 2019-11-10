@@ -38,6 +38,7 @@ class ReaderTabViewAdapter (
 ) : PagedListAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     private val onClickListener: View.OnClickListener
+    private val onLongClickListener: View.OnLongClickListener
 
     private val jobs: MutableMap<ViewHolder, Job> = mutableMapOf()
 
@@ -45,6 +46,11 @@ class ReaderTabViewAdapter (
         onClickListener = View.OnClickListener { v ->
             val item = v.tag as ReaderTab
             listener?.onTabInteraction(item)
+        }
+
+        onLongClickListener = View.OnLongClickListener {
+            val item = it.tag as ReaderTab
+            listener?.onLongPressTab(item) == true
         }
     }
 
@@ -66,6 +72,7 @@ class ReaderTabViewAdapter (
             with(holder.view) {
                 tag = item
                 setOnClickListener(onClickListener)
+                setOnLongClickListener(onLongClickListener)
             }
         }
     }
@@ -91,6 +98,8 @@ class ReaderTabViewAdapter (
 
     interface OnTabInteractionListener {
         fun onTabInteraction(tab: ReaderTab)
+
+        fun onLongPressTab(tab: ReaderTab) : Boolean
     }
 
     companion object {
