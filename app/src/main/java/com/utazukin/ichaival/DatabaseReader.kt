@@ -35,6 +35,7 @@ import java.io.File
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.util.*
 
@@ -50,6 +51,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val extractPath = "$apiPath/extract"
     private const val tagsPath = "$apiPath/tagstats"
     private const val clearNewPath = "$apiPath/clear_new"
+    private const val searchPath = "$apiPath/search"
     private const val timeout = 5000 //ms
 
     private var serverLocation: String = ""
@@ -219,10 +221,8 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         if (tagSuggestions.isNotEmpty() || !canConnect(true))
             return
 
-        val url = URL("$serverLocation$tagsPath${getApiKey(false)}")
-
-        val connection = url.openConnection() as HttpURLConnection
-        connection.connectTimeout = timeout
+        val url = "$serverLocation$tagsPath${getApiKey(false)}"
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK)
@@ -254,15 +254,80 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         }
     }
 
+    fun searchServer(search: CharSequence, onlyNew: Boolean) : List<String>? {
+        if (search.isBlank() && !onlyNew)
+            return null
+
+        refreshListener?.isRefreshing(true)
+        var jsonResults = internalSearchServer(search, onlyNew) ?: return null
+        val totalResults = jsonResults.getInt("recordsFiltered")
+
+        var dataArray = jsonResults.getJSONArray("data")
+        val results = mutableListOf<String>()
+        for (i in 0 until dataArray.length()) {
+            val id = dataArray.getJSONObject(i).getString("arcid")
+            results.add(id)
+        }
+
+        while (results.size != totalResults) {
+            jsonResults = internalSearchServer(search, onlyNew, results.size) ?: return results
+            dataArray = jsonResults.getJSONArray("data")
+            for (i in 0 until dataArray.length()) {
+                val id = dataArray.getJSONObject(i).getString("arcid")
+                results.add(id)
+            }
+        }
+
+        refreshListener?.isRefreshing(false)
+        return results
+    }
+
+    private fun internalSearchServer(search: CharSequence, onlyNew: Boolean, start: Int = 0) : JSONObject? {
+        if (!canConnect(true))
+            return null
+
+        val encodedSearch =  URLEncoder.encode(search.toString(), "utf-8")
+        val url = "$serverLocation$searchPath?filter=$encodedSearch&newonly=$onlyNew&start=$start${getApiKey(true)}"
+
+        val connection = createServerConnection(url)
+        try {
+            with (connection) {
+                if (responseCode != HttpURLConnection.HTTP_OK)
+                    return null
+
+                BufferedReader(InputStreamReader(inputStream)).use {
+                    val response = StringBuffer()
+                    var inputLine = it.readLine()
+                    while (inputLine != null) {
+                        response.append(inputLine)
+                        inputLine = it.readLine()
+                    }
+                    return JSONObject(response.toString())
+                }
+            }
+        }
+        catch (e: Exception) {}
+        finally {
+            connection.disconnect()
+        }
+
+        return null
+    }
+
+    private fun createServerConnection(url: String) : HttpURLConnection {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.connectTimeout = timeout
+        return connection
+    }
+
     private fun extractArchive(id: String) : JSONObject? {
         if (!canConnect())
             return null
 
-        val url = URL("$serverLocation$extractPath?id=$id${getApiKey(true)}")
         notifyExtract(id)
 
-        val connection = url.openConnection() as HttpURLConnection
-        connection.connectTimeout = timeout
+        val url = "$serverLocation$extractPath?id=$id${getApiKey(true)}"
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK)
@@ -325,11 +390,10 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         if (!canConnect(true))
             return
 
-        val url = URL("$serverLocation$clearNewPath?id=$id${getApiKey(true)}")
-        val connection = url.openConnection() as HttpURLConnection
+        val url = "$serverLocation$clearNewPath?id=$id${getApiKey(true)}"
+        val connection = createServerConnection(url)
         try {
             with(connection) {
-                connectTimeout = timeout
                 if (responseCode != HttpURLConnection.HTTP_OK)
                     return
             }
@@ -363,11 +427,10 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         if (!canConnect())
             return null
 
-        val url = URL("$serverLocation$archiveListPath?${getApiKey(false)}")
-        val connection = url.openConnection() as HttpURLConnection
+        val url = "$serverLocation$archiveListPath?${getApiKey(false)}"
+        val connection = createServerConnection(url)
         try {
             with(connection) {
-                connectTimeout = timeout
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     handleErrorMessage(responseCode, "Failed to connect to server!")
                     return null

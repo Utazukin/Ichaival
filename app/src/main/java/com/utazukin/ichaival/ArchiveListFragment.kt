@@ -37,26 +37,25 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlin.math.floor
 
-class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
-
+class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private var sortMethod = SortMethod.Alpha
     private var descending = false
     private var sortUpdated = false
     private var listener: OnListFragmentInteractionListener? = null
+    private var searchJob: Job? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var activityScope: CoroutineScope
     private lateinit var newCheckBox: CheckBox
     private lateinit var randomButton: Button
-    private lateinit var viewModel: ArchiveViewModel
+    private var viewModel: SearchViewModelBase? = null
     lateinit var searchView: SearchView
         private set
+    private var searchDelay: Long = 750
+    private var isLocalSearch: Boolean = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,7 +65,16 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
         setHasOptionsMenu(true)
-        viewModel = ViewModelProviders.of(this).get(ArchiveViewModel::class.java)
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val delayString = prefs.getString(getString(R.string.search_delay_key), null)
+        searchDelay = delayString?.toLong() ?: 750
+        isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
+
+        if (isLocalSearch)
+            viewModel = ViewModelProviders.of(this).get(ArchiveViewModel::class.java)
+        else
+            viewModel = ViewModelProviders.of(this).get(SearchViewModel::class.java)
 
         // Set the adapter
         with(listView) {
@@ -102,16 +110,58 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
         searchView = view.findViewById(R.id.archive_search)
         newCheckBox = view.findViewById(R.id.new_checkbox)
-        newCheckBox.setOnCheckedChangeListener { _, checked -> viewModel.filter(searchView.query, checked) }
+        newCheckBox.setOnCheckedChangeListener { _, checked ->
+            if (isLocalSearch)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, checked)
+            else {
+                searchJob?.cancel()
+                if (checked || searchView.query.isNotBlank()) {
+                    searchJob = activityScope.launch {
+                        val results = withContext(Dispatchers.Default) {
+                            DatabaseReader.searchServer(searchView.query, checked)
+                        }
+                        getViewModel<SearchViewModel>().filter(results)
+                    }
+                } else
+                    getViewModel<SearchViewModel>().filter(null)
+            }
+        }
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(p0: String?): Boolean {
-                viewModel.filter(p0, newCheckBox.isChecked)
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                if (isLocalSearch)
+                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
+                else {
+                    searchJob?.cancel()
+                    searchJob = activityScope.launch {
+                        if (query != null) {
+                            val results = withContext(Dispatchers.Default) {
+                                DatabaseReader.searchServer(query, newCheckBox.isChecked)
+                            }
+                            getViewModel<SearchViewModel>().filter(results)
+                        }
+                    }
+                }
                 return true
             }
 
-            override fun onQueryTextChange(p0: String?): Boolean {
-                viewModel.filter(p0, newCheckBox.isChecked)
+            override fun onQueryTextChange(query: String?): Boolean {
+                if (isLocalSearch)
+                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
+                else {
+                    searchJob?.cancel()
+                    searchJob = activityScope.launch {
+                        if (!query.isNullOrBlank() || newCheckBox.isChecked)
+                            delay(searchDelay)
+
+                        if (query != null) {
+                            val results = withContext(Dispatchers.Default) {
+                                DatabaseReader.searchServer(query, newCheckBox.isChecked)
+                            }
+                            getViewModel<SearchViewModel>().filter(results)
+                        }
+                    }
+                }
                 return true
             }
         })
@@ -120,7 +170,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener { v ->
             activityScope.launch {
-                val archive = withContext(Dispatchers.IO) { viewModel.getRandom() }
+                val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
                 if (archive != null)
                     startDetailsActivity(archive.id, v?.context)
             }
@@ -128,7 +178,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
 
         randomButton.setOnLongClickListener {
             activityScope.launch {
-                val archive = withContext(Dispatchers.IO) { viewModel.getRandom() }
+                val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
                 if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
                     ReaderTabHolder.addTab(archive, 0)
             }
@@ -142,18 +192,23 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         activityScope.launch(Dispatchers.Main) {
             withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir) }
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
-
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
-            viewModel.init(DatabaseReader.database.archiveDao(), method, descending, searchView.query, newCheckBox.isChecked)
-            viewModel.archiveList.observe(this@ArchiveListFragment, Observer {
+
+            if (isLocalSearch)
+                getViewModel<ArchiveViewModel>().init(DatabaseReader.database.archiveDao(), method, descending, searchView.query, newCheckBox.isChecked)
+            else
+                getViewModel<SearchViewModel>().init(DatabaseReader.database.archiveDao(), method, descending)
+
+            viewModel?.archiveList?.observe(this@ArchiveListFragment, Observer {
                 listAdapter.submitList(it)
                 val size = it.size
                 (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
             })
             updateSortMethod(method, descending, prefs)
-            viewModel.filter(searchView.query, newCheckBox.isChecked)
+
+            if (isLocalSearch)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
         }
         return view
     }
@@ -206,7 +261,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         }
 
         if (updated) {
-            viewModel.updateSort(method, descending)
+            viewModel?.updateSort(method, descending)
             sortUpdated = true
         }
     }
@@ -240,6 +295,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         } else {
             throw RuntimeException("$context must implement OnListFragmentInteractionListener")
         }
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.registerOnSharedPreferenceChangeListener(this)
     }
 
     private fun setupTagList(tagHolder: TagListHolder?) {
@@ -263,12 +321,66 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener {
         super.onDetach()
         listener = null
         DatabaseReader.refreshListener = null
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.unregisterOnSharedPreferenceChangeListener(this)
     }
 
     fun forceArchiveListUpdate() {
         activityScope.launch {
             withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir, true) }
-            viewModel.filter(searchView.query, newCheckBox.isChecked)
+
+            if (isLocalSearch)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
+            else if (!searchView.query.isNullOrEmpty() || newCheckBox.isChecked) {
+                searchJob?.cancel()
+                val results = withContext(Dispatchers.Default) {
+                    DatabaseReader.searchServer(searchView.query, newCheckBox.isChecked)
+                }
+                getViewModel<SearchViewModel>().filter(results)
+            }
+        }
+    }
+
+    private fun <T> getViewModel() : T where T : SearchViewModelBase {
+        if (viewModel == null)
+            initViewModel(isLocalSearch)
+
+        return viewModel as T
+    }
+
+    private fun initViewModel(localSearch: Boolean) {
+        val model = if (localSearch) {
+            ViewModelProviders.of(this).get(ArchiveViewModel::class.java).also {
+                it.init(DatabaseReader.database.archiveDao(), sortMethod, descending, searchView.query, newCheckBox.isChecked)
+            }
+        } else {
+            ViewModelProviders.of(this).get(SearchViewModel::class.java).also {
+                it.init(DatabaseReader.database.archiveDao(), sortMethod, descending)
+            }
+        }
+
+        model.archiveList.observe(this, Observer {
+            (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
+            val size = it.size
+            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
+        })
+
+        model.updateSort(sortMethod, descending)
+        viewModel = model
+    }
+
+    override fun onSharedPreferenceChanged(prefs: SharedPreferences?, prefName: String?) {
+        when (prefName) {
+            getString(R.string.local_search_key) -> {
+                val local = prefs?.getBoolean(prefName, false) ?: false
+                initViewModel(local)
+                isLocalSearch = local
+            }
+            getString(R.string.search_delay_key) -> {
+                val delayString = prefs?.getString(prefName, null)
+                searchDelay = delayString?.toLong() ?: 750
+            }
         }
     }
 
