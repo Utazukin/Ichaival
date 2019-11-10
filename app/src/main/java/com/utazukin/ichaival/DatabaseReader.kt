@@ -136,8 +136,10 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     pages = when (msg) {
                         is QueueExtract -> msg.action(msg.id)
                         is GetPages -> {
+                            if (pages == null)
+                                notifyError("Error getting page list for id: $id")
                             msg.response.complete(pages ?: emptyList())
-                            null
+                            pages
                         }
                     }
                 }
@@ -258,6 +260,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         if (search.isBlank() && !onlyNew)
             return null
 
+        //TODO probably have this actually page properly.
         refreshListener?.isRefreshing(true)
         var jsonResults = internalSearchServer(search, onlyNew) ?: return null
         val totalResults = jsonResults.getInt("recordsFiltered")
