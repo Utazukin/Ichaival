@@ -374,6 +374,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         when (prefName) {
             getString(R.string.local_search_key) -> {
                 val local = prefs?.getBoolean(prefName, false) ?: false
+                //Reset filter when changing search type.
+                newCheckBox.isChecked = false
+                searchView.setQuery("", true)
                 initViewModel(local)
                 isLocalSearch = local
             }
