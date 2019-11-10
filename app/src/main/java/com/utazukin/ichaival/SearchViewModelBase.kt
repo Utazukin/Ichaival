@@ -37,7 +37,7 @@ abstract class SearchViewModelBase : ViewModel() {
     protected var sortMethod = SortMethod.Alpha
     protected var descending = false
 
-    abstract fun getRandom(): Archive?
+    abstract fun getRandom(excludeBookmarked: Boolean = true): Archive?
     abstract fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false)
 }
 
@@ -47,9 +47,14 @@ class SearchViewModel : SearchViewModelBase() {
         MutableLiveData<Pair<List<String>?, Pair<SortMethod, Boolean>>>()
     private var searchResults: List<String>? = null
 
-    override fun getRandom(): Archive? {
-        val randId = searchResults?.random() ?: archiveDao.getAllIds().random()
-        return archiveDao.getArchive(randId)
+    override fun getRandom(excludeBookmarked: Boolean): Archive? {
+        var data: Collection<String> = searchResults ?: archiveDao.getAllIds()
+
+        if (excludeBookmarked)
+            data = data.subtract(archiveDao.getBookmarks().map { it.id })
+
+        val randId = if (data.isNotEmpty()) data.random() else null
+        return if (randId != null) archiveDao.getArchive(randId) else null
     }
 
     fun init(method: SortMethod = SortMethod.Alpha, desc: Boolean = false) {
@@ -116,8 +121,12 @@ class ArchiveViewModel : SearchViewModelBase() {
     private var sortFilter: CharSequence = ""
     private var onlyNew = false
 
-    override fun getRandom() : Archive? {
-        val data = internalFilter(sortFilter, onlyNew) ?: archiveDao.getAllIds()
+    override fun getRandom(excludeBookmarked: Boolean) : Archive? {
+        var data: Collection<String> = internalFilter(sortFilter, onlyNew) ?: archiveDao.getAllIds()
+
+        if (excludeBookmarked)
+            data = data.subtract(archiveDao.getBookmarks().map { it.id })
+
         val randId = data.random()
         return archiveDao.getArchive(randId)
     }

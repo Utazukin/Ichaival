@@ -170,7 +170,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener { v ->
             activityScope.launch {
-                val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
+                val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
                 if (archive != null)
                     startDetailsActivity(archive.id, v?.context)
             }
