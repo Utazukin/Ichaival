@@ -136,8 +136,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     pages = when (msg) {
                         is QueueExtract -> msg.action(msg.id)
                         is GetPages -> {
-                            if (pages == null)
-                                notifyError("Error getting page list for id: $id")
                             msg.response.complete(pages ?: emptyList())
                             pages
                         }

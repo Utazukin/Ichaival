@@ -196,9 +196,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().init(DatabaseReader.database.archiveDao(), method, descending, searchView.query, newCheckBox.isChecked)
+                getViewModel<ArchiveViewModel>().init(method, descending, searchView.query, newCheckBox.isChecked)
             else
-                getViewModel<SearchViewModel>().init(DatabaseReader.database.archiveDao(), method, descending)
+                getViewModel<SearchViewModel>().init(method, descending)
 
             viewModel?.archiveList?.observe(this@ArchiveListFragment, Observer {
                 listAdapter.submitList(it)
@@ -352,11 +352,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private fun initViewModel(localSearch: Boolean) {
         val model = if (localSearch) {
             ViewModelProviders.of(this).get(ArchiveViewModel::class.java).also {
-                it.init(DatabaseReader.database.archiveDao(), sortMethod, descending, searchView.query, newCheckBox.isChecked)
+                it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
             }
         } else {
             ViewModelProviders.of(this).get(SearchViewModel::class.java).also {
-                it.init(DatabaseReader.database.archiveDao(), sortMethod, descending)
+                it.init(sortMethod, descending)
             }
         }
 
