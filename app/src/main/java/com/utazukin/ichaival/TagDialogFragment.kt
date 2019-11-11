@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 
 import android.graphics.Color
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.view.LayoutInflater
@@ -47,6 +48,10 @@ class TagDialogFragment : DialogFragment() {
     private lateinit var tagLayout: LinearLayout
     private var tagPressListener: TagPressListener? = null
     private var tagLongPressListener: TagLongPressListener? = null
+    private val isLocalSearch by lazy {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.getBoolean(getString(R.string.local_search_key), false)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +76,14 @@ class TagDialogFragment : DialogFragment() {
         return view
     }
 
+    private fun getSearchTag(tag: String, namespace: String) : String {
+        return when {
+            namespace == "Other:" -> "\"$tag\""
+            isLocalSearch -> "$namespace\"$tag\""
+            else -> "\"$namespace$tag\"$"
+        }
+    }
+
     private fun setUpTags(archive: Archive) {
         for (pair in archive.tags) {
             if (pair.value.isEmpty())
@@ -92,7 +105,7 @@ class TagDialogFragment : DialogFragment() {
             for (tag in pair.value) {
                 val tagView = createTagView(tag)
                 if (!isSource) {
-                    val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
+                    val searchTag = getSearchTag(tag, namespace)
                     tagView.setOnClickListener { tagPressListener?.invoke(searchTag); dismiss() }
                     tagView.setOnLongClickListener {
                         val response = tagLongPressListener?.invoke(searchTag)
