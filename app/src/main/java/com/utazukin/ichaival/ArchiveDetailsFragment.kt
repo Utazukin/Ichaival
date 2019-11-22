@@ -22,6 +22,7 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.view.LayoutInflater
@@ -48,6 +49,10 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private var thumbLoadJob: Job? = null
     private lateinit var scope: CoroutineScope
     private var tagListener: TagInteractionListener? = null
+    private val isLocalSearch by lazy {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.getBoolean(getString(R.string.local_search_key), false)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,6 +104,14 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         super.onDestroy()
     }
 
+    private fun getSearchTag(tag: String, namespace: String) : String {
+        return when {
+            namespace == "Other:" -> "\"$tag\""
+            isLocalSearch -> "$namespace\"$tag\""
+            else -> "\"$namespace$tag\"$"
+        }
+    }
+
     private fun setUpTags(archive: Archive) {
         for (pair in archive.tags) {
             if (pair.value.isEmpty())
@@ -121,7 +134,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                 namespaceLayout.addView(tagView)
 
                 if (!isSource) {
-                    val searchTag = if (namespace == "Other:") "\"$tag\"" else "$namespace\"$tag\""
+                    val searchTag = getSearchTag(tag, namespace)
                     tagView.setOnClickListener { tagListener?.onTagInteraction(searchTag) }
                 } else {
                     tagView.linksClickable = true
