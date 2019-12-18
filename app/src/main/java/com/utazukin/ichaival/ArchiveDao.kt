@@ -74,7 +74,7 @@ interface ArchiveDao {
     fun getBookmarkedPage(id: String) : Int?
 
     @Query("Update archive set currentPage = :page where id = :id")
-    fun updateBookmark(id: String, page: Int)
+    suspend fun updateBookmark(id: String, page: Int)
 
     @Query("Update archive set currentPage = -1 where id = :id")
     fun removeBookmark(id: String)
@@ -84,6 +84,9 @@ interface ArchiveDao {
 
     @Query("Select * from readertab order by `index`")
     fun getBookmarks() : List<ReaderTab>
+
+    @Query("Select * from readertab where id = :id limit 1")
+    suspend fun getBookmark(id: String) : ReaderTab?
 
     @Query("Select * from readertab order by `index`")
     fun getDataBookmarks() : DataSource.Factory<Int, ReaderTab>
@@ -113,7 +116,7 @@ interface ArchiveDao {
     fun updateArchive(archive: Archive)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun updateBookmark(tab: ReaderTab)
+    suspend fun updateBookmark(tab: ReaderTab)
 
     @Update
     fun updateBookmarks(tabs: List<ReaderTab>)
@@ -170,20 +173,47 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     @Transaction
-    fun updateBookmark(tab: ReaderTab) {
+    suspend fun addBookmark(tab: ReaderTab) {
         archiveDao().updateBookmark(tab)
         archiveDao().updateBookmark(tab.id, tab.page)
     }
 
     @Transaction
-    fun removeBookmark(tab: ReaderTab, adjustedTabs: List<ReaderTab>) {
+    suspend fun updateBookmark(id: String, page: Int) {
+        val tab = archiveDao().getBookmark(id)
+        tab?.let {
+            it.page = page
+            archiveDao().updateBookmark(it)
+            archiveDao().updateBookmark(it.id, page)
+        }
+    }
+
+    @Transaction
+    suspend fun removeBookmark(id: String) : Boolean {
+        val tab = archiveDao().getBookmark(id)
+        if (tab != null) {
+            removeBookmark(tab)
+            return true
+        }
+
+        return false
+    }
+
+    @Transaction
+    fun removeBookmark(tab: ReaderTab) {
+        val tabs = archiveDao().getBookmarks()
+        val adjustedTabs = tabs.filter { it.index > tab.index }
+        for (adjustedTab in adjustedTabs)
+            --adjustedTab.index
+
         archiveDao().removeBookmark(tab.id)
         archiveDao().removeBookmark(tab)
         archiveDao().updateBookmarks(adjustedTabs)
     }
 
     @Transaction
-    fun clearBookmarks(tabs: List<ReaderTab>) {
+    fun clearBookmarks() {
+        val tabs = archiveDao().getBookmarks()
         archiveDao().removeAllBookmarks(tabs.map { it.id } )
         archiveDao().clearBookmarks(tabs)
     }

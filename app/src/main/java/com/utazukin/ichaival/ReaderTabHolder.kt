@@ -23,10 +23,12 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 object ReaderTabHolder {
-    private var openTabs: Map<String, ReaderTab>? = null
     private var initialized = false
+    private var tabCount = 0
 
     private val removeListeners = mutableSetOf<TabRemovedListener>()
 
@@ -35,12 +37,7 @@ object ReaderTabHolder {
     private val clearListeners = mutableSetOf<TabsClearedListener>()
 
     fun updatePageIfTabbed(id: String, page: Int) {
-        val tab = openTabs?.get(id)
-
-        if (tab != null) {
-            tab.page = page
-            DatabaseReader.updateBookmark(tab)
-        }
+        DatabaseReader.updateBookmark(id, page)
     }
 
     fun registerRemoveListener(listener: TabRemovedListener) = removeListeners.add(listener)
@@ -55,46 +52,35 @@ object ReaderTabHolder {
 
     fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
 
-    fun addTab(archive: Archive, page: Int) = addTab(archive.id, archive.title, page)
-
-    private fun addTab(id: String, title: String, page: Int) {
-        if (openTabs?.containsKey(id) != true) {
-            val tab = ReaderTab(id, title, openTabs?.size ?: 0, page)
-            DatabaseReader.updateBookmark(tab)
-            updateAddListeners(id)
+    fun addTab(archive: Archive, page: Int) {
+        if (archive.currentPage < 0) {
+            val tab = ReaderTab(archive.id, archive.title, tabCount, page)
+            archive.currentPage = page
+            DatabaseReader.addBookmark(tab)
+            updateAddListeners(archive.id)
         }
     }
 
     fun initialize(context: FragmentActivity) {
         if (!initialized) {
             val viewModel = ViewModelProviders.of(context).get(ReaderTabViewModel::class.java)
-            viewModel.bookmarkMap.observeForever { openTabs = it }
+            viewModel.bookmarks.observeForever { tabCount = it.size }
             initialized = true
         }
     }
 
-    fun isTabbed(id: String?) : Boolean {
-        return openTabs?.containsKey(id) == true
-    }
+    fun isTabbed(archive: Archive?) = if (archive != null) archive.currentPage > 0 else false
 
     fun removeTab(id: String) {
-        val tabToRemove = openTabs?.get(id)
-        if (tabToRemove != null) {
-            openTabs?.values?.filter { it.index > tabToRemove.index }?.let {
-                for (tab in it)
-                    tab.index--
-
-                DatabaseReader.removeBookmark(tabToRemove, it)
+        GlobalScope.launch {
+            if (DatabaseReader.removeBookmark(id))
                 updateRemoveListeners(id)
-            }
         }
     }
 
     fun removeAll() {
-        openTabs?.let {
-            DatabaseReader.clearBookmarks(it.values.toList())
-            updateClearListeners()
-        }
+        DatabaseReader.clearBookmarks()
+        updateClearListeners()
     }
 
     private fun updateRemoveListeners(id: String) {

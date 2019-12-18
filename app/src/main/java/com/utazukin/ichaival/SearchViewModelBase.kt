@@ -28,7 +28,6 @@ private fun <T, TT> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = L
 
 class ReaderTabViewModel : ViewModel() {
     val bookmarks = DatabaseReader.database.archiveDao().getDataBookmarks().toLiveData(5)
-    val bookmarkMap = Transformations.map(bookmarks) { list -> list.associateBy { it.id } }
 }
 
 abstract class SearchViewModelBase : ViewModel() {

@@ -161,7 +161,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         with(bookmarkButton) {
             setOnClickListener {
                 archive?.let {
-                    if (ReaderTabHolder.isTabbed(it.id)) {
+                    if (ReaderTabHolder.isTabbed(it)) {
                         ReaderTabHolder.removeTab(it.id)
                         text = getString(R.string.bookmark)
                     } else {
@@ -170,7 +170,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     }
                 }
             }
-            text = getString(if (ReaderTabHolder.isTabbed(archive?.id)) R.string.unbookmark else R.string.bookmark)
+            text = getString(if (ReaderTabHolder.isTabbed(archive)) R.string.unbookmark else R.string.bookmark)
         }
 
         val readButton: Button = view.findViewById(R.id.read_button)

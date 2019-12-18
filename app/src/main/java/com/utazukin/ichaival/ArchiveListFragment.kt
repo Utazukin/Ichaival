@@ -179,7 +179,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton.setOnLongClickListener {
             activityScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
-                if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
+                if (archive != null && !ReaderTabHolder.isTabbed(archive))
                     ReaderTabHolder.addTab(archive, 0)
             }
             true

@@ -153,7 +153,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     imagePager.setCurrentItem(adjustedPage, false)
                     supportActionBar?.subtitle = subtitle
 
-                    setTabbedIcon(ReaderTabHolder.isTabbed(arcid))
+                    setTabbedIcon(ReaderTabHolder.isTabbed(it))
                 }
             }
         }
@@ -272,7 +272,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         menuInflater.inflate(R.menu.reader_menu, menu)
         optionsMenu = menu
         val bookmarker = menu?.findItem(R.id.bookmark_archive)
-        setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(archive?.id))
+        setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(archive))
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -296,7 +296,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         when (item.itemId) {
             R.id.bookmark_archive -> {
                 archive?.let {
-                    if (!ReaderTabHolder.isTabbed(it.id)) {
+                    if (!ReaderTabHolder.isTabbed(it)) {
                         ReaderTabHolder.addTab(it, currentPage)
                         setTabbedIcon(item, true)
                     }

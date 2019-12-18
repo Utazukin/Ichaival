@@ -373,16 +373,18 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun updateBookmark(tab: ReaderTab) {
-        GlobalScope.launch(Dispatchers.IO) { database.updateBookmark(tab) }
+    fun updateBookmark(id: String, page: Int) {
+        GlobalScope.launch(Dispatchers.IO) { database.updateBookmark(id, page) }
     }
 
-    fun removeBookmark(tab: ReaderTab, adjustedTabs: List<ReaderTab>) {
-        GlobalScope.launch(Dispatchers.IO) { database.removeBookmark(tab, adjustedTabs) }
+    fun addBookmark(tab: ReaderTab) {
+        GlobalScope.launch(Dispatchers.IO) { database.addBookmark(tab) }
     }
 
-    fun clearBookmarks(tabs: List<ReaderTab>) {
-        GlobalScope.launch(Dispatchers.IO) { database.clearBookmarks(tabs) }
+    suspend fun removeBookmark(id: String) = withContext(Dispatchers.IO) { database.removeBookmark(id) }
+
+    fun clearBookmarks() {
+        GlobalScope.launch(Dispatchers.IO) { database.clearBookmarks() }
     }
 
     fun setArchiveNewFlag(id: String, isNew: Boolean) {
