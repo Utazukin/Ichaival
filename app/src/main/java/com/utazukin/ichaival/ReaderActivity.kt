@@ -199,8 +199,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onTabRemoved(id: String) {
-        if (id == archive?.id)
+        if (id == archive?.id) {
             setTabbedIcon(false)
+            archive?.currentPage = -1
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -221,7 +223,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    override fun onTabsCleared() = setTabbedIcon(false)
+    override fun onTabsCleared() {
+        setTabbedIcon(false)
+        archive?.currentPage = -1
+    }
 
     private fun setTabbedIcon(tabbed: Boolean) = setTabbedIcon(optionsMenu?.findItem(R.id.bookmark_archive), tabbed)
 
