@@ -364,7 +364,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         listener?.onError(error)
     }
 
-    fun getArchive(id: String) = database.archiveDao().getArchive(id)
+    suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
     suspend fun getRandomArchive() : Archive? {
         return withContext(Dispatchers.IO) {

@@ -23,8 +23,10 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
     private var initialized = false
@@ -61,6 +63,12 @@ object ReaderTabHolder {
         }
     }
 
+    suspend fun addTab(id: String, page: Int) {
+        val archive = DatabaseReader.getArchive(id)
+        if (archive != null)
+            addTab(archive, page)
+    }
+
     fun initialize(context: FragmentActivity) {
         if (!initialized) {
             val viewModel = ViewModelProviders.of(context).get(ReaderTabViewModel::class.java)
@@ -69,7 +77,12 @@ object ReaderTabHolder {
         }
     }
 
-    fun isTabbed(archive: Archive?) = if (archive != null) archive.currentPage > 0 else false
+    fun isTabbed(archive: Archive?) = if (archive != null) archive.currentPage >= 0 else false
+
+    suspend fun isTabbed(id: String) : Boolean {
+        val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
+        return isTabbed(archive)
+    }
 
     fun removeTab(id: String) {
         GlobalScope.launch {

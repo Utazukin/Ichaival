@@ -59,7 +59,7 @@ interface ArchiveDao {
     fun getDataTitleAscending(ids: List<String>) : DataSource.Factory<Int, Archive>
 
     @Query("Select * from archive where id = :id limit 1")
-    fun getArchive(id: String) : Archive?
+    suspend fun getArchive(id: String) : Archive?
 
     @Query("Select title from archive where id = :id limit 1")
     fun getArchiveTitle(id: String) : String?

@@ -160,13 +160,15 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {
-                archive?.let {
-                    if (ReaderTabHolder.isTabbed(it)) {
-                        ReaderTabHolder.removeTab(it.id)
-                        text = getString(R.string.bookmark)
-                    } else {
-                        ReaderTabHolder.addTab(it, 0)
-                        text = getString(R.string.unbookmark)
+                scope.launch {
+                    archiveId?.let {
+                        if (ReaderTabHolder.isTabbed(it)) {
+                            ReaderTabHolder.removeTab(it)
+                            text = getString(R.string.bookmark)
+                        } else {
+                            ReaderTabHolder.addTab(it, 0)
+                            text = getString(R.string.unbookmark)
+                        }
                     }
                 }
             }
