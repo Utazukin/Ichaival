@@ -200,7 +200,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onTabRemoved(id: String) {
         if (id == archive?.id) {
-            setTabbedIcon(false)
+            launch { setTabbedIcon(false) }
             archive?.currentPage = -1
         }
     }
