@@ -161,15 +161,20 @@ class DatabaseTypeConverters {
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
+    @Transaction
     fun insertOrUpdate(archives: Map<String, ArchiveJson>) {
         val currentIds = archiveDao().getAllIds()
-        val allIds = currentIds.union(archives.keys)
+        val keys = archives.keys
+        val allIds = currentIds.union(keys)
         archiveDao().updateFromJson(archives.values)
-        val toAdd = archives.keys.minus(currentIds).map { Archive(archives.getValue(it)) }
-        archiveDao().insertAll(toAdd)
 
-        val toRemove = allIds.subtract(archives.keys).toList()
-        archiveDao().removeArchives(toRemove)
+        val toAdd = keys.minus(currentIds)
+        if (toAdd.isNotEmpty())
+            archiveDao().insertAll(toAdd.map { Archive(archives.getValue(it)) })
+
+        val toRemove = allIds.subtract(keys)
+        if (toRemove.isNotEmpty())
+            archiveDao().removeArchives(toRemove.toList())
     }
 
     @Transaction
@@ -214,8 +219,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
     @Transaction
     fun clearBookmarks() {
         val tabs = archiveDao().getBookmarks()
-        archiveDao().removeAllBookmarks(tabs.map { it.id } )
-        archiveDao().clearBookmarks(tabs)
+        if (tabs.isNotEmpty()) {
+            archiveDao().removeAllBookmarks(tabs.map { it.id })
+            archiveDao().clearBookmarks(tabs)
+        }
     }
 }
 
