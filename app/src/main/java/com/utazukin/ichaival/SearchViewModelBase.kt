@@ -56,7 +56,7 @@ class SearchViewModel : SearchViewModelBase() {
         return if (randId != null) archiveDao.getArchive(randId) else null
     }
 
-    fun init(method: SortMethod = SortMethod.Alpha, desc: Boolean = false) {
+    fun init(method: SortMethod = SortMethod.Alpha, desc: Boolean = false, isSearch: Boolean = false) {
         if (this::archiveList.isInitialized)
             return
 
@@ -66,35 +66,39 @@ class SearchViewModel : SearchViewModelBase() {
             val sort = it.second.first
             val des = it.second.second
             liveData(Dispatchers.IO) {
-                val data = when (sort) {
-                    SortMethod.Alpha -> {
-                        if (des) {
-                            if (results != null)
-                                archiveDao.getDataTitleDescending(results).toLiveData()
-                            else
-                                archiveDao.getDataTitleDescending().toLiveData()
-                        } else {
-                            if (results != null)
-                                archiveDao.getDataTitleAscending(results).toLiveData()
-                            else
-                                archiveDao.getDataTitleAscending().toLiveData()
+                if (results == null && isSearch)
+                    emitSource(archiveDao.getDataTitleAscending(emptyList()).toLiveData())
+                else {
+                    val data = when (sort) {
+                        SortMethod.Alpha -> {
+                            if (des) {
+                                if (results != null)
+                                    archiveDao.getDataTitleDescending(results).toLiveData()
+                                else
+                                    archiveDao.getDataTitleDescending().toLiveData()
+                            } else {
+                                if (results != null)
+                                    archiveDao.getDataTitleAscending(results).toLiveData()
+                                else
+                                    archiveDao.getDataTitleAscending().toLiveData()
+                            }
+                        }
+                        SortMethod.Date -> {
+                            if (des) {
+                                if (results != null)
+                                    archiveDao.getDataDateDescending(results).toLiveData()
+                                else
+                                    archiveDao.getDataDateDescending().toLiveData()
+                            } else {
+                                if (results != null)
+                                    archiveDao.getDataDateAscending(results).toLiveData()
+                                else
+                                    archiveDao.getDataDateAscending().toLiveData()
+                            }
                         }
                     }
-                    SortMethod.Date -> {
-                        if (des) {
-                            if (results != null)
-                                archiveDao.getDataDateDescending(results).toLiveData()
-                            else
-                                archiveDao.getDataDateDescending().toLiveData()
-                        } else {
-                            if (results != null)
-                                archiveDao.getDataDateAscending(results).toLiveData()
-                            else
-                                archiveDao.getDataDateAscending().toLiveData()
-                        }
-                    }
+                    emitSource(data)
                 }
-                emitSource(data)
             }
         }
     }

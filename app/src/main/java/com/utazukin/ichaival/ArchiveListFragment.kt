@@ -201,7 +201,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().init(method, descending, searchView.query, newCheckBox.isChecked)
             else
-                getViewModel<SearchViewModel>().init(method, descending)
+                getViewModel<SearchViewModel>().init(method, descending, activity is ArchiveSearch)
 
             viewModel?.archiveList?.observe(this@ArchiveListFragment, Observer {
                 listAdapter.submitList(it)
