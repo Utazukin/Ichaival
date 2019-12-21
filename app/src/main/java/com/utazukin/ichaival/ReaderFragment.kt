@@ -77,6 +77,9 @@ class ReaderFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBar)
         progressBar.visibility = View.VISIBLE
 
+        //Tapping the view will display the toolbar until the image is displayed.
+        view.setOnClickListener { listener?.onFragmentTap(TouchZone.Center) }
+
         imagePath?.let(::displayImage)
         createViewCalled = true
         return view
@@ -126,6 +129,7 @@ class ReaderFragment : Fragment() {
                     .into (SubsamplingTarget(it) {
                         pageNum.visibility = View.GONE
                         progressBar.visibility = View.GONE
+                        view?.setOnClickListener(null)
                     })
             }
         }.also { setupImageTapEvents(it) }
@@ -165,8 +169,10 @@ class ReaderFragment : Fragment() {
                 dataSource: DataSource?,
                 isFirstResource: Boolean
             ): Boolean {
-                if (clearOnReady)
+                if (clearOnReady) {
                     pageNum.visibility = View.GONE
+                    view?.setOnClickListener(null)
+                }
                 progressBar.visibility = View.GONE
                 return false
             }
