@@ -208,7 +208,7 @@ class ReaderFragment : Fragment() {
 
         arguments?.run {
             val page = getInt(PAGE_NUM)
-            activity.launch(Dispatchers.Main) {
+            activity.launch {
                 val image = withContext(Dispatchers.Default) { activity.archive?.getPageImage(page) }
                 if (image != null) {
                     if (createViewCalled)
