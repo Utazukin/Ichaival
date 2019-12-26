@@ -91,8 +91,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     }
 
     override fun onTabRemoved(id: String) {
-        if (id == archiveId)
-            bookmarkButton.text = getString(R.string.bookmark)
+        if (id == archiveId) {
+            scope.launch { bookmarkButton.text = getString(R.string.bookmark) }
+        }
     }
 
     override fun onTabsCleared() {
