@@ -35,6 +35,30 @@ interface ArchiveDao {
     fun getAllAscending(sortField: String) : List<Archive>
 
     @Query("Select * from archive order by dateAdded desc")
+    fun getDateDescending() : List<Archive>
+
+    @Query("Select * from archive where id in (:ids) order by dateAdded desc")
+    fun getDateDescending(ids: List<String>) : List<Archive>
+
+    @Query("Select * from archive order by title collate nocase desc")
+    fun getTitleDescending() : List<Archive>
+
+    @Query("Select * from archive where id in (:ids) order by title collate nocase desc")
+    fun getTitleDescending(ids: List<String>) : List<Archive>
+
+    @Query("Select * from archive order by dateAdded asc")
+    fun getDateAscending() : List<Archive>
+
+    @Query("Select * from archive where id in (:ids) order by dateAdded asc")
+    fun getDateAscending(ids: List<String>) : List<Archive>
+
+    @Query("Select * from archive order by title collate nocase asc")
+    fun getTitleAscending() : List<Archive>
+
+    @Query("Select * from archive where id in (:ids) order by title collate nocase asc")
+    fun getTitleAscending(ids: List<String>) : List<Archive>
+
+    @Query("Select * from archive order by dateAdded desc")
     fun getDataDateDescending() : DataSource.Factory<Int, Archive>
 
     @Query("Select * from archive where id in (:ids) order by dateAdded desc")
