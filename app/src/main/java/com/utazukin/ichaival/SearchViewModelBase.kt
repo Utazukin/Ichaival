@@ -52,14 +52,6 @@ class ArchiveListDataFactory : DataSource.Factory<Int, Archive>() {
         results = searchResults
         archiveLiveData.value?.invalidate()
     }
-
-    fun updateSortAndResults(searchResults: List<String>?, method: SortMethod, desc: Boolean) {
-        sortMethod = method
-        descending = desc
-        results = searchResults
-        archiveLiveData.value?.invalidate()
-    }
-
 }
 
 class ArchiveListDataSource(private val results: List<String>?,
@@ -84,7 +76,7 @@ class ArchiveListDataSource(private val results: List<String>?,
         }
 
         val archives = getArchives(ids)
-        callback.onResult(archives, params.requestedStartPosition, ids?.size ?: archives.size)
+        callback.onResult(archives, params.requestedStartPosition, results?.size ?: archives.size)
     }
 
     private fun getArchives(ids: List<String>?) : List<Archive> {
