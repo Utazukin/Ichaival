@@ -254,33 +254,23 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun searchServer(search: CharSequence, onlyNew: Boolean) : List<String>? {
+    fun searchServer(search: CharSequence, onlyNew: Boolean, start: Int = 0) : ServerSearchResult {
         if (search.isBlank() && !onlyNew)
-            return null
+            return ServerSearchResult(null)
 
-        //TODO probably have this actually page properly.
         refreshListener?.isRefreshing(true)
-        var jsonResults = internalSearchServer(search, onlyNew) ?: return null
+        val jsonResults = internalSearchServer(search, onlyNew, start) ?: return ServerSearchResult(null)
         val totalResults = jsonResults.getInt("recordsFiltered")
 
-        var dataArray = jsonResults.getJSONArray("data")
+        val dataArray = jsonResults.getJSONArray("data")
         val results = mutableListOf<String>()
         for (i in 0 until dataArray.length()) {
             val id = dataArray.getJSONObject(i).getString("arcid")
             results.add(id)
         }
 
-        while (results.size != totalResults) {
-            jsonResults = internalSearchServer(search, onlyNew, results.size) ?: return results
-            dataArray = jsonResults.getJSONArray("data")
-            for (i in 0 until dataArray.length()) {
-                val id = dataArray.getJSONObject(i).getString("arcid")
-                results.add(id)
-            }
-        }
-
         refreshListener?.isRefreshing(false)
-        return results
+        return ServerSearchResult(results, totalResults, search, onlyNew)
     }
 
     private fun internalSearchServer(search: CharSequence, onlyNew: Boolean, start: Int = 0) : JSONObject? {
@@ -293,6 +283,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         val connection = createServerConnection(url)
         try {
             with (connection) {
+                connectTimeout = timeout
                 if (responseCode != HttpURLConnection.HTTP_OK)
                     return null
 

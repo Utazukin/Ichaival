@@ -123,7 +123,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         getViewModel<SearchViewModel>().filter(results)
                     }
                 } else
-                    getViewModel<SearchViewModel>().filter(null)
+                    getViewModel<SearchViewModel>().filter(ServerSearchResult(null))
             }
         }
 
@@ -341,10 +341,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked, activityScope)
             else if (!searchView.query.isNullOrEmpty() || newCheckBox.isChecked) {
                 searchJob?.cancel()
-                val results = withContext(Dispatchers.Default) {
+                val searchResult = withContext(Dispatchers.Default) {
                     DatabaseReader.searchServer(searchView.query, newCheckBox.isChecked)
                 }
-                getViewModel<SearchViewModel>().filter(results)
+                getViewModel<SearchViewModel>().filter(searchResult)
             }
         }
     }

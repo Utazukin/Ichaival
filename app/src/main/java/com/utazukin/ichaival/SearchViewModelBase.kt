@@ -36,8 +36,8 @@ class ReaderTabViewModel : ViewModel() {
 
 abstract class SearchViewModelBase : ViewModel() {
     abstract val archiveList: LiveData<PagedList<Archive>>
+    protected abstract val archiveDataFactory: ArchiveListDataFactory
     protected val archiveDao by lazy { DatabaseReader.database.archiveDao() }
-    protected val archiveDataFactory = ArchiveListDataFactory()
 
     abstract suspend fun getRandom(excludeBookmarked: Boolean = true): Archive?
     abstract fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false)
@@ -45,6 +45,7 @@ abstract class SearchViewModelBase : ViewModel() {
 
 class SearchViewModel : SearchViewModelBase() {
     override lateinit var archiveList: LiveData<PagedList<Archive>>
+    override val archiveDataFactory = ArchiveListDataFactory(false)
 
     override suspend fun getRandom(excludeBookmarked: Boolean): Archive? {
         var data: Collection<String> = archiveDataFactory.results ?: archiveDao.getAllIds()
@@ -65,13 +66,14 @@ class SearchViewModel : SearchViewModelBase() {
         archiveList = archiveDataFactory.toLiveData()
     }
 
-    fun filter(results: List<String>?) = archiveDataFactory.updateSearchResults(results)
+    fun filter(searchResult: ServerSearchResult) = archiveDataFactory.updateSearchResults(searchResult)
 
     override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) = archiveDataFactory.updateSort(method, desc, force)
 }
 
 class ArchiveViewModel : SearchViewModelBase() {
     override lateinit var archiveList: LiveData<PagedList<Archive>>
+    override val archiveDataFactory = ArchiveListDataFactory(true)
 
     override suspend fun getRandom(excludeBookmarked: Boolean) : Archive? {
         var data: Collection<String> = archiveDataFactory.results ?: archiveDao.getAllIds()
