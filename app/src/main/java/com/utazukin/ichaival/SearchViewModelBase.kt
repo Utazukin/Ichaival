@@ -28,6 +28,7 @@ import androidx.paging.PositionalDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.*
 import kotlin.math.min
 
 private fun <T, TT> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
@@ -207,10 +208,10 @@ class ArchiveViewModel : SearchViewModelBase() {
         if (filter.isEmpty())
             return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
         else {
-            val normalized = filter.toString().toLowerCase()
+            val normalized = filter.toString().toLowerCase(Locale.ROOT)
             val spaceRegex by lazy { Regex("\\s") }
             for (archive in allArchives) {
-                if (archive.title.toLowerCase().contains(normalized) && !mValues.contains(archive.id))
+                if (archive.title.toLowerCase(Locale.ROOT).contains(normalized) && !mValues.contains(archive.id))
                     addIfNew(archive)
                 else {
                     val terms = filter.split(spaceRegex)

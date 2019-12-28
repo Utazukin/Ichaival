@@ -22,6 +22,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import org.json.JSONObject
+import java.util.*
 
 @Entity
 data class Archive (
@@ -67,17 +68,19 @@ data class Archive (
         if (tag.contains(":")) {
             val split = tag.split(":")
             val namespace = split[0].trim()
-            var normalized = split[1].trim().replace("_", " ").toLowerCase()
+            var normalized = split[1].trim().replace("_", " ").toLowerCase(Locale.ROOT)
             val exact = normalized.startsWith("\"") && normalized.endsWith("\"")
             if (exact)
                 normalized = normalized.removeSurrounding("\"")
             val nTags = getTags(namespace)
-            return nTags != null && nTags.any { if (exact) it.toLowerCase() == normalized else it.toLowerCase().contains(normalized) }
+            return nTags != null && nTags.any {
+                if (exact) it.toLowerCase(Locale.ROOT) == normalized else it.toLowerCase(Locale.ROOT).contains(normalized)
+            }
         }
         else {
-            val normalized = tag.trim().replace("_", " ").toLowerCase()
+            val normalized = tag.trim().replace("_", " ").toLowerCase(Locale.ROOT)
             for (pair in tags) {
-                if (pair.value.any { it.toLowerCase().contains(normalized)})
+                if (pair.value.any { it.toLowerCase(Locale.ROOT).contains(normalized)})
                     return true
             }
         }
