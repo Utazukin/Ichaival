@@ -199,7 +199,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().init(activityScope, method, descending, searchView.query, newCheckBox.isChecked)
+                getViewModel<ArchiveViewModel>().init(activityScope, method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
             else
                 getViewModel<SearchViewModel>().init(method, descending, activity is ArchiveSearch)
 

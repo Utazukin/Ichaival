@@ -147,7 +147,7 @@ class SearchViewModel : SearchViewModelBase() {
         return if (randId != null) archiveDao.getArchive(randId) else null
     }
 
-    fun init(method: SortMethod = SortMethod.Alpha, desc: Boolean = false, isSearch: Boolean = false) {
+    fun init(method: SortMethod, desc: Boolean, isSearch: Boolean = false) {
         if (this::archiveList.isInitialized)
             return
 
@@ -174,8 +174,9 @@ class ArchiveViewModel : SearchViewModelBase() {
         return archiveDao.getArchive(randId)
     }
 
-    fun init(scope: CoroutineScope, method: SortMethod = SortMethod.Alpha, desc: Boolean = false, filter: CharSequence = "", onlyNew: Boolean = false) {
+    fun init(scope: CoroutineScope, method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
         if (!this::archiveList.isInitialized) {
+            archiveDataFactory.isSearch = isSearch
             archiveDataFactory.updateSort(method, desc, true)
             archiveList = archiveDataFactory.toLiveData()
             scope.launch(Dispatchers.IO) {
