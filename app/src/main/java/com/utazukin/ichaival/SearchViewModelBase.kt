@@ -19,108 +19,16 @@
 package com.utazukin.ichaival
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.paging.DataSource
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
-import androidx.paging.PositionalDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
-import kotlin.math.min
 
 private fun <T, TT> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
-
-class ArchiveListDataFactory : DataSource.Factory<Int, Archive>() {
-    var isSearch = false
-    var results: List<String>? = null
-        private set
-    private val archiveLiveData = MutableLiveData<ArchiveListDataSource>()
-    private var sortMethod = SortMethod.Alpha
-    private var descending = false
-
-    override fun create(): DataSource<Int, Archive> {
-        val latestSource = ArchiveListDataSource(results, sortMethod, descending, isSearch)
-        archiveLiveData.postValue(latestSource)
-        return latestSource
-    }
-
-    fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
-        if (sortMethod != method || descending != desc || force) {
-            sortMethod = method
-            descending = desc
-            archiveLiveData.value?.invalidate()
-        }
-    }
-
-    fun updateSearchResults(searchResults: List<String>?) {
-        results = searchResults
-        archiveLiveData.value?.invalidate()
-    }
-}
-
-class ArchiveListDataSource(private val results: List<String>?,
-                            private val sortMethod: SortMethod,
-                            private val descending: Boolean,
-                            private val isSearch: Boolean) : PositionalDataSource<Archive>() {
-
-    private val archiveDao by lazy { DatabaseReader.database.archiveDao() }
-
-    override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
-        val ids = results?.let {
-            val endIndex = min(params.startPosition + params.loadSize, it.size)
-            it.subList(params.startPosition, endIndex)
-        }
-        val archives = getArchives(ids)
-        callback.onResult(archives)
-    }
-
-    override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
-        val ids = results?.let {
-            val endIndex = min(params.requestedStartPosition + params.requestedLoadSize, it.size)
-            it.subList(params.requestedStartPosition, endIndex)
-        }
-
-        val archives = getArchives(ids)
-        callback.onResult(archives, params.requestedStartPosition, results?.size ?: archives.size)
-    }
-
-    private fun getArchives(ids: List<String>?) : List<Archive> {
-        if (isSearch && ids == null)
-            return emptyList()
-
-        return when (sortMethod) {
-            SortMethod.Alpha -> {
-                if (descending) {
-                    if (ids == null)
-                        archiveDao.getTitleDescending()
-                    else
-                        archiveDao.getTitleDescending(ids)
-                } else {
-                    if (ids == null)
-                        archiveDao.getTitleAscending()
-                    else
-                        archiveDao.getTitleAscending(ids)
-                }
-            }
-            SortMethod.Date -> {
-                if (descending) {
-                    if (ids == null)
-                        archiveDao.getDateDescending()
-                    else
-                        archiveDao.getDateDescending(ids)
-                } else {
-                    if (ids == null)
-                        archiveDao.getDateAscending()
-                    else
-                        archiveDao.getDateAscending(ids)
-                }
-            }
-        }
-    }
-}
 
 class ReaderTabViewModel : ViewModel() {
     val bookmarks = DatabaseReader.database.archiveDao().getDataBookmarks().toLiveData(5)
@@ -180,10 +88,7 @@ class ArchiveViewModel : SearchViewModelBase() {
             archiveDataFactory.isSearch = isSearch
             archiveDataFactory.updateSort(method, desc, true)
             archiveList = archiveDataFactory.toLiveData()
-            scope.launch(Dispatchers.IO) {
-                val ids = internalFilter(filter, onlyNew)
-                archiveDataFactory.updateSearchResults(ids)
-            }
+            filter(filter, onlyNew, scope)
         }
     }
 

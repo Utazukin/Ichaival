@@ -228,6 +228,22 @@ abstract class ArchiveDatabase : RoomDatabase() {
         return false
     }
 
+    fun getTitleDescending(ids: List<String>?) : List<Archive> {
+        return if (ids == null) archiveDao().getTitleDescending() else archiveDao().getTitleDescending(ids)
+    }
+
+    fun getTitleAscending(ids: List<String>?) : List<Archive> {
+        return if (ids == null) archiveDao().getTitleAscending() else archiveDao().getTitleAscending(ids)
+    }
+
+    fun getDateDescending(ids: List<String>?) : List<Archive> {
+        return if (ids == null) archiveDao().getDateDescending() else archiveDao().getDateDescending(ids)
+    }
+
+    fun getDateAscending(ids: List<String>?) : List<Archive> {
+        return if (ids == null) archiveDao().getDateAscending() else archiveDao().getDateAscending(ids)
+    }
+
     @Transaction
     fun removeBookmark(tab: ReaderTab) {
         val tabs = archiveDao().getBookmarks()
