@@ -384,8 +384,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 //Reset filter when changing search type.
                 newCheckBox.isChecked = false
                 searchView.setQuery("", true)
-                initViewModel(local)
+                searchJob?.cancel()
+                searchView.clearFocus()
                 isLocalSearch = local
+                initViewModel(local)
             }
             getString(R.string.search_delay_key) -> {
                 val delayString = prefs?.getString(prefName, null)
