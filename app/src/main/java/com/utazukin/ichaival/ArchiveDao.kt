@@ -26,7 +26,7 @@ import org.json.JSONObject
 @Dao
 interface ArchiveDao {
     @Query("Select * from archive")
-    fun getAll() : List<Archive>
+    suspend fun getAll() : List<Archive>
 
     @Query("Select * from archive order by :sortField collate nocase desc")
     fun getAllDescending(sortField: String) : List<Archive>

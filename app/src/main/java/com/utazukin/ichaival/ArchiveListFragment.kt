@@ -112,7 +112,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked ->
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(searchView.query, checked)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, checked, activityScope)
             else {
                 searchJob?.cancel()
                 if (checked || searchView.query.isNotBlank()) {
@@ -130,7 +130,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (isLocalSearch)
-                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
+                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked, activityScope)
                 else {
                     searchJob?.cancel()
                     searchJob = activityScope.launch {
@@ -147,7 +147,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             override fun onQueryTextChange(query: String?): Boolean {
                 if (isLocalSearch)
-                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
+                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked, activityScope)
                 else {
                     searchJob?.cancel()
                     searchJob = activityScope.launch {
@@ -199,7 +199,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().init(method, descending, searchView.query, newCheckBox.isChecked)
+                getViewModel<ArchiveViewModel>().init(activityScope, method, descending, searchView.query, newCheckBox.isChecked)
             else
                 getViewModel<SearchViewModel>().init(method, descending, activity is ArchiveSearch)
 
@@ -211,7 +211,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             updateSortMethod(method, descending, prefs)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked, activityScope)
         }
         return view
     }
@@ -338,7 +338,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir, true) }
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked, activityScope)
             else if (!searchView.query.isNullOrEmpty() || newCheckBox.isChecked) {
                 searchJob?.cancel()
                 val results = withContext(Dispatchers.Default) {
@@ -359,7 +359,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private fun initViewModel(localSearch: Boolean) {
         val model = if (localSearch) {
             ViewModelProviders.of(this).get(ArchiveViewModel::class.java).also {
-                it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
+                it.init(activityScope, sortMethod, descending, searchView.query, newCheckBox.isChecked)
             }
         } else {
             ViewModelProviders.of(this).get(SearchViewModel::class.java).also {

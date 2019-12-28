@@ -18,34 +18,40 @@
 
 package com.utazukin.ichaival
 
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.paging.DataSource
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import androidx.paging.PositionalDataSource
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.math.min
-
-private const val SQL_LIST_LIMIT = 999
 
 private fun <T, TT> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
 
 class ArchiveListDataFactory : DataSource.Factory<Int, Archive>() {
+    var isSearch = false
+    var results: List<String>? = null
+        private set
     private val archiveLiveData = MutableLiveData<ArchiveListDataSource>()
-    private var results: List<String>? = null
     private var sortMethod = SortMethod.Alpha
     private var descending = false
 
     override fun create(): DataSource<Int, Archive> {
-        val latestSource = ArchiveListDataSource(results, sortMethod, descending)
+        val latestSource = ArchiveListDataSource(results, sortMethod, descending, isSearch)
         archiveLiveData.postValue(latestSource)
         return latestSource
     }
 
-    fun updateSort(method: SortMethod, desc: Boolean) {
-        sortMethod = method
-        descending = desc
-        archiveLiveData.value?.invalidate()
+    fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
+        if (sortMethod != method || descending != desc || force) {
+            sortMethod = method
+            descending = desc
+            archiveLiveData.value?.invalidate()
+        }
     }
 
     fun updateSearchResults(searchResults: List<String>?) {
@@ -56,23 +62,24 @@ class ArchiveListDataFactory : DataSource.Factory<Int, Archive>() {
 
 class ArchiveListDataSource(private val results: List<String>?,
                             private val sortMethod: SortMethod,
-                            private val descending: Boolean) : PositionalDataSource<Archive>() {
+                            private val descending: Boolean,
+                            private val isSearch: Boolean) : PositionalDataSource<Archive>() {
 
     private val archiveDao by lazy { DatabaseReader.database.archiveDao() }
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
-        val endIndex = min(params.startPosition + params.loadSize, results?.size ?: 0)
-        val ids = results?.subList(params.startPosition, endIndex)
+        val ids = results?.let {
+            val endIndex = min(params.startPosition + params.loadSize, it.size)
+            it.subList(params.startPosition, endIndex)
+        }
         val archives = getArchives(ids)
         callback.onResult(archives)
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
         val ids = results?.let {
-            if (it.size < SQL_LIST_LIMIT)
-                it
-            else
-                it.subList(params.requestedStartPosition, min(it.size, params.requestedLoadSize))
+            val endIndex = min(params.requestedStartPosition + params.requestedLoadSize, it.size)
+            it.subList(params.requestedStartPosition, endIndex)
         }
 
         val archives = getArchives(ids)
@@ -80,7 +87,10 @@ class ArchiveListDataSource(private val results: List<String>?,
     }
 
     private fun getArchives(ids: List<String>?) : List<Archive> {
-        return  when (sortMethod) {
+        if (isSearch && ids == null)
+            return emptyList()
+
+        return when (sortMethod) {
             SortMethod.Alpha -> {
                 if (descending) {
                     if (ids == null)
@@ -119,8 +129,6 @@ abstract class SearchViewModelBase : ViewModel() {
     abstract val archiveList: LiveData<PagedList<Archive>>
     protected val archiveDao by lazy { DatabaseReader.database.archiveDao() }
     protected val archiveDataFactory = ArchiveListDataFactory()
-    protected var sortMethod = SortMethod.Alpha
-    protected var descending = false
 
     abstract suspend fun getRandom(excludeBookmarked: Boolean = true): Archive?
     abstract fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false)
@@ -128,10 +136,9 @@ abstract class SearchViewModelBase : ViewModel() {
 
 class SearchViewModel : SearchViewModelBase() {
     override lateinit var archiveList: LiveData<PagedList<Archive>>
-    private var searchResults: List<String>? = null
 
     override suspend fun getRandom(excludeBookmarked: Boolean): Archive? {
-        var data: Collection<String> = searchResults ?: archiveDao.getAllIds()
+        var data: Collection<String> = archiveDataFactory.results ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id })
@@ -144,33 +151,21 @@ class SearchViewModel : SearchViewModelBase() {
         if (this::archiveList.isInitialized)
             return
 
-        archiveDataFactory.updateSort(method, desc)
+        archiveDataFactory.isSearch = isSearch
+        archiveDataFactory.updateSort(method, desc, true)
         archiveList = archiveDataFactory.toLiveData()
     }
 
-    fun filter(results: List<String>?) {
-        searchResults = results
-        archiveDataFactory.updateSearchResults(results)
-    }
+    fun filter(results: List<String>?) = archiveDataFactory.updateSearchResults(results)
 
-    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
-        if (method != sortMethod || descending != desc || force) {
-            sortMethod = method
-            descending = desc
-            archiveDataFactory.updateSort(method, desc)
-        }
-    }
+    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) = archiveDataFactory.updateSort(method, desc, force)
 }
 
 class ArchiveViewModel : SearchViewModelBase() {
     override lateinit var archiveList: LiveData<PagedList<Archive>>
-    private val mutableSortData =
-        MutableLiveData<Pair<Pair<SortMethod, Boolean>, Pair<CharSequence, Boolean>>>()
-    private var sortFilter: CharSequence = ""
-    private var onlyNew = false
 
     override suspend fun getRandom(excludeBookmarked: Boolean) : Archive? {
-        var data: Collection<String> = internalFilter(sortFilter, onlyNew) ?: archiveDao.getAllIds()
+        var data: Collection<String> = archiveDataFactory.results ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id })
@@ -179,53 +174,25 @@ class ArchiveViewModel : SearchViewModelBase() {
         return archiveDao.getArchive(randId)
     }
 
-    fun init(method: SortMethod = SortMethod.Alpha, desc: Boolean = false, filter: CharSequence = "", onlyNew: Boolean = false) {
+    fun init(scope: CoroutineScope, method: SortMethod = SortMethod.Alpha, desc: Boolean = false, filter: CharSequence = "", onlyNew: Boolean = false) {
         if (!this::archiveList.isInitialized) {
-            mutableSortData.value = Pair(Pair(method, desc), Pair(filter, onlyNew))
-            archiveList = Transformations.switchMap(mutableSortData) {
-                liveData(Dispatchers.IO) {
-                    val ids = internalFilter(it.second.first, it.second.second)
-                    val data = when (it.first.first) {
-                        SortMethod.Alpha -> {
-                            if (it.first.second) {
-                                if (ids != null)
-                                    archiveDao.getDataTitleDescending(ids).toLiveData()
-                                else
-                                    archiveDao.getDataTitleDescending().toLiveData()
-                            } else {
-                                if (ids != null)
-                                    archiveDao.getDataTitleAscending(ids).toLiveData()
-                                else
-                                    archiveDao.getDataTitleAscending().toLiveData()
-                            }
-                        }
-                        SortMethod.Date -> {
-                            if (it.first.second) {
-                                if (ids != null)
-                                    archiveDao.getDataDateDescending(ids).toLiveData()
-                                else
-                                    archiveDao.getDataDateDescending().toLiveData()
-                            } else {
-                                if (ids != null)
-                                    archiveDao.getDataDateAscending(ids).toLiveData()
-                                else
-                                    archiveDao.getDataDateAscending().toLiveData()
-                            }
-                        }
-                    }
-                    emitSource(data)
-                }
+            archiveDataFactory.updateSort(method, desc, true)
+            archiveList = archiveDataFactory.toLiveData()
+            scope.launch(Dispatchers.IO) {
+                val ids = internalFilter(filter, onlyNew)
+                archiveDataFactory.updateSearchResults(ids)
             }
         }
     }
 
-    fun filter(filter: CharSequence?, onlyNew: Boolean) {
-        sortFilter = filter ?: ""
-        this.onlyNew = onlyNew
-        mutableSortData.value = Pair(Pair(sortMethod, descending), Pair(sortFilter, onlyNew))
+    fun filter(filter: CharSequence?, onlyNew: Boolean, scope: CoroutineScope) {
+        scope.launch(Dispatchers.IO) {
+            val ids = internalFilter(filter ?: "", onlyNew)
+            archiveDataFactory.updateSearchResults(ids)
+        }
     }
 
-    private fun internalFilter(filter: CharSequence?, onlyNew: Boolean) : List<String>? {
+    private suspend fun internalFilter(filter: CharSequence?, onlyNew: Boolean) : List<String>? {
         val mValues = mutableListOf<String>()
         if (filter == null)
             return mValues
@@ -288,11 +255,5 @@ class ArchiveViewModel : SearchViewModelBase() {
         return mValues
     }
 
-    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
-        if (method != sortMethod || descending != desc || force) {
-            sortMethod = method
-            descending = desc
-            mutableSortData.value = Pair(Pair(sortMethod, descending), Pair(sortFilter, onlyNew))
-        }
-    }
+    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) = archiveDataFactory.updateSort(method, desc, force)
 }
