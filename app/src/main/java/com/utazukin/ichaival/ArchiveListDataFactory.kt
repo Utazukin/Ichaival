@@ -30,8 +30,9 @@ class ServerSearchResult(val results: List<String>?,
 
 class ArchiveListDataFactory(private val localSearch: Boolean) : DataSource.Factory<Int, Archive>() {
     var isSearch = false
-    var results: List<String>? = null
+    var currentSource: ArchiveDataSourceBase? = null
         private set
+    private var results: List<String>? = null
     private val archiveLiveData = MutableLiveData<ArchiveDataSourceBase>()
     private var sortMethod = SortMethod.Alpha
     private var descending = false
@@ -41,6 +42,7 @@ class ArchiveListDataFactory(private val localSearch: Boolean) : DataSource.Fact
 
     override fun create(): DataSource<Int, Archive> {
         val latestSource = createDataSource()
+        currentSource = latestSource
         archiveLiveData.postValue(latestSource)
         return latestSource
     }
@@ -78,6 +80,7 @@ abstract class ArchiveDataSourceBase(private val sortMethod: SortMethod,
                                      private val descending: Boolean,
                                      protected val isSearch: Boolean) : PositionalDataSource<Archive>() {
     protected val database by lazy { DatabaseReader.database }
+    abstract val searchResults: List<String>?
 
     protected fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
         if (isSearch && ids == null)
@@ -99,6 +102,7 @@ class ArchiveListServerSource(results: List<String>?,
                               private val filter: CharSequence) : ArchiveDataSourceBase(sortMethod, descending, isSearch) {
 
     private val totalResults = mutableListOf<String>()
+    override val searchResults = if (filter.isBlank() && !isSearch) null else totalResults
 
     init {
         if (results != null)
@@ -170,13 +174,14 @@ class ArchiveListDataSource(private val results: List<String>?,
                             sortMethod: SortMethod,
                             descending: Boolean,
                             isSearch: Boolean) : ArchiveDataSourceBase(sortMethod, descending, isSearch) {
+    override val searchResults = results
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
         val ids = results?.let {
             val endIndex = min(params.startPosition + params.loadSize, it.size)
             it.subList(params.startPosition, endIndex)
         }
-        val archives = getArchives(ids)
+        val archives = if (ids != null) getArchives(ids) else getArchives(null, params.startPosition, params.loadSize)
         callback.onResult(archives)
     }
 
@@ -186,7 +191,7 @@ class ArchiveListDataSource(private val results: List<String>?,
             it.subList(params.requestedStartPosition, endIndex)
         }
 
-        val archives = getArchives(ids)
+        val archives = if (ids != null) getArchives(ids) else getArchives(null, params.requestedStartPosition, params.requestedLoadSize)
         callback.onResult(archives, params.requestedStartPosition, results?.size ?: archives.size)
     }
 }

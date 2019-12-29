@@ -48,7 +48,7 @@ class SearchViewModel : SearchViewModelBase() {
     override val archiveDataFactory = ArchiveListDataFactory(false)
 
     override suspend fun getRandom(excludeBookmarked: Boolean): Archive? {
-        var data: Collection<String> = archiveDataFactory.results ?: archiveDao.getAllIds()
+        var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id })
@@ -76,7 +76,7 @@ class ArchiveViewModel : SearchViewModelBase() {
     override val archiveDataFactory = ArchiveListDataFactory(true)
 
     override suspend fun getRandom(excludeBookmarked: Boolean) : Archive? {
-        var data: Collection<String> = archiveDataFactory.results ?: archiveDao.getAllIds()
+        var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id })
