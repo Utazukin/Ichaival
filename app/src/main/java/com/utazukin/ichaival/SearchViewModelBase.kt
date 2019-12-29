@@ -57,13 +57,13 @@ class SearchViewModel : SearchViewModelBase() {
         return if (randId != null) archiveDao.getArchive(randId) else null
     }
 
-    fun init(method: SortMethod, desc: Boolean, isSearch: Boolean = false) {
-        if (this::archiveList.isInitialized)
+    fun init(method: SortMethod, desc: Boolean, pageSize: Int, force: Boolean = false, isSearch: Boolean = false) {
+        if (this::archiveList.isInitialized && !force)
             return
 
         archiveDataFactory.isSearch = isSearch
         archiveDataFactory.updateSort(method, desc, true)
-        archiveList = archiveDataFactory.toLiveData()
+        archiveList = archiveDataFactory.toLiveData(pageSize)
     }
 
     fun filter(searchResult: ServerSearchResult) = archiveDataFactory.updateSearchResults(searchResult)

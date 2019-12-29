@@ -200,8 +200,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().init(activityScope, method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
-            else
-                getViewModel<SearchViewModel>().init(method, descending, activity is ArchiveSearch)
+            else {
+                val pageSize = prefs.getString(getString(R.string.search_page_key), "100")?.toInt() ?: 100
+                getViewModel<SearchViewModel>().init(method, descending, pageSize, isSearch = activity is ArchiveSearch)
+            }
 
             viewModel?.archiveList?.observe(this@ArchiveListFragment, Observer {
                 listAdapter.submitList(it)
@@ -356,14 +358,16 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         return viewModel as T
     }
 
-    private fun initViewModel(localSearch: Boolean) {
+    private fun initViewModel(localSearch: Boolean, force: Boolean = false) {
         val model = if (localSearch) {
             ViewModelProviders.of(this).get(ArchiveViewModel::class.java).also {
                 it.init(activityScope, sortMethod, descending, searchView.query, newCheckBox.isChecked)
             }
         } else {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val pageSize = prefs.getString(getString(R.string.search_page_key), "100")!!.toInt()
             ViewModelProviders.of(this).get(SearchViewModel::class.java).also {
-                it.init(sortMethod, descending)
+                it.init(sortMethod, descending, pageSize, force)
             }
         }
 
@@ -377,18 +381,23 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         viewModel = model
     }
 
+    private fun resetSearch(local: Boolean, force: Boolean = false) {
+        newCheckBox.isChecked = false
+        searchView.setQuery("", true)
+        searchJob?.cancel()
+        searchView.clearFocus()
+        isLocalSearch = local
+        initViewModel(local, force)
+    }
+
     override fun onSharedPreferenceChanged(prefs: SharedPreferences?, prefName: String?) {
         when (prefName) {
             getString(R.string.local_search_key) -> {
                 val local = prefs?.getBoolean(prefName, false) ?: false
                 //Reset filter when changing search type.
-                newCheckBox.isChecked = false
-                searchView.setQuery("", true)
-                searchJob?.cancel()
-                searchView.clearFocus()
-                isLocalSearch = local
-                initViewModel(local)
+                resetSearch(local)
             }
+            getString(R.string.search_page_key) -> resetSearch(isLocalSearch, true)
             getString(R.string.search_delay_key) -> {
                 val delayString = prefs?.getString(prefName, null)
                 searchDelay = delayString?.toLong() ?: 750

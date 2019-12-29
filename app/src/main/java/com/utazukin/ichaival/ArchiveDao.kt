@@ -28,35 +28,38 @@ interface ArchiveDao {
     @Query("Select * from archive")
     suspend fun getAll() : List<Archive>
 
+    @Query("Select count(id) from archive")
+    fun getArchiveCount() : Int
+
     @Query("Select * from archive order by :sortField collate nocase desc")
     fun getAllDescending(sortField: String) : List<Archive>
 
     @Query("Select * from archive order by :sortField collate nocase asc")
     fun getAllAscending(sortField: String) : List<Archive>
 
-    @Query("Select * from archive order by dateAdded desc")
-    fun getDateDescending() : List<Archive>
+    @Query("Select * from archive order by dateAdded desc limit :limit offset :offset")
+    fun getDateDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive where id in (:ids) order by dateAdded desc")
-    fun getDateDescending(ids: List<String>) : List<Archive>
+    @Query("Select * from archive where id in (:ids) order by dateAdded desc limit :limit offset :offset")
+    fun getDateDescending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive order by title collate nocase desc")
-    fun getTitleDescending() : List<Archive>
+    @Query("Select * from archive order by title collate nocase desc limit :limit offset :offset")
+    fun getTitleDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive where id in (:ids) order by title collate nocase desc")
-    fun getTitleDescending(ids: List<String>) : List<Archive>
+    @Query("Select * from archive where id in (:ids) order by title collate nocase desc limit :limit offset :offset")
+    fun getTitleDescending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive order by dateAdded asc")
-    fun getDateAscending() : List<Archive>
+    @Query("Select * from archive order by dateAdded asc limit :limit offset :offset")
+    fun getDateAscending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive where id in (:ids) order by dateAdded asc")
-    fun getDateAscending(ids: List<String>) : List<Archive>
+    @Query("Select * from archive where id in (:ids) order by dateAdded asc limit :limit offset :offset")
+    fun getDateAscending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive order by title collate nocase asc")
-    fun getTitleAscending() : List<Archive>
+    @Query("Select * from archive order by title collate nocase asc limit :limit offset :offset")
+    fun getTitleAscending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive where id in (:ids) order by title collate nocase asc")
-    fun getTitleAscending(ids: List<String>) : List<Archive>
+    @Query("Select * from archive where id in (:ids) order by title collate nocase asc limit :limit offset :offset")
+    fun getTitleAscending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
     @Query("Select * from archive order by dateAdded desc")
     fun getDataDateDescending() : DataSource.Factory<Int, Archive>
@@ -228,20 +231,20 @@ abstract class ArchiveDatabase : RoomDatabase() {
         return false
     }
 
-    fun getTitleDescending(ids: List<String>?) : List<Archive> {
-        return if (ids == null) archiveDao().getTitleDescending() else archiveDao().getTitleDescending(ids)
+    fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return if (ids == null) archiveDao().getTitleDescending(offset, limit) else archiveDao().getTitleDescending(ids, offset, limit)
     }
 
-    fun getTitleAscending(ids: List<String>?) : List<Archive> {
-        return if (ids == null) archiveDao().getTitleAscending() else archiveDao().getTitleAscending(ids)
+    fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return if (ids == null) archiveDao().getTitleAscending(offset, limit) else archiveDao().getTitleAscending(ids, offset, limit)
     }
 
-    fun getDateDescending(ids: List<String>?) : List<Archive> {
-        return if (ids == null) archiveDao().getDateDescending() else archiveDao().getDateDescending(ids)
+    fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return if (ids == null) archiveDao().getDateDescending(offset, limit) else archiveDao().getDateDescending(ids, offset, limit)
     }
 
-    fun getDateAscending(ids: List<String>?) : List<Archive> {
-        return if (ids == null) archiveDao().getDateAscending() else archiveDao().getDateAscending(ids)
+    fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return if (ids == null) archiveDao().getDateAscending(offset, limit) else archiveDao().getDateAscending(ids, offset, limit)
     }
 
     @Transaction

@@ -254,11 +254,13 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun searchServer(search: CharSequence, onlyNew: Boolean, start: Int = 0) : ServerSearchResult {
+    fun searchServer(search: CharSequence, onlyNew: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
         if (search.isBlank() && !onlyNew)
             return ServerSearchResult(null)
 
-        refreshListener?.isRefreshing(true)
+        if (showRefresh)
+            refreshListener?.isRefreshing(true)
+
         val jsonResults = internalSearchServer(search, onlyNew, start) ?: return ServerSearchResult(null)
         val totalResults = jsonResults.getInt("recordsFiltered")
 
@@ -269,7 +271,9 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             results.add(id)
         }
 
-        refreshListener?.isRefreshing(false)
+        if (showRefresh)
+            refreshListener?.isRefreshing(false)
+
         return ServerSearchResult(results, totalResults, search, onlyNew)
     }
 

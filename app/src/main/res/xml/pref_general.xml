@@ -83,6 +83,14 @@
                 android:singleLine="true"
                 android:summary="@string/search_delay_summary"
                 android:title="@string/search_delay_pref" />
+        <EditTextPreference
+                android:defaultValue="Default value"
+                android:inputType="number"
+                android:key="@string/search_page_key"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:summary="@string/search_page_desc"
+                android:title="@string/search_page_key_title" />
     </PreferenceCategory>
     <PreferenceCategory
             android:title="@string/source_pref_header">
@@ -92,9 +100,9 @@
                 android:key="@string/license_key"
                 android:summary="Licences used by this app"/>
         <Preference
-                android:title="Licensed under GPLv3"
                 android:key="@string/gpl_key"
-                android:summary="Tap to view"/>
+                android:summary="Tap to view"
+                android:title="Licensed under GPLv3" />
         <Preference
                 android:title="View on GitHub"
                 android:key="@string/git_key"
