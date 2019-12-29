@@ -124,13 +124,7 @@ class ArchiveListServerSource(results: List<String>?,
             } else {
                 DatabaseReader.refreshListener?.isRefreshing(true)
 
-                do {
-                    val newResults = DatabaseReader.searchServer(filter, onlyNew, totalResults.size, false)
-
-                    if (newResults.results != null)
-                        totalResults.addAll(newResults.results)
-                } while (totalResults.size < endIndex)
-
+                loadResults(endIndex)
                 endIndex = min(params.startPosition + params.loadSize, totalResults.size)
                 val ids = totalResults.subList(params.startPosition, endIndex)
                 val archives = getArchives(ids)
@@ -138,6 +132,15 @@ class ArchiveListServerSource(results: List<String>?,
                 callback.onResult(archives)
             }
         }
+    }
+
+    private fun loadResults(endIndex: Int) {
+        do {
+            val newResults = DatabaseReader.searchServer(filter, onlyNew, totalResults.size, false)
+
+            if (newResults.results != null)
+                totalResults.addAll(newResults.results)
+        } while (totalResults.size < endIndex || newResults.results == null)
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
@@ -154,12 +157,7 @@ class ArchiveListServerSource(results: List<String>?,
                 val archives = getArchives(ids)
                 callback.onResult(archives, params.requestedStartPosition, totalSize)
             } else {
-                do {
-                    val newResults = DatabaseReader.searchServer(filter, onlyNew, totalResults.size, false)
-                    if (newResults.results != null)
-                        totalResults.addAll(newResults.results)
-                } while (totalResults.size < endIndex)
-
+                loadResults(endIndex)
                 endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalResults.size)
                 val ids = totalResults.subList(params.requestedStartPosition, endIndex)
                 val archives = getArchives(ids)
