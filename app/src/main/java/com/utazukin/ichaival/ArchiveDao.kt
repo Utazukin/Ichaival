@@ -61,30 +61,6 @@ interface ArchiveDao {
     @Query("Select * from archive where id in (:ids) order by title collate nocase asc limit :limit offset :offset")
     fun getTitleAscending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
-    @Query("Select * from archive order by dateAdded desc")
-    fun getDataDateDescending() : DataSource.Factory<Int, Archive>
-
-    @Query("Select * from archive where id in (:ids) order by dateAdded desc")
-    fun getDataDateDescending(ids: List<String>) : DataSource.Factory<Int, Archive>
-
-    @Query("Select * from archive order by title collate nocase desc")
-    fun getDataTitleDescending() : DataSource.Factory<Int, Archive>
-
-    @Query("Select * from archive where id in (:ids) order by title collate nocase desc")
-    fun getDataTitleDescending(ids: List<String>) : DataSource.Factory<Int, Archive>
-
-    @Query("Select * from archive order by dateAdded asc")
-    fun getDataDateAscending() : DataSource.Factory<Int, Archive>
-
-    @Query("Select * from archive where id in (:ids) order by dateAdded asc")
-    fun getDataDateAscending(ids: List<String>) : DataSource.Factory<Int, Archive>
-
-    @Query("Select * from archive order by title collate nocase asc")
-    fun getDataTitleAscending() : DataSource.Factory<Int, Archive>
-
-    @Query("Select * from archive where id in (:ids) order by title collate nocase asc")
-    fun getDataTitleAscending(ids: List<String>) : DataSource.Factory<Int, Archive>
-
     @Query("Select * from archive where id = :id limit 1")
     suspend fun getArchive(id: String) : Archive?
 
