@@ -40,6 +40,9 @@ import com.bumptech.glide.Glide
 import kotlinx.coroutines.*
 import kotlin.math.floor
 
+private const val RESULTS_KEY = "search_results"
+private const val RESULTS_SIZE_KEY = "search_size"
+
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private var sortMethod = SortMethod.Alpha
     private var descending = false
@@ -214,6 +217,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked, activityScope)
+            else if (savedInstanceState != null) {
+                savedInstanceState.getStringArray(RESULTS_KEY)?.let {
+                    val totalSize = savedInstanceState.getInt(RESULTS_SIZE_KEY)
+                    val result = ServerSearchResult(it.asList(), totalSize, searchView.query, newCheckBox.isChecked)
+                    getViewModel<SearchViewModel>().filter(result)
+                }
+            }
         }
         return view
     }
@@ -309,6 +319,15 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         prefs.registerOnSharedPreferenceChangeListener(this)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val serverSource = viewModel?.archiveList?.value?.dataSource as? ArchiveListServerSource
+        serverSource?.run {
+            searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
+            outState.putInt(RESULTS_SIZE_KEY, totalSize)
+        }
+    }
+
     private fun setupTagList(tagHolder: TagListHolder?) {
         tagHolder?.run {
             val tagAdapter = TagSuggestionViewAdapter { tag, add ->
@@ -371,7 +390,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
 
-        model.archiveList.observe(this, Observer {
+        model.archiveList?.observe(this, Observer {
             (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
             val size = it.size
             (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)

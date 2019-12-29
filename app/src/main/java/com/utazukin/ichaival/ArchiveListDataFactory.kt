@@ -97,12 +97,12 @@ class ArchiveListServerSource(results: List<String>?,
                               sortMethod: SortMethod,
                               descending: Boolean,
                               isSearch: Boolean,
-                              private val totalSize: Int,
+                              val totalSize: Int,
                               private val onlyNew: Boolean,
                               private val filter: CharSequence) : ArchiveDataSourceBase(sortMethod, descending, isSearch) {
 
     private val totalResults = mutableListOf<String>()
-    override val searchResults = if (filter.isBlank() && !isSearch) null else totalResults
+    override val searchResults: List<String>? = if (filter.isBlank() && !isSearch) null else totalResults
 
     init {
         if (results != null)

@@ -35,7 +35,8 @@ class ReaderTabViewModel : ViewModel() {
 }
 
 abstract class SearchViewModelBase : ViewModel() {
-    abstract val archiveList: LiveData<PagedList<Archive>>
+    var archiveList: LiveData<PagedList<Archive>>? = null
+        protected set
     protected abstract val archiveDataFactory: ArchiveListDataFactory
     protected val archiveDao by lazy { DatabaseReader.database.archiveDao() }
 
@@ -44,7 +45,6 @@ abstract class SearchViewModelBase : ViewModel() {
 }
 
 class SearchViewModel : SearchViewModelBase() {
-    override lateinit var archiveList: LiveData<PagedList<Archive>>
     override val archiveDataFactory = ArchiveListDataFactory(false)
 
     override suspend fun getRandom(excludeBookmarked: Boolean): Archive? {
@@ -58,7 +58,7 @@ class SearchViewModel : SearchViewModelBase() {
     }
 
     fun init(method: SortMethod, desc: Boolean, pageSize: Int, force: Boolean = false, isSearch: Boolean = false) {
-        if (this::archiveList.isInitialized && !force)
+        if (archiveList != null && !force)
             return
 
         archiveDataFactory.isSearch = isSearch
@@ -72,7 +72,6 @@ class SearchViewModel : SearchViewModelBase() {
 }
 
 class ArchiveViewModel : SearchViewModelBase() {
-    override lateinit var archiveList: LiveData<PagedList<Archive>>
     override val archiveDataFactory = ArchiveListDataFactory(true)
 
     override suspend fun getRandom(excludeBookmarked: Boolean) : Archive? {
@@ -86,7 +85,7 @@ class ArchiveViewModel : SearchViewModelBase() {
     }
 
     fun init(scope: CoroutineScope, method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
-        if (!this::archiveList.isInitialized) {
+        if (archiveList == null) {
             archiveDataFactory.isSearch = isSearch
             archiveDataFactory.updateSort(method, desc, true)
             archiveList = archiveDataFactory.toLiveData()
