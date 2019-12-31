@@ -46,7 +46,7 @@ import kotlinx.coroutines.withContext
 
 private const val ARCHIVE_ID = "arcid"
 
-class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener {
+class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener {
     private var archiveId: String? = null
     private lateinit var tagLayout: LinearLayout
     private lateinit var bookmarkButton: Button
@@ -83,6 +83,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         super.onAttach(context)
         ReaderTabHolder.registerRemoveListener(this)
         ReaderTabHolder.registerClearListener(this)
+        ReaderTabHolder.registerAddListener(this)
         tagListener = context as TagInteractionListener?
     }
 
@@ -90,6 +91,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         super.onDetach()
         ReaderTabHolder.unregisterRemoveListener(this)
         ReaderTabHolder.unregisterClearListener(this)
+        ReaderTabHolder.unregisterAddListener(this)
+    }
+
+    override fun onTabAdded(id: String) {
+        if (id == archiveId)
+            lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 
     override fun onTabRemoved(id: String) {
