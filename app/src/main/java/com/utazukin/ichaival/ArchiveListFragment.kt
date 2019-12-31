@@ -115,7 +115,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked ->
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(searchView.query, checked, activityScope)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, checked)
             else {
                 searchJob?.cancel()
                 if (checked || searchView.query.isNotBlank()) {
@@ -133,7 +133,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (isLocalSearch)
-                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked, activityScope)
+                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
                 else {
                     searchJob?.cancel()
                     searchJob = activityScope.launch {
@@ -150,7 +150,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             override fun onQueryTextChange(query: String?): Boolean {
                 if (isLocalSearch)
-                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked, activityScope)
+                    getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
                 else {
                     searchJob?.cancel()
                     searchJob = activityScope.launch {
@@ -202,7 +202,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().init(activityScope, method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
+                getViewModel<ArchiveViewModel>().init(method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
             else {
                 val pageSize = prefs.getString(getString(R.string.search_page_key), "100")?.toInt() ?: 100
                 getViewModel<SearchViewModel>().init(method, descending, pageSize, isSearch = activity is ArchiveSearch)
@@ -216,7 +216,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             updateSortMethod(method, descending, prefs)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked, activityScope)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
             else if (savedInstanceState != null) {
                 savedInstanceState.getStringArray(RESULTS_KEY)?.let {
                     val totalSize = savedInstanceState.getInt(RESULTS_SIZE_KEY)
@@ -359,7 +359,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir, true) }
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked, activityScope)
+                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
             else if (!searchView.query.isNullOrEmpty() || newCheckBox.isChecked) {
                 searchJob?.cancel()
                 val searchResult = withContext(Dispatchers.Default) {
@@ -380,7 +380,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private fun initViewModel(localSearch: Boolean, force: Boolean = false) {
         val model = if (localSearch) {
             ViewModelProviders.of(this).get(ArchiveViewModel::class.java).also {
-                it.init(activityScope, sortMethod, descending, searchView.query, newCheckBox.isChecked)
+                it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
             }
         } else {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)

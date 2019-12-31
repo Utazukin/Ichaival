@@ -20,10 +20,10 @@ package com.utazukin.ichaival
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.paging.DataSource
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
@@ -84,17 +84,17 @@ class ArchiveViewModel : SearchViewModelBase() {
         return archiveDao.getArchive(randId)
     }
 
-    fun init(scope: CoroutineScope, method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
+    fun init(method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
         if (archiveList == null) {
             archiveDataFactory.isSearch = isSearch
             archiveDataFactory.updateSort(method, desc, true)
             archiveList = archiveDataFactory.toLiveData()
-            filter(filter, onlyNew, scope)
+            filter(filter, onlyNew)
         }
     }
 
-    fun filter(filter: CharSequence?, onlyNew: Boolean, scope: CoroutineScope) {
-        scope.launch(Dispatchers.IO) {
+    fun filter(filter: CharSequence?, onlyNew: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
             val ids = internalFilter(filter ?: "", onlyNew)
             archiveDataFactory.updateSearchResults(ids)
         }
