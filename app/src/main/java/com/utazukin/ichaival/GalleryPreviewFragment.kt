@@ -24,12 +24,17 @@ import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.floor
 
 private const val ARCHIVE_ID = "arcid"
 private const val MAX_PAGES = "max pages"
@@ -38,7 +43,6 @@ class GalleryPreviewFragment : Fragment() {
     private var archiveId: String? = null
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
-    private lateinit var activityScope: CoroutineScope
     private lateinit var progress: ProgressBar
     private var savedPageCount = -1
 
@@ -59,8 +63,8 @@ class GalleryPreviewFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_gallery_preview, container, false)
         progress = view.findViewById(R.id.thumb_load_progress)
 
-        activityScope.launch {
-            archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
+        lifecycleScope.launch {
+            archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(archiveId!!) }
             setGalleryView(view)
         }
 
@@ -76,7 +80,7 @@ class GalleryPreviewFragment : Fragment() {
             R.id.refresh_item -> {
                 archiveId?.let {
                     DatabaseReader.invalidateImageCache(it)
-                    activityScope.launch {
+                    lifecycleScope.launch {
                         (activity as ArchiveDetails).extractArchive(it)
                         thumbAdapter.notifyDataSetChanged()
                     }
@@ -88,7 +92,6 @@ class GalleryPreviewFragment : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        activityScope = context as CoroutineScope
     }
 
     override fun onDetach() {
@@ -114,13 +117,13 @@ class GalleryPreviewFragment : Fragment() {
         with(listView) {
             post {
                 val dpWidth = getDpWidth(width)
-                val columns = Math.floor(dpWidth / 150.0).toInt()
+                val columns = floor(dpWidth / 150.0).toInt()
                 layoutManager = if (columns > 1) GridLayoutManager(
                     context,
                     columns
                 ) else LinearLayoutManager(context)
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(activity as? ThumbInteractionListener, Glide.with(activity!!), activityScope, archive!!)
+            thumbAdapter = ThumbRecyclerViewAdapter(activity as? ThumbInteractionListener, Glide.with(activity!!), lifecycleScope, archive!!)
             if (savedPageCount > 0)
                 thumbAdapter.maxThumbnails = savedPageCount
             adapter = thumbAdapter
@@ -129,7 +132,7 @@ class GalleryPreviewFragment : Fragment() {
                     super.onScrollStateChanged(recyclerView, newState)
                     if (!listView.canScrollVertically(1) && thumbAdapter.hasMorePreviews) {
                         thumbAdapter.increasePreviewCount()
-                        activityScope.launch {
+                        lifecycleScope.launch {
                             progress.visibility = View.VISIBLE
                             delay(1000)
                             progress.visibility = View.GONE

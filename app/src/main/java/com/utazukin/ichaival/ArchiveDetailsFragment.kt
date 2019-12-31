@@ -34,11 +34,15 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val ARCHIVE_ID = "arcid"
 
@@ -47,7 +51,6 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private lateinit var tagLayout: LinearLayout
     private lateinit var bookmarkButton: Button
     private var thumbLoadJob: Job? = null
-    private lateinit var scope: CoroutineScope
     private var tagListener: TagInteractionListener? = null
     private val isLocalSearch by lazy {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -69,7 +72,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val view = inflater.inflate(R.layout.fragment_archive_details, container, false)
         tagLayout = view.findViewById(R.id.tag_layout)
 
-        scope.launch {
+        lifecycleScope.launch {
             val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
             setUpDetailView(view, archive)
         }
@@ -80,7 +83,6 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         super.onAttach(context)
         ReaderTabHolder.registerRemoveListener(this)
         ReaderTabHolder.registerClearListener(this)
-        scope = context as CoroutineScope
         tagListener = context as TagInteractionListener?
     }
 
@@ -92,7 +94,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onTabRemoved(id: String) {
         if (id == archiveId) {
-            scope.launch { bookmarkButton.text = getString(R.string.bookmark) }
+            lifecycleScope.launch { bookmarkButton.text = getString(R.string.bookmark) }
         }
     }
 
@@ -161,7 +163,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {
-                scope.launch {
+                lifecycleScope.launch {
                     archiveId?.let {
                         if (ReaderTabHolder.isTabbed(it)) {
                             ReaderTabHolder.removeTab(it)
@@ -185,7 +187,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             val titleView: TextView = view.findViewById(R.id.title)
             titleView.text = archive.title
 
-            thumbLoadJob = scope.launch(Dispatchers.Main) {
+            thumbLoadJob = lifecycleScope.launch(Dispatchers.Main) {
                 val thumbView: ImageView = view.findViewById(R.id.cover)
                 val thumb =
                     withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, context!!.filesDir) }

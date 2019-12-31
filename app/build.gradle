@@ -86,4 +86,5 @@ dependencies {
     implementation "android.arch.lifecycle:viewmodel:1.1.1"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0-rc03"
     implementation "androidx.room:room-ktx:2.2.3"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.2.0-rc03"
 }

@@ -32,6 +32,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -51,7 +52,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private var searchJob: Job? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
-    private lateinit var activityScope: CoroutineScope
     private lateinit var newCheckBox: CheckBox
     private lateinit var randomButton: Button
     private var viewModel: SearchViewModelBase? = null
@@ -106,7 +106,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     }
                 }
             }
-            val temp = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, activityScope, Glide.with(context))
+            val temp = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, viewLifecycleOwner.lifecycleScope, Glide.with(context))
             listAdapter = temp
             adapter = temp
         }
@@ -119,7 +119,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             else {
                 searchJob?.cancel()
                 if (checked || searchView.query.isNotBlank()) {
-                    searchJob = activityScope.launch {
+                    searchJob = lifecycleScope.launch {
                         val results = withContext(Dispatchers.Default) {
                             DatabaseReader.searchServer(searchView.query, checked)
                         }
@@ -136,7 +136,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
                 else {
                     searchJob?.cancel()
-                    searchJob = activityScope.launch {
+                    searchJob = lifecycleScope.launch {
                         if (query != null) {
                             val results = withContext(Dispatchers.Default) {
                                 DatabaseReader.searchServer(query, newCheckBox.isChecked)
@@ -153,7 +153,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
                 else {
                     searchJob?.cancel()
-                    searchJob = activityScope.launch {
+                    searchJob = lifecycleScope.launch {
                         if (!query.isNullOrBlank() || newCheckBox.isChecked)
                             delay(searchDelay)
 
@@ -172,7 +172,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener { v ->
-            activityScope.launch {
+            lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
                 if (archive != null)
                     startDetailsActivity(archive.id, v?.context)
@@ -180,7 +180,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
 
         randomButton.setOnLongClickListener {
-            activityScope.launch {
+            lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
                 if (archive != null && !ReaderTabHolder.isTabbed(archive))
                     ReaderTabHolder.addTab(archive, 0)
@@ -195,8 +195,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         swipeRefreshLayout.isEnabled = canSwipeRefresh
 
         DatabaseReader.init(activity!!.applicationContext)
-        activityScope.launch(Dispatchers.Main) {
-            withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir) }
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(context!!.filesDir) }
 
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
@@ -310,7 +310,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         DatabaseReader.refreshListener = this
         if (context is OnListFragmentInteractionListener) {
             listener = context
-            activityScope = context as CoroutineScope
         } else {
             throw RuntimeException("$context must implement OnListFragmentInteractionListener")
         }
@@ -355,14 +354,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     fun forceArchiveListUpdate() {
-        activityScope.launch {
-            withContext(Dispatchers.Default) { DatabaseReader.updateArchiveList(context!!.filesDir, true) }
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(context!!.filesDir, true) }
 
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
             else if (!searchView.query.isNullOrEmpty() || newCheckBox.isChecked) {
                 searchJob?.cancel()
-                val searchResult = withContext(Dispatchers.Default) {
+                val searchResult = withContext(Dispatchers.IO) {
                     DatabaseReader.searchServer(searchView.query, newCheckBox.isChecked)
                 }
                 getViewModel<SearchViewModel>().filter(searchResult)
@@ -426,7 +425,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     override fun isRefreshing(refreshing: Boolean) {
-        activityScope.launch { swipeRefreshLayout.isRefreshing = refreshing }
+        lifecycleScope.launch { swipeRefreshLayout.isRefreshing = refreshing }
     }
 
     interface OnListFragmentInteractionListener {

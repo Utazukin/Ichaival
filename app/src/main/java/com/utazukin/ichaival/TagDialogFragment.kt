@@ -31,11 +31,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -58,8 +58,8 @@ class TagDialogFragment : DialogFragment() {
         arguments?.let {
             val archiveId = it.getString(ARCHIVE_PARAM)
             archiveId?.let {
-                GlobalScope.launch(Dispatchers.Main) {
-                    val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId) }
+                lifecycleScope.launch {
+                    val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(archiveId) }
                     if (archive != null)
                         setUpTags(archive)
                 }
