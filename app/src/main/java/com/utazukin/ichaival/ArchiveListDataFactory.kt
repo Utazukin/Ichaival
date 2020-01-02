@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -74,6 +74,8 @@ class ArchiveListDataFactory(private val localSearch: Boolean) : DataSource.Fact
         totalResultCount = searchResult.totalSize
         archiveLiveData.value?.invalidate()
     }
+
+    fun reset() = archiveLiveData.value?.invalidate()
 }
 
 abstract class ArchiveDataSourceBase(private val sortMethod: SortMethod,
