@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,8 +26,12 @@ import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.widget.Toolbar
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
 import androidx.lifecycle.Observer
@@ -90,14 +94,36 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             else
                 "Page ${currentPage + 1}"
         }
+    private var drawerOpen = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_reader)
-        setSupportActionBar(findViewById(R.id.reader_toolbar))
+        val appBar: Toolbar = findViewById(R.id.reader_toolbar)
+        setSupportActionBar(appBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
+
+        ViewCompat.setOnApplyWindowInsetsListener(appBar) { _, insets ->
+            var params = FrameLayout.LayoutParams(appBar.layoutParams)
+            var safeTop = insets.displayCutout?.safeInsetTop ?: 0
+            safeTop = if (safeTop > 0) safeTop else insets.systemWindowInsetTop
+            val safeBottom = insets.displayCutout?.safeInsetBottom
+            val safeRight = insets.displayCutout?.safeInsetRight
+            val safeLeft = insets.displayCutout?.safeInsetLeft
+
+            params.setMargins(params.leftMargin, safeTop, safeRight ?: params.rightMargin, params.bottomMargin)
+            appBar.layoutParams = params
+
+            val bookmarkView: LinearLayout = findViewById(R.id.bookmark_list_layout)
+            params = FrameLayout.LayoutParams(bookmarkView.layoutParams)
+            params.setMargins(safeLeft ?: params.leftMargin,
+                safeTop, params.rightMargin, safeBottom ?: params.bottomMargin)
+            bookmarkView.layoutParams = params
+
+            insets
+        }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         rtol = prefs.getBoolean(getString(R.string.rtol_pref_key), false)
@@ -167,6 +193,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onCreateDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)
+        navView = drawerLayout.findViewById(R.id.nav_view)
         val tabView: RecyclerView = findViewById(R.id.tab_view)
         val listener = this
         val viewModel = ViewModelProviders.of(this).get(ReaderTabViewModel::class.java)

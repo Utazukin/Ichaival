@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2019 Utazukin
+  ~ Copyright (C) 2020 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -27,35 +27,49 @@
         android:focusableInTouchMode="true"
         android:descendantFocusability="beforeDescendants">
 
-    <LinearLayout
-            android:orientation="horizontal"
+    <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
         <SearchView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
                 android:id="@+id/archive_search"
-                android:layout_weight="2.5"
-                android:iconifiedByDefault="false">
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight=".75"
+                android:iconifiedByDefault="false"
+                app:layout_constraintEnd_toStartOf="@id/new_checkbox"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
         </SearchView>
 
         <CheckBox
-                android:text="@string/new_checkbox"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:id="@+id/new_checkbox"
-                android:layout_weight=".005"/>
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight=".10"
+                android:text="@string/new_checkbox"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/random_button"
+                app:layout_constraintStart_toEndOf="@+id/archive_search"
+                app:layout_constraintTop_toTopOf="parent" />
 
         <Button
-                android:text="@string/random"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
                 android:id="@+id/random_button"
-                android:layout_weight=".05"/>
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight=".15"
+                android:text="@string/random"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/new_checkbox"
+                app:layout_constraintTop_toTopOf="parent" />
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe_refresh"
