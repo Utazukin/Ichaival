@@ -94,7 +94,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             else
                 "Page ${currentPage + 1}"
         }
-    private var drawerOpen = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
