@@ -74,6 +74,8 @@ class SearchViewModel : SearchViewModelBase() {
 
 class ArchiveViewModel : SearchViewModelBase() {
     override val archiveDataFactory = ArchiveListDataFactory(true)
+    private var sortMethod = SortMethod.Alpha
+    private var descending = false
 
     override suspend fun getRandom(excludeBookmarked: Boolean) : Archive? {
         var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
@@ -90,6 +92,8 @@ class ArchiveViewModel : SearchViewModelBase() {
             archiveDataFactory.isSearch = isSearch
             archiveDataFactory.updateSort(method, desc, true)
             archiveList = archiveDataFactory.toLiveData()
+            sortMethod = method
+            descending = desc
             filter(filter, onlyNew)
         }
     }
@@ -101,7 +105,14 @@ class ArchiveViewModel : SearchViewModelBase() {
         }
     }
 
-    private suspend fun internalFilter(filter: CharSequence?, onlyNew: Boolean) : List<String>? {
+    private fun getArchives() : List<Archive> {
+        return when (sortMethod) {
+            SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending() else archiveDao.getTitleAscending()
+            SortMethod.Date -> if (descending) archiveDao.getDateDescending() else archiveDao.getDateAscending()
+        }
+    }
+
+    private fun internalFilter(filter: CharSequence?, onlyNew: Boolean) : List<String>? {
         val mValues = mutableListOf<String>()
         if (filter == null)
             return mValues
@@ -111,7 +122,7 @@ class ArchiveViewModel : SearchViewModelBase() {
                 mValues.add(archive.id)
         }
 
-        val allArchives = archiveDao.getAll()
+        val allArchives = getArchives()
         if (filter.isEmpty())
             return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
         else {
