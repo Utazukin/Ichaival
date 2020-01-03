@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -254,14 +254,14 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun searchServer(search: CharSequence, onlyNew: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
+    fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
         if (search.isBlank() && !onlyNew)
             return ServerSearchResult(null)
 
         if (showRefresh)
             refreshListener?.isRefreshing(true)
 
-        val jsonResults = internalSearchServer(search, onlyNew, start) ?: return ServerSearchResult(null)
+        val jsonResults = internalSearchServer(search, onlyNew, sortMethod, descending, start) ?: return ServerSearchResult(null)
         val totalResults = jsonResults.getInt("recordsFiltered")
 
         val dataArray = jsonResults.getJSONArray("data")
@@ -277,12 +277,17 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         return ServerSearchResult(results, totalResults, search, onlyNew)
     }
 
-    private fun internalSearchServer(search: CharSequence, onlyNew: Boolean, start: Int = 0) : JSONObject? {
+    private fun internalSearchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : JSONObject? {
         if (!canConnect(true))
             return null
 
         val encodedSearch =  URLEncoder.encode(search.toString(), "utf-8")
-        val url = "$serverLocation$searchPath?filter=$encodedSearch&newonly=$onlyNew&start=$start${getApiKey(true)}"
+        val sort = when(sortMethod) {
+            SortMethod.Alpha -> "title"
+            SortMethod.Date -> "date_added"
+        }
+        val order = if (descending) "desc" else "asc"
+        val url = "$serverLocation$searchPath?filter=$encodedSearch&newonly=$onlyNew&sortby=$sort&order=$order&start=$start${getApiKey(true)}"
 
         val connection = createServerConnection(url)
         try {

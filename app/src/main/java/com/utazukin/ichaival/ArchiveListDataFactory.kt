@@ -78,8 +78,8 @@ class ArchiveListDataFactory(private val localSearch: Boolean) : DataSource.Fact
     fun reset() = archiveLiveData.value?.invalidate()
 }
 
-abstract class ArchiveDataSourceBase(private val sortMethod: SortMethod,
-                                     private val descending: Boolean,
+abstract class ArchiveDataSourceBase(protected val sortMethod: SortMethod,
+                                     protected val descending: Boolean,
                                      protected val isSearch: Boolean) : PositionalDataSource<Archive>() {
     protected val database by lazy { DatabaseReader.database }
     abstract val searchResults: List<String>?
@@ -104,7 +104,7 @@ class ArchiveListServerSource(results: List<String>?,
                               private val filter: CharSequence) : ArchiveDataSourceBase(sortMethod, descending, isSearch) {
 
     private val totalResults = mutableListOf<String>()
-    override val searchResults: List<String>? = if (filter.isBlank() && !isSearch) null else totalResults
+    override val searchResults: List<String>? = if (filter.isBlank() && !isSearch && !onlyNew) null else totalResults
 
     init {
         if (results != null)
@@ -114,7 +114,7 @@ class ArchiveListServerSource(results: List<String>?,
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
         if (isSearch && filter.isBlank()) //Search mode with no search.  Display none.
             callback.onResult(emptyList())
-        else if (filter.isBlank()) { //This isn't search mode.  Display all.
+        else if (filter.isBlank() && !onlyNew) { //This isn't search mode.  Display all.
             val archives = getArchives(null, params.startPosition, params.loadSize)
             callback.onResult(archives)
         } else {
@@ -138,7 +138,7 @@ class ArchiveListServerSource(results: List<String>?,
 
     private fun loadResults(endIndex: Int) {
         do {
-            val newResults = DatabaseReader.searchServer(filter, onlyNew, totalResults.size, false)
+            val newResults = DatabaseReader.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size, false)
 
             if (newResults.results != null)
                 totalResults.addAll(newResults.results)
@@ -148,7 +148,7 @@ class ArchiveListServerSource(results: List<String>?,
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
         if (isSearch && filter.isBlank())
             callback.onResult(emptyList(), 0, 0)
-        else if (filter.isBlank()) {
+        else if (filter.isBlank() && !onlyNew) {
             val archives = getArchives(null, params.requestedStartPosition, params.requestedLoadSize)
             val archiveCount = database.archiveDao().getArchiveCount()
             callback.onResult(archives, params.requestedStartPosition, archiveCount)
