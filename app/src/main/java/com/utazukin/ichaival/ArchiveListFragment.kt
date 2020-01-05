@@ -216,7 +216,15 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             updateSortMethod(method, descending, prefs)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
+                    getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
+             else if (searchView.query != null){
+                searchView.query?. let {
+                    val results = withContext(Dispatchers.IO) {
+                        DatabaseReader.searchServer(it, newCheckBox.isChecked, sortMethod, descending)
+                    }
+                    getViewModel<SearchViewModel>().filter(results)
+                }
+            }
             else if (savedInstanceState != null) {
                 savedInstanceState.getStringArray(RESULTS_KEY)?.let {
                     val totalSize = savedInstanceState.getInt(RESULTS_SIZE_KEY)

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
             val tag = getStringExtra(TAG_SEARCH)
 
             listFragment.showOnlySearch(true)
-            listFragment.searchView.setQuery(tag, true)
+            listFragment.searchView.setQuery(tag, false)
         }
     }
 
