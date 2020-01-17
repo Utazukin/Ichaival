@@ -163,7 +163,7 @@ class ArchiveListServerSource(results: List<String>?,
                 endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalResults.size)
                 val ids = totalResults.subList(params.requestedStartPosition, endIndex)
                 val archives = getArchives(ids)
-                callback.onResult(archives, params.requestedStartPosition, totalSize)
+                callback.onResult(archives, params.requestedStartPosition, if (archives.size < ids.size) archives.size else totalSize)
             }
         }
     }
