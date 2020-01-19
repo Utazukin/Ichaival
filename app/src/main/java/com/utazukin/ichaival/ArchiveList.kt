@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,36 +24,17 @@ import android.os.Bundle
 import android.preference.PreferenceActivity
 import android.preference.PreferenceManager
 import android.view.View
-import android.widget.ImageView
 import android.widget.TextView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, TagListHolder {
+class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private lateinit var setupText: TextView
-    private lateinit var tagView: RecyclerView
-    private lateinit var tagListLabel: TextView
-    private lateinit var tagListIcon: ImageView
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
             startDetailsActivity(archive.id)
-    }
-
-    override fun setupTagList(tagAdapter: TagSuggestionViewAdapter) {
-        with (tagView) {
-            layoutManager = LinearLayoutManager(context)
-            adapter = tagAdapter
-        }
-
-        tagAdapter.addListener { _, add -> if (!add) drawerLayout.closeDrawers() }
-        tagListIcon.setOnClickListener { tagAdapter.toggle() }
-        tagListLabel.setOnClickListener { tagAdapter.toggle() }
-        tagAdapter.notifyDataSetChanged()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,10 +89,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 else -> false
             }
         }
-
-        tagView = findViewById(R.id.tag_view)
-        tagListLabel = findViewById(R.id.tag_label)
-        tagListIcon = findViewById(R.id.expand_tags)
     }
 
     private fun handleSetupText(setup: Boolean) {
@@ -131,10 +108,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onStart() {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
-        launch {
-            withContext(Dispatchers.Default) { DatabaseReader.generateSuggestionList() }
-            tagView.adapter?.notifyDataSetChanged()
-        }
+        launch(Dispatchers.IO) { DatabaseReader.generateSuggestionList() }
     }
 
     override fun onStop() {

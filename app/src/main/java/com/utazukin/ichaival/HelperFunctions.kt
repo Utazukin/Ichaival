@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 import android.content.res.Resources
+import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.egl.EGLContext
@@ -31,6 +32,18 @@ fun getDpWidth(pxWidth: Int) : Int {
 fun getDpAdjusted(pxSize: Int) : Int {
     val metrics = Resources.getSystem().displayMetrics
     return (pxSize * metrics.density).toInt()
+}
+
+fun getLastWord(query: String) : String {
+    val regex = "\"([^\"]*)\"|(\\S+)"
+    val matcher = Pattern.compile(regex).matcher(query)
+    var last = ""
+    while (matcher.find()) {
+        if (matcher.group(2) != null)
+            last = matcher.group(2)
+    }
+
+    return last
 }
 
 private var mMaxTextureSize = -1

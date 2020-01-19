@@ -18,16 +18,17 @@
 
 package com.utazukin.ichaival
 
+import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.database.Cursor
+import android.database.MatrixCursor
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.provider.BaseColumns
 import android.view.*
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.SearchView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -130,6 +131,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
 
+        setupTagSuggestions()
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (isLocalSearch)
@@ -149,6 +151,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
 
             override fun onQueryTextChange(query: String?): Boolean {
+                handleSearchSuggestion(query)
                 if (isLocalSearch)
                     getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
                 else {
@@ -234,6 +237,46 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
         return view
+    }
+
+    private fun setupTagSuggestions() {
+        val from = arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1)
+        val to = intArrayOf(R.id.search_suggestion)
+        val adapter = SimpleCursorAdapter(context, R.layout.search_suggestion_layout, null, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER)
+
+        searchView.run {
+            suggestionsAdapter = adapter
+
+            setOnSuggestionListener(object: SearchView.OnSuggestionListener {
+                override fun onSuggestionSelect(index: Int) = false
+
+                override fun onSuggestionClick(index: Int): Boolean {
+                    val cursor = suggestionsAdapter.getItem(index) as Cursor
+                    var selection = cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1))
+                    if (selection.split(' ').size > 1)
+                        selection = "\"$selection\""
+
+                    val query = searchView.query?.let { it.replace(getLastWord(it.toString()).toRegex(), selection) }
+                    searchView.setQuery(query, true)
+                    return true
+                }
+            })
+        }
+    }
+
+    private fun handleSearchSuggestion(query: String?) {
+        query?.let {
+            val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
+            val lastWord = getLastWord(it).trim('"', ' ')
+            if (!lastWord.isBlank()) {
+                for ((i, suggestion) in DatabaseReader.tagSuggestions.withIndex()) {
+                    if (suggestion.contains(lastWord, true))
+                        cursor.addRow(arrayOf(i, suggestion))
+                }
+            }
+
+            searchView.suggestionsAdapter?.changeCursor(cursor)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -333,23 +376,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
             outState.putInt(RESULTS_SIZE_KEY, totalSize)
         }
-    }
-
-    private fun setupTagList(tagHolder: TagListHolder?) {
-        tagHolder?.run {
-            val tagAdapter = TagSuggestionViewAdapter { tag, add ->
-                if (add)
-                    Toast.makeText(context, "Added $tag", Toast.LENGTH_SHORT).show()
-
-                searchView.setQuery(if (add) "${searchView.query} \"$tag\"" else "\"$tag\"", true)
-            }
-            setupTagList(tagAdapter)
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        setupTagList(context as? TagListHolder)
     }
 
     override fun onDetach() {

@@ -21,6 +21,8 @@ package com.utazukin.ichaival
 import android.app.Activity
 import android.os.Bundle
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
 
@@ -54,6 +56,7 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
     override fun onStart() {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
+        launch(Dispatchers.IO) { DatabaseReader.generateSuggestionList() }
     }
 
     override fun onStop() {

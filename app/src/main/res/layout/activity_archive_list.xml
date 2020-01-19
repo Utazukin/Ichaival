@@ -77,11 +77,6 @@
                 android:orientation="vertical">
 
             <include
-                    layout="@layout/tag_tab_layout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-            <include
                     layout="@layout/reader_tab_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
