@@ -256,7 +256,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     if (selection.split(' ').size > 1)
                         selection = "\"$selection\""
 
-                    val query = searchView.query?.let { it.replace(getLastWord(it.toString()).toRegex(), selection) }
+                    val query = searchView.query?.let { it.replace(getLastWord(it.toString().trimStart('-')).toRegex(), selection) }
                     searchView.setQuery(query, true)
                     return true
                 }
@@ -267,7 +267,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private fun handleSearchSuggestion(query: String?) {
         query?.let {
             val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
-            val lastWord = getLastWord(it).trim('"', ' ')
+            val lastWord = getLastWord(it).trim('"', ' ').trimStart('-')
             if (!lastWord.isBlank()) {
                 for ((i, suggestion) in DatabaseReader.tagSuggestions.withIndex()) {
                     if (suggestion.contains(lastWord, true))
