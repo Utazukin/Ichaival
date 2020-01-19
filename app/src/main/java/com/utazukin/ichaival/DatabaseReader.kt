@@ -42,6 +42,13 @@ import java.util.*
 sealed class ExtractMsg
 class QueueExtract(val id: String, val action: (id: String) -> List<String>) : ExtractMsg()
 class GetPages(val response: CompletableDeferred<List<String>>) : ExtractMsg()
+class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
+    private val tag = tagText.toLowerCase(Locale.getDefault())
+    private val namespace = namespaceText.toLowerCase(Locale.getDefault())
+    val displayTag = if (namespace.isNotBlank()) "$namespace:$tag" else tag
+
+    fun contains(query: String) = tag.contains(query, true)
+}
 
 object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val jsonLocation: String = "archives.json"
@@ -72,7 +79,7 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     var refreshListener: DatabaseRefreshListener? = null
     var connectivityManager: ConnectivityManager? = null
     var verboseMessages = false
-    var tagSuggestions : Array<String> = arrayOf()
+    var tagSuggestions : Array<TagSuggestion> = arrayOf()
         private set
 
     fun init(context: Context) {
@@ -238,12 +245,11 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
                     }
                     val tagJsonArray = parseJsonArray(response.toString())
                     if (tagJsonArray != null) {
-                        val tagArray = Array<Pair<String, Int>>(tagJsonArray.length()) { i ->
+                        tagSuggestions = Array(tagJsonArray.length()) { i ->
                             val item = tagJsonArray.getJSONObject(i)
-                            Pair(item.getString("text"), item.getInt("weight"))
+                            TagSuggestion(item.getString("text"), item.getString("namespace"), item.getInt("weight"))
                         }
-                        tagArray.sortByDescending { tag -> tag.second }
-                        tagSuggestions = Array(tagArray.size) { i -> tagArray[i].first.toLowerCase() }
+                        tagSuggestions.sortByDescending { tag -> tag.weight }
                     }
                 }
             }

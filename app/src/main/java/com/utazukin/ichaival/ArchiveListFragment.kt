@@ -270,8 +270,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val lastWord = getLastWord(it).trim('"', ' ').trimStart('-')
             if (!lastWord.isBlank()) {
                 for ((i, suggestion) in DatabaseReader.tagSuggestions.withIndex()) {
-                    if (suggestion.contains(lastWord, true))
-                        cursor.addRow(arrayOf(i, suggestion))
+                    if (suggestion.contains(lastWord))
+                        cursor.addRow(arrayOf(i, suggestion.displayTag))
                 }
             }
 
