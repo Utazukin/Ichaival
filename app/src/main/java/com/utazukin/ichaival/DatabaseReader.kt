@@ -47,7 +47,13 @@ class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
     private val namespace = namespaceText.toLowerCase(Locale.getDefault())
     val displayTag = if (namespace.isNotBlank()) "$namespace:$tag" else tag
 
-    fun contains(query: String) = tag.contains(query, true)
+    fun contains(query: String) : Boolean {
+        return if (!query.contains(":"))
+            tag.contains(query, true)
+        else {
+            displayTag.contains(query, true)
+        }
+    }
 }
 
 object DatabaseReader : Preference.OnPreferenceChangeListener {
