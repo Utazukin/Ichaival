@@ -48,6 +48,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.floor
 import kotlin.math.max
 
 private const val ID_STRING = "id"
@@ -88,11 +89,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private lateinit var imagePager: ViewPager
     private val subtitle: String
         get() {
-            val arc = archive
-            return if (arc != null && arc.numPages > 0)
-                "Page ${currentPage + 1}/${arc.numPages}"
-            else
-                "Page ${currentPage + 1}"
+            return archive.let {
+                if (it != null && it.numPages > 0)
+                    "Page ${currentPage + 1}/${it.numPages}"
+                else
+                    "Page ${currentPage + 1}"
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -144,7 +146,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)
                     launch(Dispatchers.Default) {
-                        if (it.numPages > 0 && currentPage + 1 == it.numPages)
+                        val markCompletePage = floor(it.numPages * 0.9f).toInt()
+                        if (it.numPages > 0 && currentPage + 1 == markCompletePage)
                             DatabaseReader.setArchiveNewFlag(it.id, false)
                     }
                 }
