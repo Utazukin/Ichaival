@@ -58,7 +58,7 @@ class ReaderFragment : Fragment() {
     private var retryCount = 0
     private var createViewCalled = false
     private val currentScaleType
-        get() = (activity as ReaderActivity).currentScaleType
+        get() = (activity as? ReaderActivity)?.currentScaleType
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -191,11 +191,11 @@ class ReaderFragment : Fragment() {
 
     private fun updateScaleType(newScale: ScaleType) = updateScaleType(mainImage, newScale)
 
-    private fun updateScaleType(imageView: View?, scaleType: ScaleType, useOppositeOrientation: Boolean = false) {
+    private fun updateScaleType(imageView: View?, scaleType: ScaleType?, useOppositeOrientation: Boolean = false) {
         when (imageView) {
             is SubsamplingScaleImageView -> {
                 when (scaleType) {
-                    ScaleType.FitPage -> imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
+                    ScaleType.FitPage, null -> imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
                     ScaleType.FitHeight -> {
                         val vPadding = imageView.paddingBottom - imageView.paddingTop
                         val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height
@@ -234,7 +234,7 @@ class ReaderFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         createViewCalled = false
-        (activity as ReaderActivity).unregisterScaleChangeListener(::updateScaleType)
+        (activity as? ReaderActivity)?.unregisterScaleChangeListener(::updateScaleType)
         (mainImage as? SubsamplingScaleImageView)?.recycle()
     }
 
