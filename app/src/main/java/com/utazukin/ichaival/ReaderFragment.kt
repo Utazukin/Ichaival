@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
@@ -56,17 +57,18 @@ class ReaderFragment : Fragment() {
     private lateinit var topLayout: RelativeLayout
     private var retryCount = 0
     private var createViewCalled = false
+    private var currentScaleType = ScaleType.FitPage
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_reader, container, false)
 
-        arguments?.run {
+        (savedInstanceState ?: arguments)?.run {
             page = getInt(PAGE_NUM)
+            currentScaleType = ScaleType.fromInt(getInt(SCALE_TYPE, 0))!!
         }
+
+        setHasOptionsMenu(true)
 
         retryCount = 0
         topLayout = view.findViewById(R.id.reader_layout)
@@ -83,6 +85,22 @@ class ReaderFragment : Fragment() {
         imagePath?.let(::displayImage)
         createViewCalled = true
         return view
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        updateScaleType(mainImage, true)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.scale_menu -> {
+                val dialog = ScaleTypeDialogFragment.newInstance(currentScaleType)
+                dialog.listener = ::updateScaleType
+                activity?.run { dialog.show(supportFragmentManager, "scale_picker") }
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -130,6 +148,7 @@ class ReaderFragment : Fragment() {
                         pageNum.visibility = View.GONE
                         progressBar.visibility = View.GONE
                         view?.setOnClickListener(null)
+                        updateScaleType(it)
                     })
             }
         }.also { setupImageTapEvents(it) }
@@ -183,6 +202,42 @@ class ReaderFragment : Fragment() {
         imagePath?.let { displayImage(it) }
     }
 
+    private fun updateScaleType(newScale: ScaleType) {
+        if (newScale != currentScaleType) {
+            currentScaleType = newScale
+            (activity as ReaderActivity).currentScaleType = newScale
+            updateScaleType(mainImage)
+        }
+    }
+
+    private fun updateScaleType(imageView: View?, useOppositeOrientation: Boolean = false) {
+        when (imageView) {
+            is SubsamplingScaleImageView -> {
+                when (currentScaleType) {
+                    ScaleType.FitPage -> imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
+                    ScaleType.FitHeight -> {
+                        val vPadding = imageView.paddingBottom - imageView.paddingTop
+                        val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height
+                        val minScale = (viewHeight - vPadding) / imageView.sHeight.toFloat()
+                        imageView.minScale = minScale
+                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+                    }
+                    ScaleType.FitWidth -> {
+                        val hPadding = imageView.paddingLeft - imageView.paddingRight
+                        val viewWidth = if (useOppositeOrientation) imageView.height else imageView.width
+                        val minScale = (viewWidth - hPadding) / imageView.sWidth.toFloat()
+                        imageView.minScale = minScale
+                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+                    }
+                }
+                imageView.resetScaleAndCenter()
+            }
+            is PhotoView -> {
+                //TODO
+            }
+        }
+    }
+
     private fun getTouchZone(x: Float, view: View) : TouchZone {
         val location = x / view.width
 
@@ -222,8 +277,11 @@ class ReaderFragment : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt("page", page)
-        outState.putString("pagePath", imagePath)
+        outState.run {
+            putInt("page", page)
+            putString("pagePath", imagePath)
+            putInt(SCALE_TYPE, currentScaleType.value)
+        }
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -243,12 +301,14 @@ class ReaderFragment : Fragment() {
 
     companion object {
         private const val PAGE_NUM = "page"
+        private const val SCALE_TYPE = "scale_type"
 
         @JvmStatic
-        fun createInstance(page: Int) =
+        fun createInstance(page: Int, scale: ScaleType) =
             ReaderFragment().apply {
                 arguments = Bundle().apply {
                     putInt(PAGE_NUM, page)
+                    putInt(SCALE_TYPE, scale.value)
                 }
             }
     }

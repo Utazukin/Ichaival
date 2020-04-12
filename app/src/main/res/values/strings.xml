@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2019 Utazukin
+  ~ Copyright (C) 2020 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@
         <item>3</item>
     </string-array>
 
-    <string-array name="multi_select_list_preference_default_value"/>
+    <string-array name="multi_select_list_preference_default_value" />
 
     <string name="pref_title_system_sync_settings">System sync settings</string>
 
@@ -167,4 +167,8 @@
     <string name="search_page_key">search_page</string>
     <string name="search_page_key_title">Server Search Paging</string>
     <string name="search_page_desc">Number of items to get at a time from the server.  Should match the server preference for best performance.  (Default: 100)</string>
+    <string name="scale_type_menu">Scale Type</string>
+    <string name="scale_type_fit_page">Fit Page</string>
+    <string name="scale_type_fit_height">Fit Height</string>
+    <string name="scale_type_fit_width">Fit Width</string>
 </resources>

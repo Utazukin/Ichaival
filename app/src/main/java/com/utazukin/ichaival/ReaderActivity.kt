@@ -78,6 +78,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var mVisible: Boolean = false
     private val mHideRunnable = Runnable { hide() }
 
+    var currentScaleType = ScaleType.FitPage
     var archive: Archive? = null
         private set
     private var currentPage = 0
@@ -475,7 +476,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
 
-        override fun getItem(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
+        override fun getItem(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position), currentScaleType)
 
         override fun getCount(): Int = loadedPages.size
     }
