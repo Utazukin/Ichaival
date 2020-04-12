@@ -54,6 +54,7 @@ import kotlin.math.max
 private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
+private typealias ScaleChangeListener = (ScaleType) -> Unit
 
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener {
     private val mHideHandler = Handler()
@@ -88,6 +89,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager
+    private val scaleChangeListeners = mutableListOf<ScaleChangeListener>()
     private val subtitle: String
         get() {
             return archive.let {
@@ -106,6 +108,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         setSupportActionBar(appBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
+        currentScaleType = ScaleType.fromInt(savedInstanceState?.getInt(SCALE_TYPE, 0) ?: 0)!!
 
         ViewCompat.setOnApplyWindowInsetsListener(appBar) { _, insets ->
             var params = FrameLayout.LayoutParams(appBar.layoutParams)
@@ -188,10 +191,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
+    fun registerScaleListener(listener: ScaleChangeListener) = scaleChangeListeners.add(listener)
+
+    fun unregisterScaleChangeListener(listener: ScaleChangeListener) = scaleChangeListeners.remove(listener)
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(CURRENT_PAGE_ID, currentPage)
         outState.putString(PAGE_ID, archive?.id)
+        outState.putInt(SCALE_TYPE, currentScaleType.value)
     }
 
     override fun onCreateDrawer() {
@@ -327,6 +335,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         ReaderTabHolder.unregisterAddListener(this)
     }
 
+    private fun updateScaleType(newScaleType: ScaleType) {
+        if (newScaleType != currentScaleType) {
+            currentScaleType = newScaleType
+            for (listener in scaleChangeListeners)
+                listener.invoke(newScaleType)
+        }
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.bookmark_archive -> {
@@ -380,6 +396,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         finish()
                     }
                 }
+            }
+            R.id.scale_menu -> {
+                val dialog = ScaleTypeDialogFragment.newInstance(currentScaleType)
+                dialog.listener = ::updateScaleType
+                dialog.show(supportFragmentManager, "scale_picker")
             }
         }
         return super.onOptionsItemSelected(item)
@@ -472,11 +493,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
          * and a change of the status and navigation bar.
          */
         private const val UI_ANIMATION_DELAY = 300
+
+        private const val SCALE_TYPE = "scale_type"
     }
 
     private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
 
-        override fun getItem(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position), currentScaleType)
+        override fun getItem(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
 
         override fun getCount(): Int = loadedPages.size
     }

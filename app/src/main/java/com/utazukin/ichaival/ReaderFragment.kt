@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,18 +57,16 @@ class ReaderFragment : Fragment() {
     private lateinit var topLayout: RelativeLayout
     private var retryCount = 0
     private var createViewCalled = false
-    private var currentScaleType = ScaleType.FitPage
+    private val currentScaleType
+        get() = (activity as ReaderActivity).currentScaleType
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_reader, container, false)
 
-        (savedInstanceState ?: arguments)?.run {
+        arguments?.run {
             page = getInt(PAGE_NUM)
-            currentScaleType = ScaleType.fromInt(getInt(SCALE_TYPE, 0))!!
         }
-
-        setHasOptionsMenu(true)
 
         retryCount = 0
         topLayout = view.findViewById(R.id.reader_layout)
@@ -89,18 +87,7 @@ class ReaderFragment : Fragment() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        updateScaleType(mainImage, true)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.scale_menu -> {
-                val dialog = ScaleTypeDialogFragment.newInstance(currentScaleType)
-                dialog.listener = ::updateScaleType
-                activity?.run { dialog.show(supportFragmentManager, "scale_picker") }
-            }
-        }
-        return super.onOptionsItemSelected(item)
+        updateScaleType(mainImage, currentScaleType, true)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -148,7 +135,7 @@ class ReaderFragment : Fragment() {
                         pageNum.visibility = View.GONE
                         progressBar.visibility = View.GONE
                         view?.setOnClickListener(null)
-                        updateScaleType(it)
+                        updateScaleType(it, currentScaleType)
                     })
             }
         }.also { setupImageTapEvents(it) }
@@ -202,18 +189,12 @@ class ReaderFragment : Fragment() {
         imagePath?.let { displayImage(it) }
     }
 
-    private fun updateScaleType(newScale: ScaleType) {
-        if (newScale != currentScaleType) {
-            currentScaleType = newScale
-            (activity as ReaderActivity).currentScaleType = newScale
-            updateScaleType(mainImage)
-        }
-    }
+    private fun updateScaleType(newScale: ScaleType) = updateScaleType(mainImage, newScale)
 
-    private fun updateScaleType(imageView: View?, useOppositeOrientation: Boolean = false) {
+    private fun updateScaleType(imageView: View?, scaleType: ScaleType, useOppositeOrientation: Boolean = false) {
         when (imageView) {
             is SubsamplingScaleImageView -> {
-                when (currentScaleType) {
+                when (scaleType) {
                     ScaleType.FitPage -> imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
                     ScaleType.FitHeight -> {
                         val vPadding = imageView.paddingBottom - imageView.paddingTop
@@ -253,6 +234,7 @@ class ReaderFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         createViewCalled = false
+        (activity as ReaderActivity).unregisterScaleChangeListener(::updateScaleType)
         (mainImage as? SubsamplingScaleImageView)?.recycle()
     }
 
@@ -261,6 +243,7 @@ class ReaderFragment : Fragment() {
         val activity = context as ReaderActivity
         listener = activity
 
+        activity.registerScaleListener(::updateScaleType)
         arguments?.run {
             val page = getInt(PAGE_NUM)
             activity.launch {
@@ -280,7 +263,6 @@ class ReaderFragment : Fragment() {
         outState.run {
             putInt("page", page)
             putString("pagePath", imagePath)
-            putInt(SCALE_TYPE, currentScaleType.value)
         }
     }
 
@@ -301,14 +283,12 @@ class ReaderFragment : Fragment() {
 
     companion object {
         private const val PAGE_NUM = "page"
-        private const val SCALE_TYPE = "scale_type"
 
         @JvmStatic
-        fun createInstance(page: Int, scale: ScaleType) =
+        fun createInstance(page: Int) =
             ReaderFragment().apply {
                 arguments = Bundle().apply {
                     putInt(PAGE_NUM, page)
-                    putInt(SCALE_TYPE, scale.value)
                 }
             }
     }
