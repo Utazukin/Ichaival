@@ -22,6 +22,7 @@ package com.utazukin.ichaival
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.PointF
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
@@ -195,13 +196,17 @@ class ReaderFragment : Fragment() {
         when (imageView) {
             is SubsamplingScaleImageView -> {
                 when (scaleType) {
-                    ScaleType.FitPage, null -> imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
+                    ScaleType.FitPage, null -> {
+                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
+                        imageView.resetScaleAndCenter()
+                    }
                     ScaleType.FitHeight -> {
                         val vPadding = imageView.paddingBottom - imageView.paddingTop
                         val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height
                         val minScale = (viewHeight - vPadding) / imageView.sHeight.toFloat()
                         imageView.minScale = minScale
                         imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+                        imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
                     }
                     ScaleType.FitWidth -> {
                         val hPadding = imageView.paddingLeft - imageView.paddingRight
@@ -209,9 +214,9 @@ class ReaderFragment : Fragment() {
                         val minScale = (viewWidth - hPadding) / imageView.sWidth.toFloat()
                         imageView.minScale = minScale
                         imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+                        imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
                     }
                 }
-                imageView.resetScaleAndCenter()
             }
             is PhotoView -> {
                 //TODO
