@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ package com.utazukin.ichaival
 
 import android.graphics.Color
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.view.LayoutInflater
@@ -32,6 +31,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout

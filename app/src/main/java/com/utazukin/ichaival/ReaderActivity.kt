@@ -21,7 +21,6 @@ package com.utazukin.ichaival
 import android.app.Activity
 import android.os.Bundle
 import android.os.Handler
-import android.preference.PreferenceManager
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
@@ -36,6 +35,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -497,7 +497,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private const val SCALE_TYPE = "scale_type"
     }
 
-    private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm) {
+    private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
 
         override fun getItem(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
 

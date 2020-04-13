@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ItemTouchHelper.LEFT
 import androidx.recyclerview.widget.ItemTouchHelper.RIGHT
 import androidx.recyclerview.widget.RecyclerView
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 typealias DetailsListener = (String, Int) -> Unit
@@ -55,7 +56,7 @@ class BookmarkTouchHelper(context: Context) : ItemTouchHelper.SimpleCallback(0, 
                              dY: Float,
                              actionState: Int,
                              isCurrentlyActive: Boolean) {
-        if (dX < 0 && Math.abs(dX) > margin + infoDrawable.intrinsicWidth) {
+        if (dX < 0 && abs(dX) > margin + infoDrawable.intrinsicWidth) {
             val itemView = viewHolder.itemView
 
             val cellHeight = itemView.bottom - itemView.top

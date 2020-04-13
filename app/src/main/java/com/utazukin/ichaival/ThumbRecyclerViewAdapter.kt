@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import kotlinx.coroutines.*
+import kotlin.math.min
 
 private const val thumbIncrease = 10
 
@@ -65,7 +66,7 @@ class ThumbRecyclerViewAdapter(
         if (maxThumbnails < archive.numPages) {
             val currentCount = itemCount
             maxThumbnails += thumbIncrease
-            notifyItemRangeInserted(currentCount + 1, Math.min(maxThumbnails, archive.numPages))
+            notifyItemRangeInserted(currentCount + 1, min(maxThumbnails, archive.numPages))
         }
     }
 
@@ -77,8 +78,7 @@ class ThumbRecyclerViewAdapter(
 
     override fun getItemCount(): Int = if (archive.numPages > maxThumbnails) maxThumbnails else archive.numPages
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val page = position
+    override fun onBindViewHolder(holder: ViewHolder, page: Int) {
         holder.pageNumView.text = (page + 1).toString()
 
         val job = scope.launch(Dispatchers.Main) {

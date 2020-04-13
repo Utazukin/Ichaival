@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.view.MenuItem
 import android.widget.ImageView
 import android.widget.Toast
@@ -32,6 +31,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -131,14 +131,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         job.cancel()
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), ""))
-
-        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), ""))
+        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), "")!!)
+        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "")!!)
     }
 
     override fun onError(error: String) {

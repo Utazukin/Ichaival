@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -171,25 +171,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
 
-    inner class DetailsPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager) {
-        var detailsFragment: ArchiveDetailsFragment? = null
-            private set
-
-        var thumbFragment: GalleryPreviewFragment? = null
-            private set
-
+    inner class DetailsPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
         override fun getItem(position: Int): Fragment {
             return when(position) {
-                0 -> {
-                    val fragment = ArchiveDetailsFragment.createInstance(archiveId!!)
-                    detailsFragment = fragment
-                    fragment
-                }
-                1 -> {
-                    val fragment = GalleryPreviewFragment.createInstance(archiveId!!)
-                    thumbFragment = fragment
-                    fragment
-                }
+                0 -> ArchiveDetailsFragment.createInstance(archiveId!!)
+                1 -> GalleryPreviewFragment.createInstance(archiveId!!)
                 else -> throw IllegalArgumentException("position")
             }
         }

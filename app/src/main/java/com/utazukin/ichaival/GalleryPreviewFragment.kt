@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package com.utazukin.ichaival
 
 
-import android.content.Context
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
@@ -88,10 +87,6 @@ class GalleryPreviewFragment : Fragment() {
             }
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
     }
 
     override fun onDetach() {

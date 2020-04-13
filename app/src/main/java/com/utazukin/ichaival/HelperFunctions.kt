@@ -23,6 +23,7 @@ import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.egl.EGLContext
+import kotlin.math.max
 
 fun getDpWidth(pxWidth: Int) : Int {
     val metrics = Resources.getSystem().displayMetrics
@@ -40,7 +41,7 @@ fun getLastWord(query: String) : String {
     var last = ""
     while (matcher.find()) {
         if (matcher.group(2) != null)
-            last = matcher.group(2)
+            last = matcher.group(2) ?: ""
     }
 
     return last
@@ -77,6 +78,6 @@ fun getMaxTextureSize() : Int {
     }
 
     egl.eglTerminate(display)
-    mMaxTextureSize = Math.max(maxTextureSize, IMAGE_MAX_BITMAP_DIMENSION)
+    mMaxTextureSize = max(maxTextureSize, IMAGE_MAX_BITMAP_DIMENSION)
     return maxTextureSize
 }

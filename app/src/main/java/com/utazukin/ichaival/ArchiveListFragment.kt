@@ -25,7 +25,6 @@ import android.content.SharedPreferences
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.os.Bundle
-import android.preference.PreferenceManager
 import android.provider.BaseColumns
 import android.view.*
 import android.widget.*
@@ -34,6 +33,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView

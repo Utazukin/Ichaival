@@ -22,9 +22,9 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.preference.PreferenceActivity
-import android.preference.PreferenceManager
 import android.view.View
 import android.widget.TextView
+import androidx.preference.PreferenceManager
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

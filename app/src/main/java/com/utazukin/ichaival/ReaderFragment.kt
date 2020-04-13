@@ -28,6 +28,7 @@ import android.view.*
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -143,7 +144,7 @@ class ReaderFragment : Fragment() {
     }
 
     private fun initializeView(view: View) {
-        view.background = resources.getDrawable(android.R.color.black)
+        view.background = ContextCompat.getDrawable(activity!!, android.R.color.black)
         val layoutParams = RelativeLayout
             .LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         view.layoutParams = layoutParams
