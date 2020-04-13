@@ -369,7 +369,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             R.id.goto_menu -> {
                 archive?.let {
                     if (it.numPages >= 0) {
-                        val dialog = PageSelectDialogFragment.createInstance(currentPage + 1, it.numPages)
+                        val dialog = PageSelectDialogFragment.createInstance(currentPage + 1, it.numPages, it.id)
                         dialog.listener = { value ->
                             loadImage(value)
                             imagePager.setCurrentItem(value, false)
