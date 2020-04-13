@@ -115,10 +115,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             var safeTop = insets.displayCutout?.safeInsetTop ?: 0
             safeTop = if (safeTop > 0) safeTop else insets.systemWindowInsetTop
             val safeBottom = insets.displayCutout?.safeInsetBottom
-            val safeRight = insets.displayCutout?.safeInsetRight
+            val safeRight = insets.displayCutout?.safeInsetRight ?: insets.systemWindowInsetRight
             val safeLeft = insets.displayCutout?.safeInsetLeft
 
-            params.setMargins(params.leftMargin, safeTop, safeRight ?: params.rightMargin, params.bottomMargin)
+            params.setMargins(params.leftMargin, safeTop, safeRight, params.bottomMargin)
             appBar.layoutParams = params
 
             val bookmarkView: LinearLayout = findViewById(R.id.bookmark_list_layout)
