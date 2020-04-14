@@ -253,7 +253,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 override fun onSuggestionClick(index: Int): Boolean {
                     val cursor = suggestionsAdapter.getItem(index) as Cursor
                     var selection = cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1))
-                    if (selection.split(' ').size > 1)
+                    if (!isLocalSearch)
+                        selection = "\"$selection\"\\$"
+                    else if (selection.split(' ').size > 1)
                         selection = "\"$selection\""
 
                     val query = searchView.query?.let { it.replace(getLastWord(it.toString().trimStart('-')).toRegex(), selection) }
