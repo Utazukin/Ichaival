@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.media.RingtoneManager
-import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -80,13 +79,11 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
     override fun onStart() {
         super.onStart()
         DatabaseReader.listener = this
-        DatabaseReader.connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
     override fun onPause() {
         super.onPause()
         DatabaseReader.listener = null
-        DatabaseReader.connectivityManager = null
     }
 
     override fun onDestroy() {

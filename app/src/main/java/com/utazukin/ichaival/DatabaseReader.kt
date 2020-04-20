@@ -83,14 +83,17 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         private set
     var listener: DatabaseMessageListener? = null
     var refreshListener: DatabaseRefreshListener? = null
-    var connectivityManager: ConnectivityManager? = null
+    private var connectivityManager: ConnectivityManager? = null
     var verboseMessages = false
     var tagSuggestions : Array<TagSuggestion> = arrayOf()
         private set
 
-    fun init(context: Context) {
-        if (!this::database.isInitialized)
-            database = Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db").build()
+    fun init(context: Context, connectionManger: ConnectivityManager) {
+        if (!this::database.isInitialized) {
+            database =
+                Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db").build()
+            connectivityManager = connectionManger
+        }
     }
 
     suspend fun updateArchiveList(cacheDir: File, forceUpdate: Boolean = false) {

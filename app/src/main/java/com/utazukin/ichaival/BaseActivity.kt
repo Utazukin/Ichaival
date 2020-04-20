@@ -71,7 +71,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DatabaseReader.init(applicationContext)
+        DatabaseReader.init(applicationContext, getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
         ReaderTabHolder.initialize(this)
     }
 
@@ -112,13 +112,11 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onStart() {
         super.onStart()
         DatabaseReader.listener = this
-        DatabaseReader.connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
     override fun onPause() {
         super.onPause()
         DatabaseReader.listener = null
-        DatabaseReader.connectivityManager = null
     }
 
     override fun onStop() {
