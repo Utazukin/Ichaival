@@ -200,7 +200,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         activity?.let { DatabaseReader.init(it.applicationContext, it.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager) }
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(context!!.filesDir) }
+            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext().filesDir) }
 
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
@@ -212,7 +212,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 getViewModel<SearchViewModel>().init(method, descending, pageSize, isSearch = activity is ArchiveSearch)
             }
 
-            viewModel?.archiveList?.observe(this@ArchiveListFragment, Observer {
+            viewModel?.archiveList?.observe(viewLifecycleOwner, Observer {
                 listAdapter.submitList(it)
                 val size = it.size
                 (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
@@ -394,7 +394,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     fun forceArchiveListUpdate() {
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(context!!.filesDir, true) }
+            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext().filesDir, true) }
 
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
@@ -430,7 +430,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
 
-        model.archiveList?.observe(this, Observer {
+        model.archiveList?.observe(viewLifecycleOwner, Observer {
             (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
             val size = it.size
             (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)

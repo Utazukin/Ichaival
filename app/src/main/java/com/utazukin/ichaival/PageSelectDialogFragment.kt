@@ -64,14 +64,14 @@ class PageSelectDialogFragment : DialogFragment() {
                 previewJob = coroutineScope?.launch {
                     delay(400)
                     val imageUrl = archive?.getPageImage(newValue - 1)
-                    Glide.with(context!!)
+                    Glide.with(requireContext())
                         .load(imageUrl)
                         .apply(requestOptions)
                         .into(preview)
                 }
             }
 
-            Glide.with(context!!)
+            Glide.with(requireContext())
                 .load(archive?.getPageImage(pageSelector.value - 1))
                 .apply(requestOptions)
                 .into(preview)

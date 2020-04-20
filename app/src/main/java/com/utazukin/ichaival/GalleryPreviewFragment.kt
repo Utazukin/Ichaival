@@ -91,7 +91,7 @@ class GalleryPreviewFragment : Fragment() {
 
     override fun onDetach() {
         super.onDetach()
-        Glide.get(activity!!).clearMemory()
+        Glide.get(requireActivity()).clearMemory()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -118,7 +118,7 @@ class GalleryPreviewFragment : Fragment() {
                     columns
                 ) else LinearLayoutManager(context)
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(activity as? ThumbInteractionListener, Glide.with(activity!!), lifecycleScope, archive!!)
+            thumbAdapter = ThumbRecyclerViewAdapter(activity as? ThumbInteractionListener, Glide.with(requireActivity()), lifecycleScope, archive!!)
             if (savedPageCount > 0)
                 thumbAdapter.maxThumbnails = savedPageCount
             adapter = thumbAdapter

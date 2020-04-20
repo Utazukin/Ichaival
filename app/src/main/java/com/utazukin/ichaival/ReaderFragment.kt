@@ -116,7 +116,7 @@ class ReaderFragment : Fragment() {
         mainImage = if (image.endsWith(".gif")) {
             PhotoView(activity).also {
                 initializeView(it)
-                Glide.with(activity!!)
+                Glide.with(requireActivity())
                     .load(image)
                     .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
                     .addListener(getListener())
@@ -129,7 +129,7 @@ class ReaderFragment : Fragment() {
                 it.setMaxTileSize(getMaxTextureSize())
                 it.setMinimumTileDpi(160)
 
-                Glide.with(activity!!)
+                Glide.with(requireActivity())
                     .downloadOnly()
                     .load(image)
                     .addListener(getListener(false))
@@ -144,7 +144,7 @@ class ReaderFragment : Fragment() {
     }
 
     private fun initializeView(view: View) {
-        view.background = ContextCompat.getDrawable(activity!!, android.R.color.black)
+        view.background = ContextCompat.getDrawable(requireActivity(), android.R.color.black)
         val layoutParams = RelativeLayout
             .LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         view.layoutParams = layoutParams

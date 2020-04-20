@@ -125,7 +125,7 @@ class TagDialogFragment : DialogFragment() {
     private fun createTagView(tag: String) : TextView {
         val tagView = TextView(context)
         tagView.text = tag
-        tagView.background = ContextCompat.getDrawable(context!!, R.drawable.tag_background)
+        tagView.background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
         tagView.setTextColor(Color.WHITE)
         val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         layoutParams.setMargins(10, 10, 10, 10)
