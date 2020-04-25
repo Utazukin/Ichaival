@@ -72,7 +72,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val delayString = prefs.getString(getString(R.string.search_delay_key), null)
-        searchDelay = delayString?.toLong() ?: 750
+        if (!delayString.isNullOrBlank())
+            searchDelay = delayString.toLong()
+
         isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
 
         if (isLocalSearch)
