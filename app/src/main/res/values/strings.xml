@@ -171,4 +171,7 @@
     <string name="scale_type_fit_page">Fit Page</string>
     <string name="scale_type_fit_height">Fit Height</string>
     <string name="scale_type_fit_width">Fit Width</string>
+    <string name="fullscreen_timeout_key">fullscreen_timeout_key</string>
+    <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
+    <string name="fullscreen_timeout_summary">The amount of time, in seconds, before hiding the buttons.  -1 for never.</string>
 </resources>

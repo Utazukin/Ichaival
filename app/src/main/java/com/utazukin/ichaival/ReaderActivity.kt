@@ -50,6 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.floor
 import kotlin.math.max
+import kotlin.math.truncate
 
 private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
@@ -90,6 +91,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager
     private val scaleChangeListeners = mutableListOf<ScaleChangeListener>()
+    private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
+    private var autoHideEnabled = true
     private val subtitle: String
         get() {
             return archive.let {
@@ -133,6 +136,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         rtol = prefs.getBoolean(getString(R.string.rtol_pref_key), false)
         volControl = prefs.getBoolean(getString(R.string.vol_key_pref_key), false)
+        val delayString = prefs.getString(getString(R.string.fullscreen_timeout_key), null)
+        if (!delayString.isNullOrBlank())
+            autoHideDelay = truncate(delayString.toFloat() * 1000).toInt()
+
+        autoHideEnabled = autoHideDelay >= 0
 
         mVisible = true
 
@@ -444,8 +452,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mHideHandler.removeCallbacks(mHidePart2Runnable)
         mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY.toLong())
 
-        if (AUTO_HIDE)
-            delayedHide(AUTO_HIDE_DELAY_MILLIS)
+        if (autoHideEnabled)
+            delayedHide(autoHideDelay)
     }
 
     /**
@@ -477,13 +485,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     companion object {
         /**
-         * Whether or not the system UI should be auto-hidden after
-         * [AUTO_HIDE_DELAY_MILLIS] milliseconds.
-         */
-        private const val AUTO_HIDE = true
-
-        /**
-         * If [AUTO_HIDE] is set, the number of milliseconds to wait after
+         * If [autoHideEnabled] is set, the number of milliseconds to wait after
          * user interaction before hiding the system UI.
          */
         private const val AUTO_HIDE_DELAY_MILLIS = 5000
