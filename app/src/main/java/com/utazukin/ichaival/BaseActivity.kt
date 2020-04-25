@@ -87,10 +87,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
             adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
                 viewModel.bookmarks.observe(this@BaseActivity, Observer { list ->
                     val itemAdded = list.size > it.itemCount
-                    it.submitList(list)
-
-                    if (itemAdded)
-                        scrollToPosition(list.size - 1)
+                    val scrollTarget = list.size - 1
+                    it.submitList(list) { if (itemAdded) scrollToPosition(scrollTarget) }
                 })
             }
 
