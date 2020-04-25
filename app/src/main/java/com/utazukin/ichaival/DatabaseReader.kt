@@ -88,11 +88,11 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     var tagSuggestions : Array<TagSuggestion> = arrayOf()
         private set
 
-    fun init(context: Context, connectionManger: ConnectivityManager) {
+    fun init(context: Context) {
         if (!this::database.isInitialized) {
             database =
                 Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db").build()
-            connectivityManager = connectionManger
+            connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         }
     }
 

@@ -24,7 +24,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.database.Cursor
 import android.database.MatrixCursor
-import android.net.ConnectivityManager
 import android.os.Bundle
 import android.provider.BaseColumns
 import android.view.*
@@ -198,7 +197,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
         swipeRefreshLayout.isEnabled = canSwipeRefresh
 
-        activity?.let { DatabaseReader.init(it.applicationContext, it.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager) }
+        activity?.let { DatabaseReader.init(it.applicationContext) }
         lifecycleScope.launch {
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext().filesDir) }
 
