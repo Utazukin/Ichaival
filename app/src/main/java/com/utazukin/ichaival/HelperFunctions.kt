@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.content.SharedPreferences
 import android.content.res.Resources
 import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
@@ -45,6 +46,21 @@ fun getLastWord(query: String) : String {
     }
 
     return last
+}
+
+fun SharedPreferences?.castStringPrefToInt(pref: String, defaultValue: Int = 0) : Int {
+    val stringPref = this?.getString(pref, null)
+    return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toInt()
+}
+
+fun SharedPreferences?.castStringPrefToLong(pref: String, defaultValue: Long = 0) : Long {
+    val stringPref = this?.getString(pref, null)
+    return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toLong()
+}
+
+fun SharedPreferences?.castStringPrefToFloat(pref: String, defaultValue: Float = 0f) : Float {
+    val stringPref = this?.getString(pref, null)
+    return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toFloat()
 }
 
 private var mMaxTextureSize = -1

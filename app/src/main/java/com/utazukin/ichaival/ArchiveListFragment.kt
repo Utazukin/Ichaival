@@ -44,6 +44,8 @@ import kotlin.math.floor
 
 private const val RESULTS_KEY = "search_results"
 private const val RESULTS_SIZE_KEY = "search_size"
+private const val DEFAULT_SEARCH_DELAY = 750L
+private const val DEFAULT_PAGE_SIZE = 100
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private var sortMethod = SortMethod.Alpha
@@ -58,7 +60,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private var viewModel: SearchViewModelBase? = null
     lateinit var searchView: SearchView
         private set
-    private var searchDelay: Long = 750
+    private var searchDelay: Long = DEFAULT_SEARCH_DELAY
     private var isLocalSearch: Boolean = false
 
     override fun onCreateView(
@@ -71,10 +73,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         setHasOptionsMenu(true)
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val delayString = prefs.getString(getString(R.string.search_delay_key), null)
-        if (!delayString.isNullOrBlank())
-            searchDelay = delayString.toLong()
-
+        searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
         isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
 
         if (isLocalSearch)
@@ -209,7 +208,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().init(method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
             else {
-                val pageSize = prefs.getString(getString(R.string.search_page_key), "100")?.toInt() ?: 100
+                val pageSize = prefs.castStringPrefToInt(getString(R.string.search_page_key), DEFAULT_PAGE_SIZE)
                 getViewModel<SearchViewModel>().init(method, descending, pageSize, isSearch = activity is ArchiveSearch)
             }
 
@@ -425,7 +424,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         } else {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            val pageSize = prefs.getString(getString(R.string.search_page_key), "100")!!.toInt()
+            val pageSize = prefs.castStringPrefToInt(getString(R.string.search_page_key), 100)
             ViewModelProviders.of(this).get(SearchViewModel::class.java).also {
                 it.init(sortMethod, descending, pageSize, force)
             }
@@ -458,10 +457,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 resetSearch(local)
             }
             getString(R.string.search_page_key) -> resetSearch(isLocalSearch, true)
-            getString(R.string.search_delay_key) -> {
-                val delayString = prefs?.getString(prefName, null)
-                searchDelay = delayString?.toLong() ?: 750
-            }
+            getString(R.string.search_delay_key) -> { searchDelay = prefs.castStringPrefToLong(prefName, DEFAULT_SEARCH_DELAY) }
             getString(R.string.swipe_refresh_key) -> swipeRefreshLayout.isEnabled = prefs?.getBoolean(prefName, true) ?: true
         }
     }
