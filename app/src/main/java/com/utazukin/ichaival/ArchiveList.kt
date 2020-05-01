@@ -38,21 +38,22 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        prefs.registerOnSharedPreferenceChangeListener(this)
+
+        val serverSetting = prefs.getString(getString(R.string.server_address_preference), "") as String
+        DatabaseReader.updateServerLocation(serverSetting)
+        updatePreferences(prefs)
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_list)
         setSupportActionBar(findViewById(R.id.toolbar))
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        prefs.registerOnSharedPreferenceChangeListener(this)
-        updatePreferences(prefs)
+        setupText = findViewById(R.id.first_time_text)
+        handleSetupText(serverSetting.isEmpty())
     }
 
     private fun updatePreferences(prefs: SharedPreferences) {
-        val serverSetting = prefs.getString(getString(R.string.server_address_preference), "") as String
-        setupText = findViewById(R.id.first_time_text)
-        handleSetupText(serverSetting.isEmpty())
-
-        DatabaseReader.updateServerLocation(serverSetting)
         DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "") as String)
         DatabaseReader.verboseMessages = prefs.getBoolean(getString(R.string.verbose_pref), false)
     }
