@@ -68,9 +68,9 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         DatabaseReader.init(applicationContext)
         ReaderTabHolder.initialize(this)
+        super.onCreate(savedInstanceState)
     }
 
     protected open fun onCreateDrawer() {
