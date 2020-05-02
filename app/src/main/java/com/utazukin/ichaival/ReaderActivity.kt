@@ -55,7 +55,6 @@ import kotlin.math.truncate
 private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
-private typealias ScaleChangeListener = (ScaleType) -> Unit
 
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener {
     private val mHideHandler = Handler()
@@ -90,7 +89,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager
-    private val scaleChangeListeners = mutableListOf<ScaleChangeListener>()
+    private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
     private val subtitle: String
@@ -191,14 +190,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     supportActionBar?.subtitle = subtitle
 
                     setTabbedIcon(ReaderTabHolder.isTabbed(it))
+                    for (listener in pageFragments)
+                        listener.onArchiveLoad(it)
                 }
             }
         }
     }
 
-    fun registerScaleListener(listener: ScaleChangeListener) = scaleChangeListeners.add(listener)
+    fun registerPage(listener: PageFragment) = pageFragments.add(listener)
 
-    fun unregisterScaleChangeListener(listener: ScaleChangeListener) = scaleChangeListeners.remove(listener)
+    fun unregisterPage(listener: PageFragment) = pageFragments.remove(listener)
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -343,8 +344,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private fun updateScaleType(newScaleType: ScaleType) {
         if (newScaleType != currentScaleType) {
             currentScaleType = newScaleType
-            for (listener in scaleChangeListeners)
-                listener.invoke(newScaleType)
+            for (listener in pageFragments)
+                listener.onScaleTypeChange(newScaleType)
         }
     }
 

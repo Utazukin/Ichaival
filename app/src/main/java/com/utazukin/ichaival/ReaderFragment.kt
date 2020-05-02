@@ -38,6 +38,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,7 +50,12 @@ enum class TouchZone {
     Center
 }
 
-class ReaderFragment : Fragment() {
+interface PageFragment {
+    fun onArchiveLoad(archive: Archive)
+    fun onScaleTypeChange(scaleType: ScaleType)
+}
+
+class ReaderFragment : Fragment(), PageFragment {
     private var listener: OnFragmentInteractionListener? = null
     private var page = 0
     private var imagePath: String? = null
@@ -240,20 +246,17 @@ class ReaderFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         createViewCalled = false
-        (activity as? ReaderActivity)?.unregisterScaleChangeListener(::updateScaleType)
+        (activity as? ReaderActivity)?.unregisterPage(this)
         (mainImage as? SubsamplingScaleImageView)?.recycle()
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        val activity = context as ReaderActivity
-        listener = activity
+    override fun onScaleTypeChange(scaleType: ScaleType) = updateScaleType(scaleType)
 
-        activity.registerScaleListener(::updateScaleType)
+    override fun onArchiveLoad(archive: Archive) {
         arguments?.run {
             val page = getInt(PAGE_NUM)
-            activity.launch {
-                val image = withContext(Dispatchers.IO) { activity.archive?.getPageImage(page) }
+            (activity as CoroutineScope).launch {
+                val image = withContext(Dispatchers.IO) { archive.getPageImage(page) }
                 if (image != null) {
                     if (createViewCalled)
                         displayImage(image)
@@ -262,6 +265,15 @@ class ReaderFragment : Fragment() {
                 }
             }
         }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        val activity = context as ReaderActivity
+        listener = activity
+
+        activity.registerPage(this)
+        activity.archive?.let { onArchiveLoad(it) }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
