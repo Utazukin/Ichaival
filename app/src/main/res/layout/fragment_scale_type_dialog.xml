@@ -17,37 +17,36 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".ScaleTypeDialogFragment">
 
-    <RadioGroup
-        android:layout_width="wrap_content"
+<RadioGroup android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="16dp"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <RadioButton
+        android:id="@+id/fit_page_button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="@string/scale_type_fit_page"
+        android:textSize="24sp" />
 
-        <RadioButton
-            android:id="@+id/fit_page_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/scale_type_fit_page"
-            android:textSize="24sp" />
+    <RadioButton
+        android:id="@+id/fit_height_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="@string/scale_type_fit_height"
+        android:textSize="24sp" />
 
-        <RadioButton
-            android:id="@+id/fit_height_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/scale_type_fit_height"
-            android:textSize="24sp" />
-
-        <RadioButton
-            android:id="@+id/fit_width_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/scale_type_fit_width"
-            android:textSize="24sp" />
-    </RadioGroup>
-</LinearLayout>
+    <RadioButton
+        android:id="@+id/fit_width_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:text="@string/scale_type_fit_width"
+        android:textSize="24sp" />
+</RadioGroup>
