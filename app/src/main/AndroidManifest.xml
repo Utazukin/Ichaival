@@ -23,6 +23,9 @@
         <activity android:name="com.utazukin.ichaival.ArchiveDetails">
         </activity>
         <activity android:name="com.utazukin.ichaival.ArchiveSearch"/>
+        <activity android:name="com.utazukin.ichaival.WebViewActivity"
+            android:parentActivityName="com.utazukin.ichaival.SettingsActivity"
+            android:theme="@style/Theme.MaterialComponents.Bridge"/>
         <activity
                 android:name="com.utazukin.ichaival.ReaderActivity"
                 android:configChanges="orientation|keyboardHidden|screenSize"

@@ -21,7 +21,6 @@ package com.utazukin.ichaival
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.preference.PreferenceActivity
 import android.view.View
 import android.widget.TextView
 import androidx.preference.PreferenceManager
@@ -101,8 +100,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     private fun startSettingsActivity() {
         val intent = Intent(this, SettingsActivity::class.java)
-        intent.putExtra(PreferenceActivity.EXTRA_SHOW_FRAGMENT, SettingsActivity.GeneralPreferenceFragment::class.java.name)
-        intent.putExtra(PreferenceActivity.EXTRA_NO_HEADERS, true)
         startActivity(intent)
     }
 

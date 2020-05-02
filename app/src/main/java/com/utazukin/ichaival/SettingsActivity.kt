@@ -31,7 +31,6 @@ import android.text.TextUtils
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.core.app.NavUtils
-import com.mikepenz.aboutlibraries.LibsBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -54,6 +53,8 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
     private val job: Job by lazy { Job() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        intent?.putExtra(EXTRA_SHOW_FRAGMENT, GeneralPreferenceFragment::class.java.name)
+        intent?.putExtra(EXTRA_NO_HEADERS, true)
         super.onCreate(savedInstanceState)
         setupActionBar()
     }
@@ -141,20 +142,13 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
 
             val licensePref = findPreference(getString(R.string.license_key))
             licensePref.setOnPreferenceClickListener {
-                LibsBuilder()
-                    .withLicenseShown(true)
-                    .withAboutIconShown(true)
-                    .withAboutVersionShownName(true)
-                    .withLibraries("flexboxLayout", "glide", "constraintlayout", "photoview")
-                    .start(activity)
+                startWebActivity("file:////android_asset/licenses.html")
                 true
             }
 
             val gplPref = findPreference(getString(R.string.gpl_key))
             gplPref.setOnPreferenceClickListener {
-                val webpage = Uri.parse("https://www.gnu.org/licenses/gpl.txt")
-                val intent = Intent(Intent.ACTION_VIEW, webpage)
-                startActivity(intent)
+                startWebActivity("file:////android_asset/license.txt")
                 true
             }
 
@@ -172,6 +166,13 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
                 Toast.makeText(activity, getString(R.string.clear_cache), Toast.LENGTH_SHORT).show()
                 true
             }
+        }
+
+        private fun startWebActivity(url: String) {
+            val intent = Intent(activity, WebViewActivity::class.java)
+            val bundle = Bundle().apply { putString(WebViewActivity.URL_KEY, url) }
+            intent.putExtras(bundle)
+            startActivity(intent)
         }
 
         override fun onOptionsItemSelected(item: MenuItem): Boolean {
