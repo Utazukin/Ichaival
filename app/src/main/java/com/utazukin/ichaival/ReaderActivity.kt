@@ -383,8 +383,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     if (it.numPages >= 0) {
                         val dialog = PageSelectDialogFragment.createInstance(currentPage + 1, it.numPages, it.id)
                         dialog.listener = { value ->
-                            loadImage(value)
-                            imagePager.setCurrentItem(value, false)
+                            val adjustedPage = getAdjustedPage(value)
+                            loadImage(adjustedPage)
+                            imagePager.setCurrentItem(adjustedPage, false)
                         }
                         dialog.show(supportFragmentManager, "page_picker")
                     }
