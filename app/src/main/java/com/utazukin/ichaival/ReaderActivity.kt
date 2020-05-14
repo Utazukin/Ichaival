@@ -187,8 +187,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
                     //Make sure the archive has been extracted if rtol is set since we need the page count
                     //to get the adjusted page number.
-                    if (rtol && !it.isExtracted)
+                    if (rtol && !it.isExtracted) {
+                        val loadLayout: View = findViewById(R.id.load_layout)
+                        loadLayout.visibility = View.VISIBLE
+                        loadLayout.setOnClickListener { toggle() }
                         withContext(Dispatchers.Default) { it.extract() }
+                        loadLayout.visibility = View.GONE
+                    }
 
                     val adjustedPage = getAdjustedPage(page)
                     loadImage(adjustedPage)
