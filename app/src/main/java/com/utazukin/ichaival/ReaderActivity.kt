@@ -184,6 +184,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     //Use the page from the thumbnail over the bookmark
                     val page = savedPage ?: max(it.currentPage, 0)
                     currentPage = page
+                    supportActionBar?.subtitle = subtitle
+                    setTabbedIcon(ReaderTabHolder.isTabbed(it))
 
                     //Make sure the archive has been extracted if rtol is set since we need the page count
                     //to get the adjusted page number.
@@ -198,9 +200,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     val adjustedPage = getAdjustedPage(page)
                     loadImage(adjustedPage)
                     imagePager.setCurrentItem(adjustedPage, false)
-                    supportActionBar?.subtitle = subtitle
 
-                    setTabbedIcon(ReaderTabHolder.isTabbed(it))
                     for (listener in pageFragments)
                         listener.onArchiveLoad(it)
                 }
