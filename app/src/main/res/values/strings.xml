@@ -168,9 +168,11 @@
     <string name="search_page_key_title">Server Search Paging</string>
     <string name="search_page_desc">Number of items to get at a time from the server.  Should match the server preference for best performance.  (Default: 100)</string>
     <string name="scale_type_menu">Scale Type</string>
-    <string name="scale_type_fit_page">Fit Page</string>
-    <string name="scale_type_fit_height">Fit Height</string>
-    <string name="scale_type_fit_width">Fit Width</string>
+    <string-array name="scale_types">
+        <item>Fit Page</item>
+        <item>Fit Height</item>
+        <item>Fit Width</item>
+    </string-array>
     <string name="fullscreen_timeout_key">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
     <string name="fullscreen_timeout_summary">The amount of time, in seconds, before hiding the buttons.  -1 for never.</string>

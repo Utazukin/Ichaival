@@ -25,18 +25,7 @@
             android:id="@+id/bookmark_archive"
             android:icon="@drawable/ic_bookmark_border_white_24dp"
             app:showAsAction="ifRoom"/>
-    <item
-            android:title="@string/detail_menu_item"
-            app:showAsAction="never"
-            android:id="@+id/detail_menu"/>
 
-    <item
-            android:title="@string/goto_page"
-            app:showAsAction="never"
-            android:id="@+id/goto_menu"/>
-    <item
-        android:id="@+id/scale_menu"
-        android:title="@string/scale_type_menu" />
     <item
             android:id="@+id/random_item"
             android:title="@string/random_archive" />

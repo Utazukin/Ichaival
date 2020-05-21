@@ -56,7 +56,7 @@ private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
 
-class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener {
+class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -153,11 +153,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 currentPage = getAdjustedPage(page)
                 archive?.let {
                     ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)
-                    launch(Dispatchers.Default) {
-                        val markCompletePage = floor(it.numPages * 0.9f).toInt()
-                        if (it.numPages > 0 && currentPage + 1 == markCompletePage)
-                            DatabaseReader.setArchiveNewFlag(it.id, false)
-                    }
+                    val markCompletePage = floor(it.numPages * 0.9f).toInt()
+                    if (it.numPages > 0 && currentPage + 1 == markCompletePage)
+                        launch(Dispatchers.Default) { DatabaseReader.setArchiveNewFlag(it.id, false) }
                 }
 
                 loadImage(page)
@@ -352,11 +350,36 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         ReaderTabHolder.unregisterAddListener(this)
     }
 
-    private fun updateScaleType(newScaleType: ScaleType) {
-        if (newScaleType != currentScaleType) {
-            currentScaleType = newScaleType
+    override fun updateScaleType(type: ScaleType) {
+        if (type != currentScaleType) {
+            currentScaleType = type
             for (listener in pageFragments)
-                listener.onScaleTypeChange(newScaleType)
+                listener.onScaleTypeChange(type)
+        }
+    }
+
+    override fun handleButton(buttonId: Int) {
+        when (buttonId) {
+            R.id.detail_button -> {
+                archive?.let {
+                    setResult(Activity.RESULT_OK)
+                    startDetailsActivity(it.id)
+                    finish()
+                }
+            }
+            R.id.goto_button -> {
+                archive?.let {
+                    if (it.numPages >= 0) {
+                        val dialog = PageSelectDialogFragment.createInstance(currentPage + 1, it.numPages, it.id)
+                        dialog.listener = { value ->
+                            val adjustedPage = getAdjustedPage(value)
+                            loadImage(adjustedPage)
+                            imagePager.setCurrentItem(adjustedPage, false)
+                        }
+                        dialog.show(supportFragmentManager, "page_picker")
+                    }
+                }
+            }
         }
     }
 
@@ -373,27 +396,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         setTabbedIcon(item, false)
                     }
                     return true
-                }
-            }
-            R.id.detail_menu -> {
-                archive?.let {
-                    setResult(Activity.RESULT_OK)
-                    startDetailsActivity(it.id)
-                    finish()
-                    return true
-                }
-            }
-            R.id.goto_menu -> {
-                archive?.let {
-                    if (it.numPages >= 0) {
-                        val dialog = PageSelectDialogFragment.createInstance(currentPage + 1, it.numPages, it.id)
-                        dialog.listener = { value ->
-                            val adjustedPage = getAdjustedPage(value)
-                            loadImage(adjustedPage)
-                            imagePager.setCurrentItem(adjustedPage, false)
-                        }
-                        dialog.show(supportFragmentManager, "page_picker")
-                    }
                 }
             }
             R.id.refresh_item -> {
@@ -414,11 +416,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         finish()
                     }
                 }
-            }
-            R.id.scale_menu -> {
-                val dialog = ScaleTypeDialogFragment.newInstance(currentScaleType)
-                dialog.listener = ::updateScaleType
-                dialog.show(supportFragmentManager, "scale_picker")
             }
         }
         return super.onOptionsItemSelected(item)
@@ -481,6 +478,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             TouchZone.Left -> imagePager.setCurrentItem(imagePager.currentItem - 1, false)
             TouchZone.Right -> imagePager.setCurrentItem(imagePager.currentItem + 1, false)
         }
+    }
+
+    override fun onFragmentLongPress() : Boolean {
+        val settingsFragment = ReaderSettingsDialogFragment.newInstance(currentScaleType)
+        settingsFragment.show(supportFragmentManager, "reader_settings")
+        return true
+    }
+
+    override fun onClose() {
+        hide()
     }
 
     override fun onImageLoadError(fragment: ReaderFragment) {

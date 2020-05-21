@@ -87,6 +87,7 @@ class ReaderFragment : Fragment(), PageFragment {
 
         //Tapping the view will display the toolbar until the image is displayed.
         view.setOnClickListener { listener?.onFragmentTap(TouchZone.Center) }
+        view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
 
         imagePath?.let(::displayImage)
         createViewCalled = true
@@ -113,6 +114,8 @@ class ReaderFragment : Fragment(), PageFragment {
         }
         else if (view is PhotoView)
             view.setOnViewTapListener { _, x, _ -> listener?.onFragmentTap(getTouchZone(x, view)) }
+
+        view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
     }
 
     private fun displayImage(image: String) {
@@ -143,6 +146,7 @@ class ReaderFragment : Fragment(), PageFragment {
                         pageNum.visibility = View.GONE
                         progressBar.visibility = View.GONE
                         view?.setOnClickListener(null)
+                        view?.setOnLongClickListener(null)
                         updateScaleType(it, currentScaleType)
                     })
             }
@@ -186,6 +190,7 @@ class ReaderFragment : Fragment(), PageFragment {
                 if (clearOnReady) {
                     pageNum.visibility = View.GONE
                     view?.setOnClickListener(null)
+                    view?.setOnLongClickListener(null)
                 }
                 progressBar.visibility = View.GONE
                 return false
@@ -297,6 +302,8 @@ class ReaderFragment : Fragment(), PageFragment {
         fun onFragmentTap(zone: TouchZone)
 
         fun onImageLoadError(fragment: ReaderFragment)
+
+        fun onFragmentLongPress() : Boolean
     }
 
     companion object {
