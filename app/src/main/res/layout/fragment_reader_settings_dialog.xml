@@ -29,6 +29,7 @@
         style="@style/Widget.AppCompat.Button.Borderless.Colored"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_info_black_24dp"
         android:text="@string/detail_menu_item" />
 
     <Button
@@ -36,7 +37,24 @@
         style="@style/Widget.AppCompat.Button.Borderless.Colored"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_collections_white_24dp"
         android:text="@string/goto_page" />
+
+    <Button
+        android:id="@+id/random_archive_button"
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_swap_calls_white_24dp"
+        android:text="@string/random_archive" />
+
+    <Button
+        android:id="@+id/refresh_button"
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_refresh_white_24dp"
+        android:text="@string/refresh_menu_item" />
 
     <LinearLayout
         android:layout_width="match_parent"

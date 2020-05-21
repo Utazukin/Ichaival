@@ -380,6 +380,25 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     }
                 }
             }
+            R.id.random_archive_button -> {
+                launch {
+                    val randArchive = DatabaseReader.getRandomArchive()
+                    if (randArchive != null) {
+                        startReaderActivity(randArchive.id)
+                        finish()
+                    }
+                }
+            }
+            R.id.refresh_button -> {
+                archive?.run {
+                    invalidateCache()
+                    launch {
+                        withContext(Dispatchers.Default) { extract() }
+                        loadedPages.clear()
+                        loadImage(currentPage)
+                    }
+                }
+            }
         }
     }
 
@@ -398,25 +417,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     return true
                 }
             }
-            R.id.refresh_item -> {
-                archive?.run {
-                    invalidateCache()
-                    launch {
-                        withContext(Dispatchers.Default) { extract() }
-                        loadedPages.clear()
-                        loadImage(currentPage)
-                    }
-                }
-            }
-            R.id.random_item -> {
-                launch {
-                    val randArchive = DatabaseReader.getRandomArchive()
-                    if (randArchive != null) {
-                        startReaderActivity(randArchive.id)
-                        finish()
-                    }
-                }
-            }
+            R.id.open_settings -> openSettings()
         }
         return super.onOptionsItemSelected(item)
     }
@@ -480,9 +481,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    override fun onFragmentLongPress() : Boolean {
+    private fun openSettings() {
         val settingsFragment = ReaderSettingsDialogFragment.newInstance(currentScaleType)
         settingsFragment.show(supportFragmentManager, "reader_settings")
+    }
+
+    override fun onFragmentLongPress() : Boolean {
+        openSettings()
         return true
     }
 
