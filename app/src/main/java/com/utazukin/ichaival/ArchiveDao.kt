@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -176,8 +176,15 @@ abstract class ArchiveDatabase : RoomDatabase() {
             archiveDao().insertAll(toAdd.map { Archive(archives.getValue(it)) })
 
         val toRemove = allIds.subtract(keys)
-        if (toRemove.isNotEmpty())
-            archiveDao().removeArchives(toRemove.toList())
+        if (toRemove.isNotEmpty()) {
+            //Room has a max variable count of 999.
+            if (toRemove.size < 1000)
+                archiveDao().removeArchives(toRemove.toList())
+            else {
+                for (splitList in toRemove.chunked(999))
+                    archiveDao().removeArchives(splitList)
+            }
+        }
     }
 
     @Transaction
