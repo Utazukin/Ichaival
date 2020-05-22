@@ -45,8 +45,7 @@ import kotlin.coroutines.CoroutineContext
 
 const val TAG_SEARCH = "tag"
 
-abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener,
-    CoroutineScope {
+abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener, CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main + job
     protected lateinit var drawerLayout: DrawerLayout

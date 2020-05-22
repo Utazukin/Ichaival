@@ -215,8 +215,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>(false).init(method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
             else {
-                val pageSize = prefs.castStringPrefToInt(getString(R.string.search_page_key), DEFAULT_PAGE_SIZE)
-                getViewModel<SearchViewModel>(false).init(method, descending, pageSize, isSearch = activity is ArchiveSearch)
+                getViewModel<SearchViewModel>(false).init(method, descending, isSearch = activity is ArchiveSearch)
             }
 
             when {
@@ -435,11 +434,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
             }
         } else {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            val pageSize = prefs.castStringPrefToInt(getString(R.string.search_page_key), 100)
             ViewModelProviders.of(this).get(SearchViewModel::class.java).also {
                 if (init)
-                    it.init(sortMethod, descending, pageSize, force)
+                    it.init(sortMethod, descending, force)
             }
         }
 
