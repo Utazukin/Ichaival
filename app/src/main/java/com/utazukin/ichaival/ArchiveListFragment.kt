@@ -124,7 +124,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 if (checked || searchView.query.isNotBlank()) {
                     searchJob = lifecycleScope.launch {
                         val results = withContext(Dispatchers.Default) {
-                            DatabaseReader.searchServer(searchView.query, checked, sortMethod, descending)
+                            WebHandler.searchServer(searchView.query, checked, sortMethod, descending)
                         }
                         getViewModel<SearchViewModel>().filter(results)
                     }
@@ -144,7 +144,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     searchJob = lifecycleScope.launch {
                         if (query != null) {
                             val results = withContext(Dispatchers.Default) {
-                                DatabaseReader.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
+                                WebHandler.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
                             }
                             getViewModel<SearchViewModel>().filter(results)
                         }
@@ -169,7 +169,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
                         if (query != null) {
                             val results = withContext(Dispatchers.Default) {
-                                DatabaseReader.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
+                                WebHandler.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
                             }
                             getViewModel<SearchViewModel>().filter(results)
                         }
@@ -234,7 +234,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 searchView.query != null -> {
                     searchView.query?. let {
                         val results = withContext(Dispatchers.IO) {
-                            DatabaseReader.searchServer(it, newCheckBox.isChecked, sortMethod, descending)
+                            WebHandler.searchServer(it, newCheckBox.isChecked, sortMethod, descending)
                         }
                         getViewModel<SearchViewModel>().filter(results)
                     }
@@ -415,7 +415,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 searchJob?.cancel()
                 swipeRefreshLayout.isRefreshing = false
                 val searchResult = withContext(Dispatchers.IO) {
-                    DatabaseReader.searchServer(searchView.query, newCheckBox.isChecked, sortMethod, descending)
+                    WebHandler.searchServer(searchView.query, newCheckBox.isChecked, sortMethod, descending)
                 }
                 getViewModel<SearchViewModel>().filter(searchResult)
             }

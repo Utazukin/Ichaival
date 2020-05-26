@@ -19,7 +19,6 @@
 package com.utazukin.ichaival
 
 import android.content.Context
-import android.net.ConnectivityManager
 import android.preference.Preference
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +49,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         if (!this::database.isInitialized) {
             database =
                 Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db").build()
-            WebHandler.connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         }
     }
 
@@ -107,12 +105,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
     }
 
     override fun onPreferenceChange(pref: Preference, newValue: Any) = WebHandler.onPreferenceChange(pref, newValue)
-
-    fun getRawImageUrl(path: String) = WebHandler.getRawImageUrl(path)
-
-    fun generateSuggestionList() = WebHandler.generateSuggestionList()
-
-    fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) = WebHandler.searchServer(search, onlyNew, sortMethod, descending, start, showRefresh)
 
     suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)
 

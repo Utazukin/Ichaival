@@ -138,7 +138,7 @@ class ArchiveListServerSource(results: List<String>?,
 
     private fun loadResults(endIndex: Int) {
         do {
-            val newResults = DatabaseReader.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size, false)
+            val newResults = WebHandler.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size, false)
 
             if (newResults.results != null)
                 totalResults.addAll(newResults.results)

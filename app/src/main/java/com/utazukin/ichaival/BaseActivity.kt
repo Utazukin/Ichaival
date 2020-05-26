@@ -18,7 +18,9 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.ImageView
@@ -65,6 +67,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     override fun onCreate(savedInstanceState: Bundle?) {
         DatabaseReader.init(applicationContext)
+        WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         ReaderTabHolder.initialize(this)
 
         if (WebHandler.serverLocation.isNotEmpty()) {
