@@ -166,6 +166,12 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
                 Toast.makeText(activity, getString(R.string.clear_cache), Toast.LENGTH_SHORT).show()
                 true
             }
+
+            if (ServerManager.minorVersion >= 7 || ServerManager.majorVersion > 0) {
+                val pagePref = findPreference(getString(R.string.search_page_key))
+                val searchCategory = findPreference(getString(R.string.search_header_key)) as PreferenceCategory
+                searchCategory.removePreference(pagePref)
+            }
         }
 
         private fun startWebActivity(url: String) {

@@ -45,7 +45,6 @@ import kotlin.math.floor
 private const val RESULTS_KEY = "search_results"
 private const val RESULTS_SIZE_KEY = "search_size"
 private const val DEFAULT_SEARCH_DELAY = 750L
-private const val DEFAULT_PAGE_SIZE = 100
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private var sortMethod = SortMethod.Alpha
@@ -63,17 +62,16 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private var searchDelay: Long = DEFAULT_SEARCH_DELAY
     private var isLocalSearch: Boolean = false
     private var creatingView = false
+    private var savedState: Bundle? = null
 
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
         lateinit var listAdapter: ArchiveRecyclerViewAdapter
         setHasOptionsMenu(true)
 
+        savedState = savedInstanceState
         creatingView = true
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
@@ -206,7 +204,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
         swipeRefreshLayout.isEnabled = canSwipeRefresh
 
+        return view
+    }
+
+    fun setupArchiveList() {
         lifecycleScope.launch {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val listAdapter = listView.adapter as ArchiveRecyclerViewAdapter
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext().filesDir) }
 
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
@@ -220,9 +224,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             when {
                 isLocalSearch -> getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
-                savedInstanceState != null -> {
-                    savedInstanceState.getStringArray(RESULTS_KEY)?.let {
-                        val totalSize = savedInstanceState.getInt(RESULTS_SIZE_KEY)
+                savedState != null -> {
+                    savedState?.getStringArray(RESULTS_KEY)?.let {
+                        val totalSize = savedState!!.getInt(RESULTS_SIZE_KEY)
                         val result = ServerSearchResult(it.asList(), totalSize, searchView.query, newCheckBox.isChecked)
                         getViewModel<SearchViewModel>().filter(result)
                     }
@@ -243,9 +247,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             })
             updateSortMethod(method, descending, prefs)
 
+            savedState = null
             creatingView = false
         }
-        return view
     }
 
     private fun setupTagSuggestions() {

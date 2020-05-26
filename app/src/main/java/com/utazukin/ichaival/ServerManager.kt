@@ -26,13 +26,20 @@ import java.io.File
 object ServerManager {
     private const val serverInfoFilename = "info.json"
     private var lanraragiVersionString = ""
-    private var majorVersion = 0
-    private var minorVersion = 0
-    private var patchVersion = 0
+    var majorVersion = 0
+        private set
+    var minorVersion = 0
+        private set
+    var patchVersion = 0
+        private set
     var pageSize = 50
         private set
+    private var initialized = false
 
     fun init(context: Context) {
+        if (initialized)
+            return
+
         val infoFile = File(context.filesDir, serverInfoFilename)
         var serverInfo = WebHandler.getServerInfo()
         if (serverInfo == null) {
@@ -46,9 +53,9 @@ object ServerManager {
         if (!lanraragiVersionString.isBlank()) {
             val versionRegex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)")
             versionRegex.matchEntire(lanraragiVersionString)?.let {
-                majorVersion = Integer.parseInt(it.groupValues[0])
-                minorVersion = Integer.parseInt(it.groupValues[1])
-                patchVersion = Integer.parseInt(it.groupValues[2])
+                majorVersion = Integer.parseInt(it.groupValues[1])
+                minorVersion = Integer.parseInt(it.groupValues[2])
+                patchVersion = Integer.parseInt(it.groupValues[3])
             }
         }
 
@@ -59,5 +66,7 @@ object ServerManager {
                 prefManager.castStringPrefToInt(context.getString(R.string.search_page_key), 50)
             }
         }
+
+        initialized = true
     }
 }

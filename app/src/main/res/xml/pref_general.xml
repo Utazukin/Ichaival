@@ -16,8 +16,7 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<PreferenceScreen
-        xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
@@ -76,28 +75,30 @@
             android:summary="@string/fullscreen_timeout_summary"
             android:title="@string/fullscreen_timeout_title" />
     </PreferenceCategory>
-    <PreferenceCategory android:title="@string/search_header">
+    <PreferenceCategory
+        android:title="@string/search_header"
+        android:key="@string/search_header_key">
 
         <SwitchPreference
-                android:defaultValue="false"
-                android:key="@string/local_search_key"
-                android:summary="@string/local_search_sum"
-                android:title="@string/local_search_pref" />
+            android:defaultValue="false"
+            android:key="@string/local_search_key"
+            android:summary="@string/local_search_sum"
+            android:title="@string/local_search_pref" />
         <EditTextPreference
-                android:inputType="number"
-                android:key="@string/search_delay_key"
-                android:selectAllOnFocus="true"
-                android:singleLine="true"
-                android:summary="@string/search_delay_summary"
-                android:title="@string/search_delay_pref" />
+            android:inputType="number"
+            android:key="@string/search_delay_key"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="@string/search_delay_summary"
+            android:title="@string/search_delay_pref" />
         <EditTextPreference
-                android:defaultValue="100"
-                android:inputType="number"
-                android:key="@string/search_page_key"
-                android:selectAllOnFocus="true"
-                android:singleLine="true"
-                android:summary="@string/search_page_desc"
-                android:title="@string/search_page_key_title" />
+            android:defaultValue="100"
+            android:inputType="number"
+            android:key="@string/search_page_key"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="@string/search_page_desc"
+            android:title="@string/search_page_key_title" />
     </PreferenceCategory>
     <PreferenceCategory
             android:title="@string/source_pref_header">

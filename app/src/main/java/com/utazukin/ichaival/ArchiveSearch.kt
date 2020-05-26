@@ -47,6 +47,12 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         }
     }
 
+    override fun onServerInitialized() {
+        super.onServerInitialized()
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        listFragment?.setupArchiveList()
+    }
+
     override fun onTabInteraction(tab: ReaderTab) {
         super.onTabInteraction(tab)
         setResult(Activity.RESULT_OK)

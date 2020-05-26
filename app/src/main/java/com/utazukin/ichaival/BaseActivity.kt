@@ -37,10 +37,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
 const val TAG_SEARCH = "tag"
@@ -69,8 +66,18 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onCreate(savedInstanceState: Bundle?) {
         DatabaseReader.init(applicationContext)
         ReaderTabHolder.initialize(this)
+
+        if (WebHandler.serverLocation.isNotEmpty()) {
+            launch {
+                withContext(Dispatchers.IO) { ServerManager.init(applicationContext) }
+                onServerInitialized()
+            }
+        }
+
         super.onCreate(savedInstanceState)
     }
+
+    protected open fun onServerInitialized() {}
 
     protected open fun onCreateDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)

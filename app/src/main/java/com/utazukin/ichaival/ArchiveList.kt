@@ -91,6 +91,12 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         }
     }
 
+    override fun onServerInitialized() {
+        super.onServerInitialized()
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        listFragment?.setupArchiveList()
+    }
+
     private fun handleSetupText(setup: Boolean) {
         if (setup)
             setupText.setOnClickListener { startSettingsActivity() }
