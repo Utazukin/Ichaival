@@ -284,7 +284,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
             val lastWord = getLastWord(it).trim('"', ' ').trimStart('-')
             if (!lastWord.isBlank()) {
-                for ((i, suggestion) in DatabaseReader.tagSuggestions.withIndex()) {
+                for ((i, suggestion) in WebHandler.tagSuggestions.withIndex()) {
                     if (suggestion.contains(lastWord))
                         cursor.addRow(arrayOf(i, suggestion.displayTag))
                 }

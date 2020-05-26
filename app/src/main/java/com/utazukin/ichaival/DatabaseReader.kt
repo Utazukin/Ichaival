@@ -35,8 +35,6 @@ import java.util.*
 object DatabaseReader : Preference.OnPreferenceChangeListener {
     private const val jsonLocation: String = "archives.json"
 
-    val tagSuggestions
-        get() = WebHandler.tagSuggestions
     private var isDirty = false
     private val archivePageMap = mutableMapOf<String, List<String>>()
     private val extractingArchives = mutableMapOf<String, Mutex>()
@@ -44,17 +42,9 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
 
     lateinit var database: ArchiveDatabase
         private set
-    var listener: DatabaseMessageListener?
-        get() = WebHandler.listener
-        set(value) { WebHandler.listener = value }
-
     var refreshListener: DatabaseRefreshListener?
         get() = WebHandler.refreshListener
         set(value) { WebHandler.refreshListener = value }
-
-    var verboseMessages
-        get() = WebHandler.verboseMessages
-        set(value) { WebHandler.verboseMessages = value }
 
     fun init(context: Context) {
         if (!this::database.isInitialized) {
@@ -77,14 +67,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
             refreshListener?.isRefreshing(false)
             isDirty = false
         }
-    }
-
-    fun updateServerLocation(location: String) {
-        WebHandler.serverLocation = location
-    }
-
-    fun updateApiKey(key: String) {
-        WebHandler.apiKey = key
     }
 
     fun setDatabaseDirty() {

@@ -113,12 +113,12 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     override fun onStart() {
         super.onStart()
-        DatabaseReader.listener = this
+        WebHandler.listener = this
     }
 
     override fun onPause() {
         super.onPause()
-        DatabaseReader.listener = null
+        WebHandler.listener = null
     }
 
     override fun onStop() {
@@ -134,8 +134,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        DatabaseReader.updateServerLocation(prefs.getString(getString(R.string.server_address_preference), "")!!)
-        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "")!!)
+        WebHandler.serverLocation = prefs.getString(getString(R.string.server_address_preference), "")!!
+        WebHandler.apiKey = prefs.getString(getString(R.string.api_key_pref), "")!!
     }
 
     override fun onError(error: String) {

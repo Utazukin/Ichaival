@@ -41,7 +41,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         prefs.registerOnSharedPreferenceChangeListener(this)
 
         val serverSetting = prefs.getString(getString(R.string.server_address_preference), "") as String
-        DatabaseReader.updateServerLocation(serverSetting)
+        WebHandler.serverLocation = serverSetting
         updatePreferences(prefs)
 
         super.onCreate(savedInstanceState)
@@ -53,8 +53,8 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     }
 
     private fun updatePreferences(prefs: SharedPreferences) {
-        DatabaseReader.updateApiKey(prefs.getString(getString(R.string.api_key_pref), "") as String)
-        DatabaseReader.verboseMessages = prefs.getBoolean(getString(R.string.verbose_pref), false)
+        WebHandler.apiKey = prefs.getString(getString(R.string.api_key_pref), "") as String
+        WebHandler.verboseMessages = prefs.getBoolean(getString(R.string.verbose_pref), false)
     }
 
     override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String) {
@@ -63,17 +63,17 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 val location = pref.getString(key, "") as String
                 val listFragment: ArchiveListFragment? =
                     supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
-                DatabaseReader.updateServerLocation(location)
+                WebHandler.serverLocation = location
                 handleSetupText(location.isEmpty())
                 listFragment?.forceArchiveListUpdate()
             }
             getString(R.string.api_key_pref) -> {
-                DatabaseReader.updateApiKey(pref.getString(key, "") as String)
+                WebHandler.apiKey = pref.getString(key, "") as String
                 val listFragment: ArchiveListFragment? =
                     supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
                 listFragment?.forceArchiveListUpdate()
             }
-            getString(R.string.verbose_pref) -> DatabaseReader.verboseMessages = pref.getBoolean(key, false)
+            getString(R.string.verbose_pref) -> WebHandler.verboseMessages = pref.getBoolean(key, false)
         }
     }
 

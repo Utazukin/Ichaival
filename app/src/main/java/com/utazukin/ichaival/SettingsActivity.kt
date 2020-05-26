@@ -79,12 +79,12 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
 
     override fun onStart() {
         super.onStart()
-        DatabaseReader.listener = this
+        WebHandler.listener = this
     }
 
     override fun onPause() {
         super.onPause()
-        DatabaseReader.listener = null
+        WebHandler.listener = null
     }
 
     override fun onDestroy() {

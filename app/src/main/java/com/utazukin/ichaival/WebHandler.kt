@@ -72,6 +72,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect())
             return null
 
+        refreshListener?.isRefreshing(true)
         val url = "$serverLocation$infoPath"
         val connection = createServerConnection(url)
         try {
@@ -100,6 +101,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return null
         } finally {
             connection.disconnect()
+            refreshListener?.isRefreshing(false)
         }
     }
 
