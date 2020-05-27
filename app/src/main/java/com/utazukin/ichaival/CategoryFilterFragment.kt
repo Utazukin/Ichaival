@@ -28,7 +28,6 @@ import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.Fragment
 
 class CategoryFilterFragment : Fragment() {
-    private lateinit var parentView: ViewGroup
     private lateinit var categoryGroup: RadioGroup
     private lateinit var currentCategories: List<ArchiveCategory>
     private var listener: CategoryListener? = null
@@ -41,12 +40,12 @@ class CategoryFilterFragment : Fragment() {
         }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        parentView = inflater.inflate(R.layout.fragment_category_filter, container, false) as ViewGroup
-        return parentView
+        val view = inflater.inflate(R.layout.fragment_category_filter, container, false)
+        categoryGroup = view.findViewById(R.id.category_button_group)
+        return view
     }
 
     fun initCategories(categories: List<ArchiveCategory>) {
-        categoryGroup = RadioGroup(context)
         currentCategories = categories
 
         categoryButtons.clear()
@@ -62,8 +61,6 @@ class CategoryFilterFragment : Fragment() {
             if (i >= 0 && categoryButtons[i].isChecked) //Check if really checked due to a bug in clearCheck().
                 listener?.onCategoryChanged(currentCategories[i])
         }
-
-        parentView.addView(categoryGroup)
     }
 
     fun clearCategory() = categoryGroup.clearCheck()
