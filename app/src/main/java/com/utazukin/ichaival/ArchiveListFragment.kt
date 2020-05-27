@@ -158,6 +158,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 if (creatingView)
                     return true
 
+                val categoryFragment: CategoryFilterFragment? = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+                categoryFragment?.selectedCategory?.let {
+                    if (it is StaticCategory || (it is DynamicCategory && it.search != query))
+                        categoryFragment.clearCategory()
+                }
+
                 if (isLocalSearch)
                     getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
                 else {
@@ -252,6 +258,19 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
     }
 
+    fun handleCategoryChange(category: ArchiveCategory) {
+        if (category is DynamicCategory) {
+            searchView.setQuery(category.search, true)
+            searchView.clearFocus()
+        }
+        else if (category is StaticCategory) {
+            searchView.setQuery("", false)
+            searchView.clearFocus()
+            val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, onlyNew = newCheckBox.isChecked)
+            getViewModel<SearchViewModel>().filter(result)
+        }
+    }
+
     private fun setupTagSuggestions() {
         val from = arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1)
         val to = intArrayOf(R.id.search_suggestion)
@@ -284,7 +303,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
             val lastWord = getLastWord(it).trim('"', ' ').trimStart('-')
             if (!lastWord.isBlank()) {
-                for ((i, suggestion) in WebHandler.tagSuggestions.withIndex()) {
+                for ((i, suggestion) in ServerManager.tagSuggestions.withIndex()) {
                     if (suggestion.contains(lastWord))
                         cursor.addRow(arrayOf(i, suggestion.displayTag))
                 }

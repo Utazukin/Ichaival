@@ -62,7 +62,7 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
     override fun onStart() {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
-        launch(Dispatchers.IO) { WebHandler.generateSuggestionList() }
+        launch(Dispatchers.IO) { ServerManager.generateTagSuggestions() }
     }
 
     override fun onStop() {

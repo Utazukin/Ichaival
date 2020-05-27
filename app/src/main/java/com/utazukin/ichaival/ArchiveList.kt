@@ -22,13 +22,15 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import androidx.preference.PreferenceManager
+import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener {
+class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, CategoryListener {
     private lateinit var setupText: TextView
 
     override fun onListFragmentInteraction(archive: Archive?) {
@@ -95,6 +97,21 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         super.onServerInitialized()
         val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
         listFragment?.setupArchiveList()
+
+        val categories = ServerManager.categories
+        if (categories == null) {
+            val filterSheet: NavigationView = findViewById(R.id.category_filter_view)
+            val parent = filterSheet.parent as ViewGroup
+            parent.removeView(filterSheet)
+        } else {
+            val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+            categoryFragment?.initCategories(categories)
+        }
+    }
+
+    override fun onCategoryChanged(category: ArchiveCategory) {
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        listFragment?.handleCategoryChange(category)
     }
 
     private fun handleSetupText(setup: Boolean) {
@@ -112,7 +129,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onStart() {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
-        launch(Dispatchers.IO) { WebHandler.generateSuggestionList() }
+        launch(Dispatchers.IO) { ServerManager.generateTagSuggestions() }
     }
 
     override fun onStop() {

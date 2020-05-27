@@ -70,14 +70,15 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         ReaderTabHolder.initialize(this)
 
+        super.onCreate(savedInstanceState)
+
         if (WebHandler.serverLocation.isNotEmpty()) {
             launch {
-                withContext(Dispatchers.IO) { ServerManager.init(applicationContext) }
+                withContext(Dispatchers.IO) { ServerManager.init(applicationContext, savedInstanceState != null) }
                 onServerInitialized()
             }
         }
 
-        super.onCreate(savedInstanceState)
     }
 
     protected open fun onServerInitialized() {}

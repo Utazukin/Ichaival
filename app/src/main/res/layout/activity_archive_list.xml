@@ -53,7 +53,7 @@
                 android:textAlignment="center"
                 android:textSize="24sp" />
 
-        <fragment
+        <androidx.fragment.app.FragmentContainerView
                 android:id="@+id/list_fragment"
                 android:name="com.utazukin.ichaival.ArchiveListFragment"
                 android:layout_width="match_parent"
@@ -62,24 +62,38 @@
     </LinearLayout>
 
     <com.google.android.material.navigation.NavigationView
-            android:id="@+id/nav_view"
+        android:id="@+id/category_filter_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:fitsSystemWindows="false">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/category_fragment"
+            android:name="com.utazukin.ichaival.CategoryFilterFragment"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_gravity="start"
-            android:background="?colorPrimary"
-            android:fitsSystemWindows="false"
-            app:menu="@menu/drawer_menu">
+            android:layout_height="match_parent" />
+    </com.google.android.material.navigation.NavigationView>
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="?colorPrimary"
+        android:fitsSystemWindows="false"
+        app:menu="@menu/drawer_menu">
 
         <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="?attr/actionBarSize"
-                android:orientation="vertical">
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="?attr/actionBarSize"
+            android:orientation="vertical">
 
             <include
-                    layout="@layout/reader_tab_layout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                layout="@layout/reader_tab_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
     </com.google.android.material.navigation.NavigationView>

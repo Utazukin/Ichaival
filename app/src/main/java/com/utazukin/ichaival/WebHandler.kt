@@ -55,6 +55,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val clearNewPath = "$apiPath/clear_new"
     private const val searchPath = "$apiPath/search"
     private const val infoPath = "$apiPath/info"
+    private const val categoryPath = "$apiPath/categories"
     private const val timeout = 5000 //ms
 
     var serverLocation: String = ""
@@ -65,8 +66,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     var listener: DatabaseMessageListener? = null
     var refreshListener: DatabaseRefreshListener? = null
     var connectivityManager: ConnectivityManager? = null
-    var tagSuggestions : Array<TagSuggestion> = arrayOf()
-        private set
 
     fun getServerInfo() : JSONObject? {
         if (!canConnect())
@@ -105,16 +104,16 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun generateSuggestionList() {
-        if (tagSuggestions.isNotEmpty() || !canConnect(true))
-            return
+    fun generateSuggestionList() : Array<TagSuggestion>? {
+        if (!canConnect(true))
+            return null
 
         val url = "${serverLocation}${tagsPath}${getApiKey(false)}"
         val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK)
-                    return
+                    return null
 
                 BufferedReader(InputStreamReader(inputStream)).use {
                     val response = StringBuffer()
@@ -124,18 +123,50 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                         response.append(inputLine)
                         inputLine = it.readLine()
                     }
-                    val tagJsonArray = parseJsonArray(response.toString())
-                    if (tagJsonArray != null) {
-                        tagSuggestions = Array(tagJsonArray.length()) { i ->
-                            val item = tagJsonArray.getJSONObject(i)
-                            TagSuggestion(item.getString("text"), item.getString("namespace"), item.getInt("weight"))
-                        }
-                        tagSuggestions.sortByDescending { tag -> tag.weight }
+                    val tagJsonArray = parseJsonArray(response.toString()) ?: return null
+                    val tagSuggestions = Array(tagJsonArray.length()) { i ->
+                        val item = tagJsonArray.getJSONObject(i)
+                        TagSuggestion(item.getString("text"), item.getString("namespace"), item.getInt("weight"))
                     }
+                    tagSuggestions.sortByDescending { tag -> tag.weight }
+                    return tagSuggestions
                 }
             }
         }
-        catch(e: Exception) { }
+        catch(e: Exception) {
+            return null
+        }
+        finally {
+            connection.disconnect()
+        }
+    }
+
+    fun getCategories() : JSONArray? {
+        if (!canConnect(true))
+            return null
+
+        val url = "$serverLocation$categoryPath${getApiKey(false)}"
+        val connection = createServerConnection(url)
+        try {
+            with(connection) {
+                if (responseCode != HttpURLConnection.HTTP_OK)
+                    return null
+
+                BufferedReader(InputStreamReader(inputStream)).use {
+                    val response = StringBuffer()
+
+                    var inputLine = it.readLine()
+                    while (inputLine != null) {
+                        response.append(inputLine)
+                        inputLine = it.readLine()
+                    }
+                    return parseJsonArray(response.toString())
+                }
+            }
+        }
+        catch (e: java.lang.Exception) {
+            return null
+        }
         finally {
             connection.disconnect()
         }

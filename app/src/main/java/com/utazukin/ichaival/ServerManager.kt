@@ -20,12 +20,21 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import androidx.preference.PreferenceManager
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
+interface ArchiveCategory {
+    val name: String
+    val id: String
+}
+
+class DynamicCategory(override val name: String, override val id: String, val search: String) : ArchiveCategory
+class StaticCategory(override val name: String, override val id: String, val archiveIds: List<String>) : ArchiveCategory
+
 object ServerManager {
     private const val serverInfoFilename = "info.json"
-    private var lanraragiVersionString = ""
+    private const val categoriesFilename = "categories.json"
     var majorVersion = 0
         private set
     var minorVersion = 0
@@ -34,23 +43,35 @@ object ServerManager {
         private set
     var pageSize = 50
         private set
+    var tagSuggestions: Array<TagSuggestion> = arrayOf()
+        private set
+    var categories: List<ArchiveCategory>? = null
+        private set
     private var initialized = false
 
-    fun init(context: Context) {
+    fun init(context: Context, useCachedInfo: Boolean) {
         if (initialized)
             return
 
         val infoFile = File(context.filesDir, serverInfoFilename)
-        var serverInfo = WebHandler.getServerInfo()
-        if (serverInfo == null) {
-            if (infoFile.exists())
-                serverInfo = JSONObject(infoFile.readText())
-        }
+        val serverInfo = if (!useCachedInfo) {
+            val info = WebHandler.getServerInfo()
+            if (info == null) {
+                if (infoFile.exists())
+                    JSONObject(infoFile.readText())
+                else
+                    null
+            } else {
+                infoFile.writeText(info.toString())
+                info
+            }
+        } else if (infoFile.exists())
+            JSONObject(infoFile.readText())
         else
-            infoFile.writeText(serverInfo.toString())
+            null
 
-        lanraragiVersionString = serverInfo?.getString("version") ?: ""
-        if (!lanraragiVersionString.isBlank()) {
+        val lanraragiVersionString = serverInfo?.getString("version") ?: ""
+        if (lanraragiVersionString.isNotBlank()) {
             val versionRegex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)")
             versionRegex.matchEntire(lanraragiVersionString)?.let {
                 majorVersion = Integer.parseInt(it.groupValues[1])
@@ -60,13 +81,46 @@ object ServerManager {
         }
 
         pageSize = when {
-            majorVersion > 0 || minorVersion >= 7 -> serverInfo!!.getInt("archives_per_page")
+            majorVersion > 0 || minorVersion >= 7 -> {
+                serverInfo!!.getInt("archives_per_page")
+            }
             else -> {
                 val prefManager = PreferenceManager.getDefaultSharedPreferences(context)
                 prefManager.castStringPrefToInt(context.getString(R.string.search_page_key), 50)
             }
         }
 
+        if (majorVersion > 0 || minorVersion >= 7)
+            categories = parseCategories(context.filesDir)
+
         initialized = true
+    }
+
+    fun generateTagSuggestions() {
+        if (tagSuggestions.isEmpty())
+            WebHandler.generateSuggestionList()?.let { tagSuggestions = it }
+    }
+
+    private fun parseCategories(fileDir: File) : List<ArchiveCategory>? {
+        val categoriesFile = File(fileDir, categoriesFilename)
+        var jsonCategories: JSONArray? = WebHandler.getCategories()
+        when {
+            jsonCategories != null -> categoriesFile.writeText(jsonCategories.toString())
+            categoriesFile.exists() -> jsonCategories = JSONArray(categoriesFile.readText())
+            else -> return null
+        }
+
+        return MutableList(jsonCategories.length()) { i ->
+            val category = jsonCategories.getJSONObject(i)
+            val search = category.getString("search")
+            val name = category.getString("name")
+            val id = category.getString("id")
+            if (search.isNotBlank())
+                DynamicCategory(name, id, category.getString("search"))
+            else {
+                val archives = category.getJSONArray("archives")
+                StaticCategory(name, id, MutableList(archives.length()) { k -> archives.getString(k) } )
+            }
+        }
     }
 }
