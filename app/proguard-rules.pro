@@ -32,3 +32,5 @@
 -keepclasseswithmembers class **.R$* {
     public static final int define_*;
 }
+
+-keepnames class com.utazukin.ichaival.** extends androidx.fragment.app.Fragment {}
