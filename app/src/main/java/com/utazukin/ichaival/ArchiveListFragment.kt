@@ -274,8 +274,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         else if (category is StaticCategory) {
             searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
             searchView.clearFocus()
-            val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, STATIC_CATEGORY_SEARCH, newCheckBox.isChecked)
-            getViewModel<SearchViewModel>().filter(result)
+
+            if (isLocalSearch)
+                getViewModel<ArchiveViewModel>().filter(category.archiveIds)
+            else {
+                val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, STATIC_CATEGORY_SEARCH, newCheckBox.isChecked)
+                getViewModel<SearchViewModel>().filter(result)
+            }
         }
     }
 

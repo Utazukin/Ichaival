@@ -105,6 +105,8 @@ class ArchiveViewModel : SearchViewModelBase() {
         }
     }
 
+    fun filter(ids: List<String>) = archiveDataFactory.updateSearchResults(ids)
+
     private fun getArchives() : List<Archive> {
         return when (sortMethod) {
             SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending() else archiveDao.getTitleAscending()
