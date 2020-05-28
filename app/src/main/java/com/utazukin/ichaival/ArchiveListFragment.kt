@@ -160,6 +160,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
                 val categoryFragment: CategoryFilterFragment? = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
                 categoryFragment?.selectedCategory?.let {
+                    if (it is StaticCategory && query.isNullOrEmpty())
+                        return true
                     if (it is StaticCategory || (it is DynamicCategory && it.search != query))
                         categoryFragment.clearCategory()
                 }
@@ -266,7 +268,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         else if (category is StaticCategory) {
             searchView.setQuery("", false)
             searchView.clearFocus()
-            val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, onlyNew = newCheckBox.isChecked)
+            val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, "\b", newCheckBox.isChecked)
             getViewModel<SearchViewModel>().filter(result)
         }
     }
