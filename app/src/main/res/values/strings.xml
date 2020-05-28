@@ -179,4 +179,5 @@
     <string name="search_header_key">search_header_key</string>
     <string name="category_label">Categories</string>
     <string name="category_menu">Categories</string>
+    <string name="clear_category_button">Clear Category</string>
 </resources>

@@ -45,6 +45,7 @@ import kotlin.math.floor
 private const val RESULTS_KEY = "search_results"
 private const val RESULTS_SIZE_KEY = "search_size"
 private const val DEFAULT_SEARCH_DELAY = 750L
+private const val STATIC_CATEGORY_SEARCH = "\b"
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private var sortMethod = SortMethod.Alpha
@@ -160,10 +161,15 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
                 val categoryFragment: CategoryFilterFragment? = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
                 categoryFragment?.selectedCategory?.let {
-                    if (it is StaticCategory && query.isNullOrEmpty())
+                    if (it is StaticCategory && query == STATIC_CATEGORY_SEARCH)
                         return true
                     if (it is StaticCategory || (it is DynamicCategory && it.search != query))
                         categoryFragment.clearCategory()
+                }
+
+                if (query?.startsWith(STATIC_CATEGORY_SEARCH) == true) {
+                    searchView.setQuery(query.removePrefix(STATIC_CATEGORY_SEARCH), false)
+                    return false
                 }
 
                 if (isLocalSearch)
@@ -266,9 +272,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             searchView.clearFocus()
         }
         else if (category is StaticCategory) {
-            searchView.setQuery("", false)
+            searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
             searchView.clearFocus()
-            val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, "\b", newCheckBox.isChecked)
+            val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, STATIC_CATEGORY_SEARCH, newCheckBox.isChecked)
             getViewModel<SearchViewModel>().filter(result)
         }
     }
