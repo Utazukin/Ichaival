@@ -178,4 +178,5 @@
     <string name="fullscreen_timeout_summary">The amount of time, in seconds, before hiding the buttons.  -1 for never.</string>
     <string name="search_header_key">search_header_key</string>
     <string name="category_label">Categories</string>
+    <string name="category_menu">Categories</string>
 </resources>

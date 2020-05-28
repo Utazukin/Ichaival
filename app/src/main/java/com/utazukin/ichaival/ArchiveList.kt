@@ -21,6 +21,8 @@ package com.utazukin.ichaival
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -32,6 +34,8 @@ import kotlinx.coroutines.launch
 
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, CategoryListener {
     private lateinit var setupText: TextView
+    private lateinit var categoryView: NavigationView
+    private var menu: Menu? = null
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
@@ -52,6 +56,11 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
         setupText = findViewById(R.id.first_time_text)
         handleSetupText(serverSetting.isEmpty())
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        this.menu = menu
+        return super.onCreateOptionsMenu(menu)
     }
 
     private fun updatePreferences(prefs: SharedPreferences) {
@@ -81,6 +90,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun onCreateDrawer() {
         super.onCreateDrawer()
+        categoryView = drawerLayout.findViewById(R.id.category_filter_view)
         navView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_settings -> {
@@ -90,6 +100,16 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 }
                 else -> false
             }
+        }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.category_menu -> {
+                drawerLayout.openDrawer(categoryView)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
@@ -106,6 +126,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         } else {
             val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
             categoryFragment?.initCategories(categories)
+            menu?.findItem(R.id.category_menu)?.isVisible = true
         }
     }
 
