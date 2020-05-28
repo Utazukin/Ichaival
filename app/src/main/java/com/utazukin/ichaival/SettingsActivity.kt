@@ -246,7 +246,7 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
         }
 
         private val bindAndNotifyPreferenceListener = Preference.OnPreferenceChangeListener { pref, value ->
-            if (DatabaseReader.onPreferenceChange(pref, value))
+            if (WebHandler.onPreferenceChange(pref, value))
                 sBindPreferenceSummaryToValueListener.onPreferenceChange(pref, value)
             else
             false

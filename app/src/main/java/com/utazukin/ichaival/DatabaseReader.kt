@@ -19,7 +19,6 @@
 package com.utazukin.ichaival
 
 import android.content.Context
-import android.preference.Preference
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -31,7 +30,7 @@ import org.json.JSONArray
 import java.io.File
 import java.util.*
 
-object DatabaseReader : Preference.OnPreferenceChangeListener {
+object DatabaseReader {
     private const val jsonLocation: String = "archives.json"
 
     private var isDirty = false
@@ -103,8 +102,6 @@ object DatabaseReader : Preference.OnPreferenceChangeListener {
         val dayInMill = 1000 * 60 * 60 * 24L
         return isDirty || !jsonCache.exists() || Calendar.getInstance().timeInMillis - jsonCache.lastModified() >  dayInMill
     }
-
-    override fun onPreferenceChange(pref: Preference, newValue: Any) = WebHandler.onPreferenceChange(pref, newValue)
 
     suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
