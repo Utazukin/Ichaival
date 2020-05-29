@@ -109,6 +109,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         val appBar: Toolbar = findViewById(R.id.reader_toolbar)
         setSupportActionBar(appBar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
         supportActionBar?.title = ""
         currentScaleType = ScaleType.fromInt(savedInstanceState?.getInt(SCALE_TYPE, 0) ?: 0)!!
 
@@ -418,6 +419,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 }
             }
             R.id.open_settings -> openSettings()
+            android.R.id.home -> {
+                onBackPressed()
+                return true
+            }
         }
         return super.onOptionsItemSelected(item)
     }

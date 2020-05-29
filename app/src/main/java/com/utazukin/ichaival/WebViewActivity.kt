@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 import android.os.Bundle
+import android.view.MenuItem
 import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
 
@@ -31,6 +32,16 @@ class WebViewActivity : AppCompatActivity() {
         webView.loadUrl(url)
         setContentView(webView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when(item.itemId) {
+            android.R.id.home -> {
+                onBackPressed()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     companion object {
