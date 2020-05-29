@@ -27,10 +27,17 @@ import java.io.File
 interface ArchiveCategory {
     val name: String
     val id: String
+    val pinned: Boolean
 }
 
-class DynamicCategory(override val name: String, override val id: String, val search: String) : ArchiveCategory
-class StaticCategory(override val name: String, override val id: String, val archiveIds: List<String>) : ArchiveCategory
+class DynamicCategory(override val name: String,
+                      override val id: String,
+                      override val pinned: Boolean,
+                      val search: String) : ArchiveCategory
+class StaticCategory(override val name: String,
+                     override val id: String,
+                     override val pinned: Boolean,
+                     val archiveIds: List<String>) : ArchiveCategory
 
 object ServerManager {
     private const val serverInfoFilename = "info.json"
@@ -110,17 +117,21 @@ object ServerManager {
             else -> return null
         }
 
-        return MutableList(jsonCategories.length()) { i ->
+        val list =  MutableList(jsonCategories.length()) { i ->
             val category = jsonCategories.getJSONObject(i)
             val search = category.getString("search")
             val name = category.getString("name")
             val id = category.getString("id")
+            val pinned = category.getInt("pinned") == 1
             if (search.isNotBlank())
-                DynamicCategory(name, id, category.getString("search"))
+                DynamicCategory(name, id, pinned, category.getString("search"))
             else {
                 val archives = category.getJSONArray("archives")
-                StaticCategory(name, id, MutableList(archives.length()) { k -> archives.getString(k) } )
+                StaticCategory(name, id, pinned, MutableList(archives.length()) { k -> archives.getString(k) } )
             }
         }
+        list.sortBy { it.pinned }
+
+        return list
     }
 }
