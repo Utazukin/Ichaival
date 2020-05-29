@@ -57,25 +57,32 @@ class PageSelectDialogFragment : DialogFragment() {
             arcId = it.getString(ID_PARAM)
         }
 
-        coroutineScope?.launch {
-            val archive = arcId?.let { DatabaseReader.getArchive(it) }
-            pageSelector.setOnValueChangedListener { _, _, newValue ->
-                previewJob?.cancel()
-                previewJob = coroutineScope?.launch {
-                    delay(400)
-                    val imageUrl = archive?.getPageImage(newValue - 1)
-                    Glide.with(requireContext())
-                        .load(imageUrl)
-                        .apply(requestOptions)
-                        .into(preview)
-                }
-            }
+        val metrics = resources.displayMetrics
+        val dpHeight = metrics.heightPixels / metrics.density
 
-            Glide.with(requireContext())
-                .load(archive?.getPageImage(pageSelector.value - 1))
-                .apply(requestOptions)
-                .into(preview)
+        if (dpHeight >= 500) {
+            coroutineScope?.launch {
+                val archive = arcId?.let { DatabaseReader.getArchive(it) }
+                pageSelector.setOnValueChangedListener { _, _, newValue ->
+                    previewJob?.cancel()
+                    previewJob = coroutineScope?.launch {
+                        delay(400)
+                        val imageUrl = archive?.getPageImage(newValue - 1)
+                        Glide.with(requireContext())
+                            .load(imageUrl)
+                            .apply(requestOptions)
+                            .into(preview)
+                    }
+                }
+
+                Glide.with(requireContext())
+                    .load(archive?.getPageImage(pageSelector.value - 1))
+                    .apply(requestOptions)
+                    .into(preview)
+            }
         }
+        else
+            preview.visibility = View.GONE
 
         okButton.setOnClickListener{ listener?.invoke(pageSelector.value - 1); dismiss() }
         cancelButton.setOnClickListener{ dismiss() }
