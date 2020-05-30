@@ -58,6 +58,7 @@ class ArchiveListDataFactory(private val localSearch: Boolean) : DataSource.Fact
         if (sortMethod != method || descending != desc || force) {
             sortMethod = method
             descending = desc
+            results = null
             archiveLiveData.value?.invalidate()
         }
     }
