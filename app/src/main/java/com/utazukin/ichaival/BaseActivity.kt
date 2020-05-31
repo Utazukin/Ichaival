@@ -152,6 +152,10 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         launch { Toast.makeText(context, "Extracting...", Toast.LENGTH_LONG).show() }
     }
 
+    override fun onInfo(message: String) {
+        launch { Toast.makeText(this@BaseActivity, message, Toast.LENGTH_SHORT).show() }
+    }
+
     override fun onTabAdded(id: String) {
         drawerLayout.openDrawer(navView, true)
     }

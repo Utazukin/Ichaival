@@ -56,6 +56,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val searchPath = "$apiPath/search"
     private const val infoPath = "$apiPath/info"
     private const val categoryPath = "$apiPath/categories"
+    private const val clearTempPath = "$apiPath/tempfolder"
     private const val timeout = 5000 //ms
 
     var serverLocation: String = ""
@@ -104,7 +105,26 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun generateSuggestionList() : Array<TagSuggestion>? {
+    fun clearTempFolder() {
+        if (!canConnect())
+            return
+
+        val url = "$serverLocation$clearTempPath"
+        val connection = createServerConnection(url)
+        try {
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK)
+                notify("Temp folder cleared")
+            else
+                handleErrorMessage(responseCode, "Failed to clear temp folder.")
+        } catch (e: Exception) {
+            handleErrorMessage(e, "Failed to clear temp folder.")
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    fun generateSuggestionList() : JSONArray? {
         if (!canConnect(true))
             return null
 
@@ -123,13 +143,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                         response.append(inputLine)
                         inputLine = it.readLine()
                     }
-                    val tagJsonArray = parseJsonArray(response.toString()) ?: return null
-                    val tagSuggestions = Array(tagJsonArray.length()) { i ->
-                        val item = tagJsonArray.getJSONObject(i)
-                        TagSuggestion(item.getString("text"), item.getString("namespace"), item.getInt("weight"))
-                    }
-                    tagSuggestions.sortByDescending { tag -> tag.weight }
-                    return tagSuggestions
+                    return parseJsonArray(response.toString())
                 }
             }
         }
@@ -431,6 +445,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private fun notifyError(error: String) {
         listener?.onError(error)
     }
+
+    private fun notify(message: String) = listener?.onInfo(message)
 
     override fun onPreferenceChange(pref: Preference, newValue: Any?): Boolean {
         if ((newValue as String).isEmpty())

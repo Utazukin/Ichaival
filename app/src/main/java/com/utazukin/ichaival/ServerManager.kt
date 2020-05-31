@@ -104,8 +104,19 @@ object ServerManager {
     }
 
     fun generateTagSuggestions() {
-        if (tagSuggestions.isEmpty())
-            WebHandler.generateSuggestionList()?.let { tagSuggestions = it }
+        if (tagSuggestions.isEmpty()) {
+            WebHandler.generateSuggestionList()?.let {
+                tagSuggestions = Array(it.length()) { i ->
+                    val item = it.getJSONObject(i)
+                    TagSuggestion(
+                        item.getString("text"),
+                        item.getString("namespace"),
+                        item.getInt("weight")
+                    )
+                }
+                tagSuggestions.sortByDescending { tag -> tag.weight }
+            }
+        }
     }
 
     private fun parseCategories(fileDir: File) : List<ArchiveCategory>? {

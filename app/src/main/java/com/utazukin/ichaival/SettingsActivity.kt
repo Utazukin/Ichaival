@@ -97,6 +97,10 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
         launch { Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show() }
     }
 
+    override fun onInfo(message: String) {
+        launch { Toast.makeText(this@SettingsActivity, message, Toast.LENGTH_SHORT).show() }
+    }
+
     override fun onExtract(title: String) {}
 
     /**
@@ -167,10 +171,20 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
                 true
             }
 
+            val tempPref = findPreference(getString(R.string.temp_folder_pref))
             if (ServerManager.minorVersion >= 7 || ServerManager.majorVersion > 0) {
                 val pagePref = findPreference(getString(R.string.search_page_key))
                 val searchCategory = findPreference(getString(R.string.search_header_key)) as PreferenceCategory
                 searchCategory.removePreference(pagePref)
+
+                tempPref.setOnPreferenceClickListener {
+                    (activity as CoroutineScope).launch(Dispatchers.IO) { WebHandler.clearTempFolder() }
+                    true
+                }
+            }
+            else {
+                val serverCategory = findPreference(getString(R.string.server_pref_header)) as PreferenceCategory
+                serverCategory.removePreference(tempPref)
             }
         }
 
