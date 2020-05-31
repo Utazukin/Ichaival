@@ -43,6 +43,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     private var pageCount = -1
     private lateinit var pager: ViewPager
     private lateinit var toolbar: androidx.appcompat.widget.Toolbar
+    private var menu: Menu? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,6 +61,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.archive_details_menu, menu)
+        this.menu = menu
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -73,6 +75,14 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                     }
                 }
             }
+            R.id.mark_read_item -> {
+                archiveId?.let {
+                    launch {
+                        withContext(Dispatchers.IO) { WebHandler.setArchiveNewFlag(it, true) }
+                        item.isVisible = false
+                    }
+                }
+            }
         }
         return super.onOptionsItemSelected(item)
     }
@@ -80,7 +90,10 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     suspend fun extractArchive(id: String) {
         val archive = withContext(Dispatchers.Default) {
             val a = DatabaseReader.getArchive(id)
-            a?.extract()
+            a?.run {
+                extract()
+                menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
+            }
             a
         }
 
