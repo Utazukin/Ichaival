@@ -183,7 +183,7 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
                 }
             }
             else {
-                val serverCategory = findPreference(getString(R.string.server_pref_header)) as PreferenceCategory
+                val serverCategory = findPreference(getString(R.string.server_header_key)) as PreferenceCategory
                 serverCategory.removePreference(tempPref)
             }
         }

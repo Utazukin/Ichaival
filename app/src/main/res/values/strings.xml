@@ -185,4 +185,5 @@
     <string name="temp_folder_pref_title">Clear Temp Folder</string>
     <string name="server_pref_header">Server</string>
     <string name="mark_read_item">Mark Read</string>
+    <string name="server_header_key">server_header_key</string>
 </resources>

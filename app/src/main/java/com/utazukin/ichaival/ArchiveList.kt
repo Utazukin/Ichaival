@@ -24,13 +24,13 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import android.widget.TextView
 import androidx.preference.PreferenceManager
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, CategoryListener {
     private lateinit var setupText: TextView
@@ -72,17 +72,24 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         when (key) {
             getString(R.string.server_address_preference) -> {
                 val location = pref.getString(key, "") as String
-                val listFragment: ArchiveListFragment? =
-                    supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
                 WebHandler.serverLocation = location
                 handleSetupText(location.isEmpty())
-                listFragment?.forceArchiveListUpdate()
+
+                launch {
+                    withContext(Dispatchers.IO) { ServerManager.init(this@ArchiveList, false, true) }
+                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+                    listFragment?.forceArchiveListUpdate()
+                }
             }
             getString(R.string.api_key_pref) -> {
                 WebHandler.apiKey = pref.getString(key, "") as String
-                val listFragment: ArchiveListFragment? =
-                    supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
-                listFragment?.forceArchiveListUpdate()
+
+                launch {
+                    withContext(Dispatchers.IO) { ServerManager.init(this@ArchiveList, false, true) }
+                    val listFragment: ArchiveListFragment? =
+                        supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+                    listFragment?.forceArchiveListUpdate()
+                }
             }
             getString(R.string.verbose_pref) -> WebHandler.verboseMessages = pref.getBoolean(key, false)
         }

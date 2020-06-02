@@ -56,12 +56,12 @@ object ServerManager {
         private set
     private var initialized = false
 
-    fun init(context: Context, useCachedInfo: Boolean) {
-        if (initialized)
+    fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
+        if (initialized && !force)
             return
 
         val infoFile = File(context.filesDir, serverInfoFilename)
-        val serverInfo = if (!useCachedInfo) {
+        val serverInfo = if (!useCachedInfo || force) {
             val info = WebHandler.getServerInfo()
             if (info == null) {
                 if (infoFile.exists())

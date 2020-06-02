@@ -25,7 +25,9 @@
          dismiss it. -->
     <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
 
-    <PreferenceCategory android:title="@string/server_pref_header">
+    <PreferenceCategory
+        android:title="@string/server_pref_header"
+        android:key="@string/server_header_key">
 
         <EditTextPreference
             android:key="@string/server_address_preference"
