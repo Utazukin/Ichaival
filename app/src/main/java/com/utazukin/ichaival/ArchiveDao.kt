@@ -23,6 +23,10 @@ import androidx.room.*
 import org.json.JSONArray
 import org.json.JSONObject
 
+private const val MAX_PARAMETER_COUNT = 999
+
+typealias GetArchivesFunc = (List<String>, Int, Int) -> List<Archive>
+
 @Dao
 interface ArchiveDao {
     @Query("Select * from archive")
@@ -178,10 +182,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
         val toRemove = allIds.subtract(keys)
         if (toRemove.isNotEmpty()) {
             //Room has a max variable count of 999.
-            if (toRemove.size < 1000)
+            if (toRemove.size <= MAX_PARAMETER_COUNT)
                 archiveDao().removeArchives(toRemove.toList())
             else {
-                for (splitList in toRemove.chunked(999))
+                for (splitList in toRemove.chunked(MAX_PARAMETER_COUNT))
                     archiveDao().removeArchives(splitList)
             }
         }
@@ -215,19 +219,42 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null) archiveDao().getTitleDescending(offset, limit) else archiveDao().getTitleDescending(ids, offset, limit)
+        return if (ids == null)
+            archiveDao().getTitleDescending(offset, limit)
+        else
+            getArchives(ids, offset, limit, archiveDao()::getTitleDescending)
     }
 
     fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null) archiveDao().getTitleAscending(offset, limit) else archiveDao().getTitleAscending(ids, offset, limit)
+        return if (ids == null)
+            archiveDao().getTitleAscending(offset, limit)
+        else
+           getArchives(ids, offset, limit, archiveDao()::getTitleAscending)
     }
 
     fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null) archiveDao().getDateDescending(offset, limit) else archiveDao().getDateDescending(ids, offset, limit)
+        return if (ids == null)
+            archiveDao().getDateDescending(offset, limit)
+        else
+            getArchives(ids, offset, limit, archiveDao()::getDateDescending)
     }
 
     fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null) archiveDao().getDateAscending(offset, limit) else archiveDao().getDateAscending(ids, offset, limit)
+        return if (ids == null)
+            archiveDao().getDateAscending(offset, limit)
+        else
+            getArchives(ids, offset, limit, archiveDao()::getDateAscending)
+    }
+
+    private fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
+        return if (ids.size <= MAX_PARAMETER_COUNT)
+            dataFunc(ids, offset, limit)
+        else {
+            val archives = mutableListOf<Archive>()
+            for (split in ids.chunked(MAX_PARAMETER_COUNT))
+                archives.addAll(dataFunc(ids, offset, limit))
+            archives
+        }
     }
 
     @Transaction

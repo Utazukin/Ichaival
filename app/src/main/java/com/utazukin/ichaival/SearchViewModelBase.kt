@@ -72,10 +72,42 @@ class SearchViewModel : SearchViewModelBase() {
     override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) = archiveDataFactory.updateSort(method, desc, force)
 }
 
-class ArchiveViewModel : SearchViewModelBase() {
+class StaticCategoryModel : ArchiveViewModel() {
+    private lateinit var results: List<String>
+
+    fun filter(onlyNew: Boolean) {
+        if (!onlyNew) {
+            archiveDataFactory.updateSearchResults(results)
+            updateSort(sortMethod, descending, true)
+        } else {
+            viewModelScope.launch(Dispatchers.IO) {
+                val archives = when (sortMethod) {
+                    SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending(results) else archiveDao.getTitleAscending(results)
+                    SortMethod.Date  -> if (descending) archiveDao.getDateDescending(results) else archiveDao.getTitleAscending(results)
+                }
+
+                archiveDataFactory.updateSearchResults(archives.filter { it.isNew }.map { it.id })
+            }
+        }
+    }
+
+    fun init(ids: List<String>, method: SortMethod, desc: Boolean, onlyNew: Boolean) {
+        if (archiveList == null) {
+            archiveDataFactory.isSearch = false
+            archiveDataFactory.updateSort(method, desc, true)
+            archiveList = archiveDataFactory.toLiveData()
+            sortMethod = method
+            descending = desc
+            results = ids
+            filter(onlyNew)
+        }
+    }
+}
+
+open class ArchiveViewModel : SearchViewModelBase() {
     override val archiveDataFactory = ArchiveListDataFactory(true)
-    private var sortMethod = SortMethod.Alpha
-    private var descending = false
+    protected var sortMethod = SortMethod.Alpha
+    protected var descending = false
 
     override suspend fun getRandom(excludeBookmarked: Boolean) : Archive? {
         var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
@@ -104,8 +136,6 @@ class ArchiveViewModel : SearchViewModelBase() {
             archiveDataFactory.updateSearchResults(ids)
         }
     }
-
-    fun filter(ids: List<String>) = archiveDataFactory.updateSearchResults(ids)
 
     private fun getArchives() : List<Archive> {
         return when (sortMethod) {

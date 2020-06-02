@@ -117,7 +117,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView = view.findViewById(R.id.archive_search)
         newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked ->
-            if (isLocalSearch)
+            if (viewModel is StaticCategoryModel)
+                (viewModel as StaticCategoryModel).filter(checked)
+            else if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().filter(searchView.query, checked)
             else {
                 searchJob?.cancel()
@@ -275,12 +277,17 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
             searchView.clearFocus()
 
-            if (isLocalSearch)
-                getViewModel<ArchiveViewModel>().filter(category.archiveIds)
-            else {
-                val result = ServerSearchResult(category.archiveIds, category.archiveIds.size, STATIC_CATEGORY_SEARCH, newCheckBox.isChecked)
-                getViewModel<SearchViewModel>().filter(result)
+            val model = ViewModelProviders.of(this).get(StaticCategoryModel::class.java).apply {
+                init(category.archiveIds, sortMethod, descending, newCheckBox.isChecked)
             }
+            model.archiveList?.observe(viewLifecycleOwner, Observer {
+                (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
+                val size = it.size
+                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
+            })
+
+            model.filter(newCheckBox.isChecked)
+            viewModel = model
         }
     }
 
@@ -457,8 +464,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun <T> getViewModel(init: Boolean = true) : T where T : SearchViewModelBase {
-        if (viewModel == null)
-            initViewModel(isLocalSearch, false, init)
+        val isStaticCategory = viewModel is StaticCategoryModel
+        if (viewModel == null || isStaticCategory)
+            initViewModel(isLocalSearch, false, init || isStaticCategory)
 
         return viewModel as T
     }
