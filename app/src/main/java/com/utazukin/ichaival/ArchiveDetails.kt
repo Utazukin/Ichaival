@@ -78,7 +78,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             R.id.mark_read_item -> {
                 archiveId?.let {
                     launch {
-                        withContext(Dispatchers.IO) { WebHandler.setArchiveNewFlag(it, true) }
+                        withContext(Dispatchers.IO) { WebHandler.setArchiveNewFlag(it, false) }
                         item.isVisible = false
                     }
                 }
@@ -88,19 +88,17 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     }
 
     suspend fun extractArchive(id: String) {
-        val archive = withContext(Dispatchers.Default) {
+        withContext(Dispatchers.Default) {
             val a = DatabaseReader.getArchive(id)
             a?.run {
                 extract()
-                menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
+                withContext(Dispatchers.Main) {
+                    menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
+                    pageCount = numPages
+                    if (pager.currentItem == 1)
+                        supportActionBar?.subtitle = "$pageCount pages"
+                }
             }
-            a
-        }
-
-        archive?.run {
-            pageCount = numPages
-            if (pager.currentItem == 1)
-                supportActionBar?.subtitle = "$pageCount pages"
         }
     }
 
