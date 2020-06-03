@@ -79,7 +79,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    handleErrorMessage(responseCode, "Failed to connect to server!")
+                    if (responseCode != HttpURLConnection.HTTP_NOT_FOUND) //version <0.7.0
+                        handleErrorMessage(responseCode, "Failed to connect to server!")
                     return null
                 }
 
@@ -286,6 +287,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             }
         }
         catch(e: Exception) {
+            handleErrorMessage(e, "Failed to download thumbnail!")
             return null
         }
         finally {
@@ -312,8 +314,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val connection = createServerConnection(url, true)
         try {
             with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK)
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    handleErrorMessage(responseCode, "Failed to extract archive!")
                     return null
+                }
 
                 BufferedReader(InputStreamReader(inputStream)).use {
                     val response = StringBuffer()
