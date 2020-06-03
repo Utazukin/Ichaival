@@ -341,21 +341,17 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.sort_menu -> {
-                fragmentManager?.let {
-                    val sortDialogFragment = SortDialogFragment.createInstance(sortMethod, descending)
-                    val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
-                    sortDialogFragment.setSortChangeListener { method, desc -> updateSortMethod(method, desc, prefs) }
-                    sortDialogFragment.show(it, "sort_popup")
-                    true
-                } ?: false
-            }
             R.id.refresh_archives -> {
                 forceArchiveListUpdate()
                 true
             }
             else -> false
         }
+    }
+
+    fun updateSortMethod(method: SortMethod, desc: Boolean) {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        updateSortMethod(method, desc, prefs)
     }
 
     private fun handleArchiveLongPress(archive: Archive) : Boolean {

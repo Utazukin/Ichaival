@@ -24,53 +24,115 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioGroup
+import android.widget.TextView
 import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
+
+enum class SortMethod(val value: Int) {
+    Alpha(1),
+    Date(2);
+
+    companion object {
+        private val map by lazy { values().associateBy(SortMethod::value)}
+        fun fromInt(type: Int) = map[type]
+    }
+}
 
 class CategoryFilterFragment : Fragment() {
     private lateinit var categoryGroup: RadioGroup
-    private lateinit var currentCategories: List<ArchiveCategory>
-    private var listener: CategoryListener? = null
+    private var currentCategories: List<ArchiveCategory>? = null
+    private lateinit var categoryLabel: TextView
+    private var listener: FilterListener? = null
+    private var sortMethod = SortMethod.Alpha
+    private var descending = false
     private val categoryButtons = mutableListOf<AppCompatRadioButton>()
     val selectedCategory: ArchiveCategory?
         get() {
             if (categoryGroup.checkedRadioButtonId >= 0)
-                return currentCategories[categoryGroup.checkedRadioButtonId]
+                return currentCategories?.get(categoryGroup.checkedRadioButtonId)
             return null
         }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_category_filter, container, false)
         categoryGroup = view.findViewById(R.id.category_button_group)
+        categoryLabel = view.findViewById(R.id.category_label)
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        sortMethod = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
+        descending = prefs.getBoolean(getString(R.string.desc_pref), false)
+
+        view.run {
+            val sortGroup: RadioGroup = findViewById(R.id.sort_group)
+            sortGroup.setOnCheckedChangeListener { _, id ->
+                sortMethod = getMethodFromId(id)
+                listener?.onSortChanged(sortMethod, descending)
+            }
+
+            val dirGroup: RadioGroup = findViewById(R.id.direction_group)
+            dirGroup.setOnCheckedChangeListener { _, id ->
+                descending = getDirectionFromId(id)
+                listener?.onSortChanged(sortMethod, descending)
+            }
+
+            when (sortMethod) {
+                SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
+                SortMethod.Date -> sortGroup.check(R.id.rad_date)
+            }
+
+            dirGroup.check(if (descending) R.id.rad_desc else R.id.rad_asc)
+        }
+
         return view
     }
 
-    fun initCategories(categories: List<ArchiveCategory>) {
+    fun initCategories(categories: List<ArchiveCategory>?) {
         currentCategories = categories
 
         categoryButtons.clear()
-        for ((i, category) in categories.withIndex()) {
-            val categoryButton = AppCompatRadioButton(context)
-            categoryButton.text = category.name
-            categoryButton.id = i
-            categoryGroup.addView(categoryButton)
-            categoryButtons.add(categoryButton)
-        }
+        if (!categories.isNullOrEmpty()) {
+            categoryLabel.visibility = View.VISIBLE
+            for ((i, category) in categories.withIndex()) {
+                val categoryButton = AppCompatRadioButton(context)
+                categoryButton.text = category.name
+                categoryButton.id = i
+                categoryGroup.addView(categoryButton)
+                categoryButtons.add(categoryButton)
+            }
 
-        categoryGroup.setOnCheckedChangeListener { _, i ->
-            if (i >= 0 && categoryButtons[i].isChecked) //Check if really checked due to a bug in clearCheck().
-                listener?.onCategoryChanged(currentCategories[i])
+            categoryGroup.setOnCheckedChangeListener { _, i ->
+                if (i >= 0 && categoryButtons[i].isChecked) //Check if really checked due to a bug in clearCheck().
+                    listener?.onCategoryChanged(currentCategories!![i])
+            }
         }
     }
 
     fun clearCategory() = categoryGroup.clearCheck()
 
+    private fun getMethodFromId(id: Int) : SortMethod {
+        return when(id) {
+            R.id.rad_alpha -> SortMethod.Alpha
+            R.id.rad_date -> SortMethod.Date
+            else -> SortMethod.Alpha
+        }
+    }
+
+    private fun getDirectionFromId(id: Int) : Boolean {
+        return when(id) {
+            R.id.rad_asc -> false
+            R.id.rad_desc -> true
+            else -> false
+        }
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        listener = context as? CategoryListener
+        listener = context as? FilterListener
     }
 }
 
-interface CategoryListener {
+interface FilterListener {
     fun onCategoryChanged(category: ArchiveCategory)
+    fun onSortChanged(sort: SortMethod, desc: Boolean)
 }

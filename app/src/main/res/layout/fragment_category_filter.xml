@@ -30,16 +30,98 @@
 
 
         <TextView
-            android:id="@+id/textView4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/filter_label"
+            android:textSize="30sp" />
+
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider" />
+
+        <TextView
+            android:id="@+id/category_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/category_label"
-            android:textSize="18sp" />
+            android:textSize="24sp"
+            android:visibility="gone" />
 
     <RadioGroup
         android:id="@+id/category_button_group"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-</LinearLayout>
+        android:layout_height="wrap_content" >
+
+    </RadioGroup>
+
+        <View
+            android:id="@+id/divider4"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider" />
+
+        <TextView
+            android:text="@string/sort_method"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"/>
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checkedButton="@+id/rad_alpha"
+            android:id="@+id/sort_group"
+            >
+
+            <RadioButton
+                android:text="@string/alpha_sort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/rad_alpha"
+                android:layout_weight="1"
+                android:textSize="18sp"/>
+
+            <RadioButton
+                android:text="@string/sort_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/rad_date"
+                android:layout_weight="1"
+                android:textSize="18sp"/>
+        </RadioGroup>
+
+        <TextView
+            android:text="@string/sort_direction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"/>
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/direction_group"
+            android:paddingBottom="20dp"
+            android:checkedButton="@+id/rad_asc">
+
+            <RadioButton
+                android:text="@string/sort_asc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/rad_asc"
+                android:layout_weight="1"
+                android:textSize="18sp"/>
+
+            <RadioButton
+                android:text="@string/sort_desc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/rad_desc"
+                android:layout_weight="1"
+                android:textSize="18sp"/>
+        </RadioGroup>
+
+    </LinearLayout>
 </ScrollView>
 

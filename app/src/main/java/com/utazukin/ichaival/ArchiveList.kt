@@ -32,7 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, CategoryListener {
+class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, FilterListener {
     private lateinit var setupText: TextView
     private lateinit var categoryView: NavigationView
     private var menu: Menu? = null
@@ -60,6 +60,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         this.menu = menu
+
+        if (ServerManager.categories != null)
+            menu?.findItem(R.id.filter_menu)?.isVisible = true
+
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -112,7 +116,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.category_menu -> {
+            R.id.filter_menu -> {
                 drawerLayout.openDrawer(categoryView)
                 true
             }
@@ -125,21 +129,18 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
         listFragment?.setupArchiveList()
 
-        val categories = ServerManager.categories
-        if (categories == null) {
-            val filterSheet: NavigationView = findViewById(R.id.category_filter_view)
-            val parent = filterSheet.parent as ViewGroup
-            parent.removeView(filterSheet)
-        } else {
-            val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
-            categoryFragment?.initCategories(categories)
-            menu?.findItem(R.id.category_menu)?.isVisible = true
-        }
+        val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+        categoryFragment?.initCategories(ServerManager.categories)
     }
 
     override fun onCategoryChanged(category: ArchiveCategory) {
         val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
         listFragment?.handleCategoryChange(category)
+    }
+
+    override fun onSortChanged(sort: SortMethod, desc: Boolean) {
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        listFragment?.updateSortMethod(sort, desc)
     }
 
     private fun handleSetupText(setup: Boolean) {

@@ -26,15 +26,8 @@
             android:title="@string/refresh_archive_menu"
             app:showAsAction="ifRoom" />
     <item
-            android:title="@string/sort_menu"
-            app:showAsAction="ifRoom"
-            android:id="@+id/sort_menu"
-            android:icon="@drawable/ic_sort_white_24dp"
-            android:checkable="false"/>
-    <item
-        android:id="@+id/category_menu"
+        android:id="@+id/filter_menu"
         android:icon="@drawable/ic_filter_list_white_24dp"
-        android:title="@string/category_menu"
-        android:visible="false"
+        android:title="@string/filter_label"
         app:showAsAction="ifRoom" />
 </menu>
