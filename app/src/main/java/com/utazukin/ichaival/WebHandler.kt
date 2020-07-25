@@ -112,10 +112,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return
 
         val url = "$serverLocation$clearTempPath"
-        val connection = createServerConnection(url)
+        val connection = createServerConnection(url, "DELETE")
         try {
             with(connection) {
-                requestMethod = "DELETE"
                 if (responseCode == HttpURLConnection.HTTP_OK)
                     notify("Temp folder cleared")
                 else
@@ -307,10 +306,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         notifyExtract(id)
 
         val url = "$serverLocation${extractPath.format(id)}"
-        val connection = createServerConnection(url)
+        val connection = createServerConnection(url, "POST")
         try {
             with(connection) {
-                requestMethod = "POST"
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     handleErrorMessage(responseCode, "Failed to extract archive!")
                     return null
@@ -347,10 +345,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return
 
         val url = "$serverLocation${clearNewPath.format(id)}"
-        val connection = createServerConnection(url)
+        val connection = createServerConnection(url, "DELETE")
         try {
             with(connection) {
-                requestMethod = "DELETE"
                 if (responseCode != HttpURLConnection.HTTP_OK)
                     return
             }
@@ -415,10 +412,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     fun getRawImageUrl(path: String) = serverLocation + path
 
-    private fun createServerConnection(url: String) : HttpURLConnection {
+    private fun createServerConnection(url: String, method: String = "GET") : HttpURLConnection {
         val connection = URL(url).openConnection() as HttpURLConnection
         connection.apply {
             connectTimeout = timeout
+            requestMethod = method
             if (apiKey.isNotEmpty())
                 setRequestProperty("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.URL_SAFE)}")
         }

@@ -62,6 +62,14 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.archive_details_menu, menu)
         this.menu = menu
+
+        archiveId?.let {
+            launch {
+                val archive = DatabaseReader.getArchive(it)
+                menu?.findItem(R.id.mark_read_item)?.isVisible = archive?.isNew ?: false
+            }
+        }
+
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -78,7 +86,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             R.id.mark_read_item -> {
                 archiveId?.let {
                     launch {
-                        withContext(Dispatchers.IO) { WebHandler.setArchiveNewFlag(it) }
+                        withContext(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it) }
                         item.isVisible = false
                     }
                 }
@@ -91,9 +99,9 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         withContext(Dispatchers.Default) {
             val a = DatabaseReader.getArchive(id)
             a?.run {
+                menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
                 extract()
                 withContext(Dispatchers.Main) {
-                    menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
                     pageCount = numPages
                     if (pager.currentItem == 1)
                         supportActionBar?.subtitle = "$pageCount pages"
