@@ -49,11 +49,12 @@ class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
 
 object WebHandler : Preference.OnPreferenceChangeListener {
     private const val apiPath: String = "/api"
-    private const val archiveListPath = "$apiPath/archivelist"
-    private const val thumbPath = "$apiPath/thumbnail"
-    private const val extractPath = "$apiPath/extract"
-    private const val tagsPath = "$apiPath/tagstats"
-    private const val clearNewPath = "$apiPath/clear_new"
+    private const val databasePath = "$apiPath/database"
+    private const val archiveListPath = "$apiPath/archives"
+    private const val thumbPath = "$archiveListPath/%s/thumbnail"
+    private const val extractPath = "$archiveListPath/%s/extract"
+    private const val tagsPath = "$databasePath/stats"
+    private const val clearNewPath = "$archiveListPath/%s/isnew"
     private const val searchPath = "$apiPath/search"
     private const val infoPath = "$apiPath/info"
     private const val categoryPath = "$apiPath/categories"
@@ -75,11 +76,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         refreshListener?.isRefreshing(true)
         val url = "$serverLocation$infoPath"
-        val connection = createServerConnection(url, false)
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    if (responseCode != HttpURLConnection.HTTP_NOT_FOUND) //version <0.7.0
                         handleErrorMessage(responseCode, "Failed to connect to server!")
                     return null
                 }
@@ -112,13 +112,15 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return
 
         val url = "$serverLocation$clearTempPath"
-        val connection = createServerConnection(url, false)
+        val connection = createServerConnection(url)
         try {
-            val responseCode = connection.responseCode
-            if (responseCode == HttpURLConnection.HTTP_OK)
-                notify("Temp folder cleared")
-            else
-                handleErrorMessage(responseCode, "Failed to clear temp folder.")
+            with(connection) {
+                requestMethod = "DELETE"
+                if (responseCode == HttpURLConnection.HTTP_OK)
+                    notify("Temp folder cleared")
+                else
+                    handleErrorMessage(responseCode, "Failed to clear temp folder.")
+            }
         } catch (e: Exception) {
             handleErrorMessage(e, "Failed to clear temp folder.")
         } finally {
@@ -131,7 +133,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return null
 
         val url = "$serverLocation$tagsPath"
-        val connection = createServerConnection(url, false)
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK)
@@ -162,7 +164,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return null
 
         val url = "$serverLocation$categoryPath"
-        val connection = createServerConnection(url, false)
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK)
@@ -223,7 +225,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val order = if (descending) "desc" else "asc"
         val url = "$serverLocation$searchPath?filter=$encodedSearch&newonly=$onlyNew&sortby=$sort&order=$order&start=$start"
 
-        val connection = createServerConnection(url, true)
+        val connection = createServerConnection(url)
         try {
             with (connection) {
                 connectTimeout = timeout
@@ -257,19 +259,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         val count = jsonPages.length()
-        return MutableList(count) {
-            val pagePath = jsonPages.getString(it)
-            if (pagePath.startsWith("./"))
-                pagePath.substring(1)
-            else
-                "/$pagePath"
-        }
+        return MutableList(count) { jsonPages.getString(it).substring(1) }
     }
 
     fun downloadThumb(id: String, thumbDir: File) : File? {
-        val url = "$serverLocation$thumbPath?id=$id"
+        val url = "$serverLocation${thumbPath.format(id)}"
 
-        val connection = createServerConnection(url, true)
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK) {
@@ -310,10 +306,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         notifyExtract(id)
 
-        val url = "$serverLocation$extractPath?id=$id"
-        val connection = createServerConnection(url, true)
+        val url = "$serverLocation${extractPath.format(id)}"
+        val connection = createServerConnection(url)
         try {
             with(connection) {
+                requestMethod = "POST"
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     handleErrorMessage(responseCode, "Failed to extract archive!")
                     return null
@@ -351,8 +348,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect(true))
             return
 
-        val url = "$serverLocation$clearNewPath?id=$id"
-        val connection = createServerConnection(url, true)
+        val url = "$serverLocation${clearNewPath.format(id)}"
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK)
@@ -370,7 +367,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return null
 
         val url = "$serverLocation$archiveListPath"
-        val connection = createServerConnection(url, false)
+        val connection = createServerConnection(url)
         try {
             with(connection) {
                 if (responseCode != HttpURLConnection.HTTP_OK) {
@@ -417,36 +414,17 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return true
     }
 
-
-    private fun getApiKey(multiParam: Boolean) : String {
-        if (apiKey.isBlank())
-            return ""
-        else
-            return if (multiParam) "&key=$apiKey" else "?key=$apiKey"
-    }
-
     fun getRawImageUrl(path: String) = serverLocation + path
 
-    private fun createServerConnection(url: String, multiParam: Boolean = false) : HttpURLConnection {
-        return when {
-            ServerManager.majorVersion > 0 || ServerManager.minorVersion >= 7 -> {
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.apply {
-                    connectTimeout = timeout
-                    if (apiKey.isNotEmpty())
-                        setRequestProperty("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.URL_SAFE)}")
-                }
-            }
-            else -> {
-                val connection = URL("$url${getApiKey(multiParam)}").openConnection() as HttpURLConnection
-                connection.apply {
-                    connectTimeout = timeout
-                    if (apiKey.isNotEmpty())
-                        setRequestProperty("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.URL_SAFE)}")
-                }
-            }
+    private fun createServerConnection(url: String) : HttpURLConnection {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.apply {
+            connectTimeout = timeout
+            if (apiKey.isNotEmpty())
+                setRequestProperty("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.URL_SAFE)}")
         }
 
+        return connection
     }
 
     private fun notifyExtract(id: String) {

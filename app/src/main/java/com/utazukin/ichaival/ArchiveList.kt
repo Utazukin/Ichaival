@@ -83,6 +83,9 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                     withContext(Dispatchers.IO) { ServerManager.init(this@ArchiveList, false, true) }
                     val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
                     listFragment?.forceArchiveListUpdate()
+
+                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+                    categoryFragment?.initCategories(ServerManager.categories)
                 }
             }
             getString(R.string.api_key_pref) -> {
@@ -93,6 +96,9 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                     val listFragment: ArchiveListFragment? =
                         supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
                     listFragment?.forceArchiveListUpdate()
+
+                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+                    categoryFragment?.initCategories(ServerManager.categories)
                 }
             }
             getString(R.string.verbose_pref) -> WebHandler.verboseMessages = pref.getBoolean(key, false)

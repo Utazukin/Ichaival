@@ -19,7 +19,6 @@
 package com.utazukin.ichaival
 
 import android.content.Context
-import androidx.preference.PreferenceManager
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -87,18 +86,8 @@ object ServerManager {
             }
         }
 
-        pageSize = when {
-            majorVersion > 0 || minorVersion >= 7 -> {
-                serverInfo!!.getInt("archives_per_page")
-            }
-            else -> {
-                val prefManager = PreferenceManager.getDefaultSharedPreferences(context)
-                prefManager.castStringPrefToInt(context.getString(R.string.search_page_key), 50)
-            }
-        }
-
-        if (majorVersion > 0 || minorVersion >= 7)
-            categories = parseCategories(context.filesDir)
+        pageSize = serverInfo!!.getInt("archives_per_page")
+        categories = parseCategories(context.filesDir)
 
         initialized = true
     }

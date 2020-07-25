@@ -172,19 +172,9 @@ class SettingsActivity : AppCompatPreferenceActivity(), DatabaseMessageListener,
             }
 
             val tempPref = findPreference(getString(R.string.temp_folder_pref))
-            if (ServerManager.minorVersion >= 7 || ServerManager.majorVersion > 0) {
-                val pagePref = findPreference(getString(R.string.search_page_key))
-                val searchCategory = findPreference(getString(R.string.search_header_key)) as PreferenceCategory
-                searchCategory.removePreference(pagePref)
-
-                tempPref.setOnPreferenceClickListener {
-                    (activity as CoroutineScope).launch(Dispatchers.IO) { WebHandler.clearTempFolder() }
-                    true
-                }
-            }
-            else {
-                val serverCategory = findPreference(getString(R.string.server_header_key)) as PreferenceCategory
-                serverCategory.removePreference(tempPref)
+            tempPref.setOnPreferenceClickListener {
+                (activity as CoroutineScope).launch(Dispatchers.IO) { WebHandler.clearTempFolder() }
+                true
             }
         }
 

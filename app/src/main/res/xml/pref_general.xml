@@ -101,14 +101,6 @@
             android:singleLine="true"
             android:summary="@string/search_delay_summary"
             android:title="@string/search_delay_pref" />
-        <EditTextPreference
-            android:defaultValue="100"
-            android:inputType="number"
-            android:key="@string/search_page_key"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:summary="@string/search_page_desc"
-            android:title="@string/search_page_key_title" />
     </PreferenceCategory>
     <PreferenceCategory
             android:title="@string/source_pref_header">
