@@ -126,7 +126,10 @@ object DatabaseReader {
         GlobalScope.launch(Dispatchers.IO) { database.clearBookmarks() }
     }
 
-    fun setArchiveNewFlag(id: String, isNew: Boolean) = WebHandler.setArchiveNewFlag(id, isNew)
+    fun setArchiveNewFlag(id: String) {
+        database.archiveDao().updateNewFlag(id, false)
+        WebHandler.setArchiveNewFlag(id)
+    }
 
     private fun readArchiveList(json: JSONArray) : Map<String, ArchiveJson> {
         val archiveList = mutableMapOf<String, ArchiveJson>()

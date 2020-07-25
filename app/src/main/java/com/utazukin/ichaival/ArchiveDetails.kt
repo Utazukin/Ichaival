@@ -78,7 +78,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             R.id.mark_read_item -> {
                 archiveId?.let {
                     launch {
-                        withContext(Dispatchers.IO) { WebHandler.setArchiveNewFlag(it, false) }
+                        withContext(Dispatchers.IO) { WebHandler.setArchiveNewFlag(it) }
                         item.isVisible = false
                     }
                 }

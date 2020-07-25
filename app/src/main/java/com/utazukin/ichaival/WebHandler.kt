@@ -342,9 +342,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun setArchiveNewFlag(id: String, isNew: Boolean) {
-        DatabaseReader.database.archiveDao().updateNewFlag(id, isNew)
-
+    fun setArchiveNewFlag(id: String) {
         if (!canConnect(true))
             return
 
@@ -352,6 +350,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val connection = createServerConnection(url)
         try {
             with(connection) {
+                requestMethod = "DELETE"
                 if (responseCode != HttpURLConnection.HTTP_OK)
                     return
             }

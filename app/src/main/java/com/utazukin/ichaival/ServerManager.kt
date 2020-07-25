@@ -76,17 +76,20 @@ object ServerManager {
         else
             null
 
-        val lanraragiVersionString = serverInfo?.getString("version") ?: ""
-        if (lanraragiVersionString.isNotBlank()) {
-            val versionRegex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)")
-            versionRegex.matchEntire(lanraragiVersionString)?.let {
-                majorVersion = Integer.parseInt(it.groupValues[1])
-                minorVersion = Integer.parseInt(it.groupValues[2])
-                patchVersion = Integer.parseInt(it.groupValues[3])
+        if (serverInfo != null) {
+            val lanraragiVersionString = serverInfo.getString("version")
+            if (lanraragiVersionString.isNotBlank()) {
+                val versionRegex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)")
+                versionRegex.matchEntire(lanraragiVersionString)?.let {
+                    majorVersion = Integer.parseInt(it.groupValues[1])
+                    minorVersion = Integer.parseInt(it.groupValues[2])
+                    patchVersion = Integer.parseInt(it.groupValues[3])
+                }
             }
+
+            pageSize = serverInfo.getInt("archives_per_page")
         }
 
-        pageSize = serverInfo!!.getInt("archives_per_page")
         categories = parseCategories(context.filesDir)
 
         initialized = true
