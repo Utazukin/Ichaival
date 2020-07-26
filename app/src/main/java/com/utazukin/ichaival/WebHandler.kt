@@ -37,6 +37,7 @@ import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
     private val tag = tagText.toLowerCase(Locale.getDefault())
@@ -81,12 +82,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return null
 
         refreshListener?.isRefreshing(true)
+        val errorMessage = "Failed to connect to server!"
         val url = "$serverLocation$infoPath"
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await()
-        with (response) {
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
+        response?.run {
             if (!isSuccessful) {
-                handleErrorMessage(code, "Failed to connect to server!")
+                handleErrorMessage(code, errorMessage)
                 return null
             }
 
@@ -94,20 +96,24 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             refreshListener?.isRefreshing(false)
             return json
         }
+
+        refreshListener?.isRefreshing(false)
+        return null
     }
 
     suspend fun clearTempFolder() {
         if (!canConnect())
             return
 
+        val errorMessage = "Failed to clear temp folder."
         val url = "$serverLocation$clearTempPath"
         val connection = createServerConnection(url, "DELETE")
-        val response = httpClient.newCall(connection).await()
+        val response = httpClient.newCall(connection).await(errorMessage)
         with (response) {
             if (isSuccessful)
                 notify("Temp folder cleared.")
             else
-                handleErrorMessage(code, "Failed to clear temp folder.")
+                handleErrorMessage(code, errorMessage)
         }
     }
 
@@ -117,13 +123,15 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation$tagsPath"
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await()
-        with (response) {
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+        response?.run {
             if (!isSuccessful)
                 return null
 
             return body?.let { parseJsonArray(it.suspendString()) }
         }
+
+        return null
     }
 
     suspend fun getCategories() : JSONArray? {
@@ -132,13 +140,15 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation$categoryPath"
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await()
-        with (response) {
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+        response?.run {
             if (!isSuccessful)
                 return null
 
             return body?.let { parseJsonArray(it.suspendString()) }
         }
+
+        return null
     }
 
     fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
@@ -190,7 +200,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     fun getPageList(response: JSONObject?) : List<String> {
         val jsonPages = response?.optJSONArray("pages")
         if (jsonPages == null) {
-            notifyError(response?.keys()?.next() ?: "Failed to extract archive")
+            response?.keys()?.next()?.let { notifyError(it) }
             return listOf()
         }
 
@@ -199,13 +209,15 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
     suspend fun downloadThumb(id: String, thumbDir: File) : File? {
+        if (!canConnect(true))
+            return null
+
         val url = "$serverLocation${thumbPath.format(id)}"
 
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).await()
         with (response) {
             if (!isSuccessful) {
-                handleErrorMessage(code, "Failed to download thumbnail!")
                 return null
             }
 
@@ -217,11 +229,29 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    private suspend fun Call.await() : Response {
+    private suspend fun Call.awaitWithFail(errorMessage: String? = null) : Response {
+        return suspendCancellableCoroutine {
+            enqueue(object: Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    it.resumeWithException(e)
+                    if (errorMessage != null)
+                        handleErrorMessage(e, errorMessage)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    it.resume(response)
+                }
+            })
+        }
+    }
+
+    private suspend fun Call.await(errorMessage: String? = null) : Response {
         return suspendCancellableCoroutine {
             enqueue(object: Callback{
                 override fun onFailure(call: Call, e: IOException) {
-                    it.cancel(e)
+                    it.cancel()
+                    if (errorMessage != null)
+                        handleErrorMessage(e, errorMessage)
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -246,26 +276,27 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         notifyExtract(id)
 
+        val errorMessage = "Failed to extract archive!"
         val url = "$serverLocation${extractPath.format(id)}"
         val connection = createServerConnection(url, "POST", FormBody.Builder().build())
-        val response = httpClient.newCall(connection).await()
-        with (response) {
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
+        return response?.run {
             if (!isSuccessful) {
-                handleErrorMessage(code, "Failed to extract archive!")
-                return null
-            }
-
-            val jsonString = body?.suspendString()
-            return if (jsonString == null) {
-                notifyError("Failed to extract archive!")
+                handleErrorMessage(code, errorMessage)
                 null
             } else {
-                val json = JSONObject(jsonString)
-                if (json.has("error")) {
-                    notifyError(json.getString("error"))
+                val jsonString = body?.suspendString()
+                if (jsonString == null) {
+                    notifyError(errorMessage)
                     null
-                } else
-                    json
+                } else {
+                    val json = JSONObject(jsonString)
+                    if (json.has("error")) {
+                        notifyError(json.getString("error"))
+                        null
+                    } else
+                        json
+                }
             }
         }
     }
@@ -289,12 +320,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect())
             return null
 
+        val errorMessage = "Failed to connect to server!"
         val url = "$serverLocation$archiveListPath"
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await()
+        val response = httpClient.newCall(connection).await(errorMessage)
         with (response) {
             if (!isSuccessful) {
-                handleErrorMessage(code, "Failed to connect to server!")
+                handleErrorMessage(code, errorMessage)
                 return null
             }
 
@@ -307,7 +339,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 return json
             }
 
-            notifyError("Error get archive list")
+            notifyError("Error getting archive list")
             return null
         }
     }
@@ -334,7 +366,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return false
         }
 
-        return true
+        return connected
     }
 
     fun getRawImageUrl(path: String) = serverLocation + path
@@ -357,6 +389,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     private fun handleErrorMessage(responseCode: Int, defaultMessage: String) {
         notifyError(if (verboseMessages) "$defaultMessage Response Code: $responseCode" else defaultMessage)
+    }
+
+    private fun handleErrorMessage(e: Exception, defaultMessage: String) {
+        notifyError(if (verboseMessages) e.localizedMessage else defaultMessage)
     }
 
     private fun notifyError(error: String) {

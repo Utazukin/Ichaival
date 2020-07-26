@@ -83,6 +83,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     var archive: Archive? = null
         private set
     private var currentPage = 0
+    private var retryCount = 0
     private var rtol = false
     private var volControl = false
     private val loadedPages = mutableListOf<Boolean>()
@@ -105,6 +106,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        retryCount = 0
         setContentView(R.layout.activity_reader)
         val appBar: Toolbar = findViewById(R.id.reader_toolbar)
         setSupportActionBar(appBar)
@@ -177,7 +179,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
         if (arcid != null) {
             launch {
-                archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(arcid) }
+                archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(arcid) }
                 archive?.let {
                     supportActionBar?.title = it.title
                     //Use the page from the thumbnail over the bookmark
@@ -192,7 +194,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         val loadLayout: View = findViewById(R.id.load_layout)
                         loadLayout.visibility = View.VISIBLE
                         loadLayout.setOnClickListener { toggle() }
-                        withContext(Dispatchers.Default) { it.extract() }
+                        withContext(Dispatchers.IO) { it.extract() }
                         loadLayout.visibility = View.GONE
                     }
 
@@ -300,10 +302,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun loadImage(page: Int, preload: Boolean = true) {
         if (!archive!!.hasPage(page)) {
-            if (archive!!.numPages == 0)
+            if (archive!!.numPages == 0) {
                 failedMessage.visibility = View.VISIBLE
+                imagePager.visibility = View.INVISIBLE
+            }
             return
         }
+        imagePager.visibility = View.VISIBLE
         failedMessage.visibility = View.GONE
 
         if (adjustLoadedPages(page))
@@ -391,10 +396,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 }
             }
             R.id.refresh_button -> {
+                retryCount = 0
                 archive?.run {
                     invalidateCache()
                     launch {
-                        withContext(Dispatchers.Default) { extract() }
+                        withContext(Dispatchers.IO) { extract() }
                         loadedPages.clear()
                         loadImage(currentPage)
                     }
@@ -500,13 +506,21 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         hide()
     }
 
-    override fun onImageLoadError(fragment: ReaderFragment) {
-        archive?.run {
-            invalidateCache()
-            launch {
-                withContext(Dispatchers.Default) { extract() }
-                fragment.reloadImage()
+    override fun onImageLoadError(fragment: ReaderFragment) : Boolean {
+        return if (retryCount++ < 3) {
+            archive?.run {
+                invalidateCache()
+                launch {
+                    withContext(Dispatchers.IO) { extract() }
+                    fragment.reloadImage()
+                }
             }
+
+            true
+        } else {
+            failedMessage.visibility = View.VISIBLE
+            imagePager.visibility = View.INVISIBLE
+            false
         }
     }
 

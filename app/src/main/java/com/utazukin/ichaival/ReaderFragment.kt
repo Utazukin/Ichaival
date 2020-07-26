@@ -64,7 +64,6 @@ class ReaderFragment : Fragment(), PageFragment {
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
-    private var retryCount = 0
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
@@ -77,7 +76,6 @@ class ReaderFragment : Fragment(), PageFragment {
             page = getInt(PAGE_NUM)
         }
 
-        retryCount = 0
         topLayout = view.findViewById(R.id.reader_layout)
         pageNum = view.findViewById(R.id.page_num)
         pageNum.text = (page + 1).toString()
@@ -174,11 +172,9 @@ class ReaderFragment : Fragment(), PageFragment {
                 target: Target<T>?,
                 isFirstResource: Boolean
             ): Boolean {
-                if (e?.rootCauses?.any { x -> x is FileNotFoundException } == true && retryCount < 3) {
-                    listener?.onImageLoadError(fragment)
-                    ++retryCount
-                    return true
-                }
+                if (e?.rootCauses?.any { x -> x is FileNotFoundException } == true)
+                    return listener?.onImageLoadError(fragment) == true
+
                 return false
             }
 
@@ -269,7 +265,8 @@ class ReaderFragment : Fragment(), PageFragment {
                         displayImage(image)
                     else
                         imagePath = image
-                }
+                } else
+                    listener?.onImageLoadError(this@ReaderFragment)
             }
         }
     }
@@ -303,7 +300,7 @@ class ReaderFragment : Fragment(), PageFragment {
     interface OnFragmentInteractionListener {
         fun onFragmentTap(zone: TouchZone)
 
-        fun onImageLoadError(fragment: ReaderFragment)
+        fun onImageLoadError(fragment: ReaderFragment) : Boolean
 
         fun onFragmentLongPress() : Boolean
     }

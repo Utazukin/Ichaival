@@ -63,6 +63,15 @@ fun SharedPreferences?.castStringPrefToFloat(pref: String, defaultValue: Float =
     return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toFloat()
 }
 
+inline fun <T> tryOrNull(body: () -> T) : T? {
+    return try {
+        body()
+    }
+    catch (e: Exception) {
+        null
+    }
+}
+
 private var mMaxTextureSize = -1
 //Converted to Kotlin from
 //https://stackoverflow.com/questions/7428996/hw-accelerated-activity-how-to-get-opengl-texture-size-limit/26823288#26823288
