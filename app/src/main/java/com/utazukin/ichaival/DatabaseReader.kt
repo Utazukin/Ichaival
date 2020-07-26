@@ -71,21 +71,10 @@ object DatabaseReader {
     }
 
     suspend fun getPageList(id: String) : List<String> {
-        val mutex = extractingMutex.withLock {
-            extractingArchives[id]
-                ?: run {
-                val m = Mutex()
-                extractingArchives[id] = m
-                m
-            }
-        }
+        val mutex = extractingMutex.withLock { extractingArchives[id] ?: Mutex().also { extractingArchives[id] = it } }
 
         mutex.withLock {
-            var pages = archivePageMap[id]
-            if (pages == null) {
-                pages = WebHandler.getPageList(WebHandler.extractArchive(id))
-                archivePageMap[id] = pages
-            }
+            val pages = archivePageMap[id] ?: WebHandler.getPageList(WebHandler.extractArchive(id)).also { archivePageMap[id] = it }
             extractingArchives.remove(id)
             return pages
         }
