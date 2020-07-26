@@ -21,17 +21,20 @@ package com.utazukin.ichaival
 import android.net.ConnectivityManager
 import android.preference.Preference
 import android.util.Base64
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
+import java.io.IOException
 import java.net.URLEncoder
-import java.nio.charset.Charset
 import java.util.*
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
 
 class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
     private val tag = tagText.toLowerCase(Locale.getDefault())
@@ -59,133 +62,80 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val infoPath = "$apiPath/info"
     private const val categoryPath = "$apiPath/categories"
     private const val clearTempPath = "$apiPath/tempfolder"
-    private const val timeout = 5000 //ms
+    private const val timeout = 5000L //ms
 
     var serverLocation: String = ""
     var apiKey: String = ""
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
+    private val httpClient = OkHttpClient.Builder().connectTimeout(timeout, TimeUnit.MILLISECONDS).build()
 
     var verboseMessages = false
     var listener: DatabaseMessageListener? = null
     var refreshListener: DatabaseRefreshListener? = null
     var connectivityManager: ConnectivityManager? = null
 
-    fun getServerInfo() : JSONObject? {
+    suspend fun getServerInfo() : JSONObject? {
         if (!canConnect())
             return null
 
         refreshListener?.isRefreshing(true)
         val url = "$serverLocation$infoPath"
         val connection = createServerConnection(url)
-        try {
-            with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                        handleErrorMessage(responseCode, "Failed to connect to server!")
-                    return null
-                }
-
-                val decoder = Charset.forName("utf-8").newDecoder()
-                BufferedReader(InputStreamReader(inputStream, decoder)).use {
-                    val response = StringBuffer()
-
-                    var inputLine = it.readLine()
-                    while (inputLine != null) {
-                        response.append(inputLine)
-                        inputLine = it.readLine()
-                    }
-
-                    val jsonString = response.toString()
-                    return JSONObject(jsonString)
-                }
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (!isSuccessful) {
+                handleErrorMessage(code, "Failed to connect to server!")
+                return null
             }
-        } catch (e: Exception) {
-            handleErrorMessage(e, "Failed to connect to server!")
-            return null
-        } finally {
-            connection.disconnect()
+
+            val json = body?.let { JSONObject(it.suspendString()) }
             refreshListener?.isRefreshing(false)
+            return json
         }
     }
 
-    fun clearTempFolder() {
+    suspend fun clearTempFolder() {
         if (!canConnect())
             return
 
         val url = "$serverLocation$clearTempPath"
         val connection = createServerConnection(url, "DELETE")
-        try {
-            with(connection) {
-                if (responseCode == HttpURLConnection.HTTP_OK)
-                    notify("Temp folder cleared")
-                else
-                    handleErrorMessage(responseCode, "Failed to clear temp folder.")
-            }
-        } catch (e: Exception) {
-            handleErrorMessage(e, "Failed to clear temp folder.")
-        } finally {
-            connection.disconnect()
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (isSuccessful)
+                notify("Temp folder cleared.")
+            else
+                handleErrorMessage(code, "Failed to clear temp folder.")
         }
     }
 
-    fun generateSuggestionList() : JSONArray? {
+    suspend fun generateSuggestionList() : JSONArray? {
         if (!canConnect(true))
             return null
 
         val url = "$serverLocation$tagsPath"
         val connection = createServerConnection(url)
-        try {
-            with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK)
-                    return null
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (!isSuccessful)
+                return null
 
-                BufferedReader(InputStreamReader(inputStream)).use {
-                    val response = StringBuffer()
-
-                    var inputLine = it.readLine()
-                    while (inputLine != null) {
-                        response.append(inputLine)
-                        inputLine = it.readLine()
-                    }
-                    return parseJsonArray(response.toString())
-                }
-            }
-        }
-        catch(e: Exception) {
-            return null
-        }
-        finally {
-            connection.disconnect()
+            return body?.let { parseJsonArray(it.suspendString()) }
         }
     }
 
-    fun getCategories() : JSONArray? {
+    suspend fun getCategories() : JSONArray? {
         if (!canConnect(true))
             return null
 
         val url = "$serverLocation$categoryPath"
         val connection = createServerConnection(url)
-        try {
-            with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK)
-                    return null
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (!isSuccessful)
+                return null
 
-                BufferedReader(InputStreamReader(inputStream)).use {
-                    val response = StringBuffer()
-
-                    var inputLine = it.readLine()
-                    while (inputLine != null) {
-                        response.append(inputLine)
-                        inputLine = it.readLine()
-                    }
-                    return parseJsonArray(response.toString())
-                }
-            }
-        }
-        catch (e: java.lang.Exception) {
-            return null
-        }
-        finally {
-            connection.disconnect()
+            return body?.let { parseJsonArray(it.suspendString()) }
         }
     }
 
@@ -196,7 +146,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (showRefresh)
             refreshListener?.isRefreshing(true)
 
-        val jsonResults = internalSearchServer(search, onlyNew, sortMethod, descending, start) ?: return ServerSearchResult(null)
+        val jsonResults = runBlocking { internalSearchServer(search, onlyNew, sortMethod, descending, start) } ?: return ServerSearchResult(null)
         val totalResults = jsonResults.getInt("recordsFiltered")
 
         val dataArray = jsonResults.getJSONArray("data")
@@ -212,11 +162,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return ServerSearchResult(results, totalResults, search, onlyNew)
     }
 
-    private fun internalSearchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : JSONObject? {
+    private suspend fun internalSearchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : JSONObject? {
         if (!canConnect(true))
             return null
 
-        val encodedSearch =  URLEncoder.encode(search.toString(), "utf-8")
+        val encodedSearch =  withContext(Dispatchers.IO) { URLEncoder.encode(search.toString(), "utf-8") }
         val sort = when(sortMethod) {
             SortMethod.Alpha -> "title"
             SortMethod.Date -> "date_added"
@@ -225,29 +175,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$searchPath?filter=$encodedSearch&newonly=$onlyNew&sortby=$sort&order=$order&start=$start"
 
         val connection = createServerConnection(url)
-        try {
-            with (connection) {
-                connectTimeout = timeout
-                if (responseCode != HttpURLConnection.HTTP_OK)
-                    return null
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (!isSuccessful)
+                return null
 
-                BufferedReader(InputStreamReader(inputStream)).use {
-                    val response = StringBuffer()
-                    var inputLine = it.readLine()
-                    while (inputLine != null) {
-                        response.append(inputLine)
-                        inputLine = it.readLine()
-                    }
-                    return JSONObject(response.toString())
-                }
-            }
+            return body?.let { JSONObject(it.suspendString()) }
         }
-        catch (e: Exception) {}
-        finally {
-            connection.disconnect()
-        }
-
-        return null
     }
 
     fun getPageList(response: JSONObject?) : List<String> {
@@ -261,32 +195,36 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return MutableList(count) { jsonPages.getString(it).substring(1) }
     }
 
-    fun downloadThumb(id: String, thumbDir: File) : File? {
+    suspend fun downloadThumb(id: String, thumbDir: File) : File? {
         val url = "$serverLocation${thumbPath.format(id)}"
 
         val connection = createServerConnection(url)
-        try {
-            with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    handleErrorMessage(responseCode, "Failed to download thumbnail!")
-                    return null
-                }
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (!isSuccessful) {
+                handleErrorMessage(code, "Failed to download thumbnail!")
+                return null
+            }
 
-                BufferedReader(InputStreamReader(inputStream)).use {
-                    val bytes = inputStream.readBytes()
-
-                    val thumbFile = File(thumbDir, "$id.jpg")
-                    thumbFile.writeBytes(bytes)
-                    return thumbFile
-                }
+            return body?.let {
+                val thumbFile = File(thumbDir, "$id.jpg")
+                thumbFile.writeBytes(withContext(Dispatchers.IO) { it.bytes() })
+                thumbFile
             }
         }
-        catch(e: Exception) {
-            handleErrorMessage(e, "Failed to download thumbnail!")
-            return null
-        }
-        finally {
-            connection.disconnect()
+    }
+
+    private suspend fun Call.await() : Response {
+        return suspendCancellableCoroutine {
+            enqueue(object: Callback{
+                override fun onFailure(call: Call, e: IOException) {
+                    it.cancel(e)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    it.resume(response)
+                }
+            })
         }
     }
 
@@ -299,46 +237,38 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
 
-    fun extractArchive(id: String) : JSONObject? {
+    suspend fun extractArchive(id: String) : JSONObject? {
         if (!canConnect())
             return null
 
         notifyExtract(id)
 
         val url = "$serverLocation${extractPath.format(id)}"
-        val connection = createServerConnection(url, "POST")
-        try {
-            with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    handleErrorMessage(responseCode, "Failed to extract archive!")
-                    return null
-                }
-
-                BufferedReader(InputStreamReader(inputStream)).use {
-                    val response = StringBuffer()
-
-                    var inputLine = it.readLine()
-                    while (inputLine != null) {
-                        response.append(inputLine)
-                        inputLine = it.readLine()
-                    }
-                    val json = JSONObject(response.toString())
-                    if (!json.has("error"))
-                        return json
-                    else{
-                        notifyError(json.getString("error"))
-                        return null
-                    }
-                }
+        val connection = createServerConnection(url, "POST", FormBody.Builder().build())
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (!isSuccessful) {
+                handleErrorMessage(code, "Failed to extract archive!")
+                return null
             }
-        } catch (e: Exception) {
-            handleErrorMessage(e, "Failed to extract archive!")
-            return null
-        }
-        finally {
-            connection.disconnect()
+
+            val jsonString = body?.suspendString()
+            return if (jsonString == null) {
+                notifyError("Failed to extract archive!")
+                null
+            } else {
+                val json = JSONObject(jsonString)
+                if (json.has("error")) {
+                    notifyError(json.getString("error"))
+                    null
+                } else
+                    json
+            }
         }
     }
+
+    @Suppress("BlockingMethodInNonBlockingContext")
+    private suspend fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
 
     fun setArchiveNewFlag(id: String) {
         if (!canConnect(true))
@@ -346,53 +276,33 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation${clearNewPath.format(id)}"
         val connection = createServerConnection(url, "DELETE")
-        try {
-            with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK)
-                    return
-            }
-        }
-        catch (e: Exception) {}
-        finally {
-            connection.disconnect()
-        }
+        httpClient.newCall(connection).execute()
     }
 
-    fun downloadArchiveList() : JSONArray? {
+    suspend fun downloadArchiveList() : JSONArray? {
         if (!canConnect())
             return null
 
         val url = "$serverLocation$archiveListPath"
         val connection = createServerConnection(url)
-        try {
-            with(connection) {
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    handleErrorMessage(responseCode, "Failed to connect to server!")
-                    return null
-                }
-
-                val decoder = Charset.forName("utf-8").newDecoder()
-                BufferedReader(InputStreamReader(inputStream, decoder)).use {
-                    val response = StringBuffer()
-
-                    var inputLine = it.readLine()
-                    while (inputLine != null) {
-                        response.append(inputLine)
-                        inputLine = it.readLine()
-                    }
-
-                    val jsonString = response.toString()
-                    val json =  parseJsonArray(jsonString)
-                    if (json == null)
-                        notifyError(JSONObject(jsonString).getString("error")) //Invalid api key
-                    return json
-                }
+        val response = httpClient.newCall(connection).await()
+        with (response) {
+            if (!isSuccessful) {
+                handleErrorMessage(code, "Failed to connect to server!")
+                return null
             }
-        } catch (e: Exception) {
-            handleErrorMessage(e, "Failed to connect to server!")
+
+            val jsonString = body?.suspendString()
+            if (jsonString != null) {
+                val json = parseJsonArray(jsonString)
+                if (json == null)
+                    notifyError(JSONObject(jsonString).getString("error")) //Invalid api key
+
+                return json
+            }
+
+            notifyError("Error get archive list")
             return null
-        } finally {
-            connection.disconnect()
         }
     }
 
@@ -412,26 +322,20 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     fun getRawImageUrl(path: String) = serverLocation + path
 
-    private fun createServerConnection(url: String, method: String = "GET") : HttpURLConnection {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.apply {
-            connectTimeout = timeout
-            requestMethod = method
+    private fun createServerConnection(url: String, method: String = "GET", body: RequestBody? = null) : Request {
+        return Request.Builder().run {
+            method(method, body)
+            url(url)
             if (apiKey.isNotEmpty())
-                setRequestProperty("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.URL_SAFE)}")
+                header("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.URL_SAFE)}")
+            build()
         }
-
-        return connection
     }
 
     private fun notifyExtract(id: String) {
         val title = DatabaseReader.database.archiveDao().getArchiveTitle(id)
         if (title != null)
             listener?.onExtract(title)
-    }
-
-    private fun handleErrorMessage(e: Exception, defaultMessage: String) {
-        notifyError(if (verboseMessages) e.localizedMessage else defaultMessage)
     }
 
     private fun handleErrorMessage(responseCode: Int, defaultMessage: String) {

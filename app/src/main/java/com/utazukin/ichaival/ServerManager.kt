@@ -55,7 +55,7 @@ object ServerManager {
         private set
     private var initialized = false
 
-    fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
+    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
         if (initialized && !force)
             return
 
@@ -95,7 +95,7 @@ object ServerManager {
         initialized = true
     }
 
-    fun generateTagSuggestions() {
+    suspend fun generateTagSuggestions() {
         if (tagSuggestions.isEmpty()) {
             WebHandler.generateSuggestionList()?.let {
                 tagSuggestions = Array(it.length()) { i ->
@@ -111,7 +111,7 @@ object ServerManager {
         }
     }
 
-    private fun parseCategories(fileDir: File) : List<ArchiveCategory>? {
+    private suspend fun parseCategories(fileDir: File) : List<ArchiveCategory>? {
         val categoriesFile = File(fileDir, categoriesFilename)
         var jsonCategories: JSONArray? = WebHandler.getCategories()
         when {

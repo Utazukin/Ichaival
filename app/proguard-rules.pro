@@ -25,7 +25,7 @@
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
 
 # Most of volatile fields are updated with AFU and should not be mangled
--keepclassmembernames class kotlinx.** {
+-keepclassmembernames class kotlinx.* {
     volatile <fields>;
 }
 
@@ -33,4 +33,7 @@
     public static final int define_*;
 }
 
--keepnames class com.utazukin.ichaival.** extends androidx.fragment.app.Fragment {}
+-keepnames class com.utazukin.ichaival.* extends androidx.fragment.app.Fragment {}
+
+-keep public class * extends com.bumptech.glide.module.AppGlideModule
+-keep class com.bumptech.glide.GeneratedAppGlideModuleImpl

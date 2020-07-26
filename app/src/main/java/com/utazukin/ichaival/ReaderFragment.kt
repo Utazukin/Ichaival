@@ -35,6 +35,7 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.DrawableImageViewTarget
 import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
@@ -83,6 +84,7 @@ class ReaderFragment : Fragment(), PageFragment {
         pageNum.visibility = View.VISIBLE
 
         progressBar = view.findViewById(R.id.progressBar)
+        progressBar.isIndeterminate = true
         progressBar.visibility = View.VISIBLE
 
         //Tapping the view will display the toolbar until the image is displayed.
@@ -129,7 +131,7 @@ class ReaderFragment : Fragment(), PageFragment {
                     .load(image)
                     .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
                     .addListener(getListener())
-                    .into(it)
+                    .into(ProgressTarget(image, DrawableImageViewTarget(it), progressBar))
             }
         } else {
             SubsamplingScaleImageView(activity).also {
@@ -142,13 +144,13 @@ class ReaderFragment : Fragment(), PageFragment {
                     .downloadOnly()
                     .load(image)
                     .addListener(getListener(false))
-                    .into (SubsamplingTarget(it) {
+                    .into (ProgressTarget(image, SubsamplingTarget(it) {
                         pageNum.visibility = View.GONE
                         progressBar.visibility = View.GONE
                         view?.setOnClickListener(null)
                         view?.setOnLongClickListener(null)
                         updateScaleType(it, currentScaleType)
-                    })
+                    }, progressBar))
             }
         }.also { setupImageTapEvents(it) }
     }
