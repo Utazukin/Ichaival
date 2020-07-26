@@ -156,7 +156,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)
                     val markCompletePage = floor(it.numPages * 0.9f).toInt()
                     if (it.numPages > 0 && currentPage + 1 == markCompletePage)
-                        launch(Dispatchers.Default) { DatabaseReader.setArchiveNewFlag(it.id) }
+                        launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
                 }
 
                 loadImage(page)

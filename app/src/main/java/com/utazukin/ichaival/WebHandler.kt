@@ -270,13 +270,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     @Suppress("BlockingMethodInNonBlockingContext")
     private suspend fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
 
-    fun setArchiveNewFlag(id: String) {
+    suspend fun setArchiveNewFlag(id: String) {
         if (!canConnect(true))
             return
 
         val url = "$serverLocation${clearNewPath.format(id)}"
         val connection = createServerConnection(url, "DELETE")
-        httpClient.newCall(connection).execute()
+        httpClient.newCall(connection).await()
     }
 
     suspend fun downloadArchiveList() : JSONArray? {

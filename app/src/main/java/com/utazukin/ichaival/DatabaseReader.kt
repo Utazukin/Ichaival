@@ -115,7 +115,7 @@ object DatabaseReader {
         GlobalScope.launch(Dispatchers.IO) { database.clearBookmarks() }
     }
 
-    fun setArchiveNewFlag(id: String) {
+    suspend fun setArchiveNewFlag(id: String) {
         database.archiveDao().updateNewFlag(id, false)
         WebHandler.setArchiveNewFlag(id)
     }
