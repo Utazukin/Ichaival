@@ -19,6 +19,8 @@
 package com.utazukin.ichaival
 
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.preference.Preference
 import android.util.Base64
 import kotlinx.coroutines.Dispatchers
@@ -162,6 +164,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return ServerSearchResult(results, totalResults, search, onlyNew)
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     private suspend fun internalSearchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : JSONObject? {
         if (!canConnect(true))
             return null
@@ -208,7 +211,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
             return body?.let {
                 val thumbFile = File(thumbDir, "$id.jpg")
-                thumbFile.writeBytes(withContext(Dispatchers.IO) { it.bytes() })
+                thumbFile.writeBytes(it.suspendBytes())
                 thumbFile
             }
         }
@@ -270,6 +273,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     @Suppress("BlockingMethodInNonBlockingContext")
     private suspend fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
+    private suspend fun ResponseBody.suspendBytes() = withContext(Dispatchers.IO) { bytes() }
+
     suspend fun setArchiveNewFlag(id: String) {
         if (!canConnect(true))
             return
@@ -307,13 +313,24 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
 
+    @Suppress("DEPRECATION")
     private fun canConnect(silent: Boolean = false) : Boolean {
         if (serverLocation.isEmpty())
             return false
 
-        if (connectivityManager?.activeNetworkInfo?.isConnected != true) {
-            if (!silent)
-                notifyError("No network connection!")
+        val connected = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+           connectivityManager?.let {
+               it.getNetworkCapabilities(it.activeNetwork)?.let { active ->
+                   (active.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                           || active.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                           || active.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
+               }
+           } ?: false
+        } else
+            connectivityManager?.activeNetworkInfo?.isConnected != true
+
+        if (!connected && !silent) {
+            notifyError("No network connection!")
             return false
         }
 
