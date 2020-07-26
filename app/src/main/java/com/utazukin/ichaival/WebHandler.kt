@@ -158,7 +158,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (showRefresh)
             refreshListener?.isRefreshing(true)
 
-        val jsonResults = runBlocking { internalSearchServer(search, onlyNew, sortMethod, descending, start) } ?: return ServerSearchResult(null)
+        val jsonResults = runBlocking { internalSearchServer(search, onlyNew, sortMethod, descending, start) }
+        if (jsonResults == null) {
+            if (showRefresh)
+                refreshListener?.isRefreshing(false)
+            return ServerSearchResult(null)
+        }
+
         val totalResults = jsonResults.getInt("recordsFiltered")
 
         val dataArray = jsonResults.getJSONArray("data")
@@ -188,12 +194,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$searchPath?filter=$encodedSearch&newonly=$onlyNew&sortby=$sort&order=$order&start=$start"
 
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await()
-        with (response) {
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+        return response?.run {
             if (!isSuccessful)
                 return null
 
-            return body?.let { JSONObject(it.suspendString()) }
+            body?.let { JSONObject(it.suspendString()) }
         }
     }
 
