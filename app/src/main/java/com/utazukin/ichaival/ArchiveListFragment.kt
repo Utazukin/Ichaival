@@ -278,7 +278,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             searchView.clearFocus()
 
             val model = ViewModelProviders.of(this).get(StaticCategoryModel::class.java).apply {
-                init(category.archiveIds, sortMethod, descending, newCheckBox.isChecked)
+                init(category.archiveIds, category.id, sortMethod, descending, newCheckBox.isChecked)
             }
             model.archiveList?.observe(viewLifecycleOwner, Observer {
                 (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)

@@ -74,6 +74,8 @@ class SearchViewModel : SearchViewModelBase() {
 
 class StaticCategoryModel : ArchiveViewModel() {
     private lateinit var results: List<String>
+    var categoryId: String? = null
+        private set
 
     fun filter(onlyNew: Boolean) {
         if (!onlyNew) {
@@ -91,8 +93,9 @@ class StaticCategoryModel : ArchiveViewModel() {
         }
     }
 
-    fun init(ids: List<String>, method: SortMethod, desc: Boolean, onlyNew: Boolean) {
-        if (archiveList == null) {
+    fun init(ids: List<String>, id: String, method: SortMethod, desc: Boolean, onlyNew: Boolean) {
+        if (archiveList == null || id != categoryId) {
+            categoryId = id
             archiveDataFactory.isSearch = false
             archiveDataFactory.updateSort(method, desc, true)
             archiveList = archiveDataFactory.toLiveData()
