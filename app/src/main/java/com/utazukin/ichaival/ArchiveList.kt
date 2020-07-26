@@ -120,6 +120,27 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         }
     }
 
+    override fun onLongPressTab(tab: ReaderTab): Boolean {
+        val tagFragment = TagDialogFragment.newInstance(tab.id)
+
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        listFragment?.run {
+            tagFragment.setTagPressListener {
+                tag -> searchView.setQuery(tag, true)
+                drawerLayout.closeDrawers()
+            }
+            tagFragment.setTagLongPressListener { tag ->
+                searchView.setQuery("${searchView.query} $tag", true)
+                drawerLayout.closeDrawers()
+                true
+            }
+        }
+
+        tagFragment.show(supportFragmentManager, "tag_popup")
+
+        return true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.filter_menu -> {
