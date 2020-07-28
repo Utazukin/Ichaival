@@ -382,7 +382,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             method(method, body)
             url(url)
             if (apiKey.isNotEmpty())
-                header("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.URL_SAFE)}")
+                addHeader("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.NO_WRAP)}")
             build()
         }
     }
