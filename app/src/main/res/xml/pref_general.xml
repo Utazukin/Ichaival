@@ -16,7 +16,8 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
@@ -26,97 +27,97 @@
     <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
 
     <PreferenceCategory
-        android:title="@string/server_pref_header"
-        android:key="@string/server_header_key">
+        app:title="@string/server_pref_header"
+        app:key="@string/server_header_key">
 
         <EditTextPreference
-            android:key="@string/server_address_preference"
+            app:key="@string/server_address_preference"
             android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="@string/server_location_name" />
+            app:singleLine="true"
+            app:title="@string/server_location_name" />
         <EditTextPreference
-            android:key="@string/api_key_pref"
+            app:key="@string/api_key_pref"
             android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="@string/api_key_pref_name" />
+            app:singleLine="true"
+            app:title="@string/api_key_pref_name" />
         <Preference
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:key="@string/temp_folder_pref"
-            android:summary="@string/temp_folder_pref_summary"
-            android:title="@string/temp_folder_pref_title" />
+            app:key="@string/temp_folder_pref"
+            app:summary="@string/temp_folder_pref_summary"
+            app:title="@string/temp_folder_pref_title" />
     </PreferenceCategory>
     <PreferenceCategory
-            android:title="@string/pref_header_general">
+            app:title="@string/pref_header_general">
 
         <SwitchPreference
-                android:defaultValue="false"
-                android:title="@string/verbose_pref_name"
-                android:key="@string/verbose_pref"
-                android:summary="@string/verbose_pref_summary"/>
+                app:defaultValue="false"
+                app:title="@string/verbose_pref_name"
+                app:key="@string/verbose_pref"
+                app:summary="@string/verbose_pref_summary"/>
         <SwitchPreference
-                android:defaultValue="true"
-                android:key="@string/swipe_refresh_key"
-                android:title="@string/swipe_refresh_pref" />
+                app:defaultValue="true"
+                app:key="@string/swipe_refresh_key"
+                app:title="@string/swipe_refresh_pref" />
         <Preference
-                android:title="@string/thumbnail_setting"
-                android:key="@string/thumbnail_pref"
-                android:summary="@string/thumbnail_summary"/>
+                app:title="@string/thumbnail_setting"
+                app:key="@string/thumbnail_pref"
+                app:summary="@string/thumbnail_summary"/>
     </PreferenceCategory>
 
     <PreferenceCategory
-            android:title="@string/reader_pref_header">
+            app:title="@string/reader_pref_header">
 
         <SwitchPreference
-                android:defaultValue="false"
-                android:title="@string/rtol_pref_name"
-                android:key="@string/rtol_pref_key"/>
+                app:defaultValue="false"
+                app:title="@string/rtol_pref_name"
+                app:key="@string/rtol_pref_key"/>
         <SwitchPreference
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:defaultValue="false"
-                android:key="@string/vol_key_pref_key"
-                android:title="@string/vol_key_pref_name" />
+                app:defaultValue="false"
+                app:key="@string/vol_key_pref_key"
+                app:title="@string/vol_key_pref_name" />
         <EditTextPreference
-            android:key="@string/fullscreen_timeout_key"
+            app:key="@string/fullscreen_timeout_key"
             android:selectAllOnFocus="true"
-            android:singleLine="true"
+            app:singleLine="true"
             android:inputType="numberDecimal"
-            android:summary="@string/fullscreen_timeout_summary"
-            android:title="@string/fullscreen_timeout_title" />
+            app:summary="@string/fullscreen_timeout_summary"
+            app:title="@string/fullscreen_timeout_title" />
     </PreferenceCategory>
     <PreferenceCategory
-        android:title="@string/search_header"
-        android:key="@string/search_header_key">
+        app:title="@string/search_header"
+        app:key="@string/search_header_key">
 
         <SwitchPreference
-            android:defaultValue="false"
-            android:key="@string/local_search_key"
-            android:summary="@string/local_search_sum"
-            android:title="@string/local_search_pref" />
+            app:defaultValue="false"
+            app:key="@string/local_search_key"
+            app:summary="@string/local_search_sum"
+            app:title="@string/local_search_pref" />
         <EditTextPreference
             android:inputType="number"
-            android:key="@string/search_delay_key"
+            app:key="@string/search_delay_key"
             android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:summary="@string/search_delay_summary"
-            android:title="@string/search_delay_pref" />
+            app:singleLine="true"
+            app:summary="@string/search_delay_summary"
+            app:title="@string/search_delay_pref" />
     </PreferenceCategory>
     <PreferenceCategory
-            android:title="@string/source_pref_header">
+            app:title="@string/source_pref_header">
 
         <Preference
-                android:title="Open Source Licenses"
-                android:key="@string/license_key"
-                android:summary="Licences used by this app"/>
+                app:title="Open Source Licenses"
+                app:key="@string/license_key"
+                app:summary="Licences used by this app"/>
         <Preference
-                android:key="@string/gpl_key"
-                android:summary="Tap to view"
-                android:title="Licensed under GPLv3" />
+                app:key="@string/gpl_key"
+                app:summary="Tap to view"
+                app:title="Licensed under GPLv3" />
         <Preference
-                android:title="View on GitHub"
-                android:key="@string/git_key"
-                android:summary="View source on GitHub"/>
+                app:title="View on GitHub"
+                app:key="@string/git_key"
+                app:summary="View source on GitHub"/>
     </PreferenceCategory>
 
 </PreferenceScreen>

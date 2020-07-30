@@ -21,8 +21,8 @@ package com.utazukin.ichaival
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
-import android.preference.Preference
 import android.util.Base64
+import androidx.preference.Preference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -423,8 +423,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
             //assume http if not present
             serverLocation = "http://$newValue"
-            pref.editor.putString(pref.key, serverLocation).apply()
             pref.summary = serverLocation
+            pref.sharedPreferences.edit().putString(pref.key, serverLocation).apply()
             return false
         } else {
             notifyError("Invalid URL!")

@@ -38,6 +38,7 @@
         <activity
                 android:name="com.utazukin.ichaival.SettingsActivity"
                 android:label="@string/title_activity_settings"
+                android:theme="@style/Theme.MaterialComponents.Bridge"
                 android:parentActivityName="com.utazukin.ichaival.ArchiveList">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
