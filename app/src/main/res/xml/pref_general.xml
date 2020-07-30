@@ -16,8 +16,10 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
@@ -27,97 +29,116 @@
     <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
 
     <PreferenceCategory
-        app:title="@string/server_pref_header"
-        app:key="@string/server_header_key">
+        app:key="@string/server_header_key"
+        app:iconSpaceReserved="false"
+        app:title="@string/server_pref_header">
 
         <EditTextPreference
-            app:key="@string/server_address_preference"
             android:selectAllOnFocus="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/server_address_preference"
             app:singleLine="true"
             app:title="@string/server_location_name" />
         <EditTextPreference
-            app:key="@string/api_key_pref"
             android:selectAllOnFocus="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/api_key_pref"
             app:singleLine="true"
             app:title="@string/api_key_pref_name" />
         <Preference
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:iconSpaceReserved="false"
             app:key="@string/temp_folder_pref"
             app:summary="@string/temp_folder_pref_summary"
             app:title="@string/temp_folder_pref_title" />
     </PreferenceCategory>
     <PreferenceCategory
-            app:title="@string/pref_header_general">
+        app:iconSpaceReserved="false"
+        app:title="@string/pref_header_general">
 
         <SwitchPreference
-                app:defaultValue="false"
-                app:title="@string/verbose_pref_name"
-                app:key="@string/verbose_pref"
-                app:summary="@string/verbose_pref_summary"/>
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/verbose_pref"
+            app:summary="@string/verbose_pref_summary"
+            app:title="@string/verbose_pref_name" />
         <SwitchPreference
-                app:defaultValue="true"
-                app:key="@string/swipe_refresh_key"
-                app:title="@string/swipe_refresh_pref" />
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/swipe_refresh_key"
+            app:title="@string/swipe_refresh_pref" />
         <Preference
-                app:title="@string/thumbnail_setting"
-                app:key="@string/thumbnail_pref"
-                app:summary="@string/thumbnail_summary"/>
+            app:key="@string/thumbnail_pref"
+            app:summary="@string/thumbnail_summary"
+            app:iconSpaceReserved="false"
+            app:title="@string/thumbnail_setting" />
     </PreferenceCategory>
 
     <PreferenceCategory
-            app:title="@string/reader_pref_header">
+        app:iconSpaceReserved="false"
+        app:title="@string/reader_pref_header">
 
         <SwitchPreference
-                app:defaultValue="false"
-                app:title="@string/rtol_pref_name"
-                app:key="@string/rtol_pref_key"/>
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/rtol_pref_key"
+            app:title="@string/rtol_pref_name" />
         <SwitchPreference
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:defaultValue="false"
-                app:key="@string/vol_key_pref_key"
-                app:title="@string/vol_key_pref_name" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:iconSpaceReserved="false"
+            app:defaultValue="false"
+            app:key="@string/vol_key_pref_key"
+            app:title="@string/vol_key_pref_name" />
         <EditTextPreference
-            app:key="@string/fullscreen_timeout_key"
-            android:selectAllOnFocus="true"
-            app:singleLine="true"
             android:inputType="numberDecimal"
+            android:selectAllOnFocus="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/fullscreen_timeout_key"
+            app:singleLine="true"
             app:summary="@string/fullscreen_timeout_summary"
             app:title="@string/fullscreen_timeout_title" />
     </PreferenceCategory>
     <PreferenceCategory
-        app:title="@string/search_header"
-        app:key="@string/search_header_key">
+        app:key="@string/search_header_key"
+        app:iconSpaceReserved="false"
+        app:title="@string/search_header">
 
         <SwitchPreference
             app:defaultValue="false"
+            app:iconSpaceReserved="false"
             app:key="@string/local_search_key"
             app:summary="@string/local_search_sum"
             app:title="@string/local_search_pref" />
         <EditTextPreference
             android:inputType="number"
-            app:key="@string/search_delay_key"
             android:selectAllOnFocus="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/search_delay_key"
             app:singleLine="true"
             app:summary="@string/search_delay_summary"
             app:title="@string/search_delay_pref" />
     </PreferenceCategory>
     <PreferenceCategory
-            app:title="@string/source_pref_header">
+        app:iconSpaceReserved="false"
+        app:title="@string/source_pref_header">
 
         <Preference
-                app:title="Open Source Licenses"
-                app:key="@string/license_key"
-                app:summary="Licences used by this app"/>
+            app:key="@string/license_key"
+            app:iconSpaceReserved="false"
+            app:summary="Licences used by this app"
+            app:title="Open Source Licenses" />
         <Preference
-                app:key="@string/gpl_key"
-                app:summary="Tap to view"
-                app:title="Licensed under GPLv3" />
+            app:key="@string/gpl_key"
+            app:iconSpaceReserved="false"
+            app:summary="Tap to view"
+            app:title="Licensed under GPLv3" />
         <Preference
-                app:title="View on GitHub"
-                app:key="@string/git_key"
-                app:summary="View source on GitHub"/>
+            app:key="@string/git_key"
+            app:iconSpaceReserved="false"
+            app:summary="View source on GitHub"
+            app:title="View on GitHub" />
     </PreferenceCategory>
 
 </PreferenceScreen>
