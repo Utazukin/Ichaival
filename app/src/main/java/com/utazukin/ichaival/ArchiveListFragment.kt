@@ -335,8 +335,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.archive_list_menu, menu)
-        if (activity is ArchiveSearch)
-            menu.findItem(R.id.refresh_archives)?.isVisible = false
+        if (activity is ArchiveSearch) {
+            with (menu) {
+                findItem(R.id.refresh_archives)?.isVisible = false
+                findItem(R.id.filter_menu)?.isVisible = false
+            }
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
