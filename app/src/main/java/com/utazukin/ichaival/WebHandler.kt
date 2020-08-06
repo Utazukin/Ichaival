@@ -280,7 +280,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect())
             return null
 
-        notifyExtract(id)
+        notify("Extracting...")
 
         val errorMessage = "Failed to extract archive!"
         val url = "$serverLocation${extractPath.format(id)}"
@@ -385,12 +385,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 addHeader("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.NO_WRAP)}")
             build()
         }
-    }
-
-    private fun notifyExtract(id: String) {
-        val title = DatabaseReader.database.archiveDao().getArchiveTitle(id)
-        if (title != null)
-            listener?.onExtract(title)
     }
 
     private fun handleErrorMessage(responseCode: Int, defaultMessage: String) {

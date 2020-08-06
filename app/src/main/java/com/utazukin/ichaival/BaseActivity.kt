@@ -143,13 +143,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     override fun onError(error: String) {
-        val context = this
-        launch { Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show() }
-    }
-
-    override fun onExtract(title: String) {
-        val context = this
-        launch { Toast.makeText(context, "Extracting...", Toast.LENGTH_LONG).show() }
+        launch { Toast.makeText(this@BaseActivity, "Error: $error", Toast.LENGTH_LONG).show() }
     }
 
     override fun onInfo(message: String) {

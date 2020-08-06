@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 interface DatabaseMessageListener {
     fun onError(error: String)
-    fun onExtract(title: String)
     fun onInfo(message: String)
 }
 

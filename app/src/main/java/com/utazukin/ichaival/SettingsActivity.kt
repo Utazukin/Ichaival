@@ -77,5 +77,4 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
         launch { Toast.makeText(this@SettingsActivity, message, Toast.LENGTH_SHORT).show() }
     }
 
-    override fun onExtract(title: String) {}
 }
