@@ -115,6 +115,13 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         ItemTouchHelper(touchHelper).attachToRecyclerView(tabView)
     }
 
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(navView))
+            drawerLayout.closeDrawer(navView)
+        else
+            super.onBackPressed()
+    }
+
     override fun onStart() {
         super.onStart()
         WebHandler.listener = this

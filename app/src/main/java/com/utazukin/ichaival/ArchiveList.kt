@@ -120,6 +120,13 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         }
     }
 
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(categoryView))
+            drawerLayout.closeDrawer(categoryView)
+        else
+            super.onBackPressed()
+    }
+
     override fun onLongPressTab(tab: ReaderTab): Boolean {
         val tagFragment = TagDialogFragment.newInstance(tab.id)
 
