@@ -20,6 +20,8 @@ package com.utazukin.ichaival
 
 import androidx.paging.DataSource
 import androidx.room.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -169,11 +171,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
     @Transaction
-    fun insertOrUpdate(archives: Map<String, ArchiveJson>) {
+    fun insertAndRemove(archives: Map<String, ArchiveJson>) {
         val currentIds = archiveDao().getAllIds()
         val keys = archives.keys
         val allIds = currentIds.union(keys)
-        archiveDao().updateFromJson(archives.values)
 
         val toAdd = keys.minus(currentIds)
         if (toAdd.isNotEmpty())
@@ -190,6 +191,8 @@ abstract class ArchiveDatabase : RoomDatabase() {
             }
         }
     }
+
+    suspend fun updateExisting(archives: Map<String, ArchiveJson>) = withContext(Dispatchers.IO) { archiveDao().updateFromJson(archives.values) }
 
     @Transaction
     suspend fun addBookmark(tab: ReaderTab) {

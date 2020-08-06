@@ -55,11 +55,15 @@ object DatabaseReader {
         if (forceUpdate || checkDirty(cacheDir)) {
             refreshListener?.isRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
-            val archiveJson = withContext(Dispatchers.Default) { WebHandler.downloadArchiveList() }
+            val archiveJson = withContext(Dispatchers.IO) { WebHandler.downloadArchiveList() }
             archiveJson?.let {
                 jsonFile.writeText(it.toString())
                 val serverArchives = readArchiveList(it)
-                database.insertOrUpdate(serverArchives)
+                database.insertAndRemove(serverArchives)
+                if (!forceUpdate)
+                    GlobalScope.launch { database.updateExisting(serverArchives) }
+                else
+                    database.updateExisting(serverArchives)
             }
             refreshListener?.isRefreshing(false)
             isDirty = false
