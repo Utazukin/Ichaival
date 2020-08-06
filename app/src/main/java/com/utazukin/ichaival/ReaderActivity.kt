@@ -329,7 +329,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         // Trigger the initial hide() shortly after the activity has been
         // created, to briefly hint to the user that UI controls
         // are available.
-        delayedHide(100)
+        if (autoHideEnabled)
+            delayedHide(100)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -504,6 +505,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onClose() {
         hide()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (autoHideEnabled)
+            delayedHide(100)
     }
 
     override fun onImageLoadError(fragment: ReaderFragment) : Boolean {
