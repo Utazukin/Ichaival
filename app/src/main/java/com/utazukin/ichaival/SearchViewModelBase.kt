@@ -74,8 +74,7 @@ class SearchViewModel : SearchViewModelBase() {
 
 class StaticCategoryModel : ArchiveViewModel() {
     private lateinit var results: List<String>
-    var categoryId: String? = null
-        private set
+    private var categoryId: String? = null
 
     fun filter(onlyNew: Boolean) {
         if (!onlyNew) {

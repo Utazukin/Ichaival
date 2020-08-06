@@ -81,10 +81,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
                 launch {
                     withContext(Dispatchers.IO) { ServerManager.init(this@ArchiveList, false, true) }
-                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
                     listFragment?.forceArchiveListUpdate()
 
-                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                     categoryFragment?.initCategories(ServerManager.categories)
                 }
             }
@@ -94,10 +94,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 launch {
                     withContext(Dispatchers.IO) { ServerManager.init(this@ArchiveList, false, true) }
                     val listFragment: ArchiveListFragment? =
-                        supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+                        supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
                     listFragment?.forceArchiveListUpdate()
 
-                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                     categoryFragment?.initCategories(ServerManager.categories)
                 }
             }
@@ -130,7 +130,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onLongPressTab(tab: ReaderTab): Boolean {
         val tagFragment = TagDialogFragment.newInstance(tab.id)
 
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.run {
             tagFragment.setTagPressListener {
                 tag -> searchView.setQuery(tag, true)
@@ -160,20 +160,20 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun onServerInitialized() {
         super.onServerInitialized()
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.setupArchiveList()
 
-        val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+        val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
         categoryFragment?.initCategories(ServerManager.categories)
     }
 
     override fun onCategoryChanged(category: ArchiveCategory) {
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.handleCategoryChange(category)
     }
 
     override fun onSortChanged(sort: SortMethod, desc: Boolean) {
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.updateSortMethod(sort, desc)
     }
 

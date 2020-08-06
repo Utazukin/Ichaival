@@ -37,7 +37,7 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_search)
         setSupportActionBar(findViewById(R.id.toolbar))
-        intent.run {
+        with(intent) {
             val listFragment: ArchiveListFragment =
                 supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment
             val tag = getStringExtra(TAG_SEARCH)

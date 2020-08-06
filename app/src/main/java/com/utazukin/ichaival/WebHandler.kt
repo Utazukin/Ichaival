@@ -168,11 +168,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val totalResults = jsonResults.getInt("recordsFiltered")
 
         val dataArray = jsonResults.getJSONArray("data")
-        val results = mutableListOf<String>()
-        for (i in 0 until dataArray.length()) {
-            val id = dataArray.getJSONObject(i).getString("arcid")
-            results.add(id)
-        }
+        val results = MutableList(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
 
         if (showRefresh)
             refreshListener?.isRefreshing(false)
@@ -378,7 +374,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     fun getRawImageUrl(path: String) = serverLocation + path
 
     private fun createServerConnection(url: String, method: String = "GET", body: RequestBody? = null) : Request {
-        return Request.Builder().run {
+        return with (Request.Builder()) {
             method(method, body)
             url(url)
             if (apiKey.isNotEmpty())

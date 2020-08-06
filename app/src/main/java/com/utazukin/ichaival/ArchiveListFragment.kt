@@ -161,7 +161,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 if (creatingView)
                     return true
 
-                val categoryFragment: CategoryFilterFragment? = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as CategoryFilterFragment?
+                val categoryFragment: CategoryFilterFragment? = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                 categoryFragment?.selectedCategory?.let {
                     if (it is StaticCategory && query == STATIC_CATEGORY_SEARCH)
                         return true
@@ -296,7 +296,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         val to = intArrayOf(R.id.search_suggestion)
         val adapter = SimpleCursorAdapter(context, R.layout.search_suggestion_layout, null, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER)
 
-        searchView.run {
+        with(searchView) {
             suggestionsAdapter = adapter
 
             setOnSuggestionListener(object: SearchView.OnSuggestionListener {
@@ -359,7 +359,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun handleArchiveLongPress(archive: Archive) : Boolean {
-        fragmentManager?.let {
+        parentFragmentManager.let {
             val tagFragment = TagDialogFragment.newInstance(archive.id)
             tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
             tagFragment.setTagLongPressListener { tag ->
@@ -463,7 +463,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
     }
 
-    private fun <T> getViewModel(init: Boolean = true) : T where T : SearchViewModelBase {
+    private inline fun <reified T> getViewModel(init: Boolean = true) : T where T : SearchViewModelBase {
         val isStaticCategory = viewModel is StaticCategoryModel
         if (viewModel == null || isStaticCategory)
             initViewModel(isLocalSearch, false, init || isStaticCategory)
