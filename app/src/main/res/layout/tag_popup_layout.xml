@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2018 Utazukin
+  ~ Copyright (C) 2020 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -17,14 +17,10 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
              android:background="?attr/colorBackgroundFloating"
              android:layout_width="match_parent"
-             android:layout_height="match_parent">
-
-    <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+             android:layout_height="match_parent"
             android:layout_margin="2dp">
 
         <LinearLayout
@@ -41,6 +37,5 @@
                     android:id="@+id/tag_header"
                     android:textSize="24sp"/>
         </LinearLayout>
-    </ScrollView>
 
-</FrameLayout>
+</ScrollView>
