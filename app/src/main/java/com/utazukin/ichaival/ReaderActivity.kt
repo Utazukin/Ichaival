@@ -30,10 +30,10 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -229,7 +229,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
-                viewModel.bookmarks.observe(this@ReaderActivity, Observer { list -> it.submitList(list) })
+                viewModel.bookmarks.observe(this@ReaderActivity, { list -> it.submitList(list) })
             }
 
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
@@ -346,7 +346,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             R.drawable.ic_bookmark_white_24dp
         else
             R.drawable.ic_bookmark_border_white_24dp
-        menuItem?.icon = getDrawable(icon)
+        menuItem?.icon = ContextCompat.getDrawable(this, icon)
 
     }
 
@@ -407,6 +407,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     }
                 }
             }
+            R.id.bookmark_button -> drawerLayout.openDrawer(navView)
         }
     }
 

@@ -41,6 +41,14 @@
         android:text="@string/goto_page" />
 
     <Button
+        android:id="@+id/bookmark_button"
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableStart="@drawable/ic_menu"
+        android:text="@string/bookmark_label" />
+
+    <Button
         android:id="@+id/random_archive_button"
         style="@style/Widget.AppCompat.Button.Borderless.Colored"
         android:layout_width="match_parent"

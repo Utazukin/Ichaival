@@ -50,6 +50,10 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         setContentView(R.layout.activity_archive_details)
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
+        supportActionBar?.run {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
+        }
 
         intent.extras?.run {
             archiveId = getString("id")

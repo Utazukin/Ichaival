@@ -54,7 +54,7 @@ class SearchViewModel : SearchViewModelBase() {
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id })
 
-        val randId = if (data.isNotEmpty()) data.random() else null
+        val randId = data.randomOrNull()
         return if (randId != null) archiveDao.getArchive(randId) else null
     }
 
