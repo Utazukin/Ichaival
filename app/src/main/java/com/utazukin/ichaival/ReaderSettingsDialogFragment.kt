@@ -56,10 +56,12 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
         val detailsButton: Button = view.findViewById(R.id.detail_button)
         val gotoButton: Button = view.findViewById(R.id.goto_button)
         val refreshButton: Button = view.findViewById(R.id.refresh_button)
+        val bookmarkButton: Button = view.findViewById(R.id.bookmark_button)
 
         detailsButton.setOnClickListener{ handler?.handleButton(R.id.detail_button) }
         gotoButton.setOnClickListener { handler?.handleButton(R.id.goto_button) }
         refreshButton.setOnClickListener{ handler?.handleButton(R.id.refresh_button) }
+        bookmarkButton.setOnClickListener { handler?.handleButton(R.id.bookmark_button) }
         val dialog = requireDialog() as BottomSheetDialog
         dialog.dismissWithAnimation = true
 

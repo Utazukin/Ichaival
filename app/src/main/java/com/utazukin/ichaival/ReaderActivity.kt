@@ -379,6 +379,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     if (it.numPages >= 0) {
                         val dialog = PageSelectDialogFragment.createInstance(currentPage + 1, it.numPages, it.id)
                         dialog.listener = { value ->
+                            closeSettings()
                             val adjustedPage = getAdjustedPage(value)
                             loadImage(adjustedPage)
                             imagePager.setCurrentItem(adjustedPage, false)
@@ -398,6 +399,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
             R.id.refresh_button -> {
                 retryCount = 0
+                closeSettings()
                 archive?.run {
                     invalidateCache()
                     launch {
@@ -407,7 +409,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     }
                 }
             }
-            R.id.bookmark_button -> drawerLayout.openDrawer(navView)
+            R.id.bookmark_button -> {
+                closeSettings()
+                drawerLayout.openDrawer(navView)
+            }
         }
     }
 
@@ -497,6 +502,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private fun openSettings() {
         val settingsFragment = ReaderSettingsDialogFragment.newInstance(currentScaleType)
         settingsFragment.show(supportFragmentManager, "reader_settings")
+    }
+
+    private fun closeSettings() {
+        val settingsFragment = supportFragmentManager.findFragmentByTag("reader_settings") as? ReaderSettingsDialogFragment
+        settingsFragment?.dismiss()
     }
 
     override fun onFragmentLongPress() : Boolean {
