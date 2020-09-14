@@ -147,6 +147,18 @@ object DatabaseReader {
             thumbDir.deleteRecursively()
     }
 
+    suspend fun refreshThumbnail(id: String?, cacheDir: File) : String? {
+        if (id == null)
+            return null
+
+        val thumbDir = getThumbDir(cacheDir)
+        val image = File(thumbDir, "$id.jpg")
+        if (image.exists())
+            image.delete()
+
+        return getArchiveImage(id, cacheDir)
+    }
+
     suspend fun getArchiveImage(archive: Archive, filesDir: File) = getArchiveImage(archive.id, filesDir)
 
     suspend fun getArchiveImage(id: String, filesDir: File) : String? {

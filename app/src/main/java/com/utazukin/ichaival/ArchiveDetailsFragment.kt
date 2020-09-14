@@ -25,6 +25,7 @@ import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -50,6 +51,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private var archiveId: String? = null
     private lateinit var tagLayout: LinearLayout
     private lateinit var bookmarkButton: Button
+    private lateinit var thumbView: ImageView
     private var thumbLoadJob: Job? = null
     private var tagListener: TagInteractionListener? = null
     private val isLocalSearch by lazy {
@@ -59,6 +61,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
         arguments?.let {
             archiveId = it.getString(ARCHIVE_ID)
         }
@@ -92,6 +95,22 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         ReaderTabHolder.unregisterRemoveListener(this)
         ReaderTabHolder.unregisterClearListener(this)
         ReaderTabHolder.unregisterAddListener(this)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh_thumb_item -> {
+                archiveId?.let {
+                    thumbLoadJob?.cancel()
+                    thumbView.setImageDrawable(null)
+                    lifecycleScope.launch {
+                        val thumb = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext().filesDir) }
+                        Glide.with(thumbView).load(thumb).dontTransform().into(thumbView)
+                    }
+                }
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onTabAdded(id: String) {
@@ -195,9 +214,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             titleView.text = archive.title
 
             thumbLoadJob = lifecycleScope.launch(Dispatchers.Main) {
-                val thumbView: ImageView = view.findViewById(R.id.cover)
-                val thumb =
-                    withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext().filesDir) }
+                thumbView = view.findViewById(R.id.cover)
+                val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext().filesDir) }
                 val request = Glide.with(thumbView).load(thumb).dontTransform()
                 request.into(thumbView)
 

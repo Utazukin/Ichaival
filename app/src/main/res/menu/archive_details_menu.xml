@@ -26,4 +26,7 @@
     <item
             android:id="@+id/random_item"
             android:title="@string/random_archive" />
+    <item
+        android:id="@+id/refresh_thumb_item"
+        android:title="@string/refresh_thumb_menu_item" />
 </menu>
