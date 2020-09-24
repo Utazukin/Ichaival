@@ -37,19 +37,11 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_search)
         setSupportActionBar(findViewById(R.id.toolbar))
-        with(intent) {
-            val listFragment: ArchiveListFragment =
-                supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment
-            val tag = getStringExtra(TAG_SEARCH)
-
-            listFragment.showOnlySearch(true)
-            listFragment.searchView.setQuery(tag, false)
-        }
     }
 
     override fun onServerInitialized() {
         super.onServerInitialized()
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment?
+        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.setupArchiveList()
     }
 
@@ -63,6 +55,14 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
         launch(Dispatchers.IO) { ServerManager.generateTagSuggestions() }
+        with(intent) {
+            val listFragment: ArchiveListFragment =
+                supportFragmentManager.findFragmentById(R.id.list_fragment) as ArchiveListFragment
+            val tag = getStringExtra(TAG_SEARCH)
+
+            listFragment.showOnlySearch(true)
+            listFragment.searchView.setQuery(tag, false)
+        }
     }
 
     override fun onStop() {
