@@ -48,6 +48,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.truncate
@@ -93,6 +94,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
+    private var retrying = AtomicBoolean()
     private val subtitle: String
         get() {
             return archive.let {
@@ -525,13 +527,18 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onImageLoadError(fragment: ReaderFragment) : Boolean {
-        return if (retryCount++ < 3) {
+        return if (retryCount < 3) {
             archive?.run {
-                invalidateCache()
-                launch {
-                    withContext(Dispatchers.IO) { extract() }
+                if (retrying.compareAndSet(false, true)) {
+                    invalidateCache()
+                    ++retryCount
+                    launch {
+                        withContext(Dispatchers.IO) { extract() }
+                        retrying.set(false)
+                        fragment.reloadImage()
+                    }
+                } else
                     fragment.reloadImage()
-                }
             }
 
             true

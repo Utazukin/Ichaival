@@ -43,7 +43,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.FileNotFoundException
 
 enum class TouchZone {
     Left,
@@ -172,10 +171,7 @@ class ReaderFragment : Fragment(), PageFragment {
                 target: Target<T>?,
                 isFirstResource: Boolean
             ): Boolean {
-                if (e?.rootCauses?.any { x -> x is FileNotFoundException } == true)
-                    return listener?.onImageLoadError(fragment) == true
-
-                return false
+                return listener?.onImageLoadError(fragment) == true
             }
 
             override fun onResourceReady(
