@@ -25,7 +25,10 @@ import com.bumptech.glide.annotation.GlideModule
 import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
-import okhttp3.*
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.ResponseBody
 import okio.*
 import java.io.InputStream
 
@@ -38,14 +41,12 @@ class ProgressGlideModule : AppGlideModule() {
 
     companion object {
         private fun createInterceptor(listener: ResponseProgressListener): Interceptor {
-            return object : Interceptor {
-                override fun intercept(chain: Interceptor.Chain): Response {
-                    val request = chain.request()
-                    val response = chain.proceed(request)
-                    return response.newBuilder()
-                        .body(OkHttpProgressResponseBody(request.url, response.body!!, listener))
-                        .build()
-                }
+            return Interceptor { chain ->
+                val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.encodedKey).build()
+                val response = chain.proceed(request)
+                response.newBuilder()
+                    .body(OkHttpProgressResponseBody(request.url, response.body!!, listener))
+                    .build()
             }
         }
     }

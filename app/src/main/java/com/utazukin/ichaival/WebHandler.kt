@@ -76,6 +76,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     var listener: DatabaseMessageListener? = null
     var refreshListener: DatabaseRefreshListener? = null
     var connectivityManager: ConnectivityManager? = null
+    val encodedKey
+        get() = "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.NO_WRAP)}"
 
     suspend fun getServerInfo() : JSONObject? {
         if (!canConnect())
@@ -378,7 +380,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             method(method, body)
             url(url)
             if (apiKey.isNotEmpty())
-                addHeader("Authorization", "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.NO_WRAP)}")
+                addHeader("Authorization", encodedKey)
             build()
         }
     }
