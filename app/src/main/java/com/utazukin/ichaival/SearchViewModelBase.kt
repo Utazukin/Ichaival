@@ -117,8 +117,8 @@ open class ArchiveViewModel : SearchViewModelBase() {
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id })
 
-        val randId = data.random()
-        return archiveDao.getArchive(randId)
+        val randId = data.randomOrNull()
+        return if (randId != null) archiveDao.getArchive(randId) else null
     }
 
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
