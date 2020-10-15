@@ -40,15 +40,7 @@ abstract class SearchViewModelBase : ViewModel() {
     protected abstract val archiveDataFactory: ArchiveListDataFactory
     protected val archiveDao by lazy { DatabaseReader.database.archiveDao() }
 
-    abstract suspend fun getRandom(excludeBookmarked: Boolean = true): Archive?
-    abstract fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false)
-    fun reset() = archiveDataFactory.reset()
-}
-
-class SearchViewModel : SearchViewModelBase() {
-    override val archiveDataFactory = ArchiveListDataFactory(false)
-
-    override suspend fun getRandom(excludeBookmarked: Boolean): Archive? {
+    suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? {
         var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
@@ -57,6 +49,13 @@ class SearchViewModel : SearchViewModelBase() {
         val randId = data.randomOrNull()
         return if (randId != null) archiveDao.getArchive(randId) else null
     }
+
+    abstract fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false)
+    fun reset() = archiveDataFactory.reset()
+}
+
+class SearchViewModel : SearchViewModelBase() {
+    override val archiveDataFactory = ArchiveListDataFactory(false)
 
     fun init(method: SortMethod, desc: Boolean, force: Boolean = false, isSearch: Boolean = false) {
         if (archiveList != null && !force)
@@ -110,16 +109,6 @@ open class ArchiveViewModel : SearchViewModelBase() {
     override val archiveDataFactory = ArchiveListDataFactory(true)
     protected var sortMethod = SortMethod.Alpha
     protected var descending = false
-
-    override suspend fun getRandom(excludeBookmarked: Boolean) : Archive? {
-        var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
-
-        if (excludeBookmarked)
-            data = data.subtract(archiveDao.getBookmarks().map { it.id })
-
-        val randId = data.randomOrNull()
-        return if (randId != null) archiveDao.getArchive(randId) else null
-    }
 
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
         if (archiveList == null) {

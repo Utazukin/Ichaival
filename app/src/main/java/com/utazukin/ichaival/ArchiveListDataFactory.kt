@@ -199,6 +199,6 @@ class ArchiveListDataSource(private val results: List<String>?,
 
         val archives = if (ids != null) getArchives(ids) else getArchives(null, params.requestedStartPosition, params.requestedLoadSize)
         val totalSize = if (ids != null || !isSearch) results?.size ?: database.archiveDao().getArchiveCount() else 0
-        callback.onResult(archives, params.requestedStartPosition, totalSize)
+        callback.onResult(archives, params.requestedStartPosition, if (ids != null && archives.size < ids.size) archives.size else totalSize)
     }
 }
