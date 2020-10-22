@@ -250,11 +250,11 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     private fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
-        return if (ids.size <= MAX_PARAMETER_COUNT)
+        return if (ids.size <= MAX_PARAMETER_COUNT - 2)
             dataFunc(ids, offset, limit)
         else {
             val archives = mutableListOf<Archive>()
-            for (split in ids.chunked(MAX_PARAMETER_COUNT))
+            for (split in ids.chunked(MAX_PARAMETER_COUNT - 2))
                 archives.addAll(dataFunc(ids, offset, limit))
             archives
         }
