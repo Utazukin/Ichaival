@@ -65,12 +65,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val infoPath = "$apiPath/info"
     private const val categoryPath = "$apiPath/categories"
     private const val clearTempPath = "$apiPath/tempfolder"
-    private const val timeout = 5000L //ms
+    private const val connTimeoutMs = 5000L
+    private const val readTimeoutMs = 30000L
 
     var serverLocation: String = ""
     var apiKey: String = ""
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
-    private val httpClient = OkHttpClient.Builder().connectTimeout(timeout, TimeUnit.MILLISECONDS).build()
+    private val httpClient = OkHttpClient.Builder().connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS).readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS).build()
 
     var verboseMessages = false
     var listener: DatabaseMessageListener? = null
