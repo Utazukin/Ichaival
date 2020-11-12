@@ -30,7 +30,6 @@ import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
@@ -197,11 +196,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView.clearFocus()
 
         randomButton = view.findViewById(R.id.random_button)
-        randomButton.setOnClickListener { v ->
+        randomButton.setOnClickListener {
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
                 if (archive != null)
-                    startDetailsActivity(archive.id, v?.context)
+                    startDetailsActivity(archive.id, requireContext())
             }
         }
 
@@ -256,7 +255,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     }
                 }
             }
-            viewModel?.archiveList?.observe(viewLifecycleOwner, Observer {
+            viewModel?.archiveList?.observe(viewLifecycleOwner, {
                 listAdapter.submitList(it)
                 val size = it.size
                 (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
@@ -280,7 +279,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val model = ViewModelProviders.of(this).get(StaticCategoryModel::class.java).apply {
                 init(category.archiveIds, category.id, sortMethod, descending, newCheckBox.isChecked)
             }
-            model.archiveList?.observe(viewLifecycleOwner, Observer {
+            model.archiveList?.observe(viewLifecycleOwner, {
                 (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
                 val size = it.size
                 (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
@@ -404,7 +403,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
     }
 
-    private fun startDetailsActivity(id: String, context:Context?){
+    private fun startDetailsActivity(id: String, context: Context) {
         val intent = Intent(context, ArchiveDetails::class.java)
         val bundle = Bundle()
         bundle.putString("id", id)
@@ -484,7 +483,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
 
-        model.archiveList?.observe(viewLifecycleOwner, Observer {
+        model.archiveList?.observe(viewLifecycleOwner, {
             (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
             val size = it.size
             (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
