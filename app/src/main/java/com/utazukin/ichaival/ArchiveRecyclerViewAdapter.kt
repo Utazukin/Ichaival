@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ class ArchiveRecyclerViewAdapter(
                 val image = withContext(Dispatchers.Default) {
                     DatabaseReader.getArchiveImage(
                         it,
-                        holder.mContentView.context.filesDir)
+                        holder.mContentView.context)
                 }
                 glideManager.load(image).into(holder.archiveImage)
             }
