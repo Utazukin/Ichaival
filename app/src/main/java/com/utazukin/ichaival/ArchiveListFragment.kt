@@ -226,7 +226,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         lifecycleScope.launch {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val listAdapter = listView.adapter as ArchiveRecyclerViewAdapter
-            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext().filesDir) }
+            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext()) }
 
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
@@ -445,7 +445,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     fun forceArchiveListUpdate() {
         searchJob?.cancel()
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext().filesDir, true) }
+            withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext(), true) }
 
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)

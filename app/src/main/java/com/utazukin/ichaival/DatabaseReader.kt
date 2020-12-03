@@ -51,7 +51,8 @@ object DatabaseReader {
         }
     }
 
-    suspend fun updateArchiveList(cacheDir: File, forceUpdate: Boolean = false) {
+    suspend fun updateArchiveList(context: Context, forceUpdate: Boolean = false) {
+        val cacheDir = context.noBackupFilesDir
         if (forceUpdate || checkDirty(cacheDir)) {
             refreshListener?.isRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
