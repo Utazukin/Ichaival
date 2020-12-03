@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2020 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ class ReaderTabViewAdapter (
             jobs[holder] = activityScope.launch {
                 val thumb = withContext(Dispatchers.Default) {
                     val context = activityScope as Context
-                    DatabaseReader.getArchiveImage(item.id, context.filesDir)
+                    DatabaseReader.getArchiveImage(item.id, context)
                 }
                 glideManager
                     .load(thumb)
