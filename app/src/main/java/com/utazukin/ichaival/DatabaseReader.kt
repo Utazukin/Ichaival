@@ -142,8 +142,8 @@ object DatabaseReader {
         return thumbDir
     }
 
-    fun clearThumbnails(cacheDir: File) {
-        val thumbDir = File(cacheDir, "thumbs")
+    fun clearThumbnails(context: Context) {
+        val thumbDir = File(context.noBackupFilesDir, "thumbs")
         if (thumbDir.exists())
             thumbDir.deleteRecursively()
     }

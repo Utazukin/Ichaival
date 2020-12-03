@@ -69,7 +69,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val thumbPref: Preference? = findPreference(getString(R.string.thumbnail_pref))
         thumbPref?.setOnPreferenceClickListener {
-            DatabaseReader.clearThumbnails(requireActivity().filesDir)
+            DatabaseReader.clearThumbnails(requireActivity())
             Toast.makeText(activity, getString(R.string.clear_cache), Toast.LENGTH_SHORT).show()
             true
         }
