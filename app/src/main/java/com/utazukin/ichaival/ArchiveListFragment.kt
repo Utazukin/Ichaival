@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -346,6 +346,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         return when (item.itemId) {
             R.id.refresh_archives -> {
                 forceArchiveListUpdate()
+                true
+            }
+            R.id.scroll_top -> {
+                listView.layoutManager?.scrollToPosition(0)
+                true
+            }
+            R.id.scroll_bottom -> {
+                listView.layoutManager?.scrollToPosition((listView.layoutManager?.itemCount ?: 1) - 1)
                 true
             }
             else -> false
