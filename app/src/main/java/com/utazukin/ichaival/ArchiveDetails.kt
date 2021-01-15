@@ -37,10 +37,12 @@ import kotlinx.coroutines.withContext
 
 const val SEARCH_REQUEST = 1
 const val BOOKMARK_REQUEST = 2
+const val FROM_READER_PAGE = "READER_PAGE"
 
 class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener {
     private var archiveId: String? = null
     private var pageCount = -1
+    private var readerPage = -1
     private lateinit var pager: ViewPager
     private lateinit var toolbar: androidx.appcompat.widget.Toolbar
     private var menu: Menu? = null
@@ -57,6 +59,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
         intent.extras?.run {
             archiveId = getString("id")
+            readerPage = getInt(FROM_READER_PAGE, -1)
             setUpDetailView()
         }
 
@@ -202,7 +205,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         override fun getItem(position: Int): Fragment {
             return when(position) {
                 0 -> ArchiveDetailsFragment.createInstance(archiveId!!)
-                1 -> GalleryPreviewFragment.createInstance(archiveId!!)
+                1 -> GalleryPreviewFragment.createInstance(archiveId!!, readerPage)
                 else -> throw IllegalArgumentException("position")
             }
         }

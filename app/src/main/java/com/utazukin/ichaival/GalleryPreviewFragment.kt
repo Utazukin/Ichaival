@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.min
 
 private const val ARCHIVE_ID = "arcid"
 private const val MAX_PAGES = "max pages"
@@ -44,11 +46,14 @@ class GalleryPreviewFragment : Fragment() {
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
     private lateinit var progress: ProgressBar
     private var savedPageCount = -1
+    private var readerPage = -1
+    private lateinit var listView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            archiveId = it.getString(ARCHIVE_ID)
+        arguments?.run {
+            archiveId = getString(ARCHIVE_ID)
+            readerPage = getInt(FROM_READER_PAGE, -1)
         }
 
         setHasOptionsMenu(true)
@@ -61,6 +66,7 @@ class GalleryPreviewFragment : Fragment() {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_gallery_preview, container, false)
         progress = view.findViewById(R.id.thumb_load_progress)
+        listView = view.findViewById(R.id.thumb_list)
 
         lifecycleScope.launch {
             archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(archiveId!!) }
@@ -117,6 +123,17 @@ class GalleryPreviewFragment : Fragment() {
                     context,
                     columns
                 ) else LinearLayoutManager(context)
+
+                if (savedPageCount <= 0) {
+                    archive?.let {
+                        val page = if (readerPage > -1) readerPage else it.currentPage
+                        if (page > 0) {
+                            thumbAdapter.maxThumbnails =
+                                min((ceil(page / 10f) * 10).toInt(), it.numPages)
+                            layoutManager?.scrollToPosition(page)
+                        }
+                    }
+                }
             }
             thumbAdapter = ThumbRecyclerViewAdapter(activity as? ThumbInteractionListener, Glide.with(requireActivity()), lifecycleScope, archive!!)
             if (savedPageCount > 0)
@@ -140,10 +157,11 @@ class GalleryPreviewFragment : Fragment() {
 
     companion object {
         @JvmStatic
-        fun createInstance(id: String) =
+        fun createInstance(id: String, readerPage: Int) =
             GalleryPreviewFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARCHIVE_ID, id)
+                    putInt(FROM_READER_PAGE, readerPage)
                 }
             }
     }
