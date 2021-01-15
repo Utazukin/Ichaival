@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ import kotlinx.coroutines.withContext
 const val SEARCH_REQUEST = 1
 const val BOOKMARK_REQUEST = 2
 const val FROM_READER_PAGE = "READER_PAGE"
+const val VIEW_THUMBS = "THUMB_VIEW"
 
 class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener {
     private var archiveId: String? = null
@@ -61,6 +62,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             archiveId = getString("id")
             readerPage = getInt(FROM_READER_PAGE, -1)
             setUpDetailView()
+
+            val startThumbTab = getBoolean(VIEW_THUMBS)
+            if (startThumbTab)
+                pager.setCurrentItem(1, false)
+
         }
 
         archiveId?.let { launch { extractArchive(it) } }

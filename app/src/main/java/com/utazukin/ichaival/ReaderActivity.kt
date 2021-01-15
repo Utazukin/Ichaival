@@ -368,11 +368,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    override fun startDetailsActivity(id: String) {
+    override fun startDetailsActivity(id: String) = startDetailsActivity(id, false)
+
+    private fun startDetailsActivity(id: String, startThumb: Boolean) {
         val intent = Intent(this, ArchiveDetails::class.java)
         val bundle = Bundle()
         bundle.putString("id", id)
         bundle.putInt(FROM_READER_PAGE, currentPage)
+        bundle.putBoolean(VIEW_THUMBS, startThumb)
         intent.putExtras(bundle)
         addIntentFlags(intent, id)
         startActivity(intent)
@@ -384,6 +387,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     setResult(Activity.RESULT_OK)
                     startDetailsActivity(it.id)
+                    finish()
+                }
+            }
+            R.id.thumb_button -> {
+                archive?.let {
+                    setResult(Activity.RESULT_OK)
+                    startDetailsActivity(it.id, true)
                     finish()
                 }
             }
