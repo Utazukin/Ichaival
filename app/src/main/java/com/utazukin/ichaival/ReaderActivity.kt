@@ -449,7 +449,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onThumbSelection(page: Int) {
         closeSettings()
-        val adjustedPage = getAdjustedPage(page + 1)
+        val adjustedPage = getAdjustedPage(page)
         loadImage(adjustedPage)
         imagePager.setCurrentItem(adjustedPage, false)
     }
