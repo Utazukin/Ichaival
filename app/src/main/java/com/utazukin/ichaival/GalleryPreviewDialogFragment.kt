@@ -67,7 +67,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
             pagePicker.run {
                 minValue = 1
                 maxValue = archive?.numPages ?: 1
-                value = readerPage
+                value = readerPage + 1
                 setOnValueChangedListener { _, _, newValue ->
                     if (pickerState == NumberPicker.OnScrollListener.SCROLL_STATE_IDLE)
                         jumpToPage(newValue - 1, maxValue)
@@ -127,6 +127,11 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         else -1
     }
 
+    private fun RecyclerView.isPageVisible(page: Int) : Boolean {
+        val viewHolder = this.findViewHolderForLayoutPosition(page - 1) ?: return false
+        return this.layoutManager?.isViewPartiallyVisible(viewHolder.itemView, true, true) ?: false
+    }
+
     private fun setGalleryView(view: View) {
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
         with(listView) {
@@ -163,9 +168,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
 
                     if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                         val first = findFirstItem(recyclerView.layoutManager)
-                        val currentPage = recyclerView.getChildAt(pagePicker.value - 1)
-                        val visible = if (currentPage != null) recyclerView.layoutManager?.isViewPartiallyVisible(currentPage, false, true) else false
-                        if (visible != true && first >= 0 && first != pagePicker.value)
+                        if (!recyclerView.isPageVisible(pagePicker.value) && first >= 0 && first != pagePicker.value)
                             pagePicker.value = first + 1
                     }
                 }
