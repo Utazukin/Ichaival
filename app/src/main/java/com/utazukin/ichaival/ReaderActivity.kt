@@ -58,7 +58,7 @@ private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
 
-class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler {
+class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, ThumbRecyclerViewAdapter.ThumbInteractionListener {
     private val mHideHandler = Handler()
     private val mHidePart2Runnable = Runnable {
         // Delayed removal of status and navigation bar
@@ -400,13 +400,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             R.id.goto_button -> {
                 archive?.let {
                     if (it.numPages >= 0) {
-                        val dialog = PageSelectDialogFragment.createInstance(currentPage + 1, it.numPages, it.id)
-                        dialog.listener = { value ->
-                            closeSettings()
-                            val adjustedPage = getAdjustedPage(value)
-                            loadImage(adjustedPage)
-                            imagePager.setCurrentItem(adjustedPage, false)
-                        }
+                        val dialog = GalleryPreviewDialogFragment.createInstance(it.id, currentPage)
                         dialog.show(supportFragmentManager, "page_picker")
                     }
                 }
@@ -461,6 +455,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    override fun onThumbSelection(page: Int) {
+        closeSettings()
+        val adjustedPage = getAdjustedPage(page + 1)
+        loadImage(adjustedPage)
+        imagePager.setCurrentItem(adjustedPage, false)
     }
 
     override fun onTabInteraction(tab: ReaderTab) {
