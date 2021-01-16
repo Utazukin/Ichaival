@@ -24,29 +24,13 @@
     android:layout_marginEnd="8dp"
     android:orientation="vertical">
 
-    <LinearLayout
+    <Button
+        android:id="@+id/detail_button"
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/detail_button"
-            style="@style/Widget.AppCompat.Button.Borderless.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight=".5"
-            android:drawableStart="@drawable/ic_info_black_24dp"
-            android:text="@string/detail_menu_item" />
-
-        <Button
-            android:id="@+id/thumb_button"
-            style="@style/Widget.AppCompat.Button.Borderless.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight=".5"
-            android:drawableEnd="@drawable/ic_baseline_image_24"
-            android:text="@string/thumbs_title" />
-    </LinearLayout>
+        android:drawableStart="@drawable/ic_info_black_24dp"
+        android:text="@string/detail_menu_item" />
 
     <Button
         android:id="@+id/goto_button"
