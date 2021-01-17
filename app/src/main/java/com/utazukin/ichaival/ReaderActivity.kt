@@ -452,6 +452,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         val adjustedPage = getAdjustedPage(page)
         loadImage(adjustedPage)
         imagePager.setCurrentItem(adjustedPage, false)
+        currentPage = page
     }
 
     override fun onTabInteraction(tab: ReaderTab) {
