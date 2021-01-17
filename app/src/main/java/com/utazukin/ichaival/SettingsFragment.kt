@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.core.app.ShareCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -30,6 +31,7 @@ import androidx.preference.PreferenceManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -78,6 +80,22 @@ class SettingsFragment : PreferenceFragmentCompat() {
         tempPref?.setOnPreferenceClickListener {
             (activity as CoroutineScope).launch(Dispatchers.IO) { WebHandler.clearTempFolder() }
             true
+        }
+
+        val saveLogPref: Preference? = findPreference(getString(R.string.log_save_pref))
+        saveLogPref?.let {
+            val logFile = File(context?.noBackupFilesDir, "crash.log")
+            it.isVisible = logFile.exists()
+            it.setOnPreferenceClickListener {
+                ShareCompat.IntentBuilder
+                    .from(requireActivity())
+                    .setText(logFile.readText())
+                    .setType("text/plain")
+                    .setSubject("Crash Log")
+                    .setChooserTitle("Copy Crash log")
+                    .startChooser()
+                true
+            }
         }
     }
 

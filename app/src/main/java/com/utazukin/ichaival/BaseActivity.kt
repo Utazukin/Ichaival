@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -66,6 +65,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        CrashLogger.createCrashLogger(this)
         DatabaseReader.init(applicationContext)
         WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         ReaderTabHolder.initialize(this)
@@ -93,7 +93,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
-                viewModel.bookmarks.observe(this@BaseActivity, Observer { list ->
+                viewModel.bookmarks.observe(this@BaseActivity, { list ->
                     val itemAdded = list.size == it.itemCount + 1
                     val scrollTarget = list.size - 1
                     it.submitList(list) { if (itemAdded) scrollToPosition(scrollTarget) }

@@ -119,4 +119,10 @@
     <string name="refresh_thumb_menu_item">Refresh Thumbnail</string>
     <string name="list_top">Top</string>
     <string name="list_bottom">Bottom</string>
+    <string name="debug_settings">Debug</string>
+    <string name="log_pref">log_pref</string>
+    <string name="log_pref_name">Enable Crash Logging</string>
+    <string name="log_save_pref">log_save_pref</string>
+    <string name="log_save_summary">Copy crash log to the clipboard</string>
+    <string name="log_save_title">Copy Crash Log</string>
 </resources>
