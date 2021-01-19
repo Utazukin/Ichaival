@@ -149,7 +149,7 @@
             android:key="@string/log_pref"
             android:title="@string/log_pref_name"
             app:iconSpaceReserved="false" />
-        <Preference
+        <com.utazukin.ichaival.LongClickPreference
             app:iconSpaceReserved="false"
             app:key="@string/log_save_pref"
             app:summary="@string/log_save_summary"

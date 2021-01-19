@@ -18,20 +18,33 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.AttributeSet
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
 import androidx.core.app.ShareCompat
-import androidx.preference.ListPreference
-import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceManager
+import androidx.preference.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+
+class LongClickPreference : Preference {
+    var longClickListener: View.OnLongClickListener? = null
+
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet)
+
+    override fun onBindViewHolder(holder: PreferenceViewHolder?) {
+        super.onBindViewHolder(holder)
+
+        holder?.itemView?.setOnLongClickListener(longClickListener)
+    }
+}
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -82,10 +95,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        val saveLogPref: Preference? = findPreference(getString(R.string.log_save_pref))
+        val saveLogPref: LongClickPreference? = findPreference(getString(R.string.log_save_pref))
         saveLogPref?.let {
             val logFile = File(context?.noBackupFilesDir, "crash.log")
-            it.isVisible = logFile.exists()
+            val exists = logFile.exists()
+            it.isVisible = exists
             it.setOnPreferenceClickListener {
                 ShareCompat.IntentBuilder
                     .from(requireActivity())
@@ -95,6 +109,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .setChooserTitle("Copy Crash log")
                     .startChooser()
                 true
+            }
+
+            it.longClickListener = View.OnLongClickListener { _ ->
+                if (exists) {
+                    logFile.delete()
+                    Toast.makeText(context, "Log deleted!", Toast.LENGTH_SHORT).show()
+                    it.isVisible = false
+                    true
+                } else false
             }
         }
     }
