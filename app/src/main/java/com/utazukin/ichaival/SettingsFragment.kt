@@ -62,6 +62,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val apiPref: Preference? = findPreference(getString(R.string.api_key_pref))
         bindPreferenceSummaryToValue(apiPref)
 
+        val themePref: Preference? = findPreference(getString(R.string.theme_pref))
+        bindPreferenceSummaryToValue(themePref)
+        themePref?.setOnPreferenceChangeListener { _, _ ->
+            requireActivity().recreate()
+            true
+        }
+
         val licensePref: Preference? = findPreference(getString(R.string.license_key))
         licensePref?.setOnPreferenceClickListener {
             startWebActivity("file:////android_asset/licenses.html")

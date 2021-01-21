@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
     private val job: Job by lazy { Job() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings_layout)
 
@@ -52,6 +53,13 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun setTheme() {
+        when (getCustomTheme()) {
+            getString(R.string.dark_theme) -> setTheme(R.style.SettingsTheme)
+            getString(R.string.black_theme) -> setTheme(R.style.SettingsTheme_Black)
+        }
     }
 
     override fun onStart() {

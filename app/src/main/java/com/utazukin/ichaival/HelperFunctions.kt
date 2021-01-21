@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,8 +18,10 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Resources
+import androidx.preference.PreferenceManager
 import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
@@ -61,6 +63,11 @@ fun SharedPreferences?.castStringPrefToLong(pref: String, defaultValue: Long = 0
 fun SharedPreferences?.castStringPrefToFloat(pref: String, defaultValue: Float = 0f) : Float {
     val stringPref = this?.getString(pref, null)
     return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toFloat()
+}
+
+fun Context.getCustomTheme() : String {
+    val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+    return prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme)) as String
 }
 
 inline fun <T> tryOrNull(body: () -> T) : T? {

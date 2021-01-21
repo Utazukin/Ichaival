@@ -62,6 +62,13 @@
             app:iconSpaceReserved="false"
             app:key="@string/swipe_refresh_key"
             app:title="@string/swipe_refresh_pref" />
+        <ListPreference
+            android:entries="@array/theme_names"
+            android:entryValues="@array/theme_names"
+            android:key="@string/theme_pref"
+            android:title="@string/theme_pref_name"
+            app:defaultValue="@string/dark_theme"
+            app:iconSpaceReserved="false" />
         <Preference
             app:key="@string/thumbnail_pref"
             app:summary="@string/thumbnail_summary"

@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2020 Utazukin
+  ~ Copyright (C) 2021 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,18 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar.Bridge">
         <!-- Customize your theme here. -->
+        <item name="tag_color">?colorPrimaryDark</item>
+        <item name="cardBackgroundColor">#ff424242</item>
+    </style>
+
+    <style name="AppTheme.Black" parent="AppTheme">
+        <!-- Customize your theme here. -->
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:colorBackground">#000000</item>
+        <item name="colorPrimary">#000000</item>
+        <item name="colorBackgroundFloating">#000000</item>
+        <item name="tag_color">@color/dark_gray</item>
+        <item name="cardBackgroundColor">#000000</item>
     </style>
 
     <style name="FullscreenTheme" parent="AppTheme">
@@ -31,10 +43,23 @@
         <item name="metaButtonBarButtonStyle">?android:attr/buttonBarButtonStyle</item>
     </style>
 
-    <style name="ReaderSettingsDialog" parent="Theme.Design.BottomSheetDialog"/>
+    <style name="ReaderSettingsDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog"/>
 
-    <style name="FullscreenActionBarStyle" parent="Widget.AppCompat.ActionBar">
-        <item name="android:background">@color/black_overlay</item>
+    <style name="FullscreenActionBarStyle" parent="Widget.MaterialComponents.ActionBar.Primary">
+        <item name="android:background">#000000</item>
+    </style>
+
+    <style name="SettingsTheme" parent="AppTheme">
+        <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
+    </style>
+
+    <style name="SettingsTheme.Black" parent="AppTheme.Black">
+        <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
+    </style>
+
+    <style name="WindowAnimationTransition">
+        <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:windowExitAnimation">@android:anim/fade_out</item>
     </style>
 
 </resources>

@@ -102,6 +102,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 }
             }
             getString(R.string.verbose_pref) -> WebHandler.verboseMessages = pref.getBoolean(key, false)
+            getString(R.string.theme_pref) -> {
+                setTheme()
+                recreate()
+            }
         }
     }
 

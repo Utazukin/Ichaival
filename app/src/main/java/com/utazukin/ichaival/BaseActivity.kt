@@ -69,6 +69,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         DatabaseReader.init(applicationContext)
         WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         ReaderTabHolder.initialize(this)
+        setTheme()
 
         super.onCreate(savedInstanceState)
 
@@ -82,6 +83,14 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     protected open fun onServerInitialized() {}
+
+    protected open fun setTheme() {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        when (prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme))) {
+            getString(R.string.dark_theme) -> setTheme(R.style.AppTheme)
+            getString(R.string.black_theme) -> setTheme(R.style.AppTheme_Black)
+        }
+    }
 
     protected open fun onCreateDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)

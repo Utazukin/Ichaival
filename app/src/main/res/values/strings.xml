@@ -103,6 +103,12 @@
         <item>Fit Height</item>
         <item>Fit Width</item>
     </string-array>
+    <string name="dark_theme">Dark</string>
+    <string name="black_theme">Black</string>
+    <string-array name="theme_names">
+        <item>@string/dark_theme</item>
+        <item>@string/black_theme</item>
+    </string-array>
     <string name="fullscreen_timeout_key">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
     <string name="fullscreen_timeout_summary">The amount of time, in seconds, before hiding the buttons.  -1 for never.</string>
@@ -125,4 +131,6 @@
     <string name="log_save_pref">log_save_pref</string>
     <string name="log_save_summary">Copy crash log to the clipboard</string>
     <string name="log_save_title">Copy Crash Log</string>
+    <string name="theme_pref">theme_pref</string>
+    <string name="theme_pref_name">Theme</string>
 </resources>
