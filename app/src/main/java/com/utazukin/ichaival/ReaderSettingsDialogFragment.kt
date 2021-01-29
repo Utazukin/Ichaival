@@ -37,7 +37,7 @@ enum class ScaleType(val value: Int) {
 
     companion object {
         private val map by lazy { values().associateBy(ScaleType::value)}
-        fun fromInt(type: Int) = map[type]
+        fun fromInt(type: Int) = map[type] ?: FitPage
     }
 }
 
@@ -71,7 +71,7 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun setupSpinner(view: View) {
-        val currentScale = arguments?.run { ScaleType.fromInt(getInt(SCALE_PARAM, 0))!! } ?: ScaleType.FitPage
+        val currentScale = arguments?.run { ScaleType.fromInt(getInt(SCALE_PARAM, 0)) } ?: ScaleType.FitPage
 
         val spinner: Spinner = view.findViewById(R.id.scale_type_spinner)
         spinner.setSelection(currentScale.value)
@@ -80,7 +80,7 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                handler?.updateScaleType(ScaleType.fromInt(position)!!)
+                handler?.updateScaleType(ScaleType.fromInt(position))
             }
 
         }
