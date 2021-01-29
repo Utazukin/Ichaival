@@ -107,17 +107,13 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     }
 
     suspend fun extractArchive(id: String) {
-        withContext(Dispatchers.Default) {
-            val a = DatabaseReader.getArchive(id)
-            a?.run {
-                menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
-                extract()
-                withContext(Dispatchers.Main) {
-                    pageCount = numPages
-                    if (pager.currentItem == 1)
-                        supportActionBar?.subtitle = "$pageCount pages"
-                }
-            }
+        val a = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
+        a?.run {
+            menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
+            withContext(Dispatchers.IO) { extract() }
+            pageCount = numPages
+            if (pager.currentItem == 1)
+                supportActionBar?.subtitle = "$pageCount pages"
         }
     }
 
