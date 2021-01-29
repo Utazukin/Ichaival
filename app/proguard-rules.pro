@@ -33,7 +33,7 @@
     public static final int define_*;
 }
 
--keepnames class com.utazukin.ichaival.* extends androidx.fragment.app.Fragment {}
+-keepnames class com.utazukin.ichaival.* {}
 
 -keep public class * extends com.bumptech.glide.module.AppGlideModule
 -keep class com.bumptech.glide.GeneratedAppGlideModuleImpl
