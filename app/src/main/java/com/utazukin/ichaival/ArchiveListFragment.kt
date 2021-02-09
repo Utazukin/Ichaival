@@ -373,6 +373,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 searchView.setQuery("${searchView.query} $tag", true)
                 true
             }
+            searchView.clearFocus()
             tagFragment.show(it, "tag_popup")
         }
         return true
