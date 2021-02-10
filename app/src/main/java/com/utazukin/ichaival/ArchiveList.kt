@@ -30,12 +30,12 @@ import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, FilterListener {
     private lateinit var setupText: TextView
     private lateinit var categoryView: NavigationView
     private var menu: Menu? = null
+    private var needsRefresh = false
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
@@ -76,30 +76,13 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         when (key) {
             getString(R.string.server_address_preference) -> {
                 val location = pref.getString(key, "") as String
+                needsRefresh = true
                 WebHandler.serverLocation = location
                 handleSetupText(location.isEmpty())
-
-                launch {
-                    withContext(Dispatchers.IO) { ServerManager.init(this@ArchiveList, false, true) }
-                    val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-                    listFragment?.forceArchiveListUpdate()
-
-                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-                    categoryFragment?.initCategories(ServerManager.categories)
-                }
             }
             getString(R.string.api_key_pref) -> {
                 WebHandler.apiKey = pref.getString(key, "") as String
-
-                launch {
-                    withContext(Dispatchers.IO) { ServerManager.init(this@ArchiveList, false, true) }
-                    val listFragment: ArchiveListFragment? =
-                        supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-                    listFragment?.forceArchiveListUpdate()
-
-                    val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-                    categoryFragment?.initCategories(ServerManager.categories)
-                }
+                needsRefresh = true
             }
             getString(R.string.verbose_pref) -> WebHandler.verboseMessages = pref.getBoolean(key, false)
             getString(R.string.theme_pref) -> {
@@ -193,6 +176,15 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     private fun startSettingsActivity() {
         val intent = Intent(this, SettingsActivity::class.java)
         startActivity(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (needsRefresh) {
+            needsRefresh = false
+            recreate()
+        }
     }
 
     override fun onStart() {

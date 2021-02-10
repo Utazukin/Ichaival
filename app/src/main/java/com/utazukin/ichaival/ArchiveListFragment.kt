@@ -516,7 +516,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             getString(R.string.local_search_key) -> {
                 val local = prefs?.getBoolean(prefName, false) ?: false
                 //Reset filter when changing search type.
-                resetSearch(local)
+                if (local != isLocalSearch)
+                    resetSearch(local)
             }
             getString(R.string.search_page_key) -> resetSearch(isLocalSearch, true)
             getString(R.string.search_delay_key) -> { searchDelay = prefs.castStringPrefToLong(prefName, DEFAULT_SEARCH_DELAY) }
