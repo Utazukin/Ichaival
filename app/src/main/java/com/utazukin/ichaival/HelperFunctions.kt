@@ -111,5 +111,5 @@ fun getMaxTextureSize() : Int {
 
     egl.eglTerminate(display)
     mMaxTextureSize = max(maxTextureSize, IMAGE_MAX_BITMAP_DIMENSION)
-    return maxTextureSize
+    return mMaxTextureSize
 }
