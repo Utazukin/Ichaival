@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,7 +30,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
-import kotlinx.android.synthetic.main.fragment_archive.view.*
 import kotlinx.coroutines.*
 
 class ArchiveRecyclerViewAdapter(
@@ -40,25 +39,19 @@ class ArchiveRecyclerViewAdapter(
     private val glideManager: RequestManager
 ) : PagedListAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
-    private val mOnClickListener: View.OnClickListener
+    private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
+        val item = v.tag as Archive
+        // Notify the active callbacks interface (the activity, if the fragment is attached to
+        // one) that an item has been selected.
+        mListener?.onListFragmentInteraction(item)
+    }
 
-    private val onLongClickListener: View.OnLongClickListener
+    private val onLongClickListener: View.OnLongClickListener = View.OnLongClickListener { v ->
+        val item = v.tag as Archive
+        longListener?.invoke(item) == true
+    }
 
     private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
-
-    init {
-        mOnClickListener = View.OnClickListener { v ->
-            val item = v.tag as Archive
-            // Notify the active callbacks interface (the activity, if the fragment is attached to
-            // one) that an item has been selected.
-            mListener?.onListFragmentInteraction(item)
-        }
-
-        onLongClickListener = View.OnLongClickListener { v ->
-            val item = v.tag as Archive
-            longListener?.invoke(item) == true
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -95,7 +88,7 @@ class ArchiveRecyclerViewAdapter(
     }
 
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView) {
-        val mContentView: CardView = mView.archive_card
+        val mContentView: CardView = mView.findViewById(R.id.archive_card)
         val archiveName: TextView = mContentView.findViewById(R.id.archive_label)
         val archiveImage: ImageView = mContentView.findViewById(R.id.archive_thumb)
 
