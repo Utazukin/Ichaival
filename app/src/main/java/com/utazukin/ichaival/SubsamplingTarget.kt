@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -64,6 +64,8 @@ class SubsamplingTarget(private val target: SubsamplingScaleImageView
     override fun onLoadCleared(placeholder: Drawable?) { }
 
     override fun onResourceReady(resource: File, transition: Transition<in File>?) {
+        target.setBitmapDecoderClass(ImageDecoder::class.java)
+        target.setRegionDecoderClass(ImageRegionDecoder::class.java)
         target.setOnImageEventListener(imageEventListener)
         target.setImage(ImageSource.uri(resource.absolutePath))
     }
