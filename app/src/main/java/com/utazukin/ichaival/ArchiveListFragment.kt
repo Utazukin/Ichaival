@@ -152,6 +152,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         }
                     }
                 }
+                searchView.clearFocus()
                 return true
             }
 
@@ -172,6 +173,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     searchView.setQuery(query.removePrefix(STATIC_CATEGORY_SEARCH), false)
                     return false
                 }
+
+                if (searchDelay <= 0 && !query.isNullOrBlank())
+                    return true
 
                 if (isLocalSearch)
                     getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
