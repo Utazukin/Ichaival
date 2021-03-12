@@ -190,7 +190,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     supportActionBar?.title = it.title
 
-                    if (savedPage != it.currentPage)
+                    if (savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
                         launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
 
                     //Use the page from the thumbnail over the bookmark
