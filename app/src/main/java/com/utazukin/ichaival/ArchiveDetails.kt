@@ -108,10 +108,10 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     suspend fun extractArchive(id: String) {
         val a = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
-        a?.run {
-            menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
-            withContext(Dispatchers.IO) { extract() }
-            pageCount = numPages
+        a?.let {
+            menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
+            withContext(Dispatchers.IO) { it.extract() }
+            pageCount = it.numPages
             if (pager.currentItem == 1)
                 supportActionBar?.subtitle = "$pageCount pages"
         }

@@ -42,10 +42,12 @@ data class Archive (
             : this(jsonArchive.id, jsonArchive.title, jsonArchive.dateAdded, jsonArchive.isNew, jsonArchive.tags, jsonArchive.currentPage, jsonArchive.pageCount)
 
     val numPages: Int
-        get() = if (ServerManager.checkVersionAtLeast(0, 7, 7)) pageCount else DatabaseReader.getPageCount(id)
+        get() = if (ServerManager.checkVersionAtLeast(0, 7, 7) && pageCount > 0) pageCount else DatabaseReader.getPageCount(id)
 
     suspend fun extract() {
-        DatabaseReader.getPageList(id)
+        val pages = DatabaseReader.getPageList(id)
+        if (pageCount <= 0)
+            pageCount = pages.size
     }
 
     fun invalidateCache() {
