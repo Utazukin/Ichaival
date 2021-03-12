@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -38,6 +40,13 @@ object DatabaseReader {
     private val extractingArchives = mutableMapOf<String, Mutex>()
     private val extractingMutex = Mutex()
 
+    private val MIGRATION_1_2 = object: Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("alter table archive add column pageCount INTEGER not null default 0")
+        }
+    }
+
+
     lateinit var database: ArchiveDatabase
         private set
     var refreshListener: DatabaseRefreshListener?
@@ -47,7 +56,9 @@ object DatabaseReader {
     fun init(context: Context) {
         if (!this::database.isInitialized) {
             database =
-                Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db").build()
+                Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db")
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
         }
     }
 
@@ -91,6 +102,8 @@ object DatabaseReader {
         archivePageMap.remove(id)
     }
 
+    suspend fun isBookmarked(id: String) = withContext(Dispatchers.IO) { database.archiveDao().isBookmarked(id) }
+
     private fun checkDirty(fileDir: File) : Boolean {
         val jsonCache = File(fileDir, jsonLocation)
         val dayInMill = 1000 * 60 * 60 * 24L
@@ -116,9 +129,7 @@ object DatabaseReader {
 
     suspend fun removeBookmark(id: String) = withContext(Dispatchers.IO) { database.removeBookmark(id) }
 
-    fun clearBookmarks() {
-        GlobalScope.launch(Dispatchers.IO) { database.clearBookmarks() }
-    }
+    suspend fun clearBookmarks() : List<String> = withContext(Dispatchers.IO) { database.clearBookmarks() }
 
     suspend fun setArchiveNewFlag(id: String) {
         database.archiveDao().updateNewFlag(id, false)

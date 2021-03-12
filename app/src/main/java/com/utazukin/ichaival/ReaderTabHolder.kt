@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2019 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ import androidx.room.PrimaryKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
     private var initialized = false
@@ -54,12 +53,19 @@ object ReaderTabHolder {
 
     fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
 
-    fun addTab(archive: Archive, page: Int) {
-        if (archive.currentPage < 0) {
+    suspend fun addTab(archive: Archive, page: Int) {
+        if (!isTabbed(archive.id)) {
             val tab = ReaderTab(archive.id, archive.title, tabCount, page)
             archive.currentPage = page
             DatabaseReader.addBookmark(tab)
             updateAddListeners(archive.id)
+        }
+    }
+
+    suspend fun addTab(id: String, title: String, page: Int) {
+        if (!isTabbed(id)) {
+            val tab = ReaderTab(id, title, tabCount, page)
+            DatabaseReader.addBookmark(tab)
         }
     }
 
@@ -77,22 +83,23 @@ object ReaderTabHolder {
         }
     }
 
-    fun isTabbed(archive: Archive?) = if (archive != null) archive.currentPage >= 0 else false
-
-    suspend fun isTabbed(id: String) : Boolean {
-        val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
-        return isTabbed(archive)
-    }
+    suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)
 
     fun removeTab(id: String) {
         GlobalScope.launch {
-            if (DatabaseReader.removeBookmark(id))
+            if (DatabaseReader.removeBookmark(id)) {
+                WebHandler.updateProgress(id, 0)
                 updateRemoveListeners(id)
+            }
         }
     }
 
     fun removeAll() {
-        DatabaseReader.clearBookmarks()
+        GlobalScope.launch(Dispatchers.IO) {
+            val ids = DatabaseReader.clearBookmarks()
+            for (id in ids)
+                WebHandler.updateProgress(id, 0)
+        }
         updateClearListeners()
     }
 

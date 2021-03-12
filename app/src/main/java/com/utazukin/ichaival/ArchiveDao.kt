@@ -94,6 +94,9 @@ interface ArchiveDao {
     @Query("Select * from readertab order by `index`")
     fun getBookmarks() : List<ReaderTab>
 
+    @Query("Select exists (select 1 from readertab where id = :id limit 1)")
+    suspend fun isBookmarked(id: String) : Boolean
+
     @Query("Select * from readertab where id = :id limit 1")
     suspend fun getBookmark(id: String) : ReaderTab?
 
@@ -133,13 +136,13 @@ interface ArchiveDao {
     @Update
     fun updateBookmarks(tabs: List<ReaderTab>)
 
-    @Query("Update archive set title = :title, tags = :tags, isNew = :isNew, dateAdded = :dateAdded where id = :id")
-    fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Int, tags: Map<String, List<String>>)
+    @Query("Update archive set title = :title, tags = :tags, isNew = :isNew, dateAdded = :dateAdded, pageCount = :pageCount, currentPage = :currentPage where id = :id")
+    fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Int, pageCount: Int, currentPage: Int, tags: Map<String, List<String>>)
 
     @Transaction
     fun updateFromJson(archives: Collection<ArchiveJson>) {
         for (archive in archives)
-            updateFromJson(archive.id, archive.title, archive.isNew, archive.dateAdded, archive.tags)
+            updateFromJson(archive.id, archive.title, archive.isNew, archive.dateAdded, archive.pageCount, archive.currentPage, archive.tags)
     }
 }
 
@@ -168,13 +171,13 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class, ReaderTab::class], version = 1, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class], version = 2, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
     @Transaction
-    fun insertAndRemove(archives: Map<String, ArchiveJson>) {
+    suspend fun insertAndRemove(archives: Map<String, ArchiveJson>) {
         val currentIds = archiveDao().getAllIds()
         val keys = archives.keys
         val allIds = currentIds.union(keys)
@@ -182,6 +185,11 @@ abstract class ArchiveDatabase : RoomDatabase() {
         val toAdd = keys.minus(currentIds)
         if (toAdd.isNotEmpty())
             archiveDao().insertAll(toAdd.map { Archive(archives.getValue(it)) })
+
+        for (archive in archives) {
+            if (archive.value.currentPage > 0)
+                ReaderTabHolder.addTab(archive.key, archive.value.title, archive.value.currentPage)
+        }
 
         val toRemove = allIds.subtract(keys)
         if (toRemove.isNotEmpty()) {
@@ -270,18 +278,21 @@ abstract class ArchiveDatabase : RoomDatabase() {
         for (adjustedTab in adjustedTabs)
             --adjustedTab.index
 
-        archiveDao().removeBookmark(tab.id)
+        //archiveDao().removeBookmark(tab.id)
         archiveDao().removeBookmark(tab)
         archiveDao().updateBookmarks(adjustedTabs)
     }
 
     @Transaction
-    fun clearBookmarks() {
+    fun clearBookmarks() : List<String> {
         val tabs = archiveDao().getBookmarks()
+        val removedTabs = tabs.map { it.id }
         if (tabs.isNotEmpty()) {
-            archiveDao().removeAllBookmarks(tabs.map { it.id })
+            archiveDao().removeAllBookmarks(removedTabs)
             archiveDao().clearBookmarks(tabs)
         }
+
+        return removedTabs
     }
 }
 

@@ -201,6 +201,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener {
+            searchView.clearFocus()
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
                 if (archive != null)
@@ -209,9 +210,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
 
         randomButton.setOnLongClickListener {
+            searchView.clearFocus()
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
-                if (archive != null && !ReaderTabHolder.isTabbed(archive))
+                if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
                     ReaderTabHolder.addTab(archive, 0)
             }
             true
@@ -325,7 +327,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         query?.let {
             val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
             val lastWord = getLastWord(it).trim('"', ' ').trimStart('-')
-            if (!lastWord.isBlank()) {
+            if (lastWord.isNotBlank()) {
                 for ((i, suggestion) in ServerManager.tagSuggestions.withIndex()) {
                     if (suggestion.contains(lastWord))
                         cursor.addRow(arrayOf(i, suggestion.displayTag))
@@ -455,7 +457,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         prefs.unregisterOnSharedPreferenceChangeListener(this)
     }
 
-    fun forceArchiveListUpdate() {
+    private fun forceArchiveListUpdate() {
         searchJob?.cancel()
         lifecycleScope.launch {
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext(), true) }

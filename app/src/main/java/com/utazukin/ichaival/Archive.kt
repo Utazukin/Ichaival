@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,20 +31,18 @@ data class Archive (
     @ColumnInfo var dateAdded: Int,
     @ColumnInfo var isNew: Boolean,
     @ColumnInfo val tags: Map<String, List<String>>,
-    @ColumnInfo var currentPage: Int
+    @ColumnInfo var currentPage: Int,
+    @ColumnInfo var pageCount: Int
 ) {
 
     constructor(id: String, title: String, dateAdded: Int, isNew: Boolean, tags: Map<String, List<String>>)
-            : this(id, title, dateAdded, isNew, tags, -1)
+            : this(id, title, dateAdded, isNew, tags, -1, 0)
 
     constructor(jsonArchive: ArchiveJson)
-            : this(jsonArchive.id, jsonArchive.title, jsonArchive.dateAdded, jsonArchive.isNew, jsonArchive.tags)
+            : this(jsonArchive.id, jsonArchive.title, jsonArchive.dateAdded, jsonArchive.isNew, jsonArchive.tags, jsonArchive.currentPage, jsonArchive.pageCount)
 
     val numPages: Int
-        get() = DatabaseReader.getPageCount(id)
-
-    val isExtracted: Boolean
-        get() = numPages >= 0
+        get() = if (ServerManager.checkVersionAtLeast(0, 7, 7)) pageCount else DatabaseReader.getPageCount(id)
 
     suspend fun extract() {
         DatabaseReader.getPageList(id)
@@ -55,7 +53,7 @@ data class Archive (
     }
 
     fun hasPage(page: Int) : Boolean {
-        return numPages < 0 || (page in 0 until numPages)
+        return numPages <= 0 || (page in 0 until numPages)
     }
 
     suspend fun getPageImage(page: Int) : String? {
@@ -99,6 +97,8 @@ class ArchiveJson(json: JSONObject) {
     val title: String = json.getString("title")
     val id: String = json.getString("arcid")
     val tags: Map<String, List<String>>
+    val pageCount = json.optInt("pagecount")
+    val currentPage = if (json.has("progress")) json.getInt("progress") - 1 else 0
     var isNew = false
     var dateAdded = 0
 

@@ -158,6 +158,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 currentPage = getAdjustedPage(page)
                 archive?.let {
                     ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)
+                    launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
                     val markCompletePage = floor(it.numPages * 0.9f).toInt()
                     if (it.numPages > 0 && currentPage + 1 == markCompletePage)
                         launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
@@ -184,15 +185,20 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(arcid) }
                 archive?.let {
                     supportActionBar?.title = it.title
+
+                    if (savedPage != it.currentPage)
+                        launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
+
                     //Use the page from the thumbnail over the bookmark
                     val page = savedPage ?: max(it.currentPage, 0)
+                    it.currentPage = page
                     currentPage = page
                     supportActionBar?.subtitle = subtitle
-                    setTabbedIcon(ReaderTabHolder.isTabbed(it))
+                    setTabbedIcon(ReaderTabHolder.isTabbed(it.id))
 
                     //Make sure the archive has been extracted if rtol is set since we need the page count
                     //to get the adjusted page number.
-                    if (rtol && !it.isExtracted) {
+                    if (rtol && it.numPages <= 0) {
                         val loadLayout: View = findViewById(R.id.load_layout)
                         loadLayout.visibility = View.VISIBLE
                         loadLayout.setOnClickListener { toggle() }
@@ -338,8 +344,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.reader_menu, menu)
         optionsMenu = menu
-        val bookmarker = menu?.findItem(R.id.bookmark_archive)
-        setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(archive))
+        archive?.let {
+            val bookmarker = menu?.findItem(R.id.bookmark_archive)
+            launch { setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(it.id)) }
+        }
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -427,13 +435,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         when (item.itemId) {
             R.id.bookmark_archive -> {
                 archive?.let {
-                    if (!ReaderTabHolder.isTabbed(it)) {
-                        ReaderTabHolder.addTab(it, currentPage)
-                        setTabbedIcon(item, true)
-                    }
-                    else {
-                        ReaderTabHolder.removeTab(it.id)
-                        setTabbedIcon(item, false)
+                    launch {
+                        if (!ReaderTabHolder.isTabbed(it.id)) {
+                            ReaderTabHolder.addTab(it, currentPage)
+                            setTabbedIcon(item, true)
+                        } else {
+                            ReaderTabHolder.removeTab(it.id)
+                            setTabbedIcon(item, false)
+                        }
                     }
                     return true
                 }

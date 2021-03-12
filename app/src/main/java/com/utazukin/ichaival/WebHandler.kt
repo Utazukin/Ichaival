@@ -59,6 +59,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val archiveListPath = "$apiPath/archives"
     private const val thumbPath = "$archiveListPath/%s/thumbnail"
     private const val extractPath = "$archiveListPath/%s/extract"
+    private const val progressPath = "$archiveListPath/%s/progress/%s"
     private const val tagsPath = "$databasePath/stats"
     private const val clearNewPath = "$archiveListPath/%s/isnew"
     private const val searchPath = "$apiPath/search"
@@ -153,6 +154,15 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         return null
+    }
+
+    suspend fun updateProgress(id: String, page: Int) {
+        if (!canConnect(true) || !ServerManager.checkVersionAtLeast(0, 7, 7))
+            return
+
+        val url = "$serverLocation${progressPath.format(id, page + 1)}"
+        val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
+        httpClient.newCall(connection).await()
     }
 
     fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
