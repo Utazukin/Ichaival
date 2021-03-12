@@ -37,9 +37,7 @@ object ReaderTabHolder {
 
     private val clearListeners = mutableSetOf<TabsClearedListener>()
 
-    fun updatePageIfTabbed(id: String, page: Int) {
-        DatabaseReader.updateBookmark(id, page)
-    }
+    suspend fun updatePageIfTabbed(id: String, page: Int) : Boolean = DatabaseReader.updateBookmark(id, page)
 
     fun registerRemoveListener(listener: TabRemovedListener) = removeListeners.add(listener)
 

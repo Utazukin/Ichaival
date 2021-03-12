@@ -119,9 +119,7 @@ object DatabaseReader {
         }
     }
 
-    fun updateBookmark(id: String, page: Int) {
-        GlobalScope.launch(Dispatchers.IO) { database.updateBookmark(id, page) }
-    }
+    suspend fun updateBookmark(id: String, page: Int) : Boolean = database.updateBookmark(id, page)
 
     fun addBookmark(tab: ReaderTab) {
         GlobalScope.launch(Dispatchers.IO) { database.addBookmark(tab) }

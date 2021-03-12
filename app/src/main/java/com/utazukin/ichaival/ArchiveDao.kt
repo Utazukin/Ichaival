@@ -214,13 +214,14 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     @Transaction
-    suspend fun updateBookmark(id: String, page: Int) {
+    suspend fun updateBookmark(id: String, page: Int) : Boolean {
         val tab = archiveDao().getBookmark(id)
-        tab?.let {
+        return tab?.let {
             it.page = page
             archiveDao().updateBookmark(it)
             archiveDao().updateBookmark(it.id, page)
-        }
+            true
+        } ?: false
     }
 
     @Transaction
@@ -280,7 +281,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
         for (adjustedTab in adjustedTabs)
             --adjustedTab.index
 
-        //archiveDao().removeBookmark(tab.id)
+        archiveDao().removeBookmark(tab.id)
         archiveDao().removeBookmark(tab)
         archiveDao().updateBookmarks(adjustedTabs)
     }

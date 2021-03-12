@@ -157,8 +157,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             override fun onPageSelected(page: Int) {
                 currentPage = getAdjustedPage(page)
                 archive?.let {
-                    ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)
-                    launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
+                    launch(Dispatchers.IO) {
+                        if (ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)) {
+                            DatabaseReader.setArchiveNewFlag(it.id)
+                            WebHandler.updateProgress(it.id, currentPage)
+                        }
+                    }
                     val markCompletePage = floor(it.numPages * 0.9f).toInt()
                     if (it.numPages > 0 && currentPage + 1 == markCompletePage)
                         launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
