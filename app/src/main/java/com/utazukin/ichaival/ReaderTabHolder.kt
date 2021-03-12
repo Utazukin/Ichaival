@@ -62,11 +62,14 @@ object ReaderTabHolder {
         }
     }
 
-    suspend fun addTab(id: String, title: String, page: Int) {
+    suspend fun addTab(id: String, title: String, page: Int) : Boolean {
         if (!isTabbed(id)) {
             val tab = ReaderTab(id, title, tabCount, page)
             DatabaseReader.addBookmark(tab)
+            return true
         }
+
+        return false
     }
 
     suspend fun addTab(id: String, page: Int) {
