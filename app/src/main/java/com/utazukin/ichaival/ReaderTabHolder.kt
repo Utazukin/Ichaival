@@ -55,6 +55,8 @@ object ReaderTabHolder {
         if (!isTabbed(archive.id)) {
             val tab = ReaderTab(archive.id, archive.title, tabCount, page)
             archive.currentPage = page
+            if (page > 0)
+                WebHandler.updateProgress(archive.id, page)
             DatabaseReader.addBookmark(tab)
             updateAddListeners(archive.id)
         }
