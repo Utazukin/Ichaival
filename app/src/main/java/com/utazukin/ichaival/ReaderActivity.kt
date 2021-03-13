@@ -20,12 +20,9 @@ package com.utazukin.ichaival
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.view.KeyEvent
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -56,27 +53,8 @@ private const val CURRENT_PAGE_ID = "currentPage"
 private const val PROGRESS_UPDATE_DELAY = 500L //ms
 
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, ThumbRecyclerViewAdapter.ThumbInteractionListener {
-    private val mHideHandler = Handler()
-    private val mHidePart2Runnable = Runnable {
-        // Delayed removal of status and navigation bar
-
-        // Note that some of these constants are new as of API 16 (Jelly Bean)
-        // and API 19 (KitKat). It is safe to use them, as they are inlined
-        // at compile-time and do nothing on earlier devices.
-        imagePager.systemUiVisibility =
-                View.SYSTEM_UI_FLAG_LOW_PROFILE or
-                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-    }
-    private val mShowPart2Runnable = Runnable {
-        // Delayed display of UI elements
-        supportActionBar?.show()
-    }
     private var mVisible: Boolean = false
-    private val mHideRunnable = Runnable { hide() }
+    private var switchLayoutJob: Job? = null
 
     var currentScaleType = ScaleType.FitPage
     var archive: Archive? = null
@@ -114,7 +92,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
         supportActionBar?.title = ""
-        currentScaleType = ScaleType.fromInt(savedInstanceState?.getInt(SCALE_TYPE, 0) ?: 0)!!
+        currentScaleType = ScaleType.fromInt(savedInstanceState?.getInt(SCALE_TYPE, 0) ?: 0)
 
         ViewCompat.setOnApplyWindowInsetsListener(appBar) { _, insets ->
             var params = FrameLayout.LayoutParams(appBar.layoutParams)
@@ -139,7 +117,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         rtol = prefs.getBoolean(getString(R.string.rtol_pref_key), false)
         volControl = prefs.getBoolean(getString(R.string.vol_key_pref_key), false)
-        autoHideDelay = truncate(prefs.castStringPrefToFloat(getString(R.string.fullscreen_timeout_key), AUTO_HIDE_DELAY_S) * 1000).toInt()
+        autoHideDelay = truncate(prefs.castStringPrefToFloat(getString(R.string.fullscreen_timeout_key), AUTO_HIDE_DELAY_S) * 1000).toLong()
         autoHideEnabled = autoHideDelay >= 0
 
         mVisible = true
@@ -494,32 +472,60 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mVisible = false
 
         // Schedule a runnable to remove the status and navigation bar after a delay
-        mHideHandler.removeCallbacks(mShowPart2Runnable)
-        mHideHandler.postDelayed(mHidePart2Runnable, UI_ANIMATION_DELAY.toLong())
+        switchLayoutJob?.cancel()
+        switchLayoutJob = launch {
+            delay(UI_ANIMATION_DELAY)
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                imagePager.systemUiVisibility =
+                    View.SYSTEM_UI_FLAG_LOW_PROFILE or
+                            View.SYSTEM_UI_FLAG_FULLSCREEN or
+                            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            } else {
+                window.setDecorFitsSystemWindows(false)
+                window.insetsController?.hide(WindowInsets.Type.systemBars() or WindowInsets.Type.statusBars())
+                window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
     }
 
     private fun show() {
         // Show the system bar
-        imagePager.systemUiVisibility =
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            imagePager.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        } else {
+            window.setDecorFitsSystemWindows(true)
+            window.insetsController?.show(WindowInsets.Type.systemBars() or WindowInsets.Type.statusBars())
+        }
+
         mVisible = true
 
         // Schedule a runnable to display UI elements after a delay
-        mHideHandler.removeCallbacks(mHidePart2Runnable)
-        mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY.toLong())
+        switchLayoutJob?.cancel()
+        switchLayoutJob = launch {
+            delay(UI_ANIMATION_DELAY)
+            supportActionBar?.show()
 
-        if (autoHideEnabled)
-            delayedHide(autoHideDelay)
+            if (autoHideEnabled)
+                delayedHide(autoHideDelay)
+        }
     }
 
     /**
      * Schedules a call to hide() in [delayMillis], canceling any
      * previously scheduled calls.
      */
-    private fun delayedHide(delayMillis: Int) {
-        mHideHandler.removeCallbacks(mHideRunnable)
-        mHideHandler.postDelayed(mHideRunnable, delayMillis.toLong())
+    private fun delayedHide(delayMillis: Long) {
+        switchLayoutJob?.cancel()
+        switchLayoutJob = launch {
+            delay(delayMillis)
+            hide()
+        }
     }
 
     override fun onFragmentTap(zone: TouchZone) {
@@ -584,13 +590,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
          * If [autoHideEnabled] is set, the number of milliseconds to wait after
          * user interaction before hiding the system UI.
          */
-        private const val AUTO_HIDE_DELAY_MILLIS = AUTO_HIDE_DELAY_S.toInt() * 1000
+        private const val AUTO_HIDE_DELAY_MILLIS = AUTO_HIDE_DELAY_S.toLong() * 1000
 
         /**
          * Some older devices needs a small delay between UI widget updates
          * and a change of the status and navigation bar.
          */
-        private const val UI_ANIMATION_DELAY = 300
+        private const val UI_ANIMATION_DELAY = 300L
 
         private const val SCALE_TYPE = "scale_type"
     }
