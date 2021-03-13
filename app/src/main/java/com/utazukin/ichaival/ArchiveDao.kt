@@ -181,12 +181,15 @@ abstract class ArchiveDatabase : RoomDatabase() {
         if (toAdd.isNotEmpty())
             archiveDao().insertAll(toAdd.map { Archive(archives.getValue(it)) })
 
-        for (archive in archives) {
-            if (archive.value.currentPage > 0) {
-                if (!ReaderTabHolder.addTab(archive.key, archive.value.title, archive.value.currentPage))
+        if (ServerManager.checkVersionAtLeast(7, 7, 7)) {
+            for (archive in archives) {
+                val isBookmarked = archiveDao().isBookmarked(archive.key)
+                if (archive.value.currentPage > 0 && !isBookmarked) {
+                    val tab = ReaderTabHolder.createTab(archive.key, archive.value.title, archive.value.currentPage)
+                    addBookmark(tab)
+                } else if (isBookmarked)
                     updateBookmark(archive.key, archive.value.currentPage)
-            } else if (archiveDao().isBookmarked(archive.key))
-                updateBookmark(archive.key, archive.value.currentPage)
+            }
         }
 
         val toRemove = allIds.subtract(keys)

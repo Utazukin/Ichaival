@@ -87,10 +87,10 @@ object DatabaseReader {
     }
 
     suspend fun getPageList(id: String) : List<String> {
-        val mutex = extractingMutex.withLock { extractingArchives[id] ?: Mutex().also { extractingArchives[id] = it } }
+        val mutex = extractingMutex.withLock { extractingArchives.getOrPut(id) { Mutex() } }
 
         mutex.withLock {
-            val pages = archivePageMap[id] ?: WebHandler.getPageList(WebHandler.extractArchive(id)).also { archivePageMap[id] = it }
+            val pages = archivePageMap.getOrPut(id) { WebHandler.getPageList(WebHandler.extractArchive(id)) }
             extractingArchives.remove(id)
             return pages
         }
@@ -121,9 +121,7 @@ object DatabaseReader {
 
     suspend fun updateBookmark(id: String, page: Int) : Boolean = database.updateBookmark(id, page)
 
-    fun addBookmark(tab: ReaderTab) {
-        GlobalScope.launch(Dispatchers.IO) { database.addBookmark(tab) }
-    }
+    suspend fun addBookmark(tab: ReaderTab) = withContext(Dispatchers.IO) { database.addBookmark(tab) }
 
     suspend fun removeBookmark(id: String) = withContext(Dispatchers.IO) { database.removeBookmark(id) }
 
@@ -175,8 +173,8 @@ object DatabaseReader {
         val thumbDir = getThumbDir(context.noBackupFilesDir)
 
         var image: File? = File(thumbDir, "$id.jpg")
-        if (image != null && !image.exists())
-            image = withContext(Dispatchers.Default) { WebHandler.downloadThumb(id, thumbDir) }
+        if (image?.exists() == false)
+            image = withContext(Dispatchers.IO) { WebHandler.downloadThumb(id, thumbDir) }
 
         return image?.path
     }
