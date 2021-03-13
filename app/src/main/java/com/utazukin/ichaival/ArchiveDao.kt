@@ -22,7 +22,6 @@ import androidx.paging.DataSource
 import androidx.room.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 
 private const val MAX_PARAMETER_COUNT = 999
@@ -149,9 +148,7 @@ interface ArchiveDao {
 class DatabaseTypeConverters {
     @TypeConverter
     fun fromMap(value: Map<String, List<String>>) : String {
-        val jsonObject = JSONObject()
-        for (pair in value)
-            jsonObject.put(pair.key, JSONArray(pair.value))
+        val jsonObject = JSONObject(value)
         return jsonObject.toString()
     }
 
@@ -161,9 +158,7 @@ class DatabaseTypeConverters {
         val map = mutableMapOf<String, List<String>>()
         for (key in jsonObject.keys()) {
             val tagsArray = jsonObject.getJSONArray(key)
-            val tags = mutableListOf<String>()
-            for (i in 0 until tagsArray.length())
-                tags.add(tagsArray.getString(i))
+            val tags = MutableList<String>(tagsArray.length()) { tagsArray.getString(it) }
             map[key] = tags
         }
 

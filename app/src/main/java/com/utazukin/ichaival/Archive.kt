@@ -75,10 +75,8 @@ data class Archive (
             val exact = normalized.startsWith("\"") && normalized.endsWith("\"")
             if (exact)
                 normalized = normalized.removeSurrounding("\"")
-            val nTags = getTags(namespace)
-            return nTags != null && nTags.any {
-                if (exact) it.toLowerCase(Locale.ROOT) == normalized else it.toLowerCase(Locale.ROOT).contains(normalized)
-            }
+            val nTags = tags[namespace]
+            return nTags?.any { if (exact) it.toLowerCase(Locale.ROOT) == normalized else it.toLowerCase(Locale.ROOT).contains(normalized) } == true
         }
         else {
             val normalized = tag.trim().replace("_", " ").toLowerCase(Locale.ROOT)
@@ -89,10 +87,6 @@ data class Archive (
         }
         return false
     }
-
-    private fun getTags(namespace: String) : List<String>? {
-        return if (tags.containsKey(namespace)) tags[namespace] else null
-    }
 }
 
 class ArchiveJson(json: JSONObject) {
@@ -101,13 +95,14 @@ class ArchiveJson(json: JSONObject) {
     val tags: Map<String, List<String>>
     val pageCount = json.optInt("pagecount")
     val currentPage = if (json.has("progress")) json.getInt("progress") - 1 else 0
-    var isNew = false
-    var dateAdded = 0
+    val isNew: Boolean
+    val dateAdded: Int
 
     init {
         val tagString: String = json.getString("tags")
         val tagList: List<String> = tagString.split(",")
         val mutableTags = mutableMapOf<String, MutableList<String>>()
+        var dateAdded = 0
         for (tag: String in tagList) {
             val trimmed = tag.trim()
             if (trimmed.contains(":")) {
@@ -116,17 +111,16 @@ class ArchiveJson(json: JSONObject) {
                 if (namespace == "date_added")
                     dateAdded = split[1].toInt()
                 else {
-                    if (!mutableTags.containsKey(namespace))
-                        mutableTags[namespace] = mutableListOf()
-                    mutableTags[namespace]!!.add(split[1])
+                    val namespaceList = mutableTags.getOrPut(namespace) { mutableListOf() }
+                    namespaceList.add(split[1])
                 }
             }
             else if (tag.isNotEmpty()) {
-                if (!mutableTags.containsKey("global"))
-                    mutableTags["global"] = mutableListOf()
-                mutableTags["global"]!!.add(trimmed)
+                val global = mutableTags.getOrPut("global") { mutableListOf() }
+                global.add(trimmed)
             }
         }
+        this.dateAdded = dateAdded
         tags = mutableTags
 
         val isNewString = json.getString("isnew")
