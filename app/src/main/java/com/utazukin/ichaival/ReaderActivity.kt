@@ -44,10 +44,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.floor
 import kotlin.math.max
@@ -56,6 +53,7 @@ import kotlin.math.truncate
 private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
+private const val PROGRESS_UPDATE_DELAY = 500L //ms
 
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, ThumbRecyclerViewAdapter.ThumbInteractionListener {
     private val mHideHandler = Handler()
@@ -95,6 +93,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
     private var retrying = AtomicBoolean()
+    private var updateProgressJob: Job? = null
     private val subtitle: String
         get() {
             return archive.let {
@@ -159,8 +158,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     launch(Dispatchers.IO) {
                         if (ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)) {
+                            updateProgressJob?.cancel()
                             DatabaseReader.setArchiveNewFlag(it.id)
-                            WebHandler.updateProgress(it.id, currentPage)
+                            updateProgressJob = launch {
+                                delay(PROGRESS_UPDATE_DELAY)
+                                WebHandler.updateProgress(it.id, currentPage)
+                            }
                         }
                     }
                     val markCompletePage = floor(it.numPages * 0.9f).toInt()
