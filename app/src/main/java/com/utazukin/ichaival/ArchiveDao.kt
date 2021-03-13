@@ -190,7 +190,8 @@ abstract class ArchiveDatabase : RoomDatabase() {
             if (archive.value.currentPage > 0) {
                 if (!ReaderTabHolder.addTab(archive.key, archive.value.title, archive.value.currentPage))
                     updateBookmark(archive.key, archive.value.currentPage)
-            }
+            } else if (archiveDao().isBookmarked(archive.key))
+                updateBookmark(archive.key, archive.value.currentPage)
         }
 
         val toRemove = allIds.subtract(keys)
