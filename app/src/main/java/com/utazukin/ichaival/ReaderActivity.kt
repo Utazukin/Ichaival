@@ -31,14 +31,14 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentStatePagerAdapter
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.coroutines.*
@@ -66,7 +66,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private val loadedPages = mutableListOf<Boolean>()
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
-    private lateinit var imagePager: ViewPager
+    private lateinit var imagePager: ViewPager2
     private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
@@ -124,12 +124,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         imagePager = findViewById(R.id.image_pager)
         imagePager.adapter = ReaderFragmentAdapter(supportFragmentManager)
-        imagePager.addOnPageChangeListener(object: ViewPager.OnPageChangeListener{
-            override fun onPageScrollStateChanged(page: Int) {
-            }
+        imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
+            override fun onPageScrollStateChanged(page: Int) {}
 
-            override fun onPageScrolled(p0: Int, p1: Float, p2: Int) {
-            }
+            override fun onPageScrolled(p0: Int, p1: Float, p2: Int) {}
 
             override fun onPageSelected(page: Int) {
                 currentPage = getAdjustedPage(page)
@@ -466,6 +464,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun hide() {
         // Hide UI first
         supportActionBar?.hide()
@@ -492,6 +491,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun show() {
         // Show the system bar
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -601,10 +601,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private const val SCALE_TYPE = "scale_type"
     }
 
-    private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStatePagerAdapter(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
+    private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStateAdapter(fm, lifecycle) {
 
-        override fun getItem(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
+        override fun createFragment(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
 
-        override fun getCount(): Int = loadedPages.size
+        override fun getItemCount(): Int = loadedPages.size
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2018 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,24 +22,9 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.viewpager.widget.ViewPager
 
 //These classes is necessary due to an issue with the photo view library in some view groups.
 class HackyDrawerLayout : DrawerLayout {
-    constructor(context: Context) : super(context)
-
-    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
-
-    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-        return try {
-            super.onInterceptTouchEvent(ev)
-        } catch (e: IllegalArgumentException) {
-            false
-        }
-    }
-}
-
-class HackyViewPager : ViewPager {
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
