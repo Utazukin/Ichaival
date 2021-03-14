@@ -24,28 +24,31 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentPagerAdapter
-import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-const val SEARCH_REQUEST = 1
-const val BOOKMARK_REQUEST = 2
 const val FROM_READER_PAGE = "READER_PAGE"
 
 class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener {
     private var archiveId: String? = null
     private var pageCount = -1
     private var readerPage = -1
-    private lateinit var pager: ViewPager
+    private lateinit var pager: ViewPager2
     private lateinit var toolbar: androidx.appcompat.widget.Toolbar
     private var menu: Menu? = null
+    private val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK)
+            finish()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,13 +122,12 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     private fun setUpDetailView() {
         pager = findViewById(R.id.details_pager)
-        pager.adapter = DetailsPagerAdapter(supportFragmentManager)
-        pager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
-            override fun onPageScrollStateChanged(state: Int) {
-            }
 
-            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
-            }
+        pager.adapter = DetailsPagerAdapter()
+        pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageScrollStateChanged(state: Int) {}
+
+            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
                 when (position) {
@@ -144,7 +146,14 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         })
 
         val tabLayout: TabLayout = findViewById(R.id.details_tabs)
-        tabLayout.setupWithViewPager(pager)
+        val mediator = TabLayoutMediator(tabLayout, pager) { tab, position ->
+            tab.text = when (position) {
+                0 -> getString(R.string.details_title)
+                1 -> getString(R.string.thumbs_title)
+                else -> null
+            }
+        }
+        mediator.attach()
     }
 
     override fun onTagInteraction(tag: String) {
@@ -152,15 +161,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         val bundle = Bundle()
         bundle.putString(TAG_SEARCH, tag)
         intent.putExtras(bundle)
-        startActivityForResult(intent, SEARCH_REQUEST)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == SEARCH_REQUEST || requestCode == BOOKMARK_REQUEST) {
-            if (resultCode == Activity.RESULT_OK)
-                finish()
-        }
+        resultLauncher.launch(intent)
     }
 
     override fun onThumbSelection(page: Int) {
@@ -176,7 +177,8 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             bundle.putInt("page", page)
 
         intent.putExtras(bundle)
-        startActivityForResult(intent, BOOKMARK_REQUEST)
+        intent.putExtras(bundle)
+        resultLauncher.launch(intent)
     }
 
     override fun onTabInteraction(tab: ReaderTab) {
@@ -197,8 +199,8 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
 
-    inner class DetailsPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT) {
-        override fun getItem(position: Int): Fragment {
+    inner class DetailsPagerAdapter : FragmentStateAdapter(this) {
+        override fun createFragment(position: Int): Fragment {
             return when(position) {
                 0 -> ArchiveDetailsFragment.createInstance(archiveId!!)
                 1 -> GalleryPreviewFragment.createInstance(archiveId!!, readerPage)
@@ -206,14 +208,6 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             }
         }
 
-        override fun getPageTitle(position: Int): CharSequence? {
-            return when(position){
-                0 -> getString(R.string.details_title)
-                1 -> getString(R.string.thumbs_title)
-                else -> null
-            }
-        }
-
-        override fun getCount(): Int = 2
+        override fun getItemCount(): Int = 2
     }
 }

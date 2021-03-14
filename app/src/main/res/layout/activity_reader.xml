@@ -35,9 +35,7 @@
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/image_pager"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        </androidx.viewpager2.widget.ViewPager2>
+            android:layout_height="match_parent"/>
 
         <TextView
             android:id="@+id/failed_message"

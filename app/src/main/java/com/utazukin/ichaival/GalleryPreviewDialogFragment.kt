@@ -61,7 +61,6 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         listView = view.findViewById(R.id.thumb_list)
         pagePicker = view.findViewById(R.id.page_picker_preview)
 
-
         lifecycleScope.launch {
             archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(archiveId!!) }
             pagePicker.run {
@@ -112,8 +111,8 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         outState.putInt(MAX_PAGES, thumbAdapter.maxThumbnails)
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         savedInstanceState?.let {
             val maxPages = it.getInt(MAX_PAGES, -1)
             savedPageCount = maxPages

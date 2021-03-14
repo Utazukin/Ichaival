@@ -105,8 +105,8 @@ class GalleryPreviewFragment : Fragment() {
         outState.putInt(MAX_PAGES, thumbAdapter.maxThumbnails)
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         savedInstanceState?.let {
             val maxPages = it.getInt(MAX_PAGES, -1)
             savedPageCount = maxPages
