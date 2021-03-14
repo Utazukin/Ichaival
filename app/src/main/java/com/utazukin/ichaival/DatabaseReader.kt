@@ -39,6 +39,7 @@ object DatabaseReader {
     private val archivePageMap = mutableMapOf<String, List<String>>()
     private val extractingArchives = mutableMapOf<String, Mutex>()
     private val extractingMutex = Mutex()
+    private val extractListeners = mutableListOf<DatabaseExtractListener>()
 
     private val MIGRATION_1_2 = object: Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
@@ -86,11 +87,24 @@ object DatabaseReader {
         isDirty = true
     }
 
+    fun registerExtractListener(listener: DatabaseExtractListener) = extractListeners.add(listener)
+
+    fun unregisterExtractListener(listener: DatabaseExtractListener) = extractListeners.remove(listener)
+
+    private fun notifyExtractListeners(id: String, pageCount: Int) {
+        for (listener in extractListeners)
+            listener.onExtract(id, pageCount)
+    }
+
     suspend fun getPageList(id: String) : List<String> {
         val mutex = extractingMutex.withLock { extractingArchives.getOrPut(id) { Mutex() } }
 
         mutex.withLock {
-            val pages = archivePageMap.getOrPut(id) { WebHandler.getPageList(WebHandler.extractArchive(id)) }
+            val pages = archivePageMap.getOrPut(id) {
+                val p = WebHandler.getPageList(WebHandler.extractArchive(id))
+                notifyExtractListeners(id, p.size)
+                p
+            }
             extractingArchives.remove(id)
             return pages
         }

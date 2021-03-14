@@ -51,7 +51,7 @@ private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
 private const val PROGRESS_UPDATE_DELAY = 500L //ms
 
-class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, ThumbRecyclerViewAdapter.ThumbInteractionListener {
+class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, DatabaseExtractListener, ThumbRecyclerViewAdapter.ThumbInteractionListener {
     private var mVisible: Boolean = false
     private var switchLayoutJob: Job? = null
 
@@ -240,6 +240,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         super.onStart()
         ReaderTabHolder.registerRemoveListener(this)
         ReaderTabHolder.registerClearListener(this)
+        DatabaseReader.registerExtractListener(this)
     }
 
     override fun onTabRemoved(id: String) {
@@ -282,7 +283,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 val currentSize = loadedPages.size
                 for (i in currentSize until archive!!.numPages)
                     loadedPages.add(true)
-                loadedPages.forEachIndexed { i, _ -> loadedPages[i] = true }
+                loadedPages.fill(true)
                 return true
             }
             page >= loadedPages.size -> {
@@ -353,6 +354,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         Glide.get(this).clearMemory()
         ReaderTabHolder.unregisterRemoveListener(this)
         ReaderTabHolder.unregisterAddListener(this)
+        DatabaseReader.unregisterExtractListener(this)
     }
 
     override fun updateScaleType(type: ScaleType) {
@@ -406,8 +408,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.run {
                     invalidateCache()
                     launch {
-                        withContext(Dispatchers.IO) { extract() }
                         loadedPages.clear()
+                        withContext(Dispatchers.IO) { extract() }
                         loadImage(currentPage)
                     }
                 }
@@ -586,6 +588,19 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             failedMessage.visibility = View.VISIBLE
             imagePager.visibility = View.INVISIBLE
             false
+        }
+    }
+
+    override fun onExtract(id: String, pageCount: Int) {
+        if (id != archive?.id || archive?.numPages == loadedPages.size)
+            return
+
+        launch {
+            loadedPages.clear()
+            for (i in 0 until pageCount)
+                loadedPages.add(true)
+
+            imagePager.adapter?.notifyDataSetChanged()
         }
     }
 
