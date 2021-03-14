@@ -30,7 +30,6 @@ import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
-import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -89,9 +88,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         setContentView(R.layout.activity_reader)
         val appBar: Toolbar = findViewById(R.id.reader_toolbar)
         setSupportActionBar(appBar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
-        supportActionBar?.title = ""
+        supportActionBar?.run {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
+            title = ""
+        }
         currentScaleType = ScaleType.fromInt(savedInstanceState?.getInt(SCALE_TYPE, 0) ?: 0)
 
         ViewCompat.setOnApplyWindowInsetsListener(appBar) { _, insets ->
@@ -123,12 +124,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mVisible = true
 
         imagePager = findViewById(R.id.image_pager)
-        imagePager.adapter = ReaderFragmentAdapter(supportFragmentManager)
+        imagePager.adapter = ReaderFragmentAdapter()
+        imagePager.offscreenPageLimit = 1
         imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
-            override fun onPageScrollStateChanged(page: Int) {}
-
-            override fun onPageScrolled(p0: Int, p1: Float, p2: Int) {}
-
             override fun onPageSelected(page: Int) {
                 currentPage = getAdjustedPage(page)
                 archive?.let {
@@ -157,45 +155,44 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         failedMessage.setOnClickListener { toggle() }
 
         val bundle = intent.extras
-        val arcid = bundle?.getString(ID_STRING) ?: savedInstanceState?.getString(ID_STRING)
+        val arcid = bundle?.getString(ID_STRING) ?: savedInstanceState?.getString(ID_STRING) ?: return
         val savedPage = when {
             savedInstanceState?.containsKey(CURRENT_PAGE_ID) == true -> savedInstanceState.getInt(CURRENT_PAGE_ID)
             bundle?.containsKey(PAGE_ID) == true -> bundle.getInt(PAGE_ID)
             else -> null
         }
-        if (arcid != null) {
-            launch {
-                archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(arcid) }
-                archive?.let {
-                    supportActionBar?.title = it.title
 
-                    if (savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
-                        launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
+        launch {
+            archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(arcid) }
+            archive?.let {
+                supportActionBar?.title = it.title
 
-                    //Use the page from the thumbnail over the bookmark
-                    val page = savedPage ?: max(it.currentPage, 0)
-                    it.currentPage = page
-                    currentPage = page
-                    supportActionBar?.subtitle = subtitle
-                    setTabbedIcon(ReaderTabHolder.isTabbed(it.id))
+                if (savedPage != null && savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
+                    launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
 
-                    //Make sure the archive has been extracted if rtol is set since we need the page count
-                    //to get the adjusted page number.
-                    if (rtol && it.numPages <= 0) {
-                        val loadLayout: View = findViewById(R.id.load_layout)
-                        loadLayout.visibility = View.VISIBLE
-                        loadLayout.setOnClickListener { toggle() }
-                        withContext(Dispatchers.IO) { it.extract() }
-                        loadLayout.visibility = View.GONE
-                    }
+                //Use the page from the thumbnail over the bookmark
+                val page = savedPage ?: max(it.currentPage, 0)
+                it.currentPage = page
+                currentPage = page
+                supportActionBar?.subtitle = subtitle
+                setTabbedIcon(ReaderTabHolder.isTabbed(it.id))
 
-                    val adjustedPage = getAdjustedPage(page)
-                    loadImage(adjustedPage)
-                    imagePager.setCurrentItem(adjustedPage, false)
-
-                    for (listener in pageFragments)
-                        listener.onArchiveLoad(it)
+                //Make sure the archive has been extracted if rtol is set since we need the page count
+                //to get the adjusted page number.
+                if (rtol && it.numPages <= 0) {
+                    val loadLayout: View = findViewById(R.id.load_layout)
+                    loadLayout.visibility = View.VISIBLE
+                    loadLayout.setOnClickListener { toggle() }
+                    withContext(Dispatchers.IO) { it.extract() }
+                    loadLayout.visibility = View.GONE
                 }
+
+                val adjustedPage = getAdjustedPage(page)
+                loadImage(adjustedPage)
+                imagePager.setCurrentItem(adjustedPage, false)
+
+                for (listener in pageFragments)
+                    listener.onArchiveLoad(it)
             }
         }
     }
@@ -292,8 +289,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     private fun loadImage(page: Int, preload: Boolean = true) {
-        if (!archive!!.hasPage(page)) {
-            if (archive!!.numPages == 0) {
+        if (archive?.hasPage(page) == false) {
+            if (archive?.numPages == 0) {
                 failedMessage.visibility = View.VISIBLE
                 imagePager.visibility = View.INVISIBLE
             }
@@ -601,7 +598,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private const val SCALE_TYPE = "scale_type"
     }
 
-    private inner class ReaderFragmentAdapter(fm: FragmentManager) : FragmentStateAdapter(fm, lifecycle) {
+    private inner class ReaderFragmentAdapter : FragmentStateAdapter(this) {
 
         override fun createFragment(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
 
