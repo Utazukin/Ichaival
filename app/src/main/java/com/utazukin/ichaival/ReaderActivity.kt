@@ -277,13 +277,21 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private fun getAdjustedPage(page: Int) = if (rtol) archive!!.numPages - page - 1 else page
 
     private fun adjustLoadedPages(page: Int) : Boolean {
-        if (page >= loadedPages.size) {
-            val currentSize = loadedPages.size
-            for (i in currentSize..page)
-                loadedPages.add(false)
+        when {
+            archive?.run { numPages > 0 && loadedPages.size != numPages } == true -> {
+                val currentSize = loadedPages.size
+                for (i in currentSize until archive!!.numPages)
+                    loadedPages.add(true)
+                loadedPages.forEachIndexed { i, _ -> loadedPages[i] = true }
+                return true
+            }
+            page >= loadedPages.size -> {
+                val currentSize = loadedPages.size
+                for (i in currentSize..page)
+                    loadedPages.add(false)
+            }
+            loadedPages[page] -> return false
         }
-        else if (loadedPages[page])
-            return false
         loadedPages[page] = true
         return true
     }
