@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.*
@@ -204,6 +205,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     fun registerPage(listener: PageFragment) = pageFragments.add(listener)
 
     fun unregisterPage(listener: PageFragment) = pageFragments.remove(listener)
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        //TODO remove this hack
+        //This fixes an issue where the image pager is offset after rotating the screen.
+        val page = currentPage
+        val tempPage = max(0, page - 1)
+        super.onConfigurationChanged(newConfig)
+        imagePager.setCurrentItem(tempPage, false)
+        imagePager.setCurrentItem(page, false)
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
