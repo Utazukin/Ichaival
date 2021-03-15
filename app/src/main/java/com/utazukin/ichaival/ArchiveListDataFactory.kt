@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ package com.utazukin.ichaival
 import androidx.lifecycle.MutableLiveData
 import androidx.paging.DataSource
 import androidx.paging.PositionalDataSource
+import kotlinx.coroutines.*
+import kotlin.math.floor
 import kotlin.math.min
 
 class ServerSearchResult(val results: List<String>?,
@@ -130,7 +132,7 @@ class ArchiveListServerSource(results: List<String>?,
             } else {
                 DatabaseReader.refreshListener?.isRefreshing(true)
 
-                loadResults(endIndex)
+                runBlocking { loadResults(endIndex) }
                 endIndex = min(params.startPosition + params.loadSize, totalResults.size)
                 val ids = totalResults.subList(params.startPosition, endIndex)
                 val archives = getArchives(ids)
@@ -140,13 +142,19 @@ class ArchiveListServerSource(results: List<String>?,
         }
     }
 
-    private fun loadResults(endIndex: Int) {
-        do {
-            val newResults = WebHandler.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size, false)
+    private suspend fun loadResults(endIndex: Int) = coroutineScope {
+        val remaining = totalSize - endIndex
+        val pages = floor(remaining.toFloat() / ServerManager.pageSize).toInt()
+        val jobs = mutableListOf<Deferred<ServerSearchResult>>()
+        for (i in 0 until pages) {
+            val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size + i * ServerManager.pageSize, false) }
+            jobs.add(job)
+        }
 
-            if (newResults.results != null)
-                totalResults.addAll(newResults.results)
-        } while (totalResults.size < endIndex || newResults.results == null)
+        val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size + pages * ServerManager.pageSize, false) }
+        jobs.add(job)
+
+        totalResults.addAll(jobs.awaitAll().mapNotNull { it.results }.flatten())
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
@@ -164,7 +172,7 @@ class ArchiveListServerSource(results: List<String>?,
                 callback.onResult(archives, params.requestedStartPosition, totalSize)
             } else {
                 DatabaseReader.refreshListener?.isRefreshing(true)
-                loadResults(endIndex)
+                runBlocking { loadResults(endIndex) }
                 endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalResults.size)
                 val ids = totalResults.subList(params.requestedStartPosition, endIndex)
                 val archives = getArchives(ids)
@@ -176,14 +184,14 @@ class ArchiveListServerSource(results: List<String>?,
 
 }
 
-class ArchiveListDataSource(private val results: List<String>?,
+class ArchiveListDataSource(results: List<String>?,
                             sortMethod: SortMethod,
                             descending: Boolean,
                             isSearch: Boolean) : ArchiveDataSourceBase(sortMethod, descending, isSearch) {
     override val searchResults = results
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
-        val ids = results?.let {
+        val ids = searchResults?.let {
             val endIndex = min(params.startPosition + params.loadSize, it.size)
             it.subList(params.startPosition, endIndex)
         }
@@ -192,13 +200,13 @@ class ArchiveListDataSource(private val results: List<String>?,
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
-        val ids = results?.let {
+        val ids = searchResults?.let {
             val endIndex = min(params.requestedStartPosition + params.requestedLoadSize, it.size)
             it.subList(params.requestedStartPosition, endIndex)
         }
 
         val archives = if (ids != null) getArchives(ids) else getArchives(null, params.requestedStartPosition, params.requestedLoadSize)
-        val totalSize = if (ids != null || !isSearch) results?.size ?: database.archiveDao().getArchiveCount() else 0
+        val totalSize = if (ids != null || !isSearch) searchResults?.size ?: database.archiveDao().getArchiveCount() else 0
         callback.onResult(archives, params.requestedStartPosition, if (ids != null && archives.size < ids.size) archives.size else totalSize)
     }
 }
