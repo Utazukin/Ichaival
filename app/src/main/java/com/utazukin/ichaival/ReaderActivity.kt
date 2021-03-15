@@ -56,6 +56,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var switchLayoutJob: Job? = null
 
     var currentScaleType = ScaleType.FitPage
+        private set
     var archive: Archive? = null
         private set
     private var currentPage = 0
@@ -69,7 +70,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
-    private var retrying = AtomicBoolean()
+    private val retrying = AtomicBoolean()
     private var updateProgressJob: Job? = null
     private val subtitle: String
         get() {
@@ -94,6 +95,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             title = ""
         }
         currentScaleType = ScaleType.fromInt(savedInstanceState?.getInt(SCALE_TYPE, 0) ?: 0)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            window.setDecorFitsSystemWindows(false)
 
         ViewCompat.setOnApplyWindowInsetsListener(appBar) { _, insets ->
             var params = FrameLayout.LayoutParams(appBar.layoutParams)
@@ -491,9 +495,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             } else {
-                window.setDecorFitsSystemWindows(false)
-                window.insetsController?.hide(WindowInsets.Type.systemBars() or WindowInsets.Type.statusBars())
-                window.insetsController?.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                window.insetsController?.run {
+                    hide(WindowInsets.Type.systemBars() or WindowInsets.Type.statusBars())
+                    systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
             }
         }
     }
@@ -505,10 +510,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             imagePager.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
                         View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        } else {
-            window.setDecorFitsSystemWindows(true)
+        } else
             window.insetsController?.show(WindowInsets.Type.systemBars() or WindowInsets.Type.statusBars())
-        }
 
         mVisible = true
 
