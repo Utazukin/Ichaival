@@ -145,15 +145,16 @@ class ArchiveListServerSource(results: List<String>?,
     }
 
     private suspend fun loadResults(endIndex: Int) = coroutineScope {
-        val remaining = totalSize - endIndex
+        val remaining = endIndex - totalResults.size
+        val currentSize = totalResults.size
         val pages = floor(remaining.toFloat() / ServerManager.pageSize).toInt()
         val jobs = mutableListOf<Deferred<ServerSearchResult>>()
         for (i in 0 until pages) {
-            val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size + i * ServerManager.pageSize, false) }
+            val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + i * ServerManager.pageSize, false) }
             jobs.add(job)
         }
 
-        val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, totalResults.size + pages * ServerManager.pageSize, false) }
+        val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + pages * ServerManager.pageSize, false) }
         jobs.add(job)
 
         totalResults.addAll(jobs.awaitAll().mapNotNull { it.results }.flatten())
