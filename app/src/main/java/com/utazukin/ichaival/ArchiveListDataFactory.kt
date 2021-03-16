@@ -99,6 +99,8 @@ abstract class ArchiveDataSourceBase(protected val sortMethod: SortMethod,
             SortMethod.Date -> if (descending) database.getDateDescending(ids, offset, limit) else database.getDateAscending(ids, offset, limit)
         }
     }
+
+    protected fun getSubList(startIndex: Int, endIndex: Int, list: List<String>) = if (endIndex < startIndex) list else list.subList(startIndex, endIndex)
 }
 
 class ArchiveListServerSource(results: List<String>?,
@@ -167,17 +169,18 @@ class ArchiveListServerSource(results: List<String>?,
         } else {
             var endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalSize)
             if (params.requestedStartPosition < totalResults.size && endIndex <= totalResults.size) {
-                val ids = totalResults.subList(params.requestedStartPosition, endIndex)
+                val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
                 val archives = getArchives(ids)
                 callback.onResult(archives, params.requestedStartPosition, totalSize)
             } else {
                 DatabaseReader.refreshListener?.isRefreshing(true)
                 runBlocking { loadResults(endIndex) }
                 endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalResults.size)
-                val ids = totalResults.subList(params.requestedStartPosition, endIndex)
+                val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
                 val archives = getArchives(ids)
                 DatabaseReader.refreshListener?.isRefreshing(false)
-                callback.onResult(archives, params.requestedStartPosition, if (archives.size < ids.size) archives.size else totalSize)
+                val startPosition = if (params.requestedStartPosition + archives.size > archives.size) 0 else params.requestedStartPosition
+                callback.onResult(archives, startPosition, if (archives.size < ids.size) archives.size else totalSize)
             }
         }
     }
@@ -202,11 +205,12 @@ class ArchiveListDataSource(results: List<String>?,
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
         val ids = searchResults?.let {
             val endIndex = min(params.requestedStartPosition + params.requestedLoadSize, it.size)
-            it.subList(params.requestedStartPosition, endIndex)
+            getSubList(params.requestedStartPosition, endIndex, it)
         }
 
         val archives = if (ids != null) getArchives(ids) else getArchives(null, params.requestedStartPosition, params.requestedLoadSize)
         val totalSize = if (ids != null || !isSearch) searchResults?.size ?: database.archiveDao().getArchiveCount() else 0
-        callback.onResult(archives, params.requestedStartPosition, if (ids != null && archives.size < ids.size) archives.size else totalSize)
+        val startPosition = if (params.requestedStartPosition + archives.size > archives.size) 0 else params.requestedStartPosition
+        callback.onResult(archives, startPosition, if (ids != null && archives.size < ids.size) archives.size else totalSize)
     }
 }
