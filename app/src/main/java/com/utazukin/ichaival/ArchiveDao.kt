@@ -181,7 +181,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
         if (toAdd.isNotEmpty())
             archiveDao().insertAll(toAdd.map { Archive(archives.getValue(it)) })
 
-        if (ServerManager.checkVersionAtLeast(7, 7, 7)) {
+        if (ServerManager.checkVersionAtLeast(0, 7, 7)) {
             for (archive in archives) {
                 val isBookmarked = archiveDao().isBookmarked(archive.key)
                 if (archive.value.currentPage > 0 && !isBookmarked) {
