@@ -30,8 +30,9 @@ import java.io.File
 
 typealias ResourceListener = () -> Unit
 
-class SubsamplingTarget(private val target: SubsamplingScaleImageView
-                        , private val resourceListener: ResourceListener? = null) : Target<File> {
+class SubsamplingTarget(private val target: SubsamplingScaleImageView,
+                        private val useNewDecoder: Boolean,
+                        private val resourceListener: ResourceListener? = null) : Target<File> {
     private var request: Request? = null
     private val imageEventListener: OnImageEventListener = object: OnImageEventListener {
         override fun onImageLoaded() {}
@@ -64,8 +65,10 @@ class SubsamplingTarget(private val target: SubsamplingScaleImageView
     override fun onLoadCleared(placeholder: Drawable?) { }
 
     override fun onResourceReady(resource: File, transition: Transition<in File>?) {
-        target.setBitmapDecoderClass(ImageDecoder::class.java)
-        target.setRegionDecoderClass(ImageRegionDecoder::class.java)
+        if (useNewDecoder) {
+            target.setBitmapDecoderClass(ImageDecoder::class.java)
+            target.setRegionDecoderClass(ImageRegionDecoder::class.java)
+        }
         target.setOnImageEventListener(imageEventListener)
         target.setImage(ImageSource.uri(resource.absolutePath))
     }

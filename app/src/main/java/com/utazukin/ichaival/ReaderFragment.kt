@@ -141,7 +141,7 @@ class ReaderFragment : Fragment(), PageFragment {
                     .downloadOnly()
                     .load(image)
                     .addListener(getListener(false))
-                    .into (ProgressTarget(image, SubsamplingTarget(it) {
+                    .into (ProgressTarget(image, SubsamplingTarget(it, !image.endsWith(".webp")) {
                         pageNum.visibility = View.GONE
                         progressBar.visibility = View.GONE
                         view?.setOnClickListener(null)
