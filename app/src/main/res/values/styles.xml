@@ -23,6 +23,7 @@
         <!-- Customize your theme here. -->
         <item name="tag_color">?colorPrimaryDark</item>
         <item name="cardBackgroundColor">#ff424242</item>
+        <item name="bottomSheetDialogTheme">@style/ReaderSettingsDialog</item>
     </style>
 
     <style name="AppTheme.Black" parent="AppTheme">
@@ -33,6 +34,7 @@
         <item name="colorBackgroundFloating">#000000</item>
         <item name="tag_color">@color/dark_gray</item>
         <item name="cardBackgroundColor">#000000</item>
+        <item name="bottomSheetDialogTheme">@style/ReaderSettingsDialog.Black</item>
     </style>
 
     <style name="FullscreenTheme" parent="AppTheme">
@@ -44,6 +46,10 @@
     </style>
 
     <style name="ReaderSettingsDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog"/>
+
+    <style name="ReaderSettingsDialog.Black" parent="ReaderSettingsDialog">
+        <item name="colorOnSurface">@color/black</item>
+    </style>
 
     <style name="FullscreenActionBarStyle" parent="Widget.MaterialComponents.ActionBar.Primary">
         <item name="android:background">#000000</item>

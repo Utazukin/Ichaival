@@ -44,11 +44,6 @@ enum class ScaleType(val value: Int) {
 class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
     private var handler: ReaderSettingsHandler? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setStyle(STYLE_NORMAL, R.style.ReaderSettingsDialog)
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_reader_settings_dialog, container, false)
 
