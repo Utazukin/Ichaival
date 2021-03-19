@@ -27,8 +27,8 @@
 
     <style name="AppTheme.Black" parent="AppTheme">
         <!-- Customize your theme here. -->
-        <item name="android:navigationBarColor">#000000</item>
-        <item name="android:colorBackground">#000000</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/black</item>
         <item name="colorPrimary">#000000</item>
         <item name="colorBackgroundFloating">#000000</item>
         <item name="tag_color">@color/dark_gray</item>
