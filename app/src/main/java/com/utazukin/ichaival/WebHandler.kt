@@ -157,7 +157,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
     suspend fun updateProgress(id: String, page: Int) {
-        if (!canConnect(true) || !ServerManager.checkVersionAtLeast(0, 7, 7))
+        if (!canConnect(true) || !ServerManager.serverTracksProgress)
             return
 
         val url = "$serverLocation${progressPath.format(id, page + 1)}"

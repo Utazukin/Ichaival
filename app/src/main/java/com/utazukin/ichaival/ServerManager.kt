@@ -53,6 +53,8 @@ object ServerManager {
         private set
     var categories: List<ArchiveCategory>? = null
         private set
+    var serverTracksProgress = false
+        private set
     private var initialized = false
 
     suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
@@ -88,6 +90,7 @@ object ServerManager {
             }
 
             pageSize = serverInfo.getInt("archives_per_page")
+            serverTracksProgress = serverInfo.optInt("server_tracks_progress", 1) == 1 && checkVersionAtLeast(0,7,7)
         }
 
         categories = parseCategories(context.filesDir)
