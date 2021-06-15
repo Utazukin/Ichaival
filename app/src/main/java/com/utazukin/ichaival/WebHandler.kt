@@ -34,17 +34,16 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
-import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
-    private val tag = tagText.toLowerCase(Locale.getDefault())
-    private val namespace = namespaceText.toLowerCase(Locale.getDefault())
+    private val tag = tagText.lowercase()
+    private val namespace = namespaceText.lowercase()
     val displayTag = if (namespace.isNotBlank()) "$namespace:$tag" else tag
 
-    fun contains(query: String) : Boolean {
+    fun contains(query: String): Boolean {
         return if (!query.contains(":"))
             tag.contains(query, true)
         else {

@@ -26,7 +26,6 @@ import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.*
 
 private fun <T : Any, TT : Any> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
 
@@ -149,10 +148,10 @@ open class ArchiveViewModel : SearchViewModelBase() {
         if (filter.isEmpty())
             return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
         else {
-            val normalized = filter.toString().toLowerCase(Locale.ROOT)
+            val normalized = filter.toString().lowercase()
             val spaceRegex by lazy { Regex("\\s") }
             for (archive in allArchives) {
-                if (archive.title.toLowerCase(Locale.ROOT).contains(normalized) && !mValues.contains(archive.id))
+                if (archive.title.lowercase().contains(normalized) && !mValues.contains(archive.id))
                     addIfNew(archive)
                 else {
                     val terms = filter.split(spaceRegex)
@@ -161,8 +160,7 @@ open class ArchiveViewModel : SearchViewModelBase() {
                     while (i < terms.size) {
                         var term = terms[i]
                         val colonIndex = term.indexOf(':')
-                        if (term.startsWith("\"")
-                            || (colonIndex in 0..(term.length - 2) && term[colonIndex + 1] == '"')) {
+                        if (term.startsWith("\"") || (colonIndex in 0..(term.length - 2) && term[colonIndex + 1] == '"')) {
                             val builder = StringBuilder(term)
                             if (!term.endsWith("\"")) {
                                 var k = i + 1
