@@ -65,6 +65,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val infoPath = "$apiPath/info"
     private const val categoryPath = "$apiPath/categories"
     private const val clearTempPath = "$apiPath/tempfolder"
+    private const val modifyCatPath = "$categoryPath/%s/%s"
     private const val connTimeoutMs = 5000L
     private const val readTimeoutMs = 30000L
 
@@ -153,6 +154,48 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         return null
+    }
+
+    suspend fun removeFromCategory(categoryId: String, archiveId: String) : Boolean {
+        if (!canConnect(false))
+            return false
+
+        val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
+        val connection = createServerConnection(url, "DELETE")
+        val response = httpClient.newCall(connection).await("Failed to remove from category.")
+        return response.isSuccessful
+    }
+
+    suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : String? {
+        if (!canConnect())
+            return null
+
+        val url = "$serverLocation$categoryPath"
+        val builder = FormBody.Builder().addEncoded("name", name)
+        if (search != null)
+            builder.addEncoded("search", search)
+        val formBody = builder.build()
+        val connection = createServerConnection(url, "PUT", formBody)
+        val response = httpClient.newCall(connection).await("Failed to create category.")
+        with (response) {
+            if (!isSuccessful) {
+                notifyError(body?.suspendString()?.let { JSONObject(it) }?.optString("error") ?: "Failed to create category.")
+                return null
+            }
+
+            val json = body?.suspendString()?.let { JSONObject(it) }
+            return json?.optString("category_id")
+        }
+    }
+
+    suspend fun addToCategory(categoryId: String, archiveId: String) : Boolean {
+        if (!canConnect())
+            return false
+
+        val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
+        val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
+        val response = httpClient.newCall(connection).await("Failed to add to category.")
+        return response.isSuccessful
     }
 
     suspend fun updateProgress(id: String, page: Int) {

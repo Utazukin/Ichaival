@@ -29,7 +29,6 @@
     <string name="pref_header_general">General</string>
 
 
-
     <string name="server_address_preference">server_address</string>
     <string name="server_location_name">Server Address</string>
     <string name="clear_cache">Clearing cache…</string>
@@ -133,4 +132,6 @@
     <string name="log_save_title">Copy Crash Log</string>
     <string name="theme_pref">theme_pref</string>
     <string name="theme_pref_name">Theme</string>
+    <string name="add_to_cat_button">Add to Category</string>
+    <string name="new_category_button">New Category</string>
 </resources>

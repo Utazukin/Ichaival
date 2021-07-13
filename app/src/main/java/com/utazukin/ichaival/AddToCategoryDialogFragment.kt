@@ -1,0 +1,128 @@
+/*
+ * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
+ * Copyright (C) 2021 Utazukin
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.utazukin.ichaival
+
+import android.content.Context
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.*
+import androidx.appcompat.widget.AppCompatRadioButton
+import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private const val ARCHIVE_PARAM = "archive"
+
+interface AddCategoryListener {
+    fun onAddedToCategory(name: String, archiveId: String)
+}
+
+class AddToCategoryDialogFragment : DialogFragment() {
+    private var listener: AddCategoryListener? = null
+    private var archiveId = ""
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        arguments?.let {
+            archiveId = it.getString(ARCHIVE_PARAM) ?: ""
+        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        listener = parentFragment as? AddCategoryListener
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        // Inflate the layout for this fragment
+        val view = inflater.inflate(R.layout.fragment_add_to_category_dialog, container, false)
+
+        val catGroup: RadioGroup = view.findViewById(R.id.cat_rad_group)
+        val addButton: Button = view.findViewById(R.id.add_to_cat_dialog_button)
+        val catText: EditText = view.findViewById(R.id.new_cat_txt)
+
+        catGroup.setOnCheckedChangeListener { _, i ->
+            when (i) {
+                R.id.new_cat_radio -> catText.visibility = View.VISIBLE
+                else -> catText.visibility = View.GONE
+            }
+        }
+
+        ServerManager.categories?.let {
+            val newCatButton: RadioButton = view.findViewById(R.id.new_cat_radio)
+            catGroup.removeAllViews()
+            for ((i, category) in it.withIndex()) {
+                if (category is StaticCategory) {
+                    val categoryButton = AppCompatRadioButton(context).apply {
+                        text = category.name
+                        id = i
+                    }
+                    catGroup.addView(categoryButton)
+                }
+            }
+            catGroup.addView(newCatButton)
+            catGroup.addView(catText)
+        }
+
+        addButton.setOnClickListener {
+            if (catGroup.checkedRadioButtonId == R.id.new_cat_radio) {
+                if (catText.text.isNotBlank()) {
+                    lifecycleScope.launch {
+                        val name = catText.text.toString()
+                        val catId = withContext(Dispatchers.IO) { WebHandler.createCategory(name) }
+                        val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
+                        if (success)
+                            listener?.onAddedToCategory(name, archiveId)
+                        dismiss()
+                    }
+                }
+            } else {
+                lifecycleScope.launch {
+                    val category = ServerManager.categories?.get(catGroup.checkedRadioButtonId)
+                    val catId = category?.id
+                    val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
+                    if (success)
+                        listener?.onAddedToCategory(category!!.name, archiveId)
+                    dismiss()
+                }
+            }
+        }
+
+        return view
+    }
+
+    companion object {
+        @JvmStatic
+        fun newInstance(id: String) =
+            AddToCategoryDialogFragment().apply {
+                arguments = Bundle().apply {
+                    putString(ARCHIVE_PARAM, id)
+                }
+            }
+    }
+}

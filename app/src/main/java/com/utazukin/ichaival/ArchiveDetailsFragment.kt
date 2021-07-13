@@ -40,6 +40,7 @@ import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -47,9 +48,12 @@ import kotlinx.coroutines.withContext
 
 private const val ARCHIVE_ID = "arcid"
 
-class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener {
+class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener, AddCategoryListener {
     private var archiveId: String? = null
     private lateinit var tagLayout: LinearLayout
+    private lateinit var catLayout: LinearLayout
+    private lateinit var catFlexLayout: FlexboxLayout
+    private lateinit var addToCatButton: Button
     private lateinit var bookmarkButton: Button
     private lateinit var thumbView: ImageView
     private var thumbLoadJob: Job? = null
@@ -74,11 +78,21 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_archive_details, container, false)
         tagLayout = view.findViewById(R.id.tag_layout)
+        catLayout = view.findViewById(R.id.cat_layout)
+        catFlexLayout = view.findViewById(R.id.cat_flex)
+        addToCatButton = view.findViewById(R.id.add_to_cat_button)
 
         lifecycleScope.launch {
             val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
             setUpDetailView(view, archive)
+
         }
+
+        addToCatButton.setOnClickListener {
+            val dialog = AddToCategoryDialogFragment.newInstance(archiveId!!)
+            dialog.show(childFragmentManager, "add_category")
+        }
+
         return view
     }
 
@@ -141,15 +155,35 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
+    private fun setupCategories(archive: Archive) {
+        ServerManager.getStaticCategories(archive.id)?.let {
+            for (category in it) {
+                val catView = createTagView(category.name)
+                catView.setOnLongClickListener {
+                    lifecycleScope.launch {
+                        val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(category.id, archive.id) }
+                        if (success) {
+                            catFlexLayout.removeView(catView)
+                            Snackbar.make(requireView(), "Removed from category.", Snackbar.LENGTH_SHORT).show()
+                        }
+                    }
+                    true
+                }
+                catFlexLayout.addView(catView)
+            }
+        }
+    }
+
     private fun setUpTags(archive: Archive) {
         for (pair in archive.tags) {
             if (pair.value.isEmpty())
                 continue
 
             val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
-            val namespaceLayout = FlexboxLayout(context)
-            namespaceLayout.flexWrap = FlexWrap.WRAP
-            namespaceLayout.flexDirection = FlexDirection.ROW
+            val namespaceLayout = FlexboxLayout(context).apply {
+                flexWrap = FlexWrap.WRAP
+                flexDirection = FlexDirection.ROW
+            }
             tagLayout.addView(
                 namespaceLayout,
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -208,23 +242,34 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val readButton: Button = view.findViewById(R.id.read_button)
         readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
-        if (archive != null) {
-            setUpTags(archive)
+        if (archive == null) return
 
-            val titleView: TextView = view.findViewById(R.id.title)
-            titleView.text = archive.title
+        setUpTags(archive)
+        setupCategories(archive)
 
-            thumbLoadJob = lifecycleScope.launch(Dispatchers.Main) {
-                thumbView = view.findViewById(R.id.cover)
-                val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
-                val request = Glide.with(thumbView).load(thumb).dontTransform()
-                request.into(thumbView)
+        val titleView: TextView = view.findViewById(R.id.title)
+        titleView.text = archive.title
 
-                //Replace the thumbnail with the full size image.
-                val image = withContext(Dispatchers.Default) { archive.getPageImage(0) }
-                Glide.with(thumbView).load(image).dontTransform().thumbnail(request).into(thumbView)
-            }
+        thumbLoadJob = lifecycleScope.launch(Dispatchers.Main) {
+            thumbView = view.findViewById(R.id.cover)
+            val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
+            val request = Glide.with(thumbView).load(thumb).dontTransform()
+            request.into(thumbView)
+
+            //Replace the thumbnail with the full size image.
+            val image = withContext(Dispatchers.Default) { archive.getPageImage(0) }
+            Glide.with(thumbView).load(image).dontTransform().thumbnail(request).into(thumbView)
         }
+    }
+
+    override fun onAddedToCategory(name: String, archiveId: String) {
+        if (archiveId != this.archiveId)
+            return
+
+        lifecycleScope.launch { ServerManager.parseCategories(requireContext()) }
+        val catView = createTagView(name)
+        catFlexLayout.addView(catView)
+        Snackbar.make(requireView(), "Add to $name.", Snackbar.LENGTH_SHORT).show()
     }
 
     interface TagInteractionListener {

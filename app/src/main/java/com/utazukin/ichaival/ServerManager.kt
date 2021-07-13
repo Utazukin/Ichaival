@@ -19,6 +19,8 @@
 package com.utazukin.ichaival
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -122,9 +124,24 @@ object ServerManager {
                         item.getInt("weight")
                     )
                 }
-                tagSuggestions.sortByDescending { tag -> tag.weight }
+                tagSuggestions = tagSuggestions.sortedByDescending { tag -> tag.weight }.toTypedArray()
             }
         }
+    }
+
+    fun getStaticCategories(id: String) : List<StaticCategory>? {
+        return categories?.let {
+            val staticCategories = mutableListOf<StaticCategory>()
+            for (category in it) {
+                if (category is StaticCategory && category.archiveIds.contains(id))
+                    staticCategories.add(category)
+            }
+            staticCategories
+        }
+    }
+
+    suspend fun parseCategories(context: Context) {
+        withContext(Dispatchers.IO) { parseCategories(context.filesDir) }
     }
 
     private suspend fun parseCategories(fileDir: File) : List<ArchiveCategory>? {
