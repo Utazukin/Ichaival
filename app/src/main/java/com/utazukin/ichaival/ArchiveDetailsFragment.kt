@@ -71,10 +71,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_archive_details, container, false)
         tagLayout = view.findViewById(R.id.tag_layout)
@@ -156,22 +153,25 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     }
 
     private fun setupCategories(archive: Archive) {
-        ServerManager.getStaticCategories(archive.id)?.let {
-            for (category in it) {
+        val categories = CategoryManager.getStaticCategories(archive.id)
+        if (categories != null) {
+            catLayout.visibility = View.VISIBLE
+            for (category in categories) {
                 val catView = createTagView(category.name)
                 catView.setOnLongClickListener {
                     lifecycleScope.launch {
                         val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(category.id, archive.id) }
                         if (success) {
                             catFlexLayout.removeView(catView)
-                            Snackbar.make(requireView(), "Removed from category.", Snackbar.LENGTH_SHORT).show()
+                            Snackbar.make(requireView(), "Removed from ${category.name}.", Snackbar.LENGTH_SHORT).show()
+                            ServerManager.parseCategories(requireContext())
                         }
                     }
                     true
                 }
                 catFlexLayout.addView(catView)
             }
-        }
+        } else catLayout.visibility = View.GONE
     }
 
     private fun setUpTags(archive: Archive) {
@@ -266,10 +266,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         if (archiveId != this.archiveId)
             return
 
-        lifecycleScope.launch { ServerManager.parseCategories(requireContext()) }
         val catView = createTagView(name)
         catFlexLayout.addView(catView)
-        Snackbar.make(requireView(), "Add to $name.", Snackbar.LENGTH_SHORT).show()
+        Snackbar.make(requireView(), "Added to $name.", Snackbar.LENGTH_SHORT).show()
     }
 
     interface TagInteractionListener {

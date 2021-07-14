@@ -61,7 +61,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         this.menu = menu
 
-        if (ServerManager.categories != null)
+        if (CategoryManager.categories != null)
             menu?.findItem(R.id.filter_menu)?.isVisible = true
 
         return super.onCreateOptionsMenu(menu)
@@ -151,9 +151,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         super.onServerInitialized()
         val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.setupArchiveList()
-
-        val categoryFragment: CategoryFilterFragment? = supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-        categoryFragment?.initCategories(ServerManager.categories)
     }
 
     override fun onCategoryChanged(category: ArchiveCategory) {

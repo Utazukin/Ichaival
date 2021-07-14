@@ -19,30 +19,11 @@
 package com.utazukin.ichaival
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-interface ArchiveCategory {
-    val name: String
-    val id: String
-    val pinned: Boolean
-}
-
-class DynamicCategory(override val name: String,
-                      override val id: String,
-                      override val pinned: Boolean,
-                      val search: String) : ArchiveCategory
-class StaticCategory(override val name: String,
-                     override val id: String,
-                     override val pinned: Boolean,
-                     val archiveIds: List<String>) : ArchiveCategory
-
 object ServerManager {
     private const val serverInfoFilename = "info.json"
-    private const val categoriesFilename = "categories.json"
     var majorVersion = 0
         private set
     var minorVersion = 0
@@ -52,8 +33,6 @@ object ServerManager {
     var pageSize = 50
         private set
     var tagSuggestions: Array<TagSuggestion> = arrayOf()
-        private set
-    var categories: List<ArchiveCategory>? = null
         private set
     var serverTracksProgress = false
         private set
@@ -95,7 +74,7 @@ object ServerManager {
             serverTracksProgress = serverInfo.optInt("server_tracks_progress", 1) == 1 && checkVersionAtLeast(0,7,7)
         }
 
-        categories = parseCategories(context.filesDir)
+        parseCategories(context)
 
         initialized = true
     }
@@ -129,45 +108,8 @@ object ServerManager {
         }
     }
 
-    fun getStaticCategories(id: String) : List<StaticCategory>? {
-        return categories?.let {
-            val staticCategories = mutableListOf<StaticCategory>()
-            for (category in it) {
-                if (category is StaticCategory && category.archiveIds.contains(id))
-                    staticCategories.add(category)
-            }
-            staticCategories
-        }
-    }
-
     suspend fun parseCategories(context: Context) {
-        withContext(Dispatchers.IO) { parseCategories(context.filesDir) }
+        WebHandler.getCategories()?.let { CategoryManager.updateCategories(it, context.filesDir) }
     }
 
-    private suspend fun parseCategories(fileDir: File) : List<ArchiveCategory>? {
-        val categoriesFile = File(fileDir, categoriesFilename)
-        var jsonCategories: JSONArray? = WebHandler.getCategories()
-        when {
-            jsonCategories != null -> categoriesFile.writeText(jsonCategories.toString())
-            categoriesFile.exists() -> jsonCategories = JSONArray(categoriesFile.readText())
-            else -> return null
-        }
-
-        val list =  MutableList(jsonCategories.length()) { i ->
-            val category = jsonCategories.getJSONObject(i)
-            val search = category.getString("search")
-            val name = category.getString("name")
-            val id = category.getString("id")
-            val pinned = category.getInt("pinned") == 1
-            if (search.isNotBlank())
-                DynamicCategory(name, id, pinned, category.getString("search"))
-            else {
-                val archives = category.getJSONArray("archives")
-                StaticCategory(name, id, pinned, MutableList(archives.length()) { k -> archives.getString(k) } )
-            }
-        }
-        list.sortBy { it.pinned }
-
-        return list
-    }
 }

@@ -23,7 +23,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.RadioGroup
 import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
@@ -37,9 +40,13 @@ interface AddCategoryListener {
     fun onAddedToCategory(name: String, archiveId: String)
 }
 
-class AddToCategoryDialogFragment : DialogFragment() {
+class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
     private var listener: AddCategoryListener? = null
     private var archiveId = ""
+    private var categories: List<ArchiveCategory>? = null
+    private lateinit var catGroup: RadioGroup
+    private lateinit var catText: EditText
+    private lateinit var newCatButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,16 +63,24 @@ class AddToCategoryDialogFragment : DialogFragment() {
     override fun onStart() {
         super.onStart()
         dialog?.window?.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
+        CategoryManager.addUpdateListener(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        CategoryManager.removeUpdateListener(this)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_add_to_category_dialog, container, false)
 
-        val catGroup: RadioGroup = view.findViewById(R.id.cat_rad_group)
+        catGroup = view.findViewById(R.id.cat_rad_group)
+        catText = view.findViewById(R.id.new_cat_txt)
+        newCatButton = view.findViewById(R.id.new_cat_radio)
         val addButton: Button = view.findViewById(R.id.add_to_cat_dialog_button)
-        val catText: EditText = view.findViewById(R.id.new_cat_txt)
 
+        catGroup.check(R.id.new_cat_radio)
         catGroup.setOnCheckedChangeListener { _, i ->
             when (i) {
                 R.id.new_cat_radio -> catText.visibility = View.VISIBLE
@@ -73,8 +88,40 @@ class AddToCategoryDialogFragment : DialogFragment() {
             }
         }
 
-        ServerManager.categories?.let {
-            val newCatButton: RadioButton = view.findViewById(R.id.new_cat_radio)
+        addButton.setOnClickListener {
+            if (catGroup.checkedRadioButtonId == R.id.new_cat_radio) {
+                if (catText.text.isNotBlank()) {
+                    lifecycleScope.launch {
+                        val name = catText.text.toString()
+                        val catId = withContext(Dispatchers.IO) { WebHandler.createCategory(name) }
+                        val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
+                        if (success) {
+                            withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
+                            listener?.onAddedToCategory(name, archiveId)
+                        }
+                        dismiss()
+                    }
+                }
+            } else {
+                lifecycleScope.launch {
+                    val category = categories?.get(catGroup.checkedRadioButtonId)
+                    val catId = category?.id
+                    val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
+                    if (success) {
+                        withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
+                        listener?.onAddedToCategory(category!!.name, archiveId)
+                    }
+                    dismiss()
+                }
+            }
+        }
+
+        return view
+    }
+
+    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
+        this.categories = categories
+        categories?.let {
             catGroup.removeAllViews()
             for ((i, category) in it.withIndex()) {
                 if (category is StaticCategory) {
@@ -89,31 +136,6 @@ class AddToCategoryDialogFragment : DialogFragment() {
             catGroup.addView(catText)
         }
 
-        addButton.setOnClickListener {
-            if (catGroup.checkedRadioButtonId == R.id.new_cat_radio) {
-                if (catText.text.isNotBlank()) {
-                    lifecycleScope.launch {
-                        val name = catText.text.toString()
-                        val catId = withContext(Dispatchers.IO) { WebHandler.createCategory(name) }
-                        val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
-                        if (success)
-                            listener?.onAddedToCategory(name, archiveId)
-                        dismiss()
-                    }
-                }
-            } else {
-                lifecycleScope.launch {
-                    val category = ServerManager.categories?.get(catGroup.checkedRadioButtonId)
-                    val catId = category?.id
-                    val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
-                    if (success)
-                        listener?.onAddedToCategory(category!!.name, archiveId)
-                    dismiss()
-                }
-            }
-        }
-
-        return view
     }
 
     companion object {

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ enum class SortMethod(val value: Int) {
     }
 }
 
-class CategoryFilterFragment : Fragment() {
+class CategoryFilterFragment : Fragment(), CategoryListener {
     private lateinit var categoryGroup: RadioGroup
     private var currentCategories: List<ArchiveCategory>? = null
     private lateinit var categoryLabel: TextView
@@ -87,9 +87,10 @@ class CategoryFilterFragment : Fragment() {
         return view
     }
 
-    fun initCategories(categories: List<ArchiveCategory>?) {
+    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
         currentCategories = categories
 
+        clearCategory()
         categoryButtons.clear()
         if (!categories.isNullOrEmpty()) {
             categoryLabel.visibility = View.VISIBLE
@@ -124,6 +125,16 @@ class CategoryFilterFragment : Fragment() {
             R.id.rad_desc -> true
             else -> false
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        CategoryManager.addUpdateListener(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        CategoryManager.removeUpdateListener(this)
     }
 
     override fun onAttach(context: Context) {
