@@ -37,7 +37,7 @@ import kotlinx.coroutines.withContext
 private const val ARCHIVE_PARAM = "archive"
 
 interface AddCategoryListener {
-    fun onAddedToCategory(name: String, archiveId: String)
+    fun onAddedToCategory(name: String, categoryId: String, archiveId: String)
 }
 
 class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
@@ -97,7 +97,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                         val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
                         if (success) {
                             withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
-                            listener?.onAddedToCategory(name, archiveId)
+                            listener?.onAddedToCategory(name, catId!!, archiveId)
                         }
                         dismiss()
                     }
@@ -109,7 +109,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                     val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
                     if (success) {
                         withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
-                        listener?.onAddedToCategory(category!!.name, archiveId)
+                        listener?.onAddedToCategory(category!!.name, category.id, archiveId)
                     }
                     dismiss()
                 }

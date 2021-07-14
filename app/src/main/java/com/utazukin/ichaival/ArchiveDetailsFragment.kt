@@ -262,12 +262,24 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    override fun onAddedToCategory(name: String, archiveId: String) {
+    override fun onAddedToCategory(name: String, categoryId: String, archiveId: String) {
         if (archiveId != this.archiveId)
             return
 
         val catView = createTagView(name)
         catFlexLayout.addView(catView)
+        catView.setOnLongClickListener {
+            lifecycleScope.launch {
+                val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(categoryId, archiveId) }
+                if (success) {
+                    catFlexLayout.removeView(catView)
+                    Snackbar.make(requireView(), "Removed from ${name}.", Snackbar.LENGTH_SHORT).show()
+                    ServerManager.parseCategories(requireContext())
+                }
+            }
+            true
+        }
+
         Snackbar.make(requireView(), "Added to $name.", Snackbar.LENGTH_SHORT).show()
     }
 
