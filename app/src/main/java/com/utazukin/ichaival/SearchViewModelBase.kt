@@ -70,9 +70,13 @@ class SearchViewModel : SearchViewModelBase() {
     override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) = archiveDataFactory.updateSort(method, desc, force)
 }
 
-class StaticCategoryModel : ArchiveViewModel() {
+class StaticCategoryModel : ArchiveViewModel(), CategoryListener {
     private lateinit var results: List<String>
     private var categoryId: String? = null
+
+    init {
+        CategoryManager.addUpdateListener(this)
+    }
 
     fun filter(onlyNew: Boolean) {
         if (!onlyNew) {
@@ -101,6 +105,15 @@ class StaticCategoryModel : ArchiveViewModel() {
             results = ids
             filter(onlyNew)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        CategoryManager.removeUpdateListener(this)
+    }
+
+    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
+        categoryId = null
     }
 }
 

@@ -42,7 +42,7 @@ enum class SortMethod(val value: Int) {
 class CategoryFilterFragment : Fragment(), CategoryListener {
     private lateinit var categoryGroup: RadioGroup
     private var currentCategories: List<ArchiveCategory>? = null
-    private lateinit var categoryLabel: TextView
+    private var categoryLabel: TextView? = null
     private var listener: FilterListener? = null
     private var sortMethod = SortMethod.Alpha
     private var descending = false
@@ -90,10 +90,12 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
         currentCategories = categories
 
+        val label = categoryLabel ?: return
         clearCategory()
         categoryButtons.clear()
+        categoryGroup.removeAllViews()
         if (!categories.isNullOrEmpty()) {
-            categoryLabel.visibility = View.VISIBLE
+            label.visibility = View.VISIBLE
             for ((i, category) in categories.withIndex()) {
                 val categoryButton = AppCompatRadioButton(context)
                 categoryButton.text = category.name
@@ -127,19 +129,15 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        CategoryManager.addUpdateListener(this)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        CategoryManager.removeUpdateListener(this)
-    }
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
         listener = context as? FilterListener
+        CategoryManager.addUpdateListener(this)
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        CategoryManager.removeUpdateListener(this)
     }
 }
 
