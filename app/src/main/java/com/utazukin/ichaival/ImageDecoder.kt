@@ -28,6 +28,17 @@ import com.hippo.image.BitmapRegionDecoder
 import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder as IImageDecoder
 import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder as IImageRegionDecoder
 
+enum class ImageFormat(val value: Int) {
+    JPG(2),
+    PNG(3),
+    GIF(4);
+
+    companion object {
+        private val map by lazy { values().associateBy(ImageFormat::value)}
+        fun fromInt(type: Int) = map[type]
+    }
+}
+
 class ImageDecoder : IImageDecoder {
     override fun decode(context: Context?, uri: Uri): Bitmap {
         return BitmapDecoder.decode(context?.contentResolver?.openInputStream(uri))!!

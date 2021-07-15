@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2021 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 import android.content.Context
+import android.graphics.drawable.BitmapDrawable
 import com.bumptech.glide.Glide
 import com.bumptech.glide.Registry
 import com.bumptech.glide.annotation.GlideModule
@@ -31,12 +32,17 @@ import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okio.*
 import java.io.InputStream
+import java.nio.ByteBuffer
 
 @GlideModule
 class ProgressGlideModule : AppGlideModule() {
     override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
         val client = OkHttpClient.Builder().addInterceptor(createInterceptor(ResponseProgressListener())).build()
         registry.replace(GlideUrl::class.java, InputStream::class.java, OkHttpUrlLoader.Factory(client))
+
+        val decoder = GlideImageDecoder(context, glide.bitmapPool)
+        registry.prepend(Registry.BUCKET_BITMAP_DRAWABLE, ByteBuffer::class.java, BitmapDrawable::class.java, decoder)
+        registry.prepend(Registry.BUCKET_BITMAP, ByteBuffer::class.java, BitmapDrawable::class.java, decoder)
     }
 
     companion object {
