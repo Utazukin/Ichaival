@@ -65,25 +65,25 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 
         onCategoriesUpdated(CategoryManager.categories)
 
-        view.run {
-            val sortGroup: RadioGroup = findViewById(R.id.sort_group)
-            sortGroup.setOnCheckedChangeListener { _, id ->
-                sortMethod = getMethodFromId(id)
-                listener?.onSortChanged(sortMethod, descending)
-            }
-
+        with(view) {
             val dirGroup: RadioGroup = findViewById(R.id.direction_group)
-            dirGroup.setOnCheckedChangeListener { _, id ->
-                descending = getDirectionFromId(id)
-                listener?.onSortChanged(sortMethod, descending)
-            }
-
+            val sortGroup: RadioGroup = findViewById(R.id.sort_group)
             when (sortMethod) {
                 SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
                 SortMethod.Date -> sortGroup.check(R.id.rad_date)
             }
 
             dirGroup.check(if (descending) R.id.rad_desc else R.id.rad_asc)
+
+            sortGroup.setOnCheckedChangeListener { _, id ->
+                sortMethod = getMethodFromId(id)
+                listener?.onSortChanged(sortMethod, descending)
+            }
+
+            dirGroup.setOnCheckedChangeListener { _, id ->
+                descending = getDirectionFromId(id)
+                listener?.onSortChanged(sortMethod, descending)
+            }
         }
 
         return view
