@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
 private const val ARCHIVE_PARAM = "archive"
 
 interface AddCategoryListener {
-    fun onAddedToCategory(name: String, categoryId: String, archiveId: String)
+    fun onAddedToCategory(category: ArchiveCategory, archiveId: String)
 }
 
 class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
@@ -90,11 +90,13 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                 if (catText.text.isNotBlank()) {
                     lifecycleScope.launch {
                         val name = catText.text.toString()
-                        val catId = withContext(Dispatchers.IO) { WebHandler.createCategory(name) }
-                        val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
-                        if (success) {
-                            withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
-                            listener?.onAddedToCategory(name, catId!!, archiveId)
+                        val category = withContext(Dispatchers.IO) { CategoryManager.createCategory(name) }
+                        category?.let {
+                            val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveId) }
+                            if (success) {
+                                withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
+                                listener?.onAddedToCategory(it, archiveId)
+                            }
                         }
                         dismiss()
                     }
@@ -102,11 +104,12 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
             } else {
                 lifecycleScope.launch {
                     val category = categories?.get(catGroup.checkedRadioButtonId)
-                    val catId = category?.id
-                    val success = catId != null && withContext(Dispatchers.IO) { WebHandler.addToCategory(catId, archiveId) }
-                    if (success) {
-                        withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
-                        listener?.onAddedToCategory(category!!.name, category.id, archiveId)
+                    category?.let {
+                        val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveId) }
+                        if (success) {
+                            withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
+                            listener?.onAddedToCategory(it, archiveId)
+                        }
                     }
                     dismiss()
                 }

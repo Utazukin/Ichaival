@@ -26,6 +26,7 @@ import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.view.*
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
@@ -152,18 +153,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         if (categories != null) {
             catLayout.visibility = View.VISIBLE
             for (category in categories) {
-                val catView = createCatView(category.name)
-                catView.setOnLongClickListener {
-                    lifecycleScope.launch {
-                        val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(category.id, archive.id) }
-                        if (success) {
-                            catFlexLayout.removeView(catView)
-                            Snackbar.make(requireView(), "Removed from ${category.name}.", Snackbar.LENGTH_SHORT).show()
-                            ServerManager.parseCategories(requireContext())
-                        }
-                    }
-                    true
-                }
+                val catView = createCatView(category, archive.id)
                 catFlexLayout.addView(catView)
             }
         } else catLayout.visibility = View.GONE
@@ -214,17 +204,43 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         return tagView
     }
 
-    private fun createCatView(name: String) : TextView {
-        val tagView = TextView(context)
-        tagView.text = name
-        tagView.background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
-        tagView.setTextColor(Color.WHITE)
-        val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        layoutParams.setMargins(10)
-        tagView.layoutParams = layoutParams
-        tagView.gravity = Gravity.CENTER_VERTICAL
-        tagView.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear_black_24dp), null)
-        return tagView
+    private fun createCatView(category: ArchiveCategory, archiveId: String): TextView {
+        val catView = TextView(context).apply {
+            text = category.name
+            background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
+            setTextColor(Color.WHITE)
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(10)
+            layoutParams = params
+            gravity = Gravity.CENTER_VERTICAL
+            setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear_black_24dp), null)
+        }
+        catView.setOnClickListener {
+            val builder = AlertDialog.Builder(requireContext()).apply {
+                setTitle("Remove from category")
+                setMessage("Remove from ${category.name}?")
+                setPositiveButton("Yes") { dialog, _ ->
+                    dialog.dismiss()
+                    lifecycleScope.launch {
+                        val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(category.id, archiveId) }
+                        if (success) {
+                            catFlexLayout.removeView(catView)
+                            Snackbar.make(requireView(), "Removed from ${category.name}.", Snackbar.LENGTH_SHORT).show()
+                            ServerManager.parseCategories(requireContext())
+                        }
+                    }
+                }
+
+                setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
+            }
+            val dialog = builder.create()
+            dialog.show()
+        }
+
+        return catView
     }
 
     private fun setUpDetailView(view: View, archive: Archive?) {
@@ -270,25 +286,14 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    override fun onAddedToCategory(name: String, categoryId: String, archiveId: String) {
+    override fun onAddedToCategory(category: ArchiveCategory, archiveId: String) {
         if (archiveId != this.archiveId)
             return
 
-        val catView = createCatView(name)
+        val catView = createCatView(category, archiveId)
         catFlexLayout.addView(catView)
-        catView.setOnLongClickListener {
-            lifecycleScope.launch {
-                val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(categoryId, archiveId) }
-                if (success) {
-                    catFlexLayout.removeView(catView)
-                    Snackbar.make(requireView(), "Removed from ${name}.", Snackbar.LENGTH_SHORT).show()
-                    ServerManager.parseCategories(requireContext())
-                }
-            }
-            true
-        }
 
-        Snackbar.make(requireView(), "Added to $name.", Snackbar.LENGTH_SHORT).show()
+        Snackbar.make(requireView(), "Added to ${category.name}.", Snackbar.LENGTH_SHORT).show()
     }
 
     interface TagInteractionListener {

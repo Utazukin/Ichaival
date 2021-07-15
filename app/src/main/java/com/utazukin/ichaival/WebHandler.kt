@@ -166,7 +166,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return response.isSuccessful
     }
 
-    suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : String? {
+    suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : JSONObject? {
         if (!canConnect())
             return null
 
@@ -183,8 +183,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 return null
             }
 
-            val json = body?.suspendString()?.let { JSONObject(it) }
-            return json?.optString("category_id")
+            return body?.suspendString()?.let { JSONObject(it) }
         }
     }
 

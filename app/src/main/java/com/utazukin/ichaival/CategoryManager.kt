@@ -73,6 +73,16 @@ object CategoryManager {
         }
     }
 
+    suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : ArchiveCategory? {
+        val json = withContext(Dispatchers.IO) { WebHandler.createCategory(name, search, pinned) }
+        return json?.let {
+            if (!search.isNullOrBlank())
+                StaticCategory(name, it.getString("category_id"), pinned, mutableListOf())
+            else
+                DynamicCategory(name, it.getString("category_id"), pinned, it.getString("search"))
+        }
+    }
+
     private fun updateListeners() {
         for (listener in listeners)
             listener.onCategoriesUpdated(categories)
