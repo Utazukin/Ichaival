@@ -24,15 +24,10 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
-import android.view.LayoutInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.view.*
+import android.widget.*
 import androidx.core.content.ContextCompat
+import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
@@ -53,7 +48,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private lateinit var tagLayout: LinearLayout
     private lateinit var catLayout: LinearLayout
     private lateinit var catFlexLayout: FlexboxLayout
-    private lateinit var addToCatButton: Button
+    private lateinit var addToCatButton: ImageButton
     private lateinit var bookmarkButton: Button
     private lateinit var thumbView: ImageView
     private var thumbLoadJob: Job? = null
@@ -157,7 +152,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         if (categories != null) {
             catLayout.visibility = View.VISIBLE
             for (category in categories) {
-                val catView = createTagView(category.name)
+                val catView = createCatView(category.name)
                 catView.setOnLongClickListener {
                     lifecycleScope.launch {
                         val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(category.id, archive.id) }
@@ -219,6 +214,19 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         return tagView
     }
 
+    private fun createCatView(name: String) : TextView {
+        val tagView = TextView(context)
+        tagView.text = name
+        tagView.background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
+        tagView.setTextColor(Color.WHITE)
+        val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        layoutParams.setMargins(10)
+        tagView.layoutParams = layoutParams
+        tagView.gravity = Gravity.CENTER_VERTICAL
+        tagView.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear_black_24dp), null)
+        return tagView
+    }
+
     private fun setUpDetailView(view: View, archive: Archive?) {
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
@@ -266,7 +274,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         if (archiveId != this.archiveId)
             return
 
-        val catView = createTagView(name)
+        val catView = createCatView(name)
         catFlexLayout.addView(catView)
         catView.setOnLongClickListener {
             lifecycleScope.launch {
