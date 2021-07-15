@@ -63,6 +63,8 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         sortMethod = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
         descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
+        onCategoriesUpdated(CategoryManager.categories)
+
         view.run {
             val sortGroup: RadioGroup = findViewById(R.id.sort_group)
             sortGroup.setOnCheckedChangeListener { _, id ->
