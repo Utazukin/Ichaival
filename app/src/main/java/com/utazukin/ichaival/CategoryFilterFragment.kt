@@ -99,10 +99,11 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         if (!categories.isNullOrEmpty()) {
             label.visibility = View.VISIBLE
             for ((i, category) in categories.withIndex()) {
-                val categoryButton = AppCompatRadioButton(context)
-                categoryButton.text = category.name
-                categoryButton.id = i
-                categoryGroup.addView(categoryButton)
+                val categoryButton = AppCompatRadioButton(context).apply {
+                    text = category.name
+                    id = i
+                }
+                categoryGroup.addView(categoryButton, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 categoryButtons.add(categoryButton)
             }
 
