@@ -32,7 +32,6 @@ import java.io.InputStream
 import java.nio.ByteBuffer
 import kotlin.math.floor
 import kotlin.math.max
-import kotlin.math.min
 
 class GlideImageDecoder(private val context: Context, private val pool: BitmapPool) : ResourceDecoder<ByteBuffer, BitmapDrawable> {
     override fun decode(source: ByteBuffer, width: Int, height: Int, options: Options): Resource<BitmapDrawable>? {
@@ -41,9 +40,9 @@ class GlideImageDecoder(private val context: Context, private val pool: BitmapPo
         BitmapDecoder.decode(stream, info)
         stream.reset()
         val ratio = if (info.height > info.width)
-            min(max(floor(info.height / height.toFloat()).toInt(), 1), 7)
+            max(floor(info.height / height.toFloat()).toInt(), 2) - 1
         else
-            min(max(floor(info.width / width.toFloat()).toInt(), 1), 7)
+            max(floor(info.width / width.toFloat()).toInt(), 2) - 1
         return BitmapDecoder.decode(stream, BitmapDecoder.CONFIG_AUTO, ratio)?.let {
             BitmapDrawableResource(BitmapDrawable(context.resources, it), pool)
         }
