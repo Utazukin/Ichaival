@@ -35,7 +35,7 @@ enum class SortMethod(val value: Int) {
 
     companion object {
         private val map by lazy { values().associateBy(SortMethod::value)}
-        fun fromInt(type: Int, default: SortMethod = Alpha) = map[type] ?: Alpha
+        fun fromInt(type: Int, default: SortMethod = Alpha) = map[type] ?: default
     }
 }
 
