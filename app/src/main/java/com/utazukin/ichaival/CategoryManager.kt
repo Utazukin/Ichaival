@@ -63,21 +63,14 @@ object CategoryManager {
     }
 
     fun getStaticCategories(id: String) : List<StaticCategory>? {
-        return categories?.let {
-            val staticCategories = mutableListOf<StaticCategory>()
-            for (category in it) {
-                if (category is StaticCategory && category.archiveIds.contains(id))
-                    staticCategories.add(category)
-            }
-            staticCategories
-        }
+        return categories?.mapNotNull { it as? StaticCategory }?.filter { it.archiveIds.contains(id) }
     }
 
     suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : ArchiveCategory? {
         val json = withContext(Dispatchers.IO) { WebHandler.createCategory(name, search, pinned) }
         return json?.let {
             if (search.isNullOrBlank())
-                StaticCategory(name, it.getString("category_id"), pinned, mutableListOf())
+                StaticCategory(name, it.getString("category_id"), pinned, listOf())
             else
                 DynamicCategory(name, it.getString("category_id"), pinned, search)
         }
@@ -106,7 +99,7 @@ object CategoryManager {
                 DynamicCategory(name, id, pinned, category.getString("search"))
             else {
                 val archives = category.getJSONArray("archives")
-                StaticCategory(name, id, pinned, MutableList(archives.length()) { k -> archives.getString(k) } )
+                StaticCategory(name, id, pinned, List(archives.length()) { k -> archives.getString(k) } )
             }
         }
         list.sortBy { it.pinned }
