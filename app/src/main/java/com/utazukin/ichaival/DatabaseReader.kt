@@ -23,7 +23,7 @@ import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -63,7 +63,7 @@ object DatabaseReader {
         }
     }
 
-    suspend fun updateArchiveList(context: Context, forceUpdate: Boolean = false) {
+    suspend fun updateArchiveList(context: Context, forceUpdate: Boolean = false) = coroutineScope {
         val cacheDir = context.noBackupFilesDir
         if (forceUpdate || checkDirty(cacheDir)) {
             refreshListener?.isRefreshing(true)
@@ -74,7 +74,7 @@ object DatabaseReader {
                 val serverArchives = readArchiveList(it)
                 database.insertAndRemove(serverArchives)
                 if (!forceUpdate)
-                    GlobalScope.launch { database.updateExisting(serverArchives) }
+                    launch { database.updateExisting(serverArchives) }
                 else
                     database.updateExisting(serverArchives)
             }
