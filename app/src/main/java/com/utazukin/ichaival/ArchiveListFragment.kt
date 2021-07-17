@@ -367,28 +367,26 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
             R.id.go_to_page -> {
                 val archiveCount = listView.adapter?.itemCount ?: 0
-                lifecycleScope.launch {
-                    val dialog = AlertDialog.Builder(requireContext()).apply {
-                        val pageCount = ceil(archiveCount.toFloat() / ServerManager.pageSize).toInt()
-                        val pages = Array(pageCount) { (it + 1).toString() }
-                        val current = when (val layoutManager = listView.layoutManager) {
-                            is LinearLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
-                            is GridLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
-                            else -> -1
-                        }
+                val dialog = AlertDialog.Builder(requireContext()).apply {
+                    val pageCount = ceil(archiveCount.toFloat() / ServerManager.pageSize).toInt()
+                    val pages = Array(pageCount) { (it + 1).toString() }
+                    val current = when (val layoutManager = listView.layoutManager) {
+                        is LinearLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
+                        is GridLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
+                        else -> -1
+                    }
 
-                        setSingleChoiceItems(pages, current) { dialog, id ->
-                            val position = min(id * ServerManager.pageSize, archiveCount)
-                            val layoutManager = listView.layoutManager
-                            if (layoutManager is LinearLayoutManager)
-                                layoutManager.scrollToPositionWithOffset(position, 0)
-                            else if (layoutManager is GridLayoutManager)
-                                layoutManager.scrollToPositionWithOffset(position, 0)
-                            dialog.dismiss()
-                        }
-                    }.create()
-                    dialog.show()
-                }
+                    setSingleChoiceItems(pages, current) { dialog, id ->
+                        val position = min(id * ServerManager.pageSize, archiveCount)
+                        val layoutManager = listView.layoutManager
+                        if (layoutManager is LinearLayoutManager)
+                            layoutManager.scrollToPositionWithOffset(position, 0)
+                        else if (layoutManager is GridLayoutManager)
+                            layoutManager.scrollToPositionWithOffset(position, 0)
+                        dialog.dismiss()
+                    }
+                }.create()
+                dialog.show()
                 true
             }
             else -> false
