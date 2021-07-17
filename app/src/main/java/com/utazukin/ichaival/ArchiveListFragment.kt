@@ -28,6 +28,7 @@ import android.os.Bundle
 import android.provider.BaseColumns
 import android.view.*
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
@@ -39,7 +40,9 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.bumptech.glide.Glide
 import kotlinx.coroutines.*
+import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.min
 
 private const val RESULTS_KEY = "search_results"
 private const val RESULTS_SIZE_KEY = "search_size"
@@ -360,6 +363,32 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
             R.id.scroll_bottom -> {
                 listView.layoutManager?.scrollToPosition((listView.layoutManager?.itemCount ?: 1) - 1)
+                true
+            }
+            R.id.go_to_page -> {
+                val archiveCount = listView.adapter?.itemCount ?: 0
+                lifecycleScope.launch {
+                    val dialog = AlertDialog.Builder(requireContext()).apply {
+                        val pageCount = ceil(archiveCount.toFloat() / ServerManager.pageSize).toInt()
+                        val pages = Array(pageCount) { (it + 1).toString() }
+                        val current = when (val layoutManager = listView.layoutManager) {
+                            is LinearLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
+                            is GridLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
+                            else -> -1
+                        }
+
+                        setSingleChoiceItems(pages, current) { dialog, id ->
+                            val position = min(id * ServerManager.pageSize, archiveCount)
+                            val layoutManager = listView.layoutManager
+                            if (layoutManager is LinearLayoutManager)
+                                layoutManager.scrollToPositionWithOffset(position, 0)
+                            else if (layoutManager is GridLayoutManager)
+                                layoutManager.scrollToPositionWithOffset(position, 0)
+                            dialog.dismiss()
+                        }
+                    }.create()
+                    dialog.show()
+                }
                 true
             }
             else -> false

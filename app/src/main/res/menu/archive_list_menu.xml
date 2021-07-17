@@ -38,4 +38,7 @@
         android:id="@+id/scroll_bottom"
         android:title="@string/list_bottom"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/go_to_page"
+        android:title="@string/goto_page" />
 </menu>
