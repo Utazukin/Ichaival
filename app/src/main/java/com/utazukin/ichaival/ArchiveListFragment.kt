@@ -237,7 +237,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val listAdapter = listView.adapter as ArchiveRecyclerViewAdapter
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext()) }
 
-            val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
+            val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
             val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
             if (isLocalSearch)

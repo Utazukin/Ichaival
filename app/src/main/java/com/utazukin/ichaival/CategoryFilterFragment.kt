@@ -35,7 +35,7 @@ enum class SortMethod(val value: Int) {
 
     companion object {
         private val map by lazy { values().associateBy(SortMethod::value)}
-        fun fromInt(type: Int) = map[type]
+        fun fromInt(type: Int, default: SortMethod = Alpha) = map[type] ?: Alpha
     }
 }
 
@@ -60,7 +60,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         categoryLabel = view.findViewById(R.id.category_label)
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        sortMethod = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1)) ?: SortMethod.Alpha
+        sortMethod = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
         descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
         onCategoriesUpdated(CategoryManager.categories)
