@@ -79,7 +79,7 @@ object CategoryManager {
             if (search.isNullOrBlank())
                 StaticCategory(name, it.getString("category_id"), pinned, mutableListOf())
             else
-                DynamicCategory(name, it.getString("category_id"), pinned, it.getString("search"))
+                DynamicCategory(name, it.getString("category_id"), pinned, search)
         }
     }
 
