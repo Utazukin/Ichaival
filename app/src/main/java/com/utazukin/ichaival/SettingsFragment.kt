@@ -28,9 +28,11 @@ import android.view.View
 import android.widget.Toast
 import androidx.core.app.ShareCompat
 import androidx.preference.*
+import com.bumptech.glide.Glide
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class LongClickPreference : Preference {
@@ -98,8 +100,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val tempPref: Preference? = findPreference(getString(R.string.temp_folder_pref))
         tempPref?.setOnPreferenceClickListener {
-            (activity as CoroutineScope).launch(Dispatchers.IO) { WebHandler.clearTempFolder() }
-            true
+            with(activity as CoroutineScope) {
+                launch(Dispatchers.IO) {
+                    WebHandler.clearTempFolder()
+                    DatabaseReader.invalidateImageCache()
+                    with(Glide.get(requireContext())) {
+                        withContext(Dispatchers.Main) { clearMemory() }
+                        clearDiskCache()
+                    }
+                }
+                true
+            }
         }
 
         val saveLogPref: LongClickPreference? = findPreference(getString(R.string.log_save_pref))
@@ -108,8 +119,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             val exists = logFile.exists()
             it.isVisible = exists
             it.setOnPreferenceClickListener {
-                ShareCompat.IntentBuilder
-                    .from(requireActivity())
+                ShareCompat.IntentBuilder(requireContext())
                     .setText(logFile.readText())
                     .setType("text/plain")
                     .setSubject("Crash Log")
