@@ -112,9 +112,9 @@ object DatabaseReader {
 
     fun getPageCount(id: String) : Int = archivePageMap[id]?.size ?: -1
 
-    fun invalidateImageCache(id: String) {
-        archivePageMap.remove(id)
-    }
+    fun invalidateImageCache(id: String) = archivePageMap.remove(id)
+
+    fun invalidateImageCache() = archivePageMap.clear()
 
     suspend fun isBookmarked(id: String) = withContext(Dispatchers.IO) { database.archiveDao().isBookmarked(id) }
 
