@@ -380,8 +380,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val errorMessage = "Failed to connect to server!"
         val url = "$serverLocation$archiveListPath"
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await(errorMessage)
-        with (response) {
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
+        return response?.run {
             if (!isSuccessful) {
                 handleErrorMessage(code, errorMessage)
                 return null
@@ -397,7 +397,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             }
 
             notifyError("Error getting archive list")
-            return null
+            null
         }
     }
 
