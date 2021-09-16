@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2020 Utazukin
+  ~ Copyright (C) 2021 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,9 @@
         android:id="@+id/mark_read_item"
         android:title="@string/mark_read_item"
         android:visible="false" />
+    <item
+        android:id="@+id/delete_archive_item"
+        android:title="@string/delete_archive_item" />
     <item
             android:id="@+id/random_item"
             android:title="@string/random_archive" />

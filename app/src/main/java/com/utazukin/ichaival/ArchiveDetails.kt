@@ -24,8 +24,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
@@ -98,6 +101,33 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                     launch {
                         withContext(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it) }
                         item.isVisible = false
+                    }
+                }
+            }
+            R.id.delete_archive_item -> {
+                archiveId?.let {
+                    launch {
+                        withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }?.let { arc ->
+                            val builder = AlertDialog.Builder(this@ArchiveDetails).apply {
+                                setTitle("Delete archive")
+                                setMessage("Delete \"${arc.title}\"?")
+                                setPositiveButton("Yes") { dialog, _ ->
+                                    dialog.dismiss()
+                                    lifecycleScope.launch {
+                                        val success = withContext(Dispatchers.IO) { WebHandler.deleteArchive(it) }
+                                        if (success) {
+                                            Toast.makeText(applicationContext, "Deleted \"${arc.title}\"", Toast.LENGTH_SHORT).show()
+                                            DatabaseReader.deleteArchive(it)
+                                            finish()
+                                        }
+                                    }
+                                }
+
+                                setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
+                            }
+                            val dialog = builder.create()
+                            dialog.show()
+                        }
                     }
                 }
             }

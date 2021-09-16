@@ -59,6 +59,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val thumbPath = "$archiveListPath/%s/thumbnail"
     private const val extractPath = "$archiveListPath/%s/extract"
     private const val progressPath = "$archiveListPath/%s/progress/%s"
+    private const val deleteArchivePath = "$archiveListPath/%s"
     private const val tagsPath = "$databasePath/stats"
     private const val clearNewPath = "$archiveListPath/%s/isnew"
     private const val searchPath = "$apiPath/search"
@@ -154,6 +155,36 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         return null
+    }
+
+    suspend fun deleteArchives(ids: List<String>) : List<String> {
+        if (!canConnect(true))
+            return emptyList()
+
+        val deleted = mutableListOf<String>()
+        for (id in ids) {
+            if (deleteArchive(id, false))
+                deleted.add(id)
+        }
+
+        return deleted
+    }
+
+    suspend fun deleteArchive(archiveId: String) = deleteArchive(archiveId, true)
+
+    private suspend fun deleteArchive(archiveId: String, checkConnection: Boolean) : Boolean {
+        if (checkConnection && !canConnect(true))
+            return false
+
+        val url = "$serverLocation${deleteArchivePath.format(archiveId)}"
+        val connection = createServerConnection(url, "DELETE")
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+        return response?.run {
+            if (!isSuccessful)
+                return false
+
+            body?.let { JSONObject(it.suspendString()).optInt("success", 0) } == 1
+        } ?: false
     }
 
     suspend fun removeFromCategory(categoryId: String, archiveId: String) : Boolean {

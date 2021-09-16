@@ -134,4 +134,5 @@
     <string name="theme_pref_name">Theme</string>
     <string name="add_to_cat_button">Add to Category</string>
     <string name="new_category_button">New Category</string>
+    <string name="delete_archive_item">Delete Archive</string>
 </resources>

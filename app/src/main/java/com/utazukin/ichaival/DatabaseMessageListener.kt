@@ -30,3 +30,7 @@ interface DatabaseExtractListener {
 interface DatabaseRefreshListener {
     fun isRefreshing(refreshing: Boolean)
 }
+
+interface DatabaseDeleteListener {
+    fun onDelete()
+}

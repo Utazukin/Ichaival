@@ -40,6 +40,7 @@ object DatabaseReader {
     private val extractingArchives = mutableMapOf<String, Mutex>()
     private val extractingMutex = Mutex()
     private val extractListeners = mutableListOf<DatabaseExtractListener>()
+    private val deleteListeners = mutableListOf<DatabaseDeleteListener>()
 
     private val MIGRATION_1_2 = object: Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
@@ -91,9 +92,18 @@ object DatabaseReader {
 
     fun unregisterExtractListener(listener: DatabaseExtractListener) = extractListeners.remove(listener)
 
+    fun registerDeleteListener(listener: DatabaseDeleteListener) = deleteListeners.add(listener)
+
+    fun unregisterDeleteListener(listener: DatabaseDeleteListener) = deleteListeners.remove(listener)
+
     private fun notifyExtractListeners(id: String, pageCount: Int) {
         for (listener in extractListeners)
             listener.onExtract(id, pageCount)
+    }
+
+    private fun notifyDeleteListeners() {
+        for (listener in deleteListeners)
+            listener.onDelete()
     }
 
     suspend fun getPageList(id: String) : List<String> {
@@ -131,6 +141,16 @@ object DatabaseReader {
             val ids = database.archiveDao().getAllIds()
             getArchive(ids.random())
         }
+    }
+
+    suspend fun deleteArchive(id: String) = withContext(Dispatchers.IO) {
+        database.archiveDao().removeArchive(id)
+        notifyDeleteListeners()
+    }
+
+    suspend fun deleteArchives(ids: List<String>) = withContext(Dispatchers.IO) {
+        database.archiveDao().removeArchives(ids)
+        notifyDeleteListeners()
     }
 
     suspend fun updateBookmark(id: String, page: Int) : Boolean = database.updateBookmark(id, page)

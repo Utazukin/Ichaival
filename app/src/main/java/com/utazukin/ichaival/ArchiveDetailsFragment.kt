@@ -94,7 +94,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         ReaderTabHolder.registerRemoveListener(this)
         ReaderTabHolder.registerClearListener(this)
         ReaderTabHolder.registerAddListener(this)
-        tagListener = context as TagInteractionListener?
+        tagListener = context as? TagInteractionListener
     }
 
     override fun onDetach() {

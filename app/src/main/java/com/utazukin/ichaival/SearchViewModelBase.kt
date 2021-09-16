@@ -33,11 +33,15 @@ class ReaderTabViewModel : ViewModel() {
     val bookmarks = DatabaseReader.database.archiveDao().getDataBookmarks().toLiveData(5)
 }
 
-abstract class SearchViewModelBase : ViewModel() {
+abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
     var archiveList: LiveData<PagedList<Archive>>? = null
         protected set
     protected abstract val archiveDataFactory: ArchiveListDataFactory
     protected val archiveDao by lazy { DatabaseReader.database.archiveDao() }
+
+    init {
+        DatabaseReader.registerDeleteListener(this)
+    }
 
     suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? {
         var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
@@ -50,7 +54,14 @@ abstract class SearchViewModelBase : ViewModel() {
     }
 
     abstract fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false)
+    override fun onCleared() {
+        super.onCleared()
+        DatabaseReader.unregisterDeleteListener(this)
+    }
     fun reset() = archiveDataFactory.reset()
+    override fun onDelete() {
+        reset()
+    }
 }
 
 class SearchViewModel : SearchViewModelBase() {
@@ -110,6 +121,10 @@ class StaticCategoryModel : ArchiveViewModel(), CategoryListener {
     override fun onCleared() {
         super.onCleared()
         CategoryManager.removeUpdateListener(this)
+    }
+
+    override fun onDelete() {
+        categoryId = null
     }
 
     override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
