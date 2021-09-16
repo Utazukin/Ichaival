@@ -119,6 +119,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView = view.findViewById(R.id.archive_search)
         newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked ->
+            listAdapter.disableMultiSelect()
             if (viewModel is StaticCategoryModel)
                 (viewModel as StaticCategoryModel).filter(checked)
             else if (isLocalSearch)
@@ -138,14 +139,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
 
-        view.setOnTouchListener { v, _ ->
-            searchView.clearFocus()
-            v.performClick()
-        }
-
         setupTagSuggestions()
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
+                listAdapter.disableMultiSelect()
                 if (isLocalSearch)
                     getViewModel<ArchiveViewModel>().filter(query, newCheckBox.isChecked)
                 else {
@@ -178,6 +175,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 }
 
                 if (query?.startsWith(STATIC_CATEGORY_SEARCH) == true) {
+                    listAdapter.disableMultiSelect()
                     searchView.setQuery(query.removePrefix(STATIC_CATEGORY_SEARCH), false)
                     return false
                 }
@@ -195,6 +193,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                             delay(searchDelay)
 
                         if (query != null) {
+                            listAdapter.disableMultiSelect()
                             val results = withContext(Dispatchers.Default) {
                                 WebHandler.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
                             }
@@ -209,6 +208,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener {
+            listAdapter.disableMultiSelect()
             searchView.clearFocus()
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
@@ -218,6 +218,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
 
         randomButton.setOnLongClickListener {
+            listAdapter.disableMultiSelect()
             searchView.clearFocus()
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
@@ -491,6 +492,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun forceArchiveListUpdate() {
+        with(listView.adapter as ArchiveRecyclerViewAdapter) { disableMultiSelect() }
         searchJob?.cancel()
         lifecycleScope.launch {
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext(), true) }

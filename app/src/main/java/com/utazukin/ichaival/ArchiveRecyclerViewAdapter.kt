@@ -73,6 +73,8 @@ class ArchiveRecyclerViewAdapter(
         return true
     }
 
+    fun disableMultiSelect() = actionMode?.finish()
+
     private fun selectArchive(holder: ViewHolder, archive: Archive, position: Int) {
         if (!selectedArchives.contains(archive)) {
             holder.mContentView.setCardBackgroundColor(ContextCompat.getColor(holder.mContentView.context, R.color.colorPrimaryDark))
