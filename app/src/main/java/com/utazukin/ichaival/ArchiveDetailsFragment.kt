@@ -125,6 +125,11 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 
+    override fun onTabsAdded(ids: List<String>) {
+        if (ids.contains(archiveId))
+            lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
+    }
+
     override fun onTabRemoved(id: String) {
         if (id == archiveId) {
             lifecycleScope.launch { bookmarkButton.text = getString(R.string.bookmark) }

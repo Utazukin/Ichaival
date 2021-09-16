@@ -62,6 +62,20 @@ object ReaderTabHolder {
         }
     }
 
+    suspend fun addTabs(archives: List<Archive>) {
+        val ids = mutableListOf<String>()
+        for (archive in archives) {
+            if (!isTabbed(archive.id)) {
+                val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
+                archive.currentPage = 0
+                DatabaseReader.addBookmark(tab)
+                ids.add(archive.id)
+            }
+        }
+
+        updateAddListeners(ids)
+    }
+
     fun createTab(id: String, title: String, page: Int) = ReaderTab(id, title, tabCount, page)
 
     suspend fun addTab(id: String, page: Int) {
@@ -106,6 +120,11 @@ object ReaderTabHolder {
     private fun updateAddListeners(id: String){
         for (listener in addListeners)
             listener.onTabAdded(id)
+    }
+
+    private fun updateAddListeners(ids: List<String>) {
+        for (listener in addListeners)
+            listener.onTabsAdded(ids)
     }
 
     private fun updateClearListeners() {

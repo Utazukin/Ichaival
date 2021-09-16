@@ -24,6 +24,7 @@
         <item name="tag_color">?colorPrimaryDark</item>
         <item name="cardBackgroundColor">#ff424242</item>
         <item name="bottomSheetDialogTheme">@style/ReaderSettingsDialog</item>
+        <item name="windowActionModeOverlay">true</item>
     </style>
 
     <style name="AppTheme.Black" parent="AppTheme">

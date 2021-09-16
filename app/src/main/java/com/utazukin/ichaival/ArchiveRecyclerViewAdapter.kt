@@ -19,25 +19,39 @@
 package com.utazukin.ichaival
 
 
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.view.ActionMode
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
+import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ArchiveRecyclerViewAdapter(
     private val mListener: OnListFragmentInteractionListener?,
     private val longListener: ((a: Archive) -> Boolean)?,
-    private val scope: CoroutineScope,
+    fragment: Fragment,
     private val glideManager: RequestManager
-) : PagedListAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK) {
+) : PagedListAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
+
+    private var multiSelect = false
+    private val selectedArchives = mutableMapOf<Archive, Int>()
+    private var actionMode: ActionMode? = null
+    private val scope = fragment.lifecycleScope
+    private val context = fragment.requireContext()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as Archive
@@ -52,6 +66,24 @@ class ArchiveRecyclerViewAdapter(
     }
 
     private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
+
+    fun enableMultiSelect(activity: AppCompatActivity) : Boolean {
+        multiSelect = true
+        activity.startSupportActionMode(this)
+        return true
+    }
+
+    private fun selectArchive(holder: ViewHolder, archive: Archive, position: Int) {
+        if (!selectedArchives.contains(archive)) {
+            holder.mContentView.setCardBackgroundColor(ContextCompat.getColor(holder.mContentView.context, R.color.colorPrimaryDark))
+            selectedArchives[archive] = position
+        } else {
+            holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.cardBackgroundColor))
+            selectedArchives.remove(archive)
+        }
+
+        actionMode?.title = "${selectedArchives.size} selected"
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -72,9 +104,19 @@ class ArchiveRecyclerViewAdapter(
             }
             thumbLoadingJobs[holder] = job
 
+            if (selectedArchives.contains(it))
+                holder.mContentView.setCardBackgroundColor(ContextCompat.getColor(holder.mContentView.context, R.color.colorPrimaryDark))
+            else
+                holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.cardBackgroundColor))
+
             with(holder.mView) {
                 tag = it
-                setOnClickListener(mOnClickListener)
+                setOnClickListener { view ->
+                    if (!multiSelect)
+                        mOnClickListener.onClick(view)
+                    else
+                        selectArchive(holder, it, position)
+                }
                 setOnLongClickListener(onLongClickListener)
             }
         }
@@ -95,6 +137,52 @@ class ArchiveRecyclerViewAdapter(
         override fun toString(): String {
             return super.toString() + " '" + archiveName + "'"
         }
+    }
+
+    override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+        mode?.menuInflater?.inflate(R.menu.archive_select_menu, menu) ?: return false
+        actionMode = mode
+        return true
+    }
+
+    override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?) = true
+
+    override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
+        if (selectedArchives.isEmpty())
+            return true
+
+        if (item?.itemId == R.id.delete_select_archive) {
+            val builder = AlertDialog.Builder(context).apply {
+                setTitle("Delete Archives")
+                setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size).format(selectedArchives.size))
+                setPositiveButton("Yes") { dialog, _ ->
+                    dialog.dismiss()
+                    scope.launch(Dispatchers.IO) {
+                        val deleted = WebHandler.deleteArchives(selectedArchives.keys.map { it.id }.toList())
+                        if (deleted.isNotEmpty())
+                            DatabaseReader.deleteArchives(deleted)
+                    }
+                    mode?.finish()
+                }
+                setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
+            }
+            builder.create().show()
+        } else if (item?.itemId == R.id.bookmark_select_item) {
+            val archives = selectedArchives.keys.toList()
+            scope.launch { ReaderTabHolder.addTabs(archives) }
+            mode?.finish()
+        }
+        return true
+    }
+
+    override fun onDestroyActionMode(mode: ActionMode?) {
+        multiSelect = false
+
+        for (index in selectedArchives.values)
+            notifyItemChanged(index)
+
+        selectedArchives.clear()
+        actionMode = null
     }
 
     companion object {

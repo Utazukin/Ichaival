@@ -170,6 +170,10 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         drawerLayout.openDrawer(navView, true)
     }
 
+    override fun onTabsAdded(ids: List<String>) {
+        drawerLayout.openDrawer(navView, true)
+    }
+
     override fun onTabInteraction(tab: ReaderTab) = startReaderActivity(tab.id)
 
     override fun onLongPressTab(tab: ReaderTab): Boolean {

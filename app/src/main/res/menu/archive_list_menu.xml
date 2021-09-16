@@ -31,6 +31,9 @@
         android:title="@string/filter_label"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/select_archives"
+        android:title="@string/select_archives" />
+    <item
         android:id="@+id/scroll_top"
         android:title="@string/list_top"
         app:showAsAction="never" />

@@ -112,7 +112,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     }
                 }
             }
-            listAdapter = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, viewLifecycleOwner.lifecycleScope, Glide.with(context))
+            listAdapter = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, this@ArchiveListFragment, Glide.with(context))
             adapter = listAdapter
         }
 
@@ -136,6 +136,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 } else
                     getViewModel<SearchViewModel>().filter(ServerSearchResult(null))
             }
+        }
+
+        view.setOnTouchListener { v, _ ->
+            searchView.clearFocus()
+            v.performClick()
         }
 
         setupTagSuggestions()
@@ -357,6 +362,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 forceArchiveListUpdate()
                 true
             }
+            R.id.select_archives -> with(listView.adapter as ArchiveRecyclerViewAdapter) { enableMultiSelect(requireActivity() as AppCompatActivity) }
             R.id.scroll_top -> {
                 listView.layoutManager?.scrollToPosition(0)
                 true
