@@ -37,9 +37,8 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.settings_layout)
 
-        supportFragmentManager.beginTransaction().replace(R.id.settings_frame, SettingsFragment()).commit()
+        supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingsFragment()).commit()
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }

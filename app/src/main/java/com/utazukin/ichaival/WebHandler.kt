@@ -248,7 +248,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val totalResults = jsonResults.getInt("recordsFiltered")
 
         val dataArray = jsonResults.getJSONArray("data")
-        val results = MutableList(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
+        val results = List(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
 
         if (showRefresh)
             refreshListener?.isRefreshing(false)
@@ -287,7 +287,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         val count = jsonPages.length()
-        return MutableList(count) { jsonPages.getString(it).substring(1) }
+        return List(count) { jsonPages.getString(it).substring(1) }
     }
 
     suspend fun downloadThumb(id: String, thumbDir: File) : File? {
