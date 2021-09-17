@@ -23,10 +23,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Base64
 import androidx.preference.Preference
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONException
@@ -161,13 +158,17 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect(true))
             return emptyList()
 
-        val deleted = mutableListOf<String>()
-        for (id in ids) {
-            if (deleteArchive(id, false))
-                deleted.add(id)
-        }
+        return coroutineScope {
+            val jobs = mutableListOf<Deferred<String?>>()
+            for (id in ids) {
+                val job = async(Dispatchers.IO,CoroutineStart.LAZY) {
+                    if (deleteArchive(id, false)) id else null
+                }
+                jobs.add(job)
+            }
 
-        return deleted
+            jobs.awaitAll().filterNotNull()
+        }
     }
 
     suspend fun deleteArchive(archiveId: String) = deleteArchive(archiveId, true)
