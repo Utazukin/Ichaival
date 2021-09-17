@@ -150,11 +150,11 @@ class ArchiveListServerSource(results: List<String>?,
         val pages = floor(remaining.toFloat() / ServerManager.pageSize).toInt()
         val jobs = mutableListOf<Deferred<ServerSearchResult>>()
         for (i in 0 until pages) {
-            val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + i * ServerManager.pageSize, false) }
+            val job = async(Dispatchers.IO) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + i * ServerManager.pageSize, false) }
             jobs.add(job)
         }
 
-        val job = async(Dispatchers.IO, CoroutineStart.LAZY) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + pages * ServerManager.pageSize, false) }
+        val job = async(Dispatchers.IO) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + pages * ServerManager.pageSize, false) }
         jobs.add(job)
 
         totalResults.addAll(jobs.awaitAll().mapNotNull { it.results }.flatten())

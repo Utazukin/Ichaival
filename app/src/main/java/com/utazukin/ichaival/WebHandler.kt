@@ -159,14 +159,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return emptyList()
 
         return coroutineScope {
-            val jobs = mutableListOf<Deferred<String?>>()
-            for (id in ids) {
-                val job = async(Dispatchers.IO,CoroutineStart.LAZY) {
-                    if (deleteArchive(id, false)) id else null
-                }
-                jobs.add(job)
-            }
-
+            val jobs = List(ids.size) { async { if (deleteArchive(ids[it], false)) ids[it] else null } }
             jobs.awaitAll().filterNotNull()
         }
     }
