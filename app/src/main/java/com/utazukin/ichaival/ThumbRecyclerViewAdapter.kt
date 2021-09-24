@@ -35,8 +35,6 @@ import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import kotlinx.coroutines.*
 
-private const val thumbIncrease = 10
-
 class ThumbRecyclerViewAdapter(
     private val listener: ThumbInteractionListener?,
     private val glide: RequestManager,
