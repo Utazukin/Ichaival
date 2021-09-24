@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.res.Configuration
@@ -31,6 +32,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -103,9 +105,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         ViewCompat.setOnApplyWindowInsetsListener(appBar) { _, insets ->
             var params = FrameLayout.LayoutParams(appBar.layoutParams)
             var safeTop = insets.displayCutout?.safeInsetTop ?: 0
-            safeTop = if (safeTop > 0) safeTop else insets.systemWindowInsetTop
+            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            safeTop = if (safeTop > 0) safeTop else systemInsets.top
             val safeBottom = insets.displayCutout?.safeInsetBottom
-            val safeRight = insets.displayCutout?.safeInsetRight ?: insets.systemWindowInsetRight
+            val safeRight = insets.displayCutout?.safeInsetRight ?: systemInsets.right
             val safeLeft = insets.displayCutout?.safeInsetLeft
 
             params.setMargins(params.leftMargin, safeTop, safeRight, params.bottomMargin)
@@ -292,24 +295,26 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun getAdjustedPage(page: Int) = if (rtol) archive!!.numPages - page - 1 else page
 
-    private fun adjustLoadedPages(page: Int) : Boolean {
+    private fun adjustLoadedPages(page: Int) : Int {
+        var addedPages = 0
         when {
             archive?.run { numPages > 0 && loadedPages.size != numPages } == true -> {
                 val currentSize = loadedPages.size
                 for (i in currentSize until archive!!.numPages)
                     loadedPages.add(true)
                 loadedPages.fill(true)
-                return true
+                return loadedPages.size - currentSize
             }
             page >= loadedPages.size -> {
                 val currentSize = loadedPages.size
                 for (i in currentSize..page)
                     loadedPages.add(false)
+                addedPages = loadedPages.size - currentSize
             }
-            loadedPages[page] -> return false
+            loadedPages[page] -> return 0
         }
         loadedPages[page] = true
-        return true
+        return addedPages
     }
 
     private fun loadImage(page: Int, preload: Boolean = true) {
@@ -323,8 +328,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         imagePager.visibility = View.VISIBLE
         failedMessage.visibility = View.GONE
 
-        if (adjustLoadedPages(page))
-            imagePager.adapter?.notifyDataSetChanged()
+        val addedPages = adjustLoadedPages(page)
+        if (addedPages > 0)
+            imagePager.adapter?.notifyItemRangeInserted(loadedPages.size - addedPages, addedPages)
 
         if (preload) {
             for (i in (-1..1)) {
@@ -605,6 +611,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onExtract(id: String, pageCount: Int) {
         if (id != archive?.id || archive?.numPages == loadedPages.size)
             return
