@@ -49,7 +49,7 @@ private const val RESULTS_SIZE_KEY = "search_size"
 private const val DEFAULT_SEARCH_DELAY = 750L
 private const val STATIC_CATEGORY_SEARCH = "\b"
 
-class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener {
+class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
     private var sortMethod = SortMethod.Alpha
     private var descending = false
     private var sortUpdated = false
@@ -550,6 +550,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView.clearFocus()
         isLocalSearch = local
         initViewModel(local, force)
+    }
+
+    override fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>) {
+        with(listView.adapter as ArchiveRecyclerViewAdapter) { onAddedToCategory(category) }
     }
 
     override fun onSharedPreferenceChanged(prefs: SharedPreferences?, prefName: String?) {

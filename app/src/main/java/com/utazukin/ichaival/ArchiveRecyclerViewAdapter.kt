@@ -22,6 +22,7 @@ package com.utazukin.ichaival
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
@@ -52,6 +53,7 @@ class ArchiveRecyclerViewAdapter(
     private var actionMode: ActionMode? = null
     private val scope = fragment.lifecycleScope
     private val context = fragment.requireContext()
+    private val fragmentManager = fragment.childFragmentManager
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as Archive
@@ -153,28 +155,43 @@ class ArchiveRecyclerViewAdapter(
         if (selectedArchives.isEmpty())
             return true
 
-        if (item?.itemId == R.id.delete_select_archive) {
-            val builder = AlertDialog.Builder(context).apply {
-                setTitle("Delete Archives")
-                setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size).format(selectedArchives.size))
-                setPositiveButton("Yes") { dialog, _ ->
-                    dialog.dismiss()
-                    scope.launch(Dispatchers.IO) {
-                        val deleted = WebHandler.deleteArchives(selectedArchives.keys.map { it.id }.toList())
-                        if (deleted.isNotEmpty())
-                            DatabaseReader.deleteArchives(deleted)
+        when (item?.itemId) {
+            R.id.delete_select_archive -> {
+                val builder = AlertDialog.Builder(context).apply {
+                    setTitle("Delete Archives")
+                    setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size).format(selectedArchives.size))
+                    setPositiveButton("Yes") { dialog, _ ->
+                        dialog.dismiss()
+                        scope.launch(Dispatchers.IO) {
+                            val deleted = WebHandler.deleteArchives(selectedArchives.keys.map { it.id }.toList())
+                            if (deleted.isNotEmpty())
+                                DatabaseReader.deleteArchives(deleted)
+                        }
+                        mode?.finish()
                     }
-                    mode?.finish()
+                    setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
                 }
-                setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
+                builder.create().show()
             }
-            builder.create().show()
-        } else if (item?.itemId == R.id.bookmark_select_item) {
-            val archives = selectedArchives.keys.toList()
-            scope.launch { ReaderTabHolder.addTabs(archives) }
-            mode?.finish()
+            R.id.bookmark_select_item -> {
+                val archives = selectedArchives.keys.toList()
+                scope.launch { ReaderTabHolder.addTabs(archives) }
+                mode?.finish()
+            }
+            R.id.category_select_item -> {
+                val dialog = AddToCategoryDialogFragment.newInstance(selectedArchives.keys.map { it.id })
+                dialog.show(fragmentManager, "add_category")
+            }
         }
         return true
+    }
+
+    fun onAddedToCategory(category: ArchiveCategory) {
+        if (!multiSelect || selectedArchives.none())
+            return
+
+        Toast.makeText(context, "Added to ${category.name}.", Toast.LENGTH_SHORT).show()
+        actionMode?.finish()
     }
 
     override fun onDestroyActionMode(mode: ActionMode?) {

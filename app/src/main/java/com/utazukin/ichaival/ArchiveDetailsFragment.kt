@@ -28,6 +28,7 @@ import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -82,7 +83,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
 
         addToCatButton.setOnClickListener {
-            val dialog = AddToCategoryDialogFragment.newInstance(archiveId!!)
+            val dialog = AddToCategoryDialogFragment.newInstance(listOf(archiveId!!))
             dialog.show(childFragmentManager, "add_category")
         }
 
@@ -291,11 +292,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    override fun onAddedToCategory(category: ArchiveCategory, archiveId: String) {
-        if (archiveId != this.archiveId)
+    override fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>) {
+        val id = archiveIds.firstOrNull() ?: return
+        if (id != archiveId || catFlexLayout.children.mapNotNull { it as TextView }.any { it.text == category.name })
             return
 
-        val catView = createCatView(category, archiveId)
+        val catView = createCatView(category, id)
         catFlexLayout.addView(catView)
 
         Snackbar.make(requireView(), "Added to ${category.name}.", Snackbar.LENGTH_SHORT).show()

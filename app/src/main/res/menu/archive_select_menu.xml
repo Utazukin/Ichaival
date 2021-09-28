@@ -29,4 +29,9 @@
         android:icon="@drawable/ic_bookmark_white_24dp"
         android:title="@string/bookmark"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/category_select_item"
+        android:icon="@drawable/ic_collections_white_24dp"
+        android:title="@string/add_to_cat_button"
+        app:showAsAction="ifRoom" />
 </menu>

@@ -222,6 +222,21 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return response.isSuccessful
     }
 
+    suspend fun addToCategory(categoryId: String, archiveIds: List<String>) : Boolean {
+        if (!canConnect())
+            return false
+
+        return coroutineScope {
+            val responses = List(archiveIds.size) { i ->
+                val url = "$serverLocation${modifyCatPath.format(categoryId, archiveIds[i])}"
+                val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
+                async { httpClient.newCall(connection).await() }
+            }
+
+            responses.awaitAll().all { it.isSuccessful }
+        }
+    }
+
     suspend fun updateProgress(id: String, page: Int) {
         if (!canConnect(true) || !ServerManager.serverTracksProgress)
             return

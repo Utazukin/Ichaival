@@ -34,12 +34,12 @@ import kotlinx.coroutines.withContext
 private const val ARCHIVE_PARAM = "archive"
 
 interface AddCategoryListener {
-    fun onAddedToCategory(category: ArchiveCategory, archiveId: String)
+    fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>)
 }
 
 class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
     private var listener: AddCategoryListener? = null
-    private var archiveId = ""
+    private val archiveIds = mutableListOf<String>()
     private var categories: List<ArchiveCategory>? = null
     private lateinit var catGroup: RadioGroup
     private lateinit var catText: EditText
@@ -47,8 +47,11 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        archiveIds.clear()
         arguments?.let {
-            archiveId = it.getString(ARCHIVE_PARAM) ?: ""
+            val ids = it.getStringArrayList(ARCHIVE_PARAM)
+            if (ids != null)
+                archiveIds.addAll(ids)
         }
     }
 
@@ -92,10 +95,10 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                         val name = catText.text.toString()
                         val category = withContext(Dispatchers.IO) { CategoryManager.createCategory(name) }
                         category?.let {
-                            val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveId) }
+                            val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveIds) }
                             if (success) {
                                 withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
-                                listener?.onAddedToCategory(it, archiveId)
+                                listener?.onAddedToCategory(it, archiveIds)
                             }
                         }
                         dismiss()
@@ -105,10 +108,10 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                 lifecycleScope.launch {
                     val category = categories?.get(catGroup.checkedRadioButtonId)
                     category?.let {
-                        val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveId) }
+                        val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveIds) }
                         if (success) {
                             withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
-                            listener?.onAddedToCategory(it, archiveId)
+                            listener?.onAddedToCategory(it, archiveIds)
                         }
                     }
                     dismiss()
@@ -140,10 +143,10 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
 
     companion object {
         @JvmStatic
-        fun newInstance(id: String) =
+        fun newInstance(ids: List<String>) =
             AddToCategoryDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARCHIVE_PARAM, id)
+                    putStringArrayList(ARCHIVE_PARAM, ArrayList(ids))
                 }
             }
     }
