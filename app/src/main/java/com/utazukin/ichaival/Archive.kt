@@ -70,17 +70,17 @@ data class Archive (
         if (tag.contains(":")) {
             val split = tag.split(":")
             val namespace = split[0].trim()
-            var normalized = split[1].trim().replace("_", " ").lowercase()
+            var normalized = split[1].trim().replace("_", " ")
             val exact = normalized.startsWith("\"") && normalized.endsWith("\"")
             if (exact)
                 normalized = normalized.removeSurrounding("\"")
             val nTags = tags[namespace]
-            return nTags?.any { if (exact) it.lowercase() == normalized else it.lowercase().contains(normalized) } == true
+            return nTags?.any { if (exact) it.equals(normalized, ignoreCase = true) else it.contains(normalized, ignoreCase = true) } == true
         }
         else {
-            val normalized = tag.trim().replace("_", " ").lowercase()
+            val normalized = tag.trim().replace("_", " ")
             for (pair in tags) {
-                if (pair.value.any { it.lowercase().contains(normalized)})
+                if (pair.value.any { it.contains(normalized, ignoreCase = true)})
                     return true
             }
         }
@@ -102,7 +102,7 @@ class ArchiveJson(json: JSONObject) {
         val tagList: List<String> = tagString.split(",")
         val mutableTags = mutableMapOf<String, MutableList<String>>()
         var dateAdded = 0
-        for (tag: String in tagList) {
+        for (tag in tagList) {
             val trimmed = tag.trim()
             if (trimmed.contains(":")) {
                 val split = trimmed.split(":")
