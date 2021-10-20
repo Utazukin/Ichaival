@@ -176,10 +176,9 @@ open class ArchiveViewModel : SearchViewModelBase() {
         if (filter.isEmpty())
             return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
         else {
-            val normalized = filter.toString().lowercase()
             val spaceRegex by lazy { Regex("\\s") }
             for (archive in allArchives) {
-                if (archive.title.lowercase().contains(normalized) && !mValues.contains(archive.id))
+                if (archive.title.contains(filter, ignoreCase = true) && !mValues.contains(archive.id))
                     addIfNew(archive)
                 else {
                     val terms = filter.split(spaceRegex)
