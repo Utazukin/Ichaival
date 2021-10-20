@@ -27,14 +27,14 @@ import org.json.JSONObject
 data class Archive (
     @PrimaryKey val id: String,
     @ColumnInfo val title: String,
-    @ColumnInfo var dateAdded: Int,
+    @ColumnInfo var dateAdded: Long,
     @ColumnInfo var isNew: Boolean,
     @ColumnInfo val tags: Map<String, List<String>>,
     @ColumnInfo var currentPage: Int,
     @ColumnInfo var pageCount: Int
 ) {
 
-    constructor(id: String, title: String, dateAdded: Int, isNew: Boolean, tags: Map<String, List<String>>)
+    constructor(id: String, title: String, dateAdded: Long, isNew: Boolean, tags: Map<String, List<String>>)
             : this(id, title, dateAdded, isNew, tags, -1, 0)
 
     constructor(jsonArchive: ArchiveJson)
@@ -95,20 +95,20 @@ class ArchiveJson(json: JSONObject) {
     val pageCount = json.optInt("pagecount")
     val currentPage = if (json.has("progress")) json.getInt("progress") - 1 else 0
     val isNew: Boolean
-    val dateAdded: Int
+    val dateAdded: Long
 
     init {
         val tagString: String = json.getString("tags")
         val tagList: List<String> = tagString.split(",")
         val mutableTags = mutableMapOf<String, MutableList<String>>()
-        var dateAdded = 0
+        var dateAdded = 0L
         for (tag in tagList) {
             val trimmed = tag.trim()
             if (trimmed.contains(":")) {
                 val split = trimmed.split(":")
                 val namespace = split[0]
                 if (namespace == "date_added")
-                    dateAdded = split[1].toInt()
+                    dateAdded = split[1].toLong()
                 else {
                     val namespaceList = mutableTags.getOrPut(namespace) { mutableListOf() }
                     namespaceList.add(split[1])

@@ -136,7 +136,7 @@ interface ArchiveDao {
     fun updateBookmarks(tabs: List<ReaderTab>)
 
     @Query("Update archive set title = :title, tags = :tags, isNew = :isNew, dateAdded = :dateAdded, pageCount = :pageCount, currentPage = :currentPage where id = :id")
-    fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Int, pageCount: Int, currentPage: Int, tags: Map<String, List<String>>)
+    fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Long, pageCount: Int, currentPage: Int, tags: Map<String, List<String>>)
 
     @Transaction
     fun updateFromJson(archives: Collection<ArchiveJson>) {
