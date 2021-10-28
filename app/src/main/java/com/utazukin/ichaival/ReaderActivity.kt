@@ -84,7 +84,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         get() {
             return archive.let {
                 if (it != null && it.numPages > 0) {
-                    if (!useDoublePage || loadedPages[getAdapterPage(currentPage)] == 1u)
+                    val adapterPage = getAdapterPage(currentPage)
+                    if (!useDoublePage || adapterPage < loadedPages.size && loadedPages[adapterPage] == 1u)
                         "Page ${currentPage + 1}/${it.numPages}"
                     else
                         "Pages ${currentPage + 1}-${currentPage + 2}/${it.numPages}"

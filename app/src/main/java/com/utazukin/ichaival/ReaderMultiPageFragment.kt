@@ -168,7 +168,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         if (otherImage == null || image.endsWith(".gif"))
             displaySingleImage(image)
         else {
-            lifecycleScope.launch(Dispatchers.IO) {
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                 val target = Glide.with(requireActivity())
                     .downloadOnly()
                     .load(imagePath)
@@ -198,7 +198,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             pool.put(img)
                             pool.put(otherImg)
                             withContext(Dispatchers.Main) { displaySingleImage(image) }
-                        } else if (activity != null) {
+                        } else {
                             val merged = tryOrNull { mergeBitmaps(img, otherImg, false) }
                             val pool = Glide.get(requireActivity()).bitmapPool
                             pool.put(img)
