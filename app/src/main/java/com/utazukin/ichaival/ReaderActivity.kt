@@ -33,6 +33,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -45,14 +46,13 @@ import com.bumptech.glide.Glide
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.floor
-import kotlin.math.max
-import kotlin.math.truncate
+import kotlin.math.*
 
 private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
 private const val PROGRESS_UPDATE_DELAY = 500L //ms
+private const val DOUBLE_PAGE_OFFSET = 12345L
 
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, DatabaseExtractListener, ThumbRecyclerViewAdapter.ThumbInteractionListener {
     private var mVisible: Boolean = false
@@ -66,7 +66,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var retryCount = 0
     private var rtol = false
     private var volControl = false
-    private val loadedPages = mutableListOf<Boolean>()
+    private val loadedPages = mutableListOf<UInt>()
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager2
@@ -75,13 +75,22 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var autoHideEnabled = true
     private val retrying = AtomicBoolean()
     private var updateProgressJob: Job? = null
+    private var dualPageEnabled = false
+    private val useDoublePage
+        get() = dualPageEnabled && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    private val defaultPageSize
+        get() = if (useDoublePage) 2u else 1u
     private val subtitle: String
         get() {
             return archive.let {
-                if (it != null && it.numPages > 0)
-                    "Page ${currentPage + 1}/${it.numPages}"
+                if (it != null && it.numPages > 0) {
+                    if (!useDoublePage || loadedPages[getAdapterPage(currentPage)] == 1u)
+                        "Page ${currentPage + 1}/${it.numPages}"
+                    else
+                        "Pages ${currentPage + 1}-${currentPage + 2}/${it.numPages}"
+                }
                 else
-                    "Page ${currentPage + 1}"
+                    "Page ${currentPage + (if (useDoublePage) 2 else 1)}"
             }
         }
 
@@ -128,6 +137,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         volControl = prefs.getBoolean(getString(R.string.vol_key_pref_key), false)
         autoHideDelay = truncate(prefs.castStringPrefToFloat(getString(R.string.fullscreen_timeout_key), AUTO_HIDE_DELAY_S) * 1000).toLong()
         autoHideEnabled = autoHideDelay >= 0
+        dualPageEnabled = prefs.getBoolean(getString(R.string.dualpage_key), false)
 
         mVisible = true
 
@@ -136,7 +146,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         imagePager.offscreenPageLimit = 1
         imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(page: Int) {
-                currentPage = getAdjustedPage(page)
+                currentPage = getPageFromPosition(getAdjustedPage(page))
                 archive?.let {
                     launch(Dispatchers.IO) {
                         if (ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)) {
@@ -153,11 +163,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
                 }
 
-                loadImage(page)
+                loadImage(getPageFromPosition(page))
                 supportActionBar?.subtitle = subtitle
             }
 
         } )
+        imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
 
         failedMessage = findViewById(R.id.failed_message)
         failedMessage.setOnClickListener { toggle() }
@@ -185,19 +196,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 supportActionBar?.subtitle = subtitle
                 setTabbedIcon(ReaderTabHolder.isTabbed(it.id))
 
-                //Make sure the archive has been extracted if rtol is set since we need the page count
-                //to get the adjusted page number.
-                if (rtol && it.numPages <= 0) {
-                    val loadLayout: View = findViewById(R.id.load_layout)
-                    loadLayout.visibility = View.VISIBLE
-                    loadLayout.setOnClickListener { toggle() }
-                    withContext(Dispatchers.IO) { it.extract() }
-                    loadLayout.visibility = View.GONE
-                }
-
                 val adjustedPage = getAdjustedPage(page)
                 loadImage(adjustedPage)
-                imagePager.setCurrentItem(adjustedPage, false)
+                imagePager.setCurrentItem(getAdapterPage(adjustedPage), false)
 
                 for (listener in pageFragments)
                     listener.onArchiveLoad(it)
@@ -210,13 +211,35 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     fun unregisterPage(listener: PageFragment) = pageFragments.remove(listener)
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        //TODO remove this hack
-        //This fixes an issue where the image pager is offset after rotating the screen.
-        val page = currentPage
-        val tempPage = max(0, page - 1)
+        val currentPage = getPageFromPosition(imagePager.currentItem)
+        if (dualPageEnabled) {
+            val oldSize = loadedPages.size
+            when (newConfig.orientation) {
+                Configuration.ORIENTATION_LANDSCAPE -> {
+                    val start = loadedPages.size / 2
+                    loadedPages.removeRange(start, start)
+                    imagePager.adapter?.notifyItemRangeRemoved(start, start)
+                    for (i in 0 until loadedPages.size) {
+                        if (loadedPages[i] == 1u)
+                            loadedPages[i] = 2u
+                    }
+                }
+                else -> {
+                    while (loadedPages.size < archive!!.numPages)
+                        loadedPages.add(1u)
+                    imagePager.adapter?.notifyItemRangeInserted(oldSize - 1, archive!!.numPages - oldSize)
+                    for (i in 0 until oldSize) {
+                        if (loadedPages[i] == 2u)
+                            loadedPages[i] = 1u
+                    }
+                }
+            }
+        }
         super.onConfigurationChanged(newConfig)
-        imagePager.setCurrentItem(tempPage, false)
-        imagePager.setCurrentItem(page, false)
+        if (dualPageEnabled) {
+            val page = if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) getAdapterPage(currentPage) else currentPage
+            imagePager.setCurrentItem(page, false)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -293,27 +316,41 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun setTabbedIcon(tabbed: Boolean) = setTabbedIcon(optionsMenu?.findItem(R.id.bookmark_archive), tabbed)
 
-    private fun getAdjustedPage(page: Int) = if (rtol) archive!!.numPages - page - 1 else page
+    private fun getAdjustedPage(page: Int) = page
 
     private fun adjustLoadedPages(page: Int) : Int {
+        if (useDoublePage) {
+            val adapterPage = getAdapterPage(page)
+            if (adapterPage >= loadedPages.size) {
+                val currentSize = loadedPages.size
+                for (i in currentSize..adapterPage)
+                    loadedPages.add(defaultPageSize)
+                return loadedPages.size - currentSize
+            }
+            return 0
+        }
+
         var addedPages = 0
         when {
             archive?.run { numPages > 0 && loadedPages.size != numPages } == true -> {
                 val currentSize = loadedPages.size
                 for (i in currentSize until archive!!.numPages)
-                    loadedPages.add(true)
-                loadedPages.fill(true)
+                    loadedPages.add(defaultPageSize)
+                for (i in 0 until loadedPages.size) {
+                    if (loadedPages[i] != 1u)
+                        loadedPages[i] = defaultPageSize
+                }
                 return loadedPages.size - currentSize
             }
             page >= loadedPages.size -> {
                 val currentSize = loadedPages.size
                 for (i in currentSize..page)
-                    loadedPages.add(false)
+                    loadedPages.add(0u)
                 addedPages = loadedPages.size - currentSize
             }
-            loadedPages[page] -> return 0
+            loadedPages[page] > 0u -> return 0
         }
-        loadedPages[page] = true
+        loadedPages[page] = defaultPageSize
         return addedPages
     }
 
@@ -333,9 +370,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             imagePager.adapter?.notifyItemRangeInserted(loadedPages.size - addedPages, addedPages)
 
         if (preload) {
-            for (i in (-1..1)) {
+            for (i in (defaultPageSize.toInt() * -1..defaultPageSize.toInt())) {
                 val newPage = page + i
-                if (newPage >= 0 && (newPage >= loadedPages.size || !loadedPages[page + i]))
+                if (newPage >= 0 && (newPage >= loadedPages.size || loadedPages[page + i] == 0u))
                     loadImage(page + i, false)
             }
         }
@@ -471,7 +508,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         closeSettings()
         val adjustedPage = getAdjustedPage(page)
         loadImage(adjustedPage)
-        imagePager.setCurrentItem(adjustedPage, false)
+        imagePager.setCurrentItem(getAdapterPage(adjustedPage), false)
         currentPage = page
     }
 
@@ -558,8 +595,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onFragmentTap(zone: TouchZone) {
         when (zone) {
             TouchZone.Center -> toggle()
-            TouchZone.Left -> imagePager.setCurrentItem(imagePager.currentItem - 1, false)
-            TouchZone.Right -> imagePager.setCurrentItem(imagePager.currentItem + 1, false)
+            TouchZone.Left -> {
+                val next = if (rtol) imagePager.currentItem + 1 else imagePager.currentItem - 1
+                imagePager.setCurrentItem(next, false)
+            }
+            TouchZone.Right -> {
+                val next = if (rtol) imagePager.currentItem - 1 else imagePager.currentItem + 1
+                imagePager.setCurrentItem(next, false)
+            }
         }
     }
 
@@ -588,7 +631,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             delayedHide(100)
     }
 
-    override fun onImageLoadError(fragment: ReaderFragment) : Boolean {
+    override fun onImageLoadError(fragment: PageFragment) : Boolean {
         return if (retryCount < 3) {
             archive?.run {
                 if (retrying.compareAndSet(false, true)) {
@@ -611,15 +654,43 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
+    fun onMergeFailed(page: Int) {
+        val adapterPage = getAdapterPage(page)
+        loadedPages[adapterPage] = 1u
+        loadedPages.add(adapterPage + 1, 2u)
+        imagePager.adapter?.notifyItemInserted(adapterPage + 1)
+    }
+
+    private fun getAdapterPage(position: Int) : Int {
+        var pageSum = 0u
+        for (i in 0 until position) {
+            pageSum += if (i < loadedPages.size) loadedPages[i] else 2u
+            if (pageSum > position.toUInt())
+                return i
+        }
+        return position
+    }
+
+    private fun getPageFromPosition(position: Int) : Int {
+        if (position >= loadedPages.size)
+            return -1
+
+        var pageSum = 0u
+        for (i in 0 until position)
+            pageSum += loadedPages[i]
+        return pageSum.toInt()
+    }
+
     @SuppressLint("NotifyDataSetChanged")
     override fun onExtract(id: String, pageCount: Int) {
         if (id != archive?.id || archive?.numPages == loadedPages.size)
             return
 
         launch {
+            val count = if (useDoublePage) ceil(pageCount / 2f).toInt() else pageCount
             loadedPages.clear()
-            for (i in 0 until pageCount)
-                loadedPages.add(true)
+            for (i in 0 until count)
+                loadedPages.add(defaultPageSize)
 
             imagePager.adapter?.notifyDataSetChanged()
         }
@@ -643,8 +714,29 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     private inner class ReaderFragmentAdapter : FragmentStateAdapter(this) {
+        override fun createFragment(position: Int) : Fragment {
+            return if (useDoublePage) {
+                val page = getPageFromPosition(getAdjustedPage(position))
+                if (loadedPages[position] > 1u) {
+                    ReaderMultiPageFragment.createInstance(page, page + 1)
+                } else {
+                    ReaderFragment.createInstance(page)
+                }
+            } else {
+                ReaderFragment.createInstance(getAdjustedPage(position))
+            }
+        }
 
-        override fun createFragment(position: Int) = ReaderFragment.createInstance(getAdjustedPage(position))
+        override fun getItemId(position: Int): Long {
+            return if (useDoublePage) getPageFromPosition(position).toLong() + DOUBLE_PAGE_OFFSET else super.getItemId(position)
+        }
+
+        override fun containsItem(itemId: Long): Boolean {
+            val page = getPageFromPosition((itemId - DOUBLE_PAGE_OFFSET).toInt()).toLong()
+            if (useDoublePage && page < 0)
+                return false
+            return if (useDoublePage) super.containsItem(page) else super.containsItem(itemId)
+        }
 
         override fun getItemCount(): Int = loadedPages.size
     }

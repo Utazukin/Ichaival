@@ -21,12 +21,15 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.Rect
 import androidx.preference.PreferenceManager
 import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.egl.EGLContext
 import kotlin.math.max
+import kotlin.math.min
 
 fun getDpWidth(pxWidth: Int) : Int {
     val metrics = Resources.getSystem().displayMetrics
@@ -69,6 +72,16 @@ fun Context.getCustomTheme() : String {
     val prefs = PreferenceManager.getDefaultSharedPreferences(this)
     return prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme)) as String
 }
+
+fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
+    var i = min(start + count, size - 1)
+    while (i >= 0 && i >= start)
+        removeAt(i--)
+}
+
+val Bitmap.rect: Rect
+    get() = Rect(0, 0, width, height)
+
 
 inline fun <T> tryOrNull(body: () -> T) : T? {
     return try {

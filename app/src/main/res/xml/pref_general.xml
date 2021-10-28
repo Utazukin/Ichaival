@@ -92,6 +92,12 @@
             app:defaultValue="false"
             app:key="@string/vol_key_pref_key"
             app:title="@string/vol_key_pref_name" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/dualpage_key"
+            android:summary="@string/dualpage_pref_summary"
+            android:title="@string/dualpage_pref_title"
+            app:iconSpaceReserved="false" />
         <EditTextPreference
             android:inputType="numberDecimal"
             android:selectAllOnFocus="true"

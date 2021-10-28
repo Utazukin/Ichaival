@@ -136,6 +136,9 @@
     <string name="new_category_button">New Category</string>
     <string name="delete_archive_item">Delete Archive</string>
     <string name="select_archives">Select Archives</string>
+    <string name="dualpage_key">dualpage_key</string>
+    <string name="dualpage_pref_title">Merge Dual Pages</string>
+    <string name="dualpage_pref_summary">Merge portrait images when device is landscape</string>
     <plurals name="delete_archive_count">
         <item quantity="one">Delete %d archive?</item>
         <item quantity="other">Delete %d archives?</item>
