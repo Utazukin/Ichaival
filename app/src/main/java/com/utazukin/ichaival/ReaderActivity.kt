@@ -146,7 +146,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         imagePager.offscreenPageLimit = 1
         imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(page: Int) {
-                currentPage = getPageFromPosition(getAdjustedPage(page))
+                currentPage = if (useDoublePage) getPageFromPosition(getAdjustedPage(page)) else page
                 archive?.let {
                     launch(Dispatchers.IO) {
                         if (ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)) {
@@ -163,7 +163,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
                 }
 
-                loadImage(getPageFromPosition(page))
+                loadImage(currentPage)
                 supportActionBar?.subtitle = subtitle
             }
 
