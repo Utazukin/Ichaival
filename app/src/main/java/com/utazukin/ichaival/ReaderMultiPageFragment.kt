@@ -264,6 +264,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         FileOutputStream(mergedFile.path).use {
             result.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+        result.recycle()
         return mergedFile.path
     }
 
