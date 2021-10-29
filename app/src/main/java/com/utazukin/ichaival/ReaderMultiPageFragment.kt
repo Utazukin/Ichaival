@@ -390,7 +390,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         imagePath = image
                         otherImagePath = otherImage
                     }
-                } else if (page < archive.numPages)
+                } else
                     listener?.onImageLoadError(this@ReaderMultiPageFragment)
             }
         }

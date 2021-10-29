@@ -658,8 +658,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     fun onMergeFailed(page: Int) {
         val adapterPage = getAdapterPage(page)
         loadedPages[adapterPage] = 1u
-        loadedPages.add(adapterPage + 1, 2u)
-        imagePager.adapter?.notifyItemInserted(adapterPage + 1)
+        if (loadedPages.size < archive!!.numPages) {
+            loadedPages.add(adapterPage + 1, 2u)
+            imagePager.adapter?.notifyItemInserted(adapterPage + 1)
+        }
     }
 
     private fun getAdapterPage(position: Int) : Int {
