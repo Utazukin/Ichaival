@@ -200,6 +200,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             withContext(Dispatchers.Main) { displaySingleImage(image) }
                         } else {
                             val merged = tryOrNull { mergeBitmaps(img, otherImg, false) }
+                            yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
                             pool.put(img)
                             pool.put(otherImg)
