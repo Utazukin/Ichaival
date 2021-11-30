@@ -305,7 +305,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val count = jsonPages.length()
         return if (ServerManager.checkVersionAtLeast(0,8,2))
-            List(count) { jsonPages.getString(it).substring(1).split('/', '=').last() }
+            List(count) { jsonPages.getString(it).substring(1).split("?path=", limit = 2).last() }
         else
             List(count) { jsonPages.getString(it).substring(1) }
     }
