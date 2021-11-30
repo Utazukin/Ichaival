@@ -55,6 +55,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val archiveListPath = "$apiPath/archives"
     private const val thumbPath = "$archiveListPath/%s/thumbnail"
     private const val extractPath = "$archiveListPath/%s/extract"
+    private const val filesPath = "$archiveListPath/%s/files"
     private const val progressPath = "$archiveListPath/%s/progress/%s"
     private const val deleteArchivePath = "$archiveListPath/%s"
     private const val tagsPath = "$databasePath/stats"
@@ -64,6 +65,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val categoryPath = "$apiPath/categories"
     private const val clearTempPath = "$apiPath/tempfolder"
     private const val modifyCatPath = "$categoryPath/%s/%s"
+    private const val pagePath = "$archiveListPath/%s/page"
     private const val connTimeoutMs = 5000L
     private const val readTimeoutMs = 30000L
 
@@ -302,7 +304,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         val count = jsonPages.length()
-        return List(count) { jsonPages.getString(it).substring(1) }
+        return if (ServerManager.checkVersionAtLeast(0,8,2))
+            List(count) { jsonPages.getString(it).substring(1).split('/', '=').last() }
+        else
+            List(count) { jsonPages.getString(it).substring(1) }
     }
 
     suspend fun downloadThumb(id: String, thumbDir: File) : File? {
@@ -374,8 +379,14 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         notify("Extracting...")
 
         val errorMessage = "Failed to extract archive!"
-        val url = "$serverLocation${extractPath.format(id)}"
-        val connection = createServerConnection(url, "POST", FormBody.Builder().build())
+        val connection = if (ServerManager.checkVersionAtLeast(0, 8, 2)) {
+            val url = "$serverLocation${extractPath.format(id)}"
+            createServerConnection(url, "POST", FormBody.Builder().build())
+        } else {
+            val url = "$serverLocation${filesPath.format(id)}"
+            createServerConnection(url)
+        }
+
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
         return response?.run {
             if (!isSuccessful) {
@@ -466,7 +477,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return connected
     }
 
-    fun getRawImageUrl(path: String) = serverLocation + path
+    fun getRawImageUrl(id: String, path: String) : String {
+        return if (ServerManager.checkVersionAtLeast(0, 8, 2))
+            "$serverLocation${pagePath.format(id)}?path=$path"
+        else
+            serverLocation + path
+    }
 
     private fun createServerConnection(url: String, method: String = "GET", body: RequestBody? = null) : Request {
         return with (Request.Builder()) {

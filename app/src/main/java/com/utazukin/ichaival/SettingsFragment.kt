@@ -103,7 +103,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
             with(activity as CoroutineScope) {
                 launch(Dispatchers.IO) {
                     WebHandler.clearTempFolder()
-                    DatabaseReader.invalidateImageCache()
+                    if (!ServerManager.checkVersionAtLeast(0, 8, 2))
+                        DatabaseReader.invalidateImageCache()
                     with(Glide.get(requireContext())) {
                         withContext(Dispatchers.Main) { clearMemory() }
                         clearDiskCache()
