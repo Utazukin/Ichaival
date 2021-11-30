@@ -63,7 +63,7 @@ data class Archive (
 
     private suspend fun downloadPage(page: Int) : String? {
         val pages = DatabaseReader.getPageList(id)
-        return if (page < pages.size) WebHandler.getRawImageUrl(id, pages[page]) else null
+        return if (page < pages.size) WebHandler.getRawImageUrl(pages[page]) else null
     }
 
     fun containsTag(tag: String) : Boolean {
