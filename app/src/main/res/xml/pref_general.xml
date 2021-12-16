@@ -97,7 +97,8 @@
             android:key="@string/dualpage_key"
             android:summary="@string/dualpage_pref_summary"
             android:title="@string/dualpage_pref_title"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false"
+            app:isPreferenceVisible="false" />
         <EditTextPreference
             android:inputType="numberDecimal"
             android:selectAllOnFocus="true"
