@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.*
 import java.io.File
-import java.io.FileOutputStream
 import kotlin.math.max
 
 class ReaderMultiPageFragment : Fragment(), PageFragment {
@@ -194,12 +193,13 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         val otherBytes = otherFile.readBytes()
                         val otherImg = BitmapFactory.decodeByteArray(otherBytes, 0, otherBytes.size)
                         if (img.width > img.height || otherImg.width > otherImg.height) {
+                            yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
                             pool.put(img)
                             pool.put(otherImg)
                             withContext(Dispatchers.Main) { displaySingleImage(image) }
                         } else {
-                            val merged = tryOrNull { mergeBitmaps(img, otherImg, false) }
+                            val merged = tryOrNull { mergeBitmaps(img, otherImg, false, requireContext().cacheDir) }
                             yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
                             pool.put(img)
@@ -231,10 +231,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     }
 
     //Mostly from TachiyomiJ2K
-    private fun mergeBitmaps(imageBitmap: Bitmap, imageBitmap2: Bitmap, isLTR: Boolean): String {
-        val mergedFile = File(requireContext().cacheDir, "$archiveId-$page-$otherPage.png")
-        if (mergedFile.exists())
-            return mergedFile.path
+    private suspend fun mergeBitmaps(imageBitmap: Bitmap, imageBitmap2: Bitmap, isLTR: Boolean, cacheDir: File): String {
+        val mergedFile = getMergedPage(cacheDir, archiveId!!, page, otherPage)
+        if (mergedFile != null)
+            return mergedFile
 
         val height = imageBitmap.height
         val width = imageBitmap.width
@@ -262,11 +262,9 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         canvas.drawBitmap(imageBitmap2, imageBitmap2.rect, bottomPart, null)
         progressBar.progress = 99
 
-        FileOutputStream(mergedFile.path).use {
-            result.compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
+        val merged = saveMergedPath(cacheDir, result, archiveId!!, page, otherPage)
         result.recycle()
-        return mergedFile.path
+        return merged
     }
 
     private fun initializeView(view: View) {
@@ -372,6 +370,17 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         createViewCalled = false
         (activity as? ReaderActivity)?.unregisterPage(this)
         (mainImage as? SubsamplingScaleImageView)?.recycle()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (otherImagePath != null) {
+            context?.let {
+                val id = archiveId ?: return
+                val cacheDir = it.cacheDir
+                GlobalScope.launch { trashMergedPage(cacheDir, id, page, otherPage) }
+            }
+        }
     }
 
     override fun onScaleTypeChange(scaleType: ScaleType) = updateScaleType(scaleType)

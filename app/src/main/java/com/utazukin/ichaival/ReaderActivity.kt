@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -211,6 +211,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     fun unregisterPage(listener: PageFragment) = pageFragments.remove(listener)
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onConfigurationChanged(newConfig: Configuration) {
         val currentPage = getPageFromPosition(imagePager.currentItem)
         if (dualPageEnabled) {
@@ -219,20 +220,18 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 Configuration.ORIENTATION_LANDSCAPE -> {
                     val start = loadedPages.size / 2
                     loadedPages.removeRange(start, start)
-                    imagePager.adapter?.notifyItemRangeRemoved(start, start)
-                    for (i in 0 until loadedPages.size) {
-                        if (loadedPages[i] == 1u)
-                            loadedPages[i] = 2u
-                    }
+                    for (i in 0 until loadedPages.size)
+                        loadedPages[i] = 2u
+                    imagePager.adapter?.notifyDataSetChanged()
                 }
                 else -> {
                     while (loadedPages.size < archive!!.numPages)
                         loadedPages.add(1u)
-                    imagePager.adapter?.notifyItemRangeInserted(oldSize - 1, archive!!.numPages - oldSize)
-                    for (i in 0 until oldSize) {
-                        if (loadedPages[i] == 2u)
-                            loadedPages[i] = 1u
-                    }
+                    if (archive!!.numPages - oldSize > 0)
+                        imagePager.adapter?.notifyItemRangeInserted(oldSize, archive!!.numPages - oldSize)
+                    for (i in 0 until oldSize)
+                        loadedPages[i] = 1u
+                    imagePager.adapter?.notifyItemRangeChanged(0, loadedPages.size)
                 }
             }
         }
@@ -255,7 +254,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         navView = drawerLayout.findViewById(R.id.nav_view)
         val tabView: RecyclerView = findViewById(R.id.tab_view)
         val listener = this
-        val viewModel = ViewModelProviders.of(this).get(ReaderTabViewModel::class.java)
+        val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
@@ -656,12 +655,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     fun onMergeFailed(page: Int) {
-        val adapterPage = getAdapterPage(page)
-        loadedPages[adapterPage] = 1u
-        if (loadedPages.size < archive!!.numPages) {
-            loadedPages.add(adapterPage + 1, 2u)
-            imagePager.adapter?.notifyItemInserted(adapterPage + 1)
-        }
+        if (page < archive!!.numPages - 1) {
+            val adapterPage = getAdapterPage(page)
+            loadedPages[adapterPage] = 1u
+            if (loadedPages.size < archive!!.numPages) {
+                val pageSum = loadedPages.sum().toInt()
+                loadedPages.add(adapterPage + 1, if (pageSum <= archive!!.numPages - 2) 2u else 1u)
+                imagePager.adapter?.notifyItemInserted(adapterPage + 1)
+            }
+        } else loadedPages[getAdapterPage(page)] = 1u
     }
 
     private fun getAdapterPage(position: Int) : Int {
