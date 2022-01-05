@@ -218,7 +218,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             val oldSize = loadedPages.size
             when (newConfig.orientation) {
                 Configuration.ORIENTATION_LANDSCAPE -> {
-                    val start = loadedPages.size / 2
+                    val start = ceil(loadedPages.size / 2f).toInt()
                     loadedPages.removeRange(start, start)
                     for (i in 0 until loadedPages.size)
                         loadedPages[i] = 2u
