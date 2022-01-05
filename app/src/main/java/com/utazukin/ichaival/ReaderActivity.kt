@@ -250,7 +250,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
-                viewModel.bookmarks.observe(this@ReaderActivity, { list -> it.submitList(list) })
+                launch(Dispatchers.Default) { viewModel.bookmarks.collectLatest { data -> it.submitData(data) } }
             }
 
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)

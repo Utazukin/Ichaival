@@ -20,11 +20,13 @@ package com.utazukin.ichaival
 
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.viewModelScope
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 object ReaderTabHolder {
@@ -63,13 +65,14 @@ object ReaderTabHolder {
     }
 
     suspend fun addTabs(archives: List<Archive>) {
-        val ids = mutableListOf<String>()
-        for (archive in archives) {
-            if (!isTabbed(archive.id)) {
-                val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
-                archive.currentPage = 0
-                DatabaseReader.addBookmark(tab)
-                ids.add(archive.id)
+        val ids = buildList(archives.size) {
+            for (archive in archives) {
+                if (!isTabbed(archive.id)) {
+                    val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
+                    archive.currentPage = 0
+                    DatabaseReader.addBookmark(tab)
+                    add(archive.id)
+                }
             }
         }
 
@@ -79,15 +82,13 @@ object ReaderTabHolder {
     fun createTab(id: String, title: String, page: Int) = ReaderTab(id, title, tabCount, page)
 
     suspend fun addTab(id: String, page: Int) {
-        val archive = DatabaseReader.getArchive(id)
-        if (archive != null)
-            addTab(archive, page)
+        DatabaseReader.getArchive(id)?.let { addTab(it, page) }
     }
 
     fun initialize(context: FragmentActivity) {
         if (!initialized) {
             val viewModel = ViewModelProviders.of(context)[ReaderTabViewModel::class.java]
-            viewModel.bookmarks.observeForever { tabCount = it.size }
+            viewModel.viewModelScope.launch { viewModel.bookmarks.collectLatest { tabCount = DatabaseReader.database.archiveDao().getBookmarkCount() } }
             initialized = true
         }
     }

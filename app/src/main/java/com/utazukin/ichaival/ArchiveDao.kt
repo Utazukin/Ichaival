@@ -18,7 +18,7 @@
 
 package com.utazukin.ichaival
 
-import androidx.paging.DataSource
+import androidx.paging.PagingSource
 import androidx.room.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -90,6 +90,9 @@ interface ArchiveDao {
     @Query("Update archive set currentPage = -1 where id in (:ids)")
     fun removeAllBookmarks(ids: List<String>)
 
+    @Query("Select count(id) from readertab")
+    suspend fun getBookmarkCount() : Int
+
     @Query("Select * from readertab order by `index`")
     fun getBookmarks() : List<ReaderTab>
 
@@ -100,7 +103,7 @@ interface ArchiveDao {
     suspend fun getBookmark(id: String) : ReaderTab?
 
     @Query("Select * from readertab order by `index`")
-    fun getDataBookmarks() : DataSource.Factory<Int, ReaderTab>
+    fun getDataBookmarks() : PagingSource<Int, ReaderTab>
 
     @Query("Delete from archive where id = :id")
     fun removeArchive(id: String)
@@ -155,11 +158,12 @@ class DatabaseTypeConverters {
     @TypeConverter
     fun fromString(json: String) : Map<String, List<String>> {
         val jsonObject = JSONObject(json)
-        val map = mutableMapOf<String, List<String>>()
-        for (key in jsonObject.keys()) {
-            val tagsArray = jsonObject.getJSONArray(key)
-            val tags = MutableList<String>(tagsArray.length()) { tagsArray.getString(it) }
-            map[key] = tags
+        val map = buildMap(jsonObject.length()) {
+            for (key in jsonObject.keys()) {
+                val tagsArray = jsonObject.getJSONArray(key)
+                val tags = List(tagsArray.length()) { tagsArray.getString(it) }
+                put(key, tags)
+            }
         }
 
         return map
@@ -266,10 +270,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
         return if (ids.size <= MAX_PARAMETER_COUNT - 2)
             dataFunc(ids, offset, limit)
         else {
-            val archives = mutableListOf<Archive>()
-            for (split in ids.chunked(MAX_PARAMETER_COUNT - 2))
-                archives.addAll(dataFunc(ids, offset, limit))
-            archives
+            buildList {
+                for (split in ids.chunked(MAX_PARAMETER_COUNT - 2))
+                    addAll(dataFunc(ids, offset, limit))
+            }
         }
     }
 

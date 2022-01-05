@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import kotlin.coroutines.CoroutineContext
 
 const val TAG_SEARCH = "tag"
@@ -98,15 +99,14 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val context = this
         tabView = findViewById(R.id.tab_view)
         val listener = this
-        val viewModel = ViewModelProviders.of(this).get(ReaderTabViewModel::class.java)
+        val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
-                viewModel.bookmarks.observe(this@BaseActivity, { list ->
-                    val itemAdded = list.size == it.itemCount + 1
-                    val scrollTarget = list.size - 1
-                    it.submitList(list) { if (itemAdded) scrollToPosition(scrollTarget) }
-                })
+                it.addOnPagesUpdatedListener { scrollToPosition(it.itemCount - 1) }
+                launch(Dispatchers.Default) {
+                    viewModel.bookmarks.collectLatest { data -> it.submitData(data) }
+                }
             }
 
             val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)

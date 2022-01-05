@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,16 +21,14 @@ package com.utazukin.ichaival
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.DataSource
-import androidx.paging.LivePagedListBuilder
-import androidx.paging.PagedList
+import androidx.paging.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 private fun <T : Any, TT : Any> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
 
 class ReaderTabViewModel : ViewModel() {
-    val bookmarks = DatabaseReader.database.archiveDao().getDataBookmarks().toLiveData(5)
+    val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
 }
 
 abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
@@ -47,7 +45,7 @@ abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
         var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
-            data = data.subtract(archiveDao.getBookmarks().map { it.id })
+            data = data.subtract(archiveDao.getBookmarks().map { it.id }.toSet())
 
         val randId = data.randomOrNull()
         return if (randId != null) archiveDao.getArchive(randId) else null
