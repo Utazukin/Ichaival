@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -148,14 +148,16 @@ class ArchiveListServerSource(results: List<String>?,
         val remaining = endIndex - totalResults.size
         val currentSize = totalResults.size
         val pages = floor(remaining.toFloat() / ServerManager.pageSize).toInt()
-        val jobs = mutableListOf<Deferred<ServerSearchResult>>()
-        for (i in 0 until pages) {
-            val job = async(Dispatchers.IO) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + i * ServerManager.pageSize, false) }
-            jobs.add(job)
+        val jobs = buildList(pages + 1) {
+            for (i in 0 until pages) {
+                val job = async(Dispatchers.IO) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + i * ServerManager.pageSize, false) }
+                add(job)
+            }
+
+            val job = async(Dispatchers.IO) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + pages * ServerManager.pageSize, false) }
+            add(job)
         }
 
-        val job = async(Dispatchers.IO) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + pages * ServerManager.pageSize, false) }
-        jobs.add(job)
 
         totalResults.addAll(jobs.awaitAll().mapNotNull { it.results }.flatten())
     }

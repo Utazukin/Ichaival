@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ class BookmarkTouchHelper(context: Context) : ItemTouchHelper.SimpleCallback(0, 
         val tab = holder.itemView.tag as? ReaderTab ?: return
         when (direction) {
             RIGHT -> ReaderTabHolder.removeTab(tab.id)
-            LEFT -> leftSwipeListener?.invoke(tab.id, holder.adapterPosition)
+            LEFT -> leftSwipeListener?.invoke(tab.id, holder.absoluteAdapterPosition)
         }
     }
 

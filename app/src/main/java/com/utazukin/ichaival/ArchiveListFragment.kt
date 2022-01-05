@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -80,16 +80,16 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
         isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
 
-        if (isLocalSearch)
-            viewModel = ViewModelProviders.of(this).get(ArchiveViewModel::class.java)
+        viewModel = if (isLocalSearch)
+            ViewModelProviders.of(this)[ArchiveViewModel::class.java]
         else
-            viewModel = ViewModelProviders.of(this).get(SearchViewModel::class.java)
+            ViewModelProviders.of(this)[SearchViewModel::class.java]
 
         // Set the adapter
         with(listView) {
             post {
                 val dpWidth = getDpWidth(width)
-                val columns = floor(dpWidth / 300.0).toInt()
+                val columns = floor(dpWidth / 300f).toInt()
                 layoutManager = if (columns > 1) {
                     object : GridLayoutManager(context, columns) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
@@ -291,13 +291,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
             searchView.clearFocus()
 
-            val model = ViewModelProviders.of(this).get(StaticCategoryModel::class.java).apply {
+            val model = ViewModelProviders.of(this)[StaticCategoryModel::class.java].apply {
                 init(category.archiveIds, category.id, sortMethod, descending, newCheckBox.isChecked)
             }
             model.archiveList?.observe(viewLifecycleOwner, {
-                (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
+                with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) }
                 val size = it.size
-                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
+                with(activity as AppCompatActivity) { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
             })
 
             model.filter(newCheckBox.isChecked)
@@ -522,21 +522,21 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     private fun initViewModel(localSearch: Boolean, force: Boolean = false, init: Boolean = true) {
         val model = if (localSearch) {
-            ViewModelProviders.of(this).get(ArchiveViewModel::class.java).also {
+            ViewModelProviders.of(this)[ArchiveViewModel::class.java].also {
                 if (init)
                     it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
             }
         } else {
-            ViewModelProviders.of(this).get(SearchViewModel::class.java).also {
+            ViewModelProviders.of(this)[SearchViewModel::class.java].also {
                 if (init)
                     it.init(sortMethod, descending, force)
             }
         }
 
         model.archiveList?.observe(viewLifecycleOwner, {
-            (listView.adapter as ArchiveRecyclerViewAdapter).submitList(it)
+            with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) }
             val size = it.size
-            (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
+            with(activity as AppCompatActivity) { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
         })
 
         model.updateSort(sortMethod, descending)

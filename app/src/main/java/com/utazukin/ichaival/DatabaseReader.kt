@@ -166,11 +166,13 @@ object DatabaseReader {
         WebHandler.setArchiveNewFlag(id)
     }
 
-    private fun readArchiveList(json: JSONArray) : Map<String, ArchiveJson> {
-        val archiveList = mutableMapOf<String, ArchiveJson>()
-        for (i in 0 until json.length()) {
-            val archive = ArchiveJson(json.getJSONObject(i))
-            archiveList[archive.id] = archive
+    private fun readArchiveList(json: JSONArray, context: Context) : Map<String, ArchiveJson> {
+        val length = json.length()
+        val archiveList = buildMap(length) {
+            for (i in 0 until length) {
+                val archive = ArchiveJson(json.getJSONObject(i), context)
+                put(archive.id, archive)
+            }
         }
 
         return archiveList
