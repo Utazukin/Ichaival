@@ -27,7 +27,7 @@
             android:parentActivityName="com.utazukin.ichaival.SettingsActivity"/>
         <activity
                 android:name="com.utazukin.ichaival.ReaderActivity"
-                android:configChanges="orientation|keyboardHidden|screenSize"
+                android:configChanges="orientation|screenLayout|screenSize"
                 android:label="@string/title_activity_reader"
                 android:theme="@style/FullscreenTheme">
             <meta-data

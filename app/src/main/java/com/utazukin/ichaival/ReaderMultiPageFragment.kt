@@ -88,13 +88,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         return view
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        updateScaleType(mainImage, currentScaleType, true)
-        if (newConfig.orientation != Configuration.ORIENTATION_LANDSCAPE && otherImagePath != null)
-            reloadImage(true)
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     private fun setupImageTapEvents(view: View) {
         if (view is SubsamplingScaleImageView) {
