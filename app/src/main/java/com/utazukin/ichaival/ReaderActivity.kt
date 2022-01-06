@@ -70,6 +70,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     var archive: Archive? = null
         private set
     private var currentPage = 0
+    private var jumpPage = -1
     private var retryCount = 0
     private var rtol = false
     private var volControl = false
@@ -172,6 +173,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
                 currentAdapter?.loadImage(currentPage)
                 supportActionBar?.subtitle = subtitle
+                if (currentAdapter?.containsPage(jumpPage, page) != true)
+                    jumpPage = -1
             }
 
         } )
@@ -200,6 +203,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 val page = savedPage ?: max(it.currentPage, 0)
                 it.currentPage = page
                 currentPage = page
+                jumpPage = currentPage
                 supportActionBar?.subtitle = subtitle
                 setTabbedIcon(ReaderTabHolder.isTabbed(it.id))
 
@@ -569,7 +573,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    fun onMergeFailed(page: Int) = currentAdapter?.onMergeFailed(page)
+    fun onMergeFailed(page: Int, failPage: Int) {
+        dualPageAdapter.onMergeFailed(page, failPage)
+        if (jumpPage >= 0 && dualPageAdapter.getPositionFromPage(jumpPage) != imagePager.currentItem)
+            imagePager.setCurrentItem(dualPageAdapter.getPositionFromPage(jumpPage), false)
+    }
 
     override fun onExtract(id: String, pageCount: Int) {
         if (id != archive?.id || archive?.numPages == currentAdapter?.itemCount)
@@ -610,20 +618,44 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 ReaderFragment.createInstance(page)
         }
 
+        override fun getItemId(position: Int): Long {
+            return getPageFromPosition(position).toLong()
+        }
+
+        override fun containsItem(itemId: Long): Boolean {
+            val position = getPositionFromPage(itemId.toInt())
+            return position >= 0 && position < loadedPages.size
+        }
+
+        override fun containsPage(page: Int, position: Int) = getPositionFromPage(page) == position
+
         override fun getItemCount(): Int = loadedPages.size
 
         override fun isPageLoaded(page: Int) = loadedPages[page] != 0u
 
-        override fun onMergeFailed(page: Int) {
+        fun onMergeFailed(page: Int, failPage: Int) {
+            val adapterPage = getPositionFromPage(page)
             if (page < archive!!.numPages - 1) {
-                val adapterPage = getPositionFromPage(page)
                 loadedPages[adapterPage] = 1u
-                if (loadedPages.size < archive!!.numPages) {
-                    val pageSum = loadedPages.sum().toInt()
-                    loadedPages.add(adapterPage + 1, if (pageSum <= archive!!.numPages - 2) 2u else 1u)
-                    imagePager.adapter?.notifyItemInserted(adapterPage + 1)
+                notifyItemChanged(adapterPage)
+                if (page != failPage && adapterPage < loadedPages.size - 1) {
+                    loadedPages.add(adapterPage + 1, 1u)
+                    notifyItemInserted(adapterPage + 1)
                 }
-            } else loadedPages[getPositionFromPage(page)] = 1u
+                if (loadedPages.size < archive!!.numPages) {
+                    val last = loadedPages.size - 1
+                    if (loadedPages[last] == 1u && adapterPage != last) {
+                        ++loadedPages[last]
+                        notifyItemChanged(last)
+                    } else {
+                        loadedPages.add(1u)
+                        notifyItemInserted(loadedPages.size - 1)
+                    }
+                }
+            } else {
+                loadedPages[adapterPage] = 1u
+                notifyItemChanged(adapterPage)
+            }
         }
 
         override fun adjustLoadedPages(page: Int): Int {
@@ -666,7 +698,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         override fun isSinglePage(position: Int): Boolean {
             val page = getPositionFromPage(position)
-            return page < loadedPages.size && loadedPages[page] == 1u
+            return page >= 0 && page < loadedPages.size && loadedPages[page] == 1u
         }
         @SuppressLint("NotifyDataSetChanged")
         override fun updateLoadedPages(pageCount: Int) {
@@ -676,7 +708,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 loadedPages.add(defaultPageSize)
             notifyDataSetChanged()
         }
-        override fun clearPages() = loadedPages.clear()
     }
 
     private abstract inner class ReaderAdapter<T> : FragmentStateAdapter(this) {
@@ -684,12 +715,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         abstract val defaultPageSize: UInt
 
         open fun isSinglePage(position: Int) = true
-        open fun clearPages() = loadedPages.clear()
-        open fun onMergeFailed(page: Int) {}
+        open fun clearPages() {
+            val size = loadedPages.size
+            loadedPages.clear()
+            notifyItemRangeRemoved(0, size)
+        }
         abstract fun updateLoadedPages(pageCount: Int)
         abstract fun adjustLoadedPages(page: Int): Int
         abstract fun getPositionFromPage(page: Int): Int
         abstract fun getPageFromPosition(position: Int): Int
+        abstract fun containsPage(page: Int, position: Int): Boolean
         protected abstract fun isPageLoaded(page: Int): Boolean
 
         fun loadImage(page: Int, preload: Boolean = true) {
@@ -726,6 +761,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         override fun isPageLoaded(page: Int) = loadedPages[page]
         override fun getPositionFromPage(page: Int) = page
         override fun getPageFromPosition(position: Int) = position
+        override fun containsPage(page: Int, position: Int) = page == position
 
         @SuppressLint("NotifyDataSetChanged")
         override fun updateLoadedPages(pageCount: Int) {

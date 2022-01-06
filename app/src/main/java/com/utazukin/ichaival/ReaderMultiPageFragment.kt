@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.*
 import android.os.Bundle
 import android.view.*
@@ -108,8 +107,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
     }
 
-    private fun displaySingleImage(image: String) {
-        with(activity as ReaderActivity) { onMergeFailed(page) }
+    private fun displaySingleImage(image: String, failPage: Int) {
+        with(activity as ReaderActivity) { onMergeFailed(page, failPage) }
         pageNum.text = (page + 1).toString()
         mainImage = if (image.endsWith(".gif")) {
             PhotoView(activity).also {
@@ -158,7 +157,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         otherImagePath = otherImage
 
         if (otherImage == null || image.endsWith(".gif"))
-            displaySingleImage(image)
+            displaySingleImage(image, page)
         else {
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                 val target = Glide.with(requireActivity())
@@ -188,9 +187,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         if (img.width > img.height || otherImg.width > otherImg.height) {
                             yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
+                            val otherImageFail = otherImg.width > otherImg.height
                             pool.put(img)
                             pool.put(otherImg)
-                            withContext(Dispatchers.Main) { displaySingleImage(image) }
+                            withContext(Dispatchers.Main) { displaySingleImage(image, if (otherImageFail) otherPage else page) }
                         } else {
                             val merged = tryOrNull { mergeBitmaps(img, otherImg, false, requireContext().cacheDir) }
                             yield()
@@ -199,7 +199,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             pool.put(otherImg)
                             if (merged == null) {
                                 progressBar.isIndeterminate = true
-                                displaySingleImage(image)
+                                displaySingleImage(image, page)
                             } else {
                                 progressBar.progress = 100
 
