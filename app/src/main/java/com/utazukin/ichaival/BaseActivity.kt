@@ -103,7 +103,12 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
             adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
-                it.addOnPagesUpdatedListener { scrollToPosition(it.itemCount - 1) }
+                it.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
+                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                        super.onItemRangeInserted(positionStart, itemCount)
+                        scrollToPosition(positionStart)
+                    }
+                })
                 launch(Dispatchers.Default) {
                     viewModel.bookmarks.collectLatest { data -> it.submitData(data) }
                 }
