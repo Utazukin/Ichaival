@@ -75,6 +75,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager2
     private lateinit var pageSeekBar: SeekBar
+    private lateinit var pageSeekLayout: LinearLayout
     private lateinit var progressEndText: TextView
     private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
@@ -152,6 +153,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mVisible = true
 
         pageSeekBar = findViewById(R.id.page_seek_bar)
+        pageSeekLayout = findViewById(R.id.page_seek_layout)
         val progressStartText: TextView = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
         imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
@@ -197,7 +199,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             else -> null
         }
 
-        pageSeekBar.visibility = View.GONE
+        pageSeekLayout.visibility = View.GONE
         pageSeekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
             private var seekPage = -1
             override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -231,10 +233,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 if (it.numPages > 0) {
                     pageSeekBar.max = it.numPages - 1
                     progressEndText.text = it.numPages.toString()
+                    if (mVisible)
+                        pageSeekLayout.visibility = View.VISIBLE
                 }
                 progressStartText.text = (currentPage + 1).toString()
                 pageSeekBar.progress = currentPage
-                pageSeekBar.visibility = View.VISIBLE
 
                 val adjustedPage = getAdjustedPage(page)
                 currentAdapter?.loadImage(adjustedPage)
@@ -497,6 +500,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private fun hide() {
         // Hide UI first
         supportActionBar?.hide()
+        pageSeekLayout.visibility = View.GONE
         mVisible = false
 
         switchLayoutJob?.cancel()
@@ -522,6 +526,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         switchLayoutJob = launch {
             delay(UI_ANIMATION_DELAY)
             supportActionBar?.show()
+            if (pageSeekBar.max > 0)
+                pageSeekLayout.visibility = View.VISIBLE
 
             if (autoHideEnabled)
                 delayedHide(autoHideDelay)

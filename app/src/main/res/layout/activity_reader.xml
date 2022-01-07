@@ -58,6 +58,7 @@
             android:theme="?attr/actionBarTheme" />
 
         <LinearLayout
+            android:id="@+id/page_seek_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
