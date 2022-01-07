@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,22 +42,14 @@ class ThumbRecyclerViewAdapter(
     private val archive: Archive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
-    private val onClickListener: View.OnClickListener
+    private val onClickListener = View.OnClickListener { v ->
+        val item = v.getTag(R.id.small_thumb) as Int
+        listener?.onThumbSelection(item)
+    }
     var maxThumbnails = 10
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
     private val imageLoadingJobs: MutableMap<ViewHolder, Job> = mutableMapOf()
-
-    init {
-        onClickListener = View.OnClickListener { v ->
-            val item = v.getTag(R.id.small_thumb) as Int
-            listener?.onThumbSelection(item)
-        }
-        scope.launch(Dispatchers.Main) {
-            withContext(Dispatchers.IO) { archive.extract() }
-            notifyDataSetChanged()
-        }
-    }
 
     fun increasePreviewCount() {
         if (maxThumbnails < archive.numPages) {
@@ -78,8 +70,8 @@ class ThumbRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, page: Int) {
         holder.pageNumView.text = (page + 1).toString()
 
-        val job = scope.launch(Dispatchers.Main) {
-            val image = withContext(Dispatchers.Default) { archive.getPageImage(page) }
+        val job = scope.launch {
+            val image = withContext(Dispatchers.Default) { archive.getThumb(page) }
 
             with(holder.thumbView) {
                 setTag(R.id.small_thumb, page)
@@ -121,6 +113,7 @@ class ThumbRecyclerViewAdapter(
         imageLoadingJobs[holder]?.cancel()
         imageLoadingJobs.remove(holder)
 
+        holder.thumbView.setImageBitmap(null)
         val params = holder.thumbView.layoutParams
         params.height = getDpAdjusted(200)
         holder.thumbView.adjustViewBounds = false

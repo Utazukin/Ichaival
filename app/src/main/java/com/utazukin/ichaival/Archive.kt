@@ -61,6 +61,8 @@ data class Archive (
         return downloadPage(page)
     }
 
+    suspend fun getThumb(page: Int) = WebHandler.downloadThumb(id, page) ?: downloadPage(page)
+
     private suspend fun downloadPage(page: Int) : String? {
         val pages = DatabaseReader.getPageList(id)
         return if (page < pages.size) WebHandler.getRawImageUrl(pages[page]) else null
@@ -98,8 +100,8 @@ class ArchiveJson(json: JSONObject) {
     val dateAdded: Long
 
     init {
-        val tagString: String = json.getString("tags")
-        val tagList: List<String> = tagString.split(",")
+        val tagString = json.getString("tags")
+        val tagList = tagString.split(",")
         val mutableTags = mutableMapOf<String, MutableList<String>>()
         var dateAdded = 0L
         for (tag in tagList) {

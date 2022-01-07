@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -65,13 +65,18 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val categoryPath = "$apiPath/categories"
     private const val clearTempPath = "$apiPath/tempfolder"
     private const val modifyCatPath = "$categoryPath/%s/%s"
+    private const val minionStatusPath = "$apiPath/minion/%s"
     private const val connTimeoutMs = 5000L
     private const val readTimeoutMs = 30000L
 
     var serverLocation: String = ""
     var apiKey: String = ""
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
-    private val httpClient = OkHttpClient.Builder().connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS).readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS).build()
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS)
+        .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
+        .dispatcher(Dispatcher().apply { maxRequests = 10 })
+        .build()
 
     var verboseMessages = false
     var listener: DatabaseMessageListener? = null
@@ -306,6 +311,38 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return List(count) { jsonPages.getString(it).substring(1) }
     }
 
+    suspend fun downloadThumb(id: String, page: Int): String? {
+        if (!canConnect(true) || !ServerManager.checkVersionAtLeast(0, 8, 4))
+            return null
+
+        val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
+        val connection = createServerConnection(url)
+        val response = httpClient.newCall(connection).await()
+        return with(response) {
+            when (code) {
+                200 -> url
+                202 -> {
+                    body?.let {
+                        val json = JSONObject(it.suspendString())
+                        val job = json.getInt("job")
+                        if (waitForJob(job)) url else null
+                    }
+                }
+                else -> null
+            }
+        }
+    }
+
+    private suspend fun waitForJob(jobId: Int): Boolean {
+        var jobComplete: Boolean?
+        do {
+            delay(1000)
+            jobComplete = checkJobStatus(jobId)
+        } while (jobComplete == null)
+
+        return jobComplete
+    }
+
     suspend fun downloadThumb(id: String, thumbDir: File) : File? {
         if (!canConnect(true))
             return null
@@ -325,6 +362,29 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 thumbFile
             }
         }
+    }
+
+    private suspend fun checkJobStatus(jobId: Int): Boolean? {
+        if (!canConnect(true))
+            return false
+
+        val url = "$serverLocation${minionStatusPath.format(jobId)}"
+        val connection = createServerConnection(url)
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+        response?.run {
+            if (!isSuccessful)
+                return false
+
+            body?.let {
+                val json = JSONObject(it.suspendString())
+                return if (json.optString("state") == "finished") {
+                    json.optString("result", "") != ""
+                } else null
+            }
+
+        }
+
+        return false
     }
 
     private suspend fun Call.awaitWithFail(errorMessage: String? = null) : Response {

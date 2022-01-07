@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -280,15 +280,11 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive.title
 
-        thumbLoadJob = lifecycleScope.launch(Dispatchers.Main) {
+        thumbLoadJob = lifecycleScope.launch {
             thumbView = view.findViewById(R.id.cover)
             val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
             val request = Glide.with(thumbView).load(thumb).dontTransform()
             request.into(thumbView)
-
-            //Replace the thumbnail with the full size image.
-            val image = withContext(Dispatchers.Default) { archive.getPageImage(0) }
-            Glide.with(thumbView).load(image).dontTransform().thumbnail(request).into(thumbView)
         }
     }
 

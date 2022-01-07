@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -143,7 +143,8 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         val a = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
         a?.let {
             menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
-            withContext(Dispatchers.IO) { it.extract() }
+            if (it.numPages <= 0)
+                withContext(Dispatchers.IO) { it.extract() }
             pageCount = it.numPages
             if (pager.currentItem == 1)
                 supportActionBar?.subtitle = "$pageCount pages"
