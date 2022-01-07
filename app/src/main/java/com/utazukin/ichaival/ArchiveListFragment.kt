@@ -114,6 +114,19 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
             listAdapter = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, this@ArchiveListFragment, Glide.with(context))
             adapter = listAdapter
+            listAdapter.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
+                override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                    super.onItemRangeInserted(positionStart, itemCount)
+                    val size = listAdapter.itemCount
+                    with(activity as AppCompatActivity) { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
+                }
+
+                override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                    super.onItemRangeRemoved(positionStart, itemCount)
+                    val size = listAdapter.itemCount
+                    with(activity as AppCompatActivity) { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
+                }
+            })
         }
 
         searchView = view.findViewById(R.id.archive_search)
@@ -270,11 +283,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     }
                 }
             }
-            viewModel?.archiveList?.observe(viewLifecycleOwner, {
-                listAdapter.submitList(it)
-                val size = it.size
-                (activity as AppCompatActivity).supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
-            })
+            viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
             updateSortMethod(method, descending, prefs)
 
             savedState = null
@@ -294,11 +303,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val model = ViewModelProviders.of(this)[StaticCategoryModel::class.java].apply {
                 init(category.archiveIds, category.id, sortMethod, descending, newCheckBox.isChecked)
             }
-            model.archiveList?.observe(viewLifecycleOwner, {
-                with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) }
-                val size = it.size
-                with(activity as AppCompatActivity) { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
-            })
+            model.archiveList?.observe(viewLifecycleOwner) { with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) } }
 
             model.filter(newCheckBox.isChecked)
             viewModel = model
@@ -533,11 +538,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
 
-        model.archiveList?.observe(viewLifecycleOwner, {
-            with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) }
-            val size = it.size
-            with(activity as AppCompatActivity) { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
-        })
+        model.archiveList?.observe(viewLifecycleOwner) { with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) } }
 
         model.updateSort(sortMethod, descending)
         viewModel = model
