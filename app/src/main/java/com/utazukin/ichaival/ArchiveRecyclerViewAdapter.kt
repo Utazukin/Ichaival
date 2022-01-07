@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
+import com.bumptech.glide.signature.ObjectKey
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
@@ -104,7 +105,11 @@ class ArchiveRecyclerViewAdapter(
                         it,
                         holder.mContentView.context)
                 }
-                glideManager.load(image).into(holder.archiveImage)
+                image?.run {
+                    glideManager.load(first)
+                        .signature(ObjectKey(second))
+                        .into(holder.archiveImage)
+                }
             }
             thumbLoadingJobs[holder] = job
 

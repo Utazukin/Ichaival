@@ -343,23 +343,29 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return jobComplete
     }
 
-    suspend fun downloadThumb(id: String, thumbDir: File) : File? {
-        if (!canConnect(true))
+    suspend fun downloadThumb(id: String, thumbDir: File, page: Int? = null) : File? {
+        if (!canConnect(page == null))
             return null
 
         val url = "$serverLocation${thumbPath.format(id)}"
+        if (page != null) {
+            val updateUrl = url + "?page=${page + 1}"
+            val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
+            val errorMessage = "Failed to set new thumbnail."
+            tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) } ?: return null
+        }
 
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await()
-        with (response) {
-            if (!isSuccessful) {
-                return null
-            }
-
-            return body?.let {
-                val thumbFile = File(thumbDir, "$id.jpg")
-                thumbFile.writeBytes(it.suspendBytes())
-                thumbFile
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() } ?: return null
+        return with(response) {
+            if (!isSuccessful)
+                null
+            else {
+                body?.let {
+                    val thumbFile = File(thumbDir, "$id.jpg")
+                    thumbFile.writeBytes(it.suspendBytes())
+                    thumbFile
+                }
             }
         }
     }

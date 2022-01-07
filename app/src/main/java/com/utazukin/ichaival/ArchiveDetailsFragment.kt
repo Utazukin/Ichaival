@@ -34,6 +34,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
+import com.bumptech.glide.signature.ObjectKey
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
@@ -113,7 +114,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     thumbView.setImageDrawable(null)
                     lifecycleScope.launch {
                         val thumb = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext()) }
-                        Glide.with(thumbView).load(thumb).dontTransform().into(thumbView)
+                        thumb?.run {
+                            Glide.with(thumbView).load(first).signature(ObjectKey(second)).dontTransform().into(thumbView)
+                        }
                     }
                 }
             }
@@ -283,8 +286,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         thumbLoadJob = lifecycleScope.launch {
             thumbView = view.findViewById(R.id.cover)
             val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
-            val request = Glide.with(thumbView).load(thumb).dontTransform()
-            request.into(thumbView)
+            thumb?.run {
+                Glide.with(thumbView).load(first).signature(ObjectKey(second)).dontTransform().into(thumbView)
+            }
         }
     }
 

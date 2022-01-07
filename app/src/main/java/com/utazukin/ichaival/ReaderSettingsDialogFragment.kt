@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,12 +50,14 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
         setupSpinner(view)
         val detailsButton: Button = view.findViewById(R.id.detail_button)
         val gotoButton: Button = view.findViewById(R.id.goto_button)
+        val thumbButton: Button = view.findViewById(R.id.thumb_button)
         val refreshButton: Button = view.findViewById(R.id.refresh_button)
         val bookmarkButton: Button = view.findViewById(R.id.bookmark_button)
         val randomButton: Button = view.findViewById(R.id.random_archive_button)
 
         detailsButton.setOnClickListener{ handler?.handleButton(R.id.detail_button) }
         gotoButton.setOnClickListener { handler?.handleButton(R.id.goto_button) }
+        thumbButton.setOnClickListener { handler?.handleButton(R.id.thumb_button) }
         refreshButton.setOnClickListener{ handler?.handleButton(R.id.refresh_button) }
         bookmarkButton.setOnClickListener { handler?.handleButton(R.id.bookmark_button) }
         randomButton.setOnClickListener { handler?.handleButton(R.id.random_archive_button) }

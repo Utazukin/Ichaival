@@ -419,6 +419,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     }
                 }
             }
+            R.id.thumb_button -> archive?.let {
+                launch {
+                    withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(it.id, this@ReaderActivity, currentPage) }
+                    Toast.makeText(this@ReaderActivity, "Thumbnail will be updated after restart.", Toast.LENGTH_SHORT).show()
+                }
+            }
             R.id.random_archive_button -> {
                 launch {
                     val randArchive = DatabaseReader.getRandomArchive()

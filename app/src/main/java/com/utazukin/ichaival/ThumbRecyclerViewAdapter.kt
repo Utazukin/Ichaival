@@ -113,7 +113,7 @@ class ThumbRecyclerViewAdapter(
         imageLoadingJobs[holder]?.cancel()
         imageLoadingJobs.remove(holder)
 
-        holder.thumbView.setImageBitmap(null)
+        holder.thumbView.setImageDrawable(null)
         val params = holder.thumbView.layoutParams
         params.height = getDpAdjusted(200)
         holder.thumbView.adjustViewBounds = false

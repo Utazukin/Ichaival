@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2021 Utazukin
+  ~ Copyright (C) 2022 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -139,6 +139,7 @@
     <string name="dualpage_key">dualpage_key</string>
     <string name="dualpage_pref_title">Merge Dual Pages</string>
     <string name="dualpage_pref_summary">Merge portrait images when device is landscape</string>
+    <string name="use_thumb">Use as Thumbnail</string>
     <plurals name="delete_archive_count">
         <item quantity="one">Delete %d archive?</item>
         <item quantity="other">Delete %d archives?</item>
