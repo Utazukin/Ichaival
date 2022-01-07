@@ -44,6 +44,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
+import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -682,6 +683,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             if (page < archive!!.numPages - 1) {
                 loadedPages[adapterPage] = 1u
                 notifyItemChanged(adapterPage)
+                if (currentPage == adapterPage)
+                    supportActionBar?.subtitle = subtitle
                 if (page != failPage && adapterPage < loadedPages.size - 1) {
                     loadedPages.add(adapterPage + 1, 1u)
                     notifyItemInserted(adapterPage + 1)
