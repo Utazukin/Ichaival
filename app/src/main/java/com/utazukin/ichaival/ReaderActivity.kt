@@ -27,10 +27,7 @@ import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -77,18 +74,23 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var optionsMenu: Menu? = null
     private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager2
+    private lateinit var pageSeekBar: SeekBar
+    private lateinit var progressEndText: TextView
     private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
     private val retrying = AtomicBoolean()
     private var updateProgressJob: Job? = null
     private var dualPageEnabled = false
+
     private val dualPageAdapter by lazy { ReaderMultiFragmentAdapter() }
     private val pageAdapter by lazy { ReaderFragmentAdapter() }
+
     private val currentAdapter
         get() = imagePager.adapter as? ReaderAdapter<*>
     private val useDoublePage
         get() = dualPageEnabled && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     private val subtitle: String
         get() {
             return archive.let {
@@ -149,6 +151,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         mVisible = true
 
+        pageSeekBar = findViewById(R.id.page_seek_bar)
+        val progressStartText: TextView = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
         imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
         imagePager.offscreenPageLimit = 1
@@ -171,6 +175,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
                 }
 
+                pageSeekBar.progress = currentPage
+                progressStartText.text = (currentPage + 1).toString()
                 currentAdapter?.loadImage(currentPage)
                 supportActionBar?.subtitle = subtitle
                 if (currentAdapter?.containsPage(jumpPage, page) != true)
@@ -191,6 +197,21 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             else -> null
         }
 
+        pageSeekBar.visibility = View.GONE
+        pageSeekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+            private var seekPage = -1
+            override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
+                seekPage = currentAdapter?.getPositionFromPage(progress) ?: 0
+            }
+            override fun onStartTrackingTouch(p0: SeekBar?) { }
+            override fun onStopTrackingTouch(p0: SeekBar?) {
+                if (seekPage > -1)
+                    imagePager.setCurrentItem(seekPage, false)
+                seekPage = -1
+            }
+        })
+
+        progressEndText = findViewById(R.id.txt_progress_end)
         launch {
             archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(arcid) }
             archive?.let {
@@ -206,6 +227,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 jumpPage = currentPage
                 supportActionBar?.subtitle = subtitle
                 setTabbedIcon(ReaderTabHolder.isTabbed(it.id))
+
+                if (it.numPages > 0) {
+                    pageSeekBar.max = it.numPages - 1
+                    progressEndText.text = it.numPages.toString()
+                }
+                progressStartText.text = (currentPage + 1).toString()
+                pageSeekBar.progress = currentPage
+                pageSeekBar.visibility = View.VISIBLE
 
                 val adjustedPage = getAdjustedPage(page)
                 currentAdapter?.loadImage(adjustedPage)
@@ -582,6 +611,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onExtract(id: String, pageCount: Int) {
         if (id != archive?.id || archive?.numPages == currentAdapter?.itemCount)
             return
+
+        pageSeekBar.max = pageCount - 1
+        progressEndText.text = pageCount.toString()
 
         launch {
             pageAdapter.updateLoadedPages(pageCount)
