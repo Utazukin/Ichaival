@@ -94,14 +94,14 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$infoPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
-        response?.run {
-            if (!isSuccessful) {
-                handleErrorMessage(code, errorMessage)
+        response?.use {
+            if (!it.isSuccessful) {
+                handleErrorMessage(it.code, errorMessage)
                 refreshListener?.isRefreshing(false)
                 return null
             }
 
-            val json = body?.use { JSONObject(it.suspendString()) }
+            val json = it.body?.run { JSONObject(suspendString()) }
             refreshListener?.isRefreshing(false)
             return json
         }
@@ -118,11 +118,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$clearTempPath"
         val connection = createServerConnection(url, "DELETE")
         val response = httpClient.newCall(connection).await(errorMessage)
-        with (response) {
-            if (isSuccessful)
+        response.use {
+            if (it.isSuccessful)
                 notify("Temp folder cleared.")
             else
-                handleErrorMessage(code, errorMessage)
+                handleErrorMessage(it.code, errorMessage)
         }
     }
 
@@ -133,14 +133,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$tagsPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        response?.run {
-            if (!isSuccessful)
-                return null
-
-            return body?.use { parseJsonArray(it.suspendString()) }
+        return response?.use {
+            if (!it.isSuccessful)
+                null
+            else
+                it.body?.run { parseJsonArray(suspendString()) }
         }
-
-        return null
     }
 
     suspend fun getCategories() : JSONArray? {
@@ -150,14 +148,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$categoryPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        response?.run {
-            if (!isSuccessful)
-                return null
-
-            return body?.use { parseJsonArray(it.suspendString()) }
+        return response?.use {
+            if (!it.isSuccessful)
+                null
+            else
+                it.body?.run { parseJsonArray(suspendString()) }
         }
-
-        return null
     }
 
     suspend fun deleteArchives(ids: List<String>) : List<String> {
@@ -179,11 +175,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation${deleteArchivePath.format(archiveId)}"
         val connection = createServerConnection(url, "DELETE")
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        return response?.run {
-            if (!isSuccessful)
-                return false
-
-            body?.use { JSONObject(it.suspendString()).optInt("success", 0) } == 1
+        return response?.use {
+            if (!it.isSuccessful)
+                false
+            else
+                it.body?.run { JSONObject(suspendString()).optInt("success", 0) } == 1
         } ?: false
     }
 
@@ -194,7 +190,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
         val connection = createServerConnection(url, "DELETE")
         val response = httpClient.newCall(connection).await("Failed to remove from category.")
-        return response.isSuccessful
+        return response.use { it.isSuccessful }
     }
 
     suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : JSONObject? {
@@ -208,13 +204,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val formBody = builder.build()
         val connection = createServerConnection(url, "PUT", formBody)
         val response = httpClient.newCall(connection).await("Failed to create category.")
-        with (response) {
-            if (!isSuccessful) {
-                notifyError(body?.use { JSONObject(it.suspendString()) }?.optString("error") ?: "Failed to create category.")
+        response.use {
+            if (!it.isSuccessful) {
+                notifyError(it.body?.run { JSONObject(suspendString()) }?.optString("error") ?: "Failed to create category.")
                 return null
             }
 
-            return body?.use { JSONObject(it.suspendString()) }
+            return it.body?.run { JSONObject(suspendString()) }
         }
     }
 
@@ -225,7 +221,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
         val response = httpClient.newCall(connection).await("Failed to add to category.")
-        return response.isSuccessful
+        return response.use { it.isSuccessful }
     }
 
     suspend fun addToCategory(categoryId: String, archiveIds: List<String>) : Boolean {
@@ -239,7 +235,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 async { httpClient.newCall(connection).await() }
             }
 
-            responses.awaitAll().all { it.isSuccessful }
+            responses.awaitAll().all { it.use { res -> res.isSuccessful } }
         }
     }
 
@@ -249,7 +245,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation${progressPath.format(id, page + 1)}"
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
-        httpClient.newCall(connection).await()
+        httpClient.newCall(connection).await(autoClose = true)
     }
 
     fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
@@ -292,11 +288,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        return response?.run {
-            if (!isSuccessful)
+        return response?.use {
+            if (!it.isSuccessful)
                 null
             else
-                body?.use { JSONObject(it.suspendString()) }
+                it.body?.run { JSONObject(suspendString()) }
         }
     }
 
@@ -318,12 +314,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).await()
-        return with(response) {
-            when (code) {
+        return response.use {
+            when (it.code) {
                 200 -> url
                 202 -> {
-                    body?.use {
-                        val json = JSONObject(it.suspendString())
+                    it.body?.run {
+                        val json = JSONObject(suspendString())
                         val job = json.getInt("job")
                         if (waitForJob(job)) url else null
                     }
@@ -352,18 +348,18 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             val updateUrl = url + "?page=${page + 1}"
             val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
             val errorMessage = "Failed to set new thumbnail."
-            tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) } ?: return null
+            tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }?.close() ?: return null
         }
 
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() } ?: return null
-        return with(response) {
-            if (!isSuccessful)
+        return response.use {
+            if (!it.isSuccessful)
                 null
             else {
-                body?.use {
+                it.body?.run {
                     val thumbFile = File(thumbDir, "$id.jpg")
-                    thumbFile.writeBytes(it.suspendBytes())
+                    thumbFile.writeBytes(suspendBytes())
                     thumbFile
                 }
             }
@@ -377,12 +373,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation${minionStatusPath.format(jobId)}"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        response?.run {
-            if (!isSuccessful)
+        response?.use {
+            if (!it.isSuccessful)
                 return false
 
-            body?.use {
-                val json = JSONObject(it.suspendString())
+            it.body?.run {
+                val json = JSONObject(suspendString())
                 return if (json.optString("state") == "finished") {
                     json.optString("result", "") != ""
                 } else null
@@ -409,7 +405,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    private suspend fun Call.await(errorMessage: String? = null, autoCloseBody: Boolean = false) : Response {
+    private suspend fun Call.await(errorMessage: String? = null, autoClose: Boolean = false) : Response {
         return suspendCancellableCoroutine {
             enqueue(object: Callback{
                 override fun onFailure(call: Call, e: IOException) {
@@ -419,10 +415,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    it.invokeOnCancellation { response.body?.close() }
+                    it.invokeOnCancellation { response.close() }
                     it.resume(response)
-                    if (autoCloseBody)
-                        response.body?.close()
+                    if (autoClose)
+                        response.close()
                 }
             })
         }
@@ -453,12 +449,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
-        return response?.run {
-            if (!isSuccessful) {
-                handleErrorMessage(code, errorMessage)
+        return response?.use {
+            if (!it.isSuccessful) {
+                handleErrorMessage(it.code, errorMessage)
                 null
             } else {
-                val jsonString = body?.use { it.suspendString() }
+                val jsonString = it.body?.suspendString()
                 if (jsonString == null) {
                     notifyError(errorMessage)
                     null
@@ -486,7 +482,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation${clearNewPath.format(id)}"
         val connection = createServerConnection(url, "DELETE")
-        httpClient.newCall(connection).await(autoCloseBody = true)
+        httpClient.newCall(connection).await(autoClose = true)
     }
 
     suspend fun downloadArchiveList() : JSONArray? {
@@ -497,13 +493,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$archiveListPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
-        return response?.run {
-            if (!isSuccessful) {
-                handleErrorMessage(code, errorMessage)
+        return response?.use {
+            if (!it.isSuccessful) {
+                handleErrorMessage(it.code, errorMessage)
                 return null
             }
 
-            val jsonString = body?.use { it.suspendString() }
+            val jsonString = it.body?.suspendString()
             if (jsonString != null) {
                 val json = parseJsonArray(jsonString)
                 if (json == null)
