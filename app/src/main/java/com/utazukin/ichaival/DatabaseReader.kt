@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -166,11 +166,11 @@ object DatabaseReader {
         WebHandler.setArchiveNewFlag(id)
     }
 
-    private fun readArchiveList(json: JSONArray, context: Context) : Map<String, ArchiveJson> {
+    private fun readArchiveList(json: JSONArray) : Map<String, ArchiveJson> {
         val length = json.length()
         val archiveList = buildMap(length) {
             for (i in 0 until length) {
-                val archive = ArchiveJson(json.getJSONObject(i), context)
+                val archive = ArchiveJson(json.getJSONObject(i))
                 put(archive.id, archive)
             }
         }
