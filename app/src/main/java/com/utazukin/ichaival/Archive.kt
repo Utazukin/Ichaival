@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ package com.utazukin.ichaival
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 @Entity
@@ -55,6 +57,11 @@ data class Archive (
 
     fun hasPage(page: Int) : Boolean {
         return numPages <= 0 || (page in 0 until numPages)
+    }
+
+    suspend fun clearNewFlag() = withContext(Dispatchers.IO) {
+        DatabaseReader.setArchiveNewFlag(id)
+        isNew = false
     }
 
     suspend fun getPageImage(page: Int) : String? {

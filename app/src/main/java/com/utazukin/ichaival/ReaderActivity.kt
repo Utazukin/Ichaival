@@ -164,20 +164,20 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(page: Int) {
                 currentPage = currentAdapter?.run { getPageFromPosition(getAdjustedPage(page)) } ?: 0
-                archive?.let {
+                archive?.run {
                     launch(Dispatchers.IO) {
-                        if (ReaderTabHolder.updatePageIfTabbed(it.id, currentPage)) {
+                        if (ReaderTabHolder.updatePageIfTabbed(id, currentPage)) {
                             updateProgressJob?.cancel()
-                            DatabaseReader.setArchiveNewFlag(it.id)
+                            clearNewFlag()
                             updateProgressJob = launch {
                                 delay(PROGRESS_UPDATE_DELAY)
-                                WebHandler.updateProgress(it.id, currentPage)
+                                WebHandler.updateProgress(id, currentPage)
                             }
                         }
                     }
-                    val markCompletePage = floor(it.numPages * 0.9f).toInt()
-                    if (it.numPages > 0 && currentPage + 1 == markCompletePage)
-                        launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
+                    val markCompletePage = floor(numPages * 0.9f).toInt()
+                    if (numPages > 0 && currentPage + 1 == markCompletePage && isNew)
+                        launch { clearNewFlag() }
                 }
 
                 pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
