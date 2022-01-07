@@ -101,7 +101,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 return null
             }
 
-            val json = body?.let { JSONObject(it.suspendString()) }
+            val json = body?.use { JSONObject(it.suspendString()) }
             refreshListener?.isRefreshing(false)
             return json
         }
@@ -137,7 +137,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (!isSuccessful)
                 return null
 
-            return body?.let { parseJsonArray(it.suspendString()) }
+            return body?.use { parseJsonArray(it.suspendString()) }
         }
 
         return null
@@ -154,7 +154,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (!isSuccessful)
                 return null
 
-            return body?.let { parseJsonArray(it.suspendString()) }
+            return body?.use { parseJsonArray(it.suspendString()) }
         }
 
         return null
@@ -183,7 +183,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (!isSuccessful)
                 return false
 
-            body?.let { JSONObject(it.suspendString()).optInt("success", 0) } == 1
+            body?.use { JSONObject(it.suspendString()).optInt("success", 0) } == 1
         } ?: false
     }
 
@@ -210,11 +210,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val response = httpClient.newCall(connection).await("Failed to create category.")
         with (response) {
             if (!isSuccessful) {
-                notifyError(body?.suspendString()?.let { JSONObject(it) }?.optString("error") ?: "Failed to create category.")
+                notifyError(body?.use { JSONObject(it.suspendString()) }?.optString("error") ?: "Failed to create category.")
                 return null
             }
 
-            return body?.suspendString()?.let { JSONObject(it) }
+            return body?.use { JSONObject(it.suspendString()) }
         }
     }
 
@@ -294,9 +294,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
         return response?.run {
             if (!isSuccessful)
-                return null
-
-            body?.let { JSONObject(it.suspendString()) }
+                null
+            else
+                body?.use { JSONObject(it.suspendString()) }
         }
     }
 
@@ -304,7 +304,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val jsonPages = response?.optJSONArray("pages")
         if (jsonPages == null) {
             response?.keys()?.next()?.let { notifyError(it) }
-            return listOf()
+            return emptyList()
         }
 
         val count = jsonPages.length()
@@ -322,7 +322,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             when (code) {
                 200 -> url
                 202 -> {
-                    body?.let {
+                    body?.use {
                         val json = JSONObject(it.suspendString())
                         val job = json.getInt("job")
                         if (waitForJob(job)) url else null
@@ -361,7 +361,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (!isSuccessful)
                 null
             else {
-                body?.let {
+                body?.use {
                     val thumbFile = File(thumbDir, "$id.jpg")
                     thumbFile.writeBytes(it.suspendBytes())
                     thumbFile
@@ -381,7 +381,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (!isSuccessful)
                 return false
 
-            body?.let {
+            body?.use {
                 val json = JSONObject(it.suspendString())
                 return if (json.optString("state") == "finished") {
                     json.optString("result", "") != ""
@@ -409,7 +409,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    private suspend fun Call.await(errorMessage: String? = null) : Response {
+    private suspend fun Call.await(errorMessage: String? = null, autoCloseBody: Boolean = false) : Response {
         return suspendCancellableCoroutine {
             enqueue(object: Callback{
                 override fun onFailure(call: Call, e: IOException) {
@@ -419,7 +419,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
+                    it.invokeOnCancellation { response.body?.close() }
                     it.resume(response)
+                    if (autoCloseBody)
+                        response.body?.close()
                 }
             })
         }
@@ -455,7 +458,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 handleErrorMessage(code, errorMessage)
                 null
             } else {
-                val jsonString = body?.suspendString()
+                val jsonString = body?.use { it.suspendString() }
                 if (jsonString == null) {
                     notifyError(errorMessage)
                     null
@@ -483,7 +486,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation${clearNewPath.format(id)}"
         val connection = createServerConnection(url, "DELETE")
-        httpClient.newCall(connection).await()
+        httpClient.newCall(connection).await(autoCloseBody = true)
     }
 
     suspend fun downloadArchiveList() : JSONArray? {
@@ -500,7 +503,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 return null
             }
 
-            val jsonString = body?.suspendString()
+            val jsonString = body?.use { it.suspendString() }
             if (jsonString != null) {
                 val json = parseJsonArray(jsonString)
                 if (json == null)
