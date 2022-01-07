@@ -101,14 +101,11 @@ class ArchiveRecyclerViewAdapter(
             holder.archiveName.text = it.title
             val job = scope.launch(Dispatchers.Main) {
                 val image = withContext(Dispatchers.Default) {
-                    DatabaseReader.getArchiveImage(
-                        it,
-                        holder.mContentView.context)
+                    DatabaseReader.getArchiveImage(it, holder.mContentView.context)
                 }
-                image?.run {
-                    glideManager.load(first)
-                        .signature(ObjectKey(second))
-                        .into(holder.archiveImage)
+                image?.let { pair ->
+                    val (imagePath, modifiedTime) = pair
+                    glideManager.load(imagePath).signature(ObjectKey(modifiedTime)).into(holder.archiveImage)
                 }
             }
             thumbLoadingJobs[holder] = job

@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.signature.ObjectKey
 import kotlinx.coroutines.*
 
 class ReaderTabViewAdapter (
@@ -63,10 +64,14 @@ class ReaderTabViewAdapter (
                     val context = activityScope as Context
                     DatabaseReader.getArchiveImage(item.id, context)
                 }
-                glideManager
-                    .load(thumb)
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .into(holder.thumbView)
+                thumb?.let {
+                    val (thumbPath, modifiedTime) = it
+                    glideManager
+                        .load(thumbPath)
+                        .signature(ObjectKey(modifiedTime))
+                        .transition(DrawableTransitionOptions.withCrossFade())
+                        .into(holder.thumbView)
+                }
             }
 
             with(holder.view) {

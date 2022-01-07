@@ -114,8 +114,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     thumbView.setImageDrawable(null)
                     lifecycleScope.launch {
                         val thumb = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext()) }
-                        thumb?.run {
-                            Glide.with(thumbView).load(first).signature(ObjectKey(second)).dontTransform().into(thumbView)
+                        thumb?.let {
+                            val (imagePath, modifiedTime) = it
+                            Glide.with(thumbView).load(imagePath).signature(ObjectKey(modifiedTime)).dontTransform().into(thumbView)
                         }
                     }
                 }
@@ -286,8 +287,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         thumbLoadJob = lifecycleScope.launch {
             thumbView = view.findViewById(R.id.cover)
             val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
-            thumb?.run {
-                Glide.with(thumbView).load(first).signature(ObjectKey(second)).dontTransform().into(thumbView)
+            thumb?.let {
+                val (thumbPath, modifiedTime) = it
+                Glide.with(thumbView).load(thumbPath).signature(ObjectKey(modifiedTime)).dontTransform().into(thumbView)
             }
         }
     }
