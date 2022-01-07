@@ -78,6 +78,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private lateinit var pageSeekBar: SeekBar
     private lateinit var pageSeekLayout: LinearLayout
     private lateinit var progressEndText: TextView
+    private lateinit var progressStartText: TextView
     private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
@@ -97,7 +98,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         get() {
             return archive.let {
                 if (it != null && it.numPages > 0) {
-                    if (!useDoublePage || currentAdapter?.isSinglePage(currentPage) == true)
+                    if (!useDoublePage || currentAdapter?.run { isSinglePage(getPositionFromPage(currentPage)) } == true)
                         "Page ${currentPage + 1}/${it.numPages}"
                     else
                         "Pages ${currentPage + 1}-${currentPage + 2}/${it.numPages}"
@@ -155,7 +156,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         pageSeekBar = findViewById(R.id.page_seek_bar)
         pageSeekLayout = findViewById(R.id.page_seek_layout)
-        val progressStartText: TextView = findViewById(R.id.txt_progress_start)
+        pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout, R.attr.cardBackgroundColor))
+        progressStartText = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
         imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
         imagePager.offscreenPageLimit = 1
@@ -178,8 +180,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         launch(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it.id) }
                 }
 
-                pageSeekBar.progress = currentPage
-                progressStartText.text = (currentPage + 1).toString()
+                pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
+                progressStartText.text = if (currentAdapter?.isSinglePage(page) != false) (currentPage + 1).toString() else (currentPage + 2).toString()
                 currentAdapter?.loadImage(currentPage)
                 supportActionBar?.subtitle = subtitle
                 if (currentAdapter?.containsPage(jumpPage, page) != true)
@@ -237,8 +239,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     if (mVisible)
                         pageSeekLayout.visibility = View.VISIBLE
                 }
-                progressStartText.text = (currentPage + 1).toString()
-                pageSeekBar.progress = currentPage
+                pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
+                progressStartText.text = if (currentAdapter?.isSinglePage(page) != false) (currentPage + 1).toString() else (currentPage + 2).toString()
 
                 val adjustedPage = getAdjustedPage(page)
                 currentAdapter?.loadImage(adjustedPage)
@@ -616,7 +618,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     fun onMergeFailed(page: Int, failPage: Int) {
-        dualPageAdapter.onMergeFailed(page, failPage)
+        if (dualPageAdapter.onMergeFailed(page, failPage)) {
+            supportActionBar?.subtitle = subtitle
+            pageSeekBar.progress = currentPage
+            progressStartText.text = (currentPage + 1).toString()
+        }
         if (jumpPage >= 0 && dualPageAdapter.getPositionFromPage(jumpPage) != imagePager.currentItem)
             imagePager.setCurrentItem(dualPageAdapter.getPositionFromPage(jumpPage), false)
     }
@@ -678,18 +684,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         override fun isPageLoaded(page: Int) = loadedPages[page] != 0u
 
-        fun onMergeFailed(page: Int, failPage: Int) {
+        fun onMergeFailed(page: Int, failPage: Int): Boolean {
             val adapterPage = getPositionFromPage(page)
             if (page < archive!!.numPages - 1) {
                 loadedPages[adapterPage] = 1u
                 notifyItemChanged(adapterPage)
-                if (currentPage == adapterPage)
-                    supportActionBar?.subtitle = subtitle
+
                 if (page != failPage && adapterPage < loadedPages.size - 1) {
                     loadedPages.add(adapterPage + 1, 1u)
                     notifyItemInserted(adapterPage + 1)
-                }
-                if (loadedPages.size < archive!!.numPages) {
+                } else if (loadedPages.size < archive!!.numPages) {
                     val last = loadedPages.size - 1
                     if (loadedPages[last] == 1u && adapterPage != last) {
                         ++loadedPages[last]
@@ -703,6 +707,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 loadedPages[adapterPage] = 1u
                 notifyItemChanged(adapterPage)
             }
+
+            return adapterPage == getPositionFromPage(currentPage)
         }
 
         override fun adjustLoadedPages(page: Int): Int {
@@ -743,10 +749,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             return pageSum.toInt()
         }
 
-        override fun isSinglePage(position: Int): Boolean {
-            val page = getPositionFromPage(position)
-            return page >= 0 && page < loadedPages.size && loadedPages[page] == 1u
-        }
+        override fun isSinglePage(position: Int) = position >= 0 && position < loadedPages.size && loadedPages[position] == 1u
+
         @SuppressLint("NotifyDataSetChanged")
         override fun updateLoadedPages(pageCount: Int) {
             val count = ceil(pageCount / 2f).toInt()
