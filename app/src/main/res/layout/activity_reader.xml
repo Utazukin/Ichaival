@@ -65,7 +65,9 @@
             android:layout_marginStart="10dp"
             android:layout_marginEnd="10dp"
             android:layout_marginBottom="50dp"
-            android:orientation="horizontal">
+            android:background="@color/dark_gray"
+            android:orientation="horizontal"
+            android:padding="5dp">
 
             <TextView
                 android:id="@+id/txt_progress_start"
