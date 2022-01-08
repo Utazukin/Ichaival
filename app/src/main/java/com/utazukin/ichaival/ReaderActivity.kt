@@ -169,18 +169,19 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             override fun onPageSelected(page: Int) {
                 currentPage = currentAdapter?.run { getPageFromPosition(getAdjustedPage(page)) } ?: 0
                 archive?.run {
+                    val current = this@ReaderActivity.currentPage
                     launch(Dispatchers.IO) {
-                        if (ReaderTabHolder.updatePageIfTabbed(id, currentPage)) {
+                        if (ReaderTabHolder.updatePageIfTabbed(id, current)) {
                             updateProgressJob?.cancel()
                             clearNewFlag()
                             updateProgressJob = launch {
                                 delay(PROGRESS_UPDATE_DELAY)
-                                WebHandler.updateProgress(id, currentPage)
+                                WebHandler.updateProgress(id, current)
                             }
                         }
                     }
                     val markCompletePage = floor(numPages * 0.9f).toInt()
-                    if (numPages > 0 && currentPage + 1 == markCompletePage && isNew)
+                    if (numPages > 0 && current + 1 == markCompletePage && isNew)
                         launch { clearNewFlag() }
                 }
 
