@@ -41,6 +41,7 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.*
 import java.io.File
+import kotlin.math.ceil
 import kotlin.math.max
 
 class ReaderMultiPageFragment : Fragment(), PageFragment {
@@ -164,26 +165,36 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     .downloadOnly()
                     .load(imagePath)
                     .submit()
-                val dtarget = async { target.get() }
                 val otherTarget = Glide.with(requireActivity())
                     .downloadOnly()
                     .load(otherImage)
                     .submit()
-                val dotherTarget = async { otherTarget.get() }
                 progressBar.isIndeterminate = false
                 progressBar.progress = 0
 
+                val dtarget = async { tryOrNull { target.get() } }
+                val dotherTarget = async { tryOrNull { otherTarget.get() } }
+
                 val dfile = dtarget.await()
+                if (dfile == null) {
+                    displaySingleImage(image, page)
+                    return@launch
+                }
                 progressBar.progress = 45
+
                 val dotherFile = dotherTarget.await()
+                if (dotherFile == null) {
+                    displaySingleImage(image, page)
+                    return@launch
+                }
                 progressBar.progress = 90
 
                 dfile.inputStream().use { file ->
                     dotherFile.inputStream().use { otherFile ->
                         val bytes = file.readBytes()
-                        val img = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        var img = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                         val otherBytes = otherFile.readBytes()
-                        val otherImg = BitmapFactory.decodeByteArray(otherBytes, 0, otherBytes.size)
+                        var otherImg = BitmapFactory.decodeByteArray(otherBytes, 0, otherBytes.size)
                         if (img.width > img.height || otherImg.width > otherImg.height) {
                             yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
@@ -192,6 +203,21 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             pool.put(otherImg)
                             withContext(Dispatchers.Main) { displaySingleImage(image, if (otherImageFail) otherPage else page) }
                         } else {
+                            //Scale one of the images to match the smaller one if their heights differ too much.
+                            if (img.height - otherImg.height > 100) {
+                                val ar = otherImg.width / otherImg.height.toFloat()
+                                val width = ceil(img.height * ar).toInt()
+                                val scaled = Bitmap.createScaledBitmap(otherImg, width, img.height, true)
+                                otherImg.recycle()
+                                otherImg = scaled
+                            } else if (otherImg.height < img.height - 100) {
+                                val ar = img.width / img.height.toFloat()
+                                val width = ceil(otherImg.height * ar).toInt()
+                                val scaled = Bitmap.createScaledBitmap(img, width, otherImg.height, true)
+                                img.recycle()
+                                img = scaled
+                            }
+
                             val merged = tryOrNull { mergeBitmaps(img, otherImg, false, requireContext().cacheDir) }
                             yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
@@ -240,7 +266,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         canvas.drawColor(Color.WHITE)
         val upperPart = Rect(
             if (isLTR) 0 else width2,
-            (maxHeight - imageBitmap.height) / 2,
+            0,
             (if (isLTR) 0 else width2) + imageBitmap.width,
             imageBitmap.height + (maxHeight - imageBitmap.height) / 2
         )
@@ -248,7 +274,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         progressBar.progress = 95
         val bottomPart = Rect(
             if (!isLTR) 0 else width,
-            (maxHeight - imageBitmap2.height) / 2,
+            0,
             (if (!isLTR) 0 else width) + imageBitmap2.width,
             imageBitmap2.height + (maxHeight - imageBitmap2.height) / 2
         )
