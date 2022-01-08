@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2019 Utazukin
+  ~ Copyright (C) 2022 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -20,5 +20,6 @@
 <resources>
     <dimen name="text_margin">16dp</dimen>
     <dimen name="status_bar_height">24dp</dimen>
+    <dimen name="seek_bar_margin">20dp</dimen>
     <dimen name="ic_clear_margin">16dp</dimen>
 </resources>
