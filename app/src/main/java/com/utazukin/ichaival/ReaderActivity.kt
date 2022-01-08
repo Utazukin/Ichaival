@@ -214,13 +214,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             private var seekPage = -1
             override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
                 seekPage = currentAdapter?.getPositionFromPage(progress) ?: 0
-                progressStartText.text = (seekPage + 1).toString()
+                currentAdapter?.run { progressStartText.text = (getPageFromPosition(seekPage) + 1).toString() }
             }
-            override fun onStartTrackingTouch(p0: SeekBar?) { }
+            override fun onStartTrackingTouch(p0: SeekBar?) { switchLayoutJob?.cancel() }
             override fun onStopTrackingTouch(p0: SeekBar?) {
                 if (seekPage > -1)
                     imagePager.setCurrentItem(seekPage, false)
                 seekPage = -1
+                delayedHide(autoHideDelay)
             }
         })
 
