@@ -124,6 +124,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
+        pageSeekLayout = findViewById(R.id.page_seek_layout)
         ViewCompat.setOnApplyWindowInsetsListener(appBar) { _, insets ->
             var params = FrameLayout.LayoutParams(appBar.layoutParams)
             var safeTop = insets.displayCutout?.safeInsetTop ?: 0
@@ -135,6 +136,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
             params.setMargins(params.leftMargin, safeTop, safeRight, params.bottomMargin)
             appBar.layoutParams = params
+
+            params = pageSeekLayout.layoutParams as FrameLayout.LayoutParams
+            params.setMargins(params.leftMargin, params.topMargin, max(safeRight, params.leftMargin), params.bottomMargin)
+            pageSeekLayout.layoutParams = params
 
             val bookmarkView: LinearLayout = findViewById(R.id.bookmark_list_layout)
             params = FrameLayout.LayoutParams(bookmarkView.layoutParams)
@@ -155,7 +160,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mVisible = true
 
         pageSeekBar = findViewById(R.id.page_seek_bar)
-        pageSeekLayout = findViewById(R.id.page_seek_layout)
         pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout, R.attr.cardBackgroundColor))
         progressStartText = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
