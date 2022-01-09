@@ -30,6 +30,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
+import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
@@ -75,7 +76,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS)
         .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
-        .dispatcher(Dispatcher().apply { maxRequests = 10 })
+        .dispatcher(Dispatcher().apply { maxRequests = 20 })
         .build()
 
     var verboseMessages = false
@@ -316,8 +317,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val response = httpClient.newCall(connection).await()
         return response.use {
             when (it.code) {
-                200 -> url
-                202 -> {
+                HttpURLConnection.HTTP_OK -> url
+                HttpURLConnection.HTTP_ACCEPTED -> {
                     it.body?.run {
                         val json = JSONObject(suspendString())
                         val job = json.getInt("job")
@@ -332,7 +333,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private suspend fun waitForJob(jobId: Int): Boolean {
         var jobComplete: Boolean?
         do {
-            delay(1000)
+            delay(500)
             jobComplete = checkJobStatus(jobId)
         } while (jobComplete == null)
 
@@ -379,11 +380,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
             it.body?.run {
                 val json = JSONObject(suspendString())
-                return if (json.optString("state") == "finished") {
-                    json.optString("result", "") != ""
-                } else null
+                return when(json.optString("state")) {
+                    "finished" -> true
+                    "failed" -> false
+                    else -> null
+                }
             }
-
         }
 
         return false
@@ -399,6 +401,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
+                    it.invokeOnCancellation { response.close() }
                     it.resume(response)
                 }
             })
@@ -416,9 +419,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
                 override fun onResponse(call: Call, response: Response) {
                     it.invokeOnCancellation { response.close() }
-                    it.resume(response)
                     if (autoClose)
-                        response.close()
+                        response.use { res -> it.resume(res) }
+                    else
+                        it.resume(response)
                 }
             })
         }
