@@ -71,16 +71,22 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
         topLayout = view.findViewById(R.id.reader_layout)
         pageNum = view.findViewById(R.id.page_num)
-        pageNum.text = "${page + 1}-${otherPage + 1}"
-        pageNum.visibility = View.VISIBLE
+        with (pageNum) {
+            text = "${page + 1}-${otherPage + 1}"
+            visibility = View.VISIBLE
+        }
 
         progressBar = view.findViewById(R.id.progressBar)
-        progressBar.isIndeterminate = true
-        progressBar.visibility = View.VISIBLE
+        with(progressBar) {
+            isIndeterminate = true
+            visibility = View.VISIBLE
+        }
 
         //Tapping the view will display the toolbar until the image is displayed.
-        view.setOnClickListener { listener?.onFragmentTap(TouchZone.Center) }
-        view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
+        with(view) {
+            setOnClickListener { listener?.onFragmentTap(TouchZone.Center) }
+            setOnLongClickListener { listener?.onFragmentLongPress() == true }
+        }
 
         imagePath?.let { displayImage(it, otherImagePath) }
 
@@ -90,20 +96,21 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupImageTapEvents(view: View) {
-        if (view is SubsamplingScaleImageView) {
-            val gestureDetector =
-                GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                    override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-                        if (view.isReady && e != null)
-                            listener?.onFragmentTap(getTouchZone(e.x, view))
-                        return true
-                    }
-                })
+        when (view) {
+            is SubsamplingScaleImageView -> {
+                val gestureDetector =
+                    GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                        override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+                            if (view.isReady && e != null)
+                                listener?.onFragmentTap(getTouchZone(e.x, view))
+                            return true
+                        }
+                    })
 
-            view.setOnTouchListener { _, e -> gestureDetector.onTouchEvent(e) }
+                view.setOnTouchListener { _, e -> gestureDetector.onTouchEvent(e) }
+            }
+            is PhotoView -> view.setOnViewTapListener { _, x, _ -> listener?.onFragmentTap(getTouchZone(x, view)) }
         }
-        else if (view is PhotoView)
-            view.setOnViewTapListener { _, x, _ -> listener?.onFragmentTap(getTouchZone(x, view)) }
 
         view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
     }
@@ -204,13 +211,13 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             withContext(Dispatchers.Main) { displaySingleImage(image, if (otherImageFail) otherPage else page) }
                         } else {
                             //Scale one of the images to match the smaller one if their heights differ too much.
-                            if (img.height - otherImg.height > 100) {
+                            if (img.height - otherImg.height < -100) {
                                 val ar = otherImg.width / otherImg.height.toFloat()
                                 val width = ceil(img.height * ar).toInt()
                                 val scaled = Bitmap.createScaledBitmap(otherImg, width, img.height, true)
                                 otherImg.recycle()
                                 otherImg = scaled
-                            } else if (otherImg.height < img.height - 100) {
+                            } else if (otherImg.height - img.height < -100) {
                                 val ar = img.width / img.height.toFloat()
                                 val width = ceil(otherImg.height * ar).toInt()
                                 val scaled = Bitmap.createScaledBitmap(img, width, otherImg.height, true)
@@ -329,12 +336,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     }
 
     override fun reloadImage() {
-        reloadImage(false)
-    }
-
-    private fun reloadImage(forceSingle: Boolean) {
-        if (forceSingle)
-            otherImagePath = null
         imagePath?.let { displayImage(it, otherImagePath) }
     }
 
@@ -426,16 +427,17 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        val activity = context as ReaderActivity
-        listener = activity
+        (context as ReaderActivity).let {
+            listener = it
 
-        activity.registerPage(this)
-        activity.archive?.let { onArchiveLoad(it) }
+            it.registerPage(this)
+            it.archive?.let { a -> onArchiveLoad(a) }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.run {
+        with(outState) {
             putInt("page", page)
             putString("pagePath", imagePath)
         }
