@@ -95,15 +95,16 @@ object ServerManager {
     suspend fun generateTagSuggestions() {
         if (tagSuggestions.isEmpty()) {
             WebHandler.generateSuggestionList()?.let {
-                tagSuggestions = Array(it.length()) { i ->
-                    val item = it.getJSONObject(i)
-                    TagSuggestion(
-                        item.getString("text"),
-                        item.getString("namespace"),
-                        item.getInt("weight")
-                    )
+                val length = it.length()
+                val suggestions = buildList(length) {
+                    for (i in 0 until length) {
+                        val item = it.getJSONObject(i)
+                        val namespace = item.getString("namespace")
+                        if (namespace != "date_added" && namespace != "source")
+                            add(TagSuggestion(item.getString("text"), namespace, item.getInt("weight")))
+                    }
                 }
-                tagSuggestions = tagSuggestions.sortedByDescending { tag -> tag.weight }.toTypedArray()
+                tagSuggestions = suggestions.sortedByDescending { tag -> tag.weight }.toTypedArray()
             }
         }
     }
