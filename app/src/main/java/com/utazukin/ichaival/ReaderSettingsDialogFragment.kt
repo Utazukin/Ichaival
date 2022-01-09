@@ -55,14 +55,16 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
         val bookmarkButton: Button = view.findViewById(R.id.bookmark_button)
         val randomButton: Button = view.findViewById(R.id.random_archive_button)
 
+        if (!ServerManager.checkVersionAtLeast(0, 8, 4))
+            thumbButton.visibility = View.GONE
+
         detailsButton.setOnClickListener{ handler?.handleButton(R.id.detail_button) }
         gotoButton.setOnClickListener { handler?.handleButton(R.id.goto_button) }
         thumbButton.setOnClickListener { handler?.handleButton(R.id.thumb_button) }
         refreshButton.setOnClickListener{ handler?.handleButton(R.id.refresh_button) }
         bookmarkButton.setOnClickListener { handler?.handleButton(R.id.bookmark_button) }
         randomButton.setOnClickListener { handler?.handleButton(R.id.random_archive_button) }
-        val dialog = requireDialog() as BottomSheetDialog
-        dialog.dismissWithAnimation = true
+        with(requireDialog() as BottomSheetDialog) { dismissWithAnimation = true }
 
         return view
     }
