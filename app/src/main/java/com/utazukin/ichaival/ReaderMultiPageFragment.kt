@@ -188,7 +188,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
                 val dotherFile = dotherTarget.await()
                 if (dotherFile == null) {
-                    displaySingleImage(image, page)
+                    displaySingleImageMain(image, page)
                     return@launch
                 }
                 progressBar.progress = 90
