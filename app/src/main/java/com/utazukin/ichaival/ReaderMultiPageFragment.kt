@@ -115,6 +115,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
     }
 
+    private suspend fun displaySingleImageMain(image: String, failPage: Int) = withContext(Dispatchers.Main) { displaySingleImage(image, failPage) }
+
     private fun displaySingleImage(image: String, failPage: Int) {
         with(activity as ReaderActivity) { onMergeFailed(page, failPage) }
         pageNum.text = (page + 1).toString()
@@ -123,12 +125,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 initializeView(it)
                 Glide.with(requireActivity())
                     .load(image)
-                    .apply(
-                        RequestOptions().override(
-                            Target.SIZE_ORIGINAL,
-                            Target.SIZE_ORIGINAL
-                        )
-                    )
+                    .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
                     .addListener(getListener())
                     .into(ProgressTarget(image, DrawableImageViewTarget(it), progressBar))
             }
@@ -184,7 +181,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
                 val dfile = dtarget.await()
                 if (dfile == null) {
-                    displaySingleImage(image, page)
+                    displaySingleImageMain(image, page)
                     return@launch
                 }
                 progressBar.progress = 45
@@ -199,17 +196,19 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 dfile.inputStream().use { file ->
                     dotherFile.inputStream().use { otherFile ->
                         val bytes = file.readBytes()
-                        var img = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        var img = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inMutable = true })
                         if (img == null) {
-                            displaySingleImage(image, page)
+                            displaySingleImageMain(image, page)
                             return@launch
                         }
+
                         val otherBytes = otherFile.readBytes()
-                        var otherImg = BitmapFactory.decodeByteArray(otherBytes, 0, otherBytes.size)
+                        var otherImg = BitmapFactory.decodeByteArray(otherBytes, 0, otherBytes.size, BitmapFactory.Options().apply { inMutable = true })
                         if (otherImg == null) {
+                            yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
                             pool.put(img)
-                            displaySingleImage(image, otherPage)
+                            displaySingleImageMain(image, otherPage)
                             return@launch
                         }
 
@@ -219,7 +218,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             val otherImageFail = otherImg.width > otherImg.height
                             pool.put(img)
                             pool.put(otherImg)
-                            withContext(Dispatchers.Main) { displaySingleImage(image, if (otherImageFail) otherPage else page) }
+                            displaySingleImageMain(image, if (otherImageFail) otherPage else page)
                         } else {
                             //Scale one of the images to match the smaller one if their heights differ too much.
                             if (img.height - otherImg.height < -100) {
@@ -243,7 +242,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             pool.put(otherImg)
                             if (merged == null) {
                                 progressBar.isIndeterminate = true
-                                displaySingleImage(image, page)
+                                displaySingleImageMain(image, page)
                             } else {
                                 progressBar.progress = 100
 
@@ -300,7 +299,9 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         progressBar.progress = 99
 
         val merged = saveMergedPath(cacheDir, result, archiveId!!, page, otherPage)
-        result.recycle()
+        yield()
+        val pool = Glide.get(requireActivity()).bitmapPool
+        pool.put(result)
         return merged
     }
 
