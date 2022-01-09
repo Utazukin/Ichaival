@@ -72,6 +72,9 @@ interface ArchiveDao {
     @Query("Select title from archive where id = :id limit 1")
     fun getArchiveTitle(id: String) : String?
 
+    @Query("update archive set pageCount = :pageCount where id = :id and pageCount <= 0")
+    fun updatePageCount(id: String, pageCount: Int)
+
     @Query("Update archive set isNew = :isNew where id = :id")
     fun updateNewFlag(id: String, isNew: Boolean)
 

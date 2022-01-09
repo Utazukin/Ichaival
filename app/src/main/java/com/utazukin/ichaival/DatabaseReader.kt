@@ -112,6 +112,7 @@ object DatabaseReader {
         mutex.withLock {
             val pages = archivePageMap.getOrPut(id) {
                 val p = WebHandler.getPageList(WebHandler.extractArchive(id))
+                database.archiveDao().updatePageCount(id, p.size)
                 notifyExtractListeners(id, p.size)
                 p
             }
