@@ -200,8 +200,19 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     dotherFile.inputStream().use { otherFile ->
                         val bytes = file.readBytes()
                         var img = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        if (img == null) {
+                            displaySingleImage(image, page)
+                            return@launch
+                        }
                         val otherBytes = otherFile.readBytes()
                         var otherImg = BitmapFactory.decodeByteArray(otherBytes, 0, otherBytes.size)
+                        if (otherImg == null) {
+                            val pool = Glide.get(requireActivity()).bitmapPool
+                            pool.put(img)
+                            displaySingleImage(image, otherPage)
+                            return@launch
+                        }
+
                         if (img.width > img.height || otherImg.width > otherImg.height) {
                             yield()
                             val pool = Glide.get(requireActivity()).bitmapPool
