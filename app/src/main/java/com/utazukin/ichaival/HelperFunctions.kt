@@ -24,16 +24,10 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.preference.PreferenceManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
 import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.egl.EGLContext
-import kotlin.io.path.Path
-import kotlin.io.path.moveTo
 import kotlin.math.max
 import kotlin.math.min
 
@@ -87,90 +81,6 @@ fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
 
 val Bitmap.rect: Rect
     get() = Rect(0, 0, width, height)
-
-private const val mergedPagePath = "merged_pages"
-private const val mergedPageTrashPath = "merged_page_trash"
-private const val maxCacheSize = 250 * 1024 * 1024
-
-@Suppress("BlockingMethodInNonBlockingContext")
-suspend fun getMergedPage(cacheDir: File, archiveId: String, page: Int, otherPage: Int) : String? {
-    val mergedDir = File(cacheDir, mergedPagePath)
-    if (!mergedDir.exists()) {
-        mergedDir.mkdir()
-        return null
-    }
-    val filename = "$archiveId-$page-$otherPage.png"
-    val file = File(mergedDir, filename)
-    if (!file.exists()) {
-        val trashDir = File(cacheDir, mergedPageTrashPath)
-        if (!trashDir.exists())
-            return null
-        val trashFile = File(trashDir, filename)
-        if (!trashFile.exists())
-            return null
-        val t = Path(trashFile.path)
-        withContext(Dispatchers.IO) { t.moveTo(Path(file.path)) }
-    }
-
-    return file.path
-}
-
-@Suppress("BlockingMethodInNonBlockingContext")
-suspend fun saveMergedPath(cacheDir: File, image: Bitmap, archiveId: String, page: Int, otherPage: Int) : String {
-    val filename = "$archiveId-$page-$otherPage.png"
-    val mergedDir = File(cacheDir, mergedPagePath)
-    if (!mergedDir.exists())
-        mergedDir.mkdir()
-
-    var cacheSize = mergedDir.listFiles()?.filterNotNull()?.sumOf { it.length() } ?: 0
-
-    val trashDir = File(cacheDir, mergedPageTrashPath)
-    if (trashDir.exists()) {
-        val trashFiles = trashDir.listFiles()
-        trashFiles?.let {
-            cacheSize += it.filterNotNull().sumOf { f -> f.length() }
-
-            if (cacheSize >= maxCacheSize) {
-                for (f in it)
-                    f.deleteRecursively()
-            }
-        }
-    }
-
-    val file = File(mergedDir, filename)
-    withContext(Dispatchers.IO) {
-        FileOutputStream(file.path).use {
-            image.compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
-    }
-
-    return file.path
-}
-
-@Suppress("BlockingMethodInNonBlockingContext")
-suspend fun trashMergedPage(cacheDir: File, archiveId: String, page: Int, otherPage: Int) = withContext(Dispatchers.IO) {
-    val filename = "$archiveId-$page-$otherPage.png"
-    val trashDir = File(cacheDir, mergedPageTrashPath)
-    if (!trashDir.exists())
-        trashDir.mkdir()
-    val trashFile = File(trashDir, filename)
-    val mergedDir = File(cacheDir, mergedPagePath)
-    val file = File(mergedDir, filename)
-    if (file.exists()) {
-        val path = Path(file.path)
-        path.moveTo(Path(trashFile.path))
-    }
-}
-
-suspend fun clearMergedPages(cacheDir: File) = withContext(Dispatchers.IO) {
-    val trashDir = File(cacheDir, mergedPageTrashPath)
-    val mergedDir = File(cacheDir, mergedPagePath)
-
-    if (trashDir.exists())
-        trashDir.deleteRecursively()
-    if (mergedDir.exists())
-        mergedDir.deleteRecursively()
-}
 
 inline fun <T> tryOrNull(body: () -> T) : T? {
     return try {

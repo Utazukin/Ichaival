@@ -27,9 +27,10 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.core.app.ShareCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
 import com.bumptech.glide.Glide
-import kotlinx.coroutines.CoroutineScope
+import com.bumptech.glide.load.engine.cache.DiskCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,6 +72,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
+        val cachePref: Preference? = findPreference(getString(R.string.local_cache_pref))
+        cachePref?.let { setupCachePref(it) }
+
+        val compressPref: Preference? = findPreference(getString(R.string.compression_type_pref))
+        bindPreferenceSummaryToValue(compressPref)
+
         val licensePref: Preference? = findPreference(getString(R.string.license_key))
         licensePref?.setOnPreferenceClickListener {
             startWebActivity("file:////android_asset/licenses.html")
@@ -100,19 +107,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val tempPref: Preference? = findPreference(getString(R.string.temp_folder_pref))
         tempPref?.setOnPreferenceClickListener {
-            with(activity as CoroutineScope) {
-                launch(Dispatchers.IO) {
-                    WebHandler.clearTempFolder()
-                    if (!ServerManager.checkVersionAtLeast(0, 8, 2))
-                        DatabaseReader.invalidateImageCache()
-                    with(Glide.get(requireContext())) {
-                        withContext(Dispatchers.Main) { clearMemory() }
-                        clearDiskCache()
-                    }
-                    clearMergedPages(requireContext().cacheDir)
+            lifecycleScope.launch(Dispatchers.IO) {
+                WebHandler.clearTempFolder()
+                if (!ServerManager.checkVersionAtLeast(0, 8, 2))
+                    DatabaseReader.invalidateImageCache()
+                with(Glide.get(requireContext())) {
+                    withContext(Dispatchers.Main) { clearMemory() }
+                    clearDiskCache()
                 }
-                true
+                DualPageHelper.clearMergedPages(requireContext().cacheDir)
             }
+            true
         }
 
         val saveLogPref: LongClickPreference? = findPreference(getString(R.string.log_save_pref))
@@ -138,6 +143,36 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     true
                 } else false
             }
+        }
+    }
+
+    private fun setupCachePref(cachePref: Preference) {
+        cachePref.setOnPreferenceClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                DualPageHelper.clearMergedPages(requireContext().cacheDir)
+                with(Glide.get(requireContext())) {
+                    clearDiskCache()
+                    withContext(Dispatchers.Main) { clearMemory() }
+                }
+            }
+            cachePref.summary = "0 MB"
+            true
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            var size = DualPageHelper.getCacheSize(requireContext().cacheDir)
+            val glideCache = File(requireContext().cacheDir, DiskCache.Factory.DEFAULT_DISK_CACHE_DIR)
+            size += calculateCacheSize(glideCache)
+            size = size / 1024 / 1024
+            withContext(Dispatchers.Main) { cachePref.summary = "$size MB" }
+        }
+    }
+
+    private fun calculateCacheSize(file: File?) : Long {
+        return when {
+            file == null -> 0
+            !file.isDirectory -> file.length()
+            else -> file.listFiles()?.sumOf { calculateCacheSize(it) } ?: 0
         }
     }
 

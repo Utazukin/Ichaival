@@ -111,6 +111,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        launch { DualPageHelper.trashMergedPages(cacheDir) }
+
         retryCount = 0
         setContentView(R.layout.activity_reader)
         val appBar: Toolbar = findViewById(R.id.reader_toolbar)
@@ -601,6 +603,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         super.onResume()
         if (autoHideEnabled)
             delayedHide(100)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        archive?.run {
+            val cacheDir = cacheDir
+            GlobalScope.launch { DualPageHelper.trashMergedPages(cacheDir, id) }
+        }
     }
 
     override fun onImageLoadError(fragment: PageFragment) : Boolean {

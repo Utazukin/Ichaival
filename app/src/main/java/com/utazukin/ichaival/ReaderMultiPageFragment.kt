@@ -29,6 +29,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -43,6 +44,24 @@ import kotlinx.coroutines.*
 import java.io.File
 import kotlin.math.ceil
 import kotlin.math.max
+
+enum class PageCompressFormat {
+    JPEG,
+    PNG;
+
+    companion object {
+        fun PageCompressFormat.toBitmapFormat() : Bitmap.CompressFormat {
+            return if (this == JPEG) Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG
+        }
+
+        fun fromString(format: String?, context: Context?) : PageCompressFormat {
+            return when(format) {
+                context?.getString(R.string.jpg_compress) -> JPEG
+                else -> PNG
+            }
+        }
+    }
+}
 
 class ReaderMultiPageFragment : Fragment(), PageFragment {
     private var listener: ReaderFragment.OnFragmentInteractionListener? = null
@@ -141,13 +160,13 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     .load(image)
                     .addListener(getListener(false))
                     .into(
-                        ProgressTarget(
-                            image,
-                            SubsamplingTarget(it, !image.endsWith(".webp")) {
+                        ProgressTarget(image, SubsamplingTarget(it, !image.endsWith(".webp")) {
                                 pageNum.visibility = View.GONE
                                 progressBar.visibility = View.GONE
-                                view?.setOnClickListener(null)
-                                view?.setOnLongClickListener(null)
+                                view?.run {
+                                    setOnClickListener(null)
+                                    setOnLongClickListener(null)
+                                }
                                 updateScaleType(it, currentScaleType)
                             },
                             progressBar
@@ -157,128 +176,146 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         }.also { setupImageTapEvents(it) }
     }
 
+    private fun createImageView(mergedPath: String, useNewDecoder: Boolean) {
+        mainImage = SubsamplingScaleImageView(activity).apply {
+            if (useNewDecoder) {
+                setBitmapDecoderClass(ImageDecoder::class.java)
+                setRegionDecoderClass(ImageRegionDecoder::class.java)
+            }
+            setOnImageEventListener(object: SubsamplingScaleImageView.OnImageEventListener {
+                override fun onReady() {
+                    pageNum.visibility = View.GONE
+                    progressBar.visibility = View.GONE
+
+                    view?.run {
+                        setOnClickListener(null)
+                        setOnLongClickListener(null)
+                    }
+                }
+                override fun onImageLoaded() {}
+                override fun onPreviewLoadError(e: Exception?) {}
+                override fun onImageLoadError(e: Exception?) {}
+                override fun onTileLoadError(e: Exception?) {}
+                override fun onPreviewReleased() {}
+            })
+            initializeView(this)
+            setMaxTileSize(getMaxTextureSize())
+            setMinimumTileDpi(160)
+            setImage(ImageSource.uri(mergedPath))
+            setupImageTapEvents(this)
+        }
+    }
+
     private fun displayImage(image: String, otherImage: String?) {
         imagePath = image
         otherImagePath = otherImage
 
-        if (otherImage == null || image.endsWith(".gif"))
+        if (otherImage == null || image.endsWith(".gif")) {
             displaySingleImage(image, page)
-        else {
-            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                val target = Glide.with(requireActivity())
-                    .downloadOnly()
-                    .load(imagePath)
-                    .submit()
-                val otherTarget = Glide.with(requireActivity())
-                    .downloadOnly()
-                    .load(otherImage)
-                    .submit()
-                progressBar.isIndeterminate = false
-                progressBar.progress = 0
+            return
+        }
 
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val compressString = PreferenceManager.getDefaultSharedPreferences(requireContext()).getString(getString(R.string.compression_type_pref), getString(R.string.jpg_compress))
+            val compressType = PageCompressFormat.fromString(compressString, requireContext())
+            val mergedPath = DualPageHelper.getMergedPage(requireContext().cacheDir, archiveId!!, page, otherPage, compressType)
+            if (mergedPath != null) {
+                withContext(Dispatchers.Main) { createImageView(mergedPath, !image.endsWith(".webp")) }
+                return@launch
+            }
+
+            val target = Glide.with(requireActivity())
+                .asBitmap()
+                .load(imagePath)
+                .submit()
+            val otherTarget = Glide.with(requireActivity())
+                .asBitmap()
+                .load(otherImage)
+                .submit()
+            progressBar.isIndeterminate = false
+            progressBar.progress = 15
+
+            try {
                 val dtarget = async { tryOrNull { target.get() } }
                 val dotherTarget = async { tryOrNull { otherTarget.get() } }
 
-                val dfile = dtarget.await()
-                if (dfile == null) {
+                val img = dtarget.await()
+                if (img == null) {
                     displaySingleImageMain(image, page)
                     return@launch
                 }
                 progressBar.progress = 45
 
-                val dotherFile = dotherTarget.await()
-                if (dotherFile == null) {
-                    displaySingleImageMain(image, page)
+                val otherImg = dotherTarget.await()
+                if (otherImg == null) {
+                    displaySingleImageMain(image, otherPage)
                     return@launch
                 }
                 progressBar.progress = 90
 
-                dfile.inputStream().use { file ->
-                    dotherFile.inputStream().use { otherFile ->
-                        val bytes = file.readBytes()
-                        var img = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inMutable = true })
-                        if (img == null) {
-                            displaySingleImageMain(image, page)
-                            return@launch
+                if (img.width > img.height || otherImg.width > otherImg.height) {
+                    val otherImageFail = otherImg.width > otherImg.height
+                    displaySingleImageMain(image, if (otherImageFail) otherPage else page)
+                } else {
+                    //Scale one of the images to match the smaller one if their heights differ too much.
+                    val firstImg: Bitmap
+                    val secondImg: Bitmap
+                    val scaled: Bitmap?
+                    when {
+                        img.height - otherImg.height < -100 -> {
+                            val ar = otherImg.width / otherImg.height.toFloat()
+                            val width = ceil(img.height * ar).toInt()
+                            scaled = Bitmap.createScaledBitmap(otherImg, width, img.height, true)
+                            secondImg = scaled
+                            firstImg = img
                         }
-
-                        val otherBytes = otherFile.readBytes()
-                        var otherImg = BitmapFactory.decodeByteArray(otherBytes, 0, otherBytes.size, BitmapFactory.Options().apply { inMutable = true })
-                        if (otherImg == null) {
-                            yield()
-                            val pool = Glide.get(requireActivity()).bitmapPool
-                            pool.put(img)
-                            displaySingleImageMain(image, otherPage)
-                            return@launch
+                        otherImg.height - img.height < -100 -> {
+                            val ar = img.width / img.height.toFloat()
+                            val width = ceil(otherImg.height * ar).toInt()
+                            scaled = Bitmap.createScaledBitmap(img, width, otherImg.height, true)
+                            firstImg = scaled
+                            secondImg = otherImg
                         }
-
-                        if (img.width > img.height || otherImg.width > otherImg.height) {
-                            yield()
-                            val pool = Glide.get(requireActivity()).bitmapPool
-                            val otherImageFail = otherImg.width > otherImg.height
-                            pool.put(img)
-                            pool.put(otherImg)
-                            displaySingleImageMain(image, if (otherImageFail) otherPage else page)
-                        } else {
-                            //Scale one of the images to match the smaller one if their heights differ too much.
-                            if (img.height - otherImg.height < -100) {
-                                val ar = otherImg.width / otherImg.height.toFloat()
-                                val width = ceil(img.height * ar).toInt()
-                                val scaled = Bitmap.createScaledBitmap(otherImg, width, img.height, true)
-                                otherImg.recycle()
-                                otherImg = scaled
-                            } else if (otherImg.height - img.height < -100) {
-                                val ar = img.width / img.height.toFloat()
-                                val width = ceil(otherImg.height * ar).toInt()
-                                val scaled = Bitmap.createScaledBitmap(img, width, otherImg.height, true)
-                                img.recycle()
-                                img = scaled
-                            }
-
-                            val merged = tryOrNull { mergeBitmaps(img, otherImg, false, requireContext().cacheDir) }
-                            yield()
-                            val pool = Glide.get(requireActivity()).bitmapPool
-                            pool.put(img)
-                            pool.put(otherImg)
-                            if (merged == null) {
-                                progressBar.isIndeterminate = true
-                                displaySingleImageMain(image, page)
-                            } else {
-                                progressBar.progress = 100
-
-                                withContext(Dispatchers.Main) {
-                                    pageNum.visibility = View.GONE
-                                    view?.setOnClickListener(null)
-                                    view?.setOnLongClickListener(null)
-                                    progressBar.visibility = View.GONE
-                                    mainImage = SubsamplingScaleImageView(activity).also {
-                                        initializeView(it)
-                                        it.setMaxTileSize(getMaxTextureSize())
-                                        it.setMinimumTileDpi(160)
-                                        it.setImage(ImageSource.uri(merged))
-                                    }.also { setupImageTapEvents(it) }
-                                }
-                            }
+                        else -> {
+                            firstImg = img
+                            secondImg = otherImg
+                            scaled = null
                         }
                     }
+
+                    val merged = tryOrNull { mergeBitmaps(firstImg, secondImg, false, requireContext().cacheDir, compressType) }
+                    scaled?.recycle()
+                    yield()
+                    if (merged == null) {
+                        progressBar.isIndeterminate = true
+                        displaySingleImageMain(image, page)
+                    } else {
+                        progressBar.progress = 100
+                        withContext(Dispatchers.Main) { createImageView(merged, !image.endsWith(".webp")) }
+                    }
+                }
+            } finally {
+                target.cancel(false)
+                otherTarget.cancel(false)
+                activity?.let {
+                    Glide.with(it).clear(target)
+                    Glide.with(it).clear(otherTarget)
                 }
             }
         }
     }
 
     //Mostly from TachiyomiJ2K
-    private suspend fun mergeBitmaps(imageBitmap: Bitmap, imageBitmap2: Bitmap, isLTR: Boolean, cacheDir: File): String {
-        val mergedFile = getMergedPage(cacheDir, archiveId!!, page, otherPage)
-        if (mergedFile != null)
-            return mergedFile
-
+    private suspend fun mergeBitmaps(imageBitmap: Bitmap, imageBitmap2: Bitmap, isLTR: Boolean, cacheDir: File, compressType: PageCompressFormat): String {
         val height = imageBitmap.height
         val width = imageBitmap.width
 
         val height2 = imageBitmap2.height
         val width2 = imageBitmap2.width
         val maxHeight = max(height, height2)
-        val result = Bitmap.createBitmap(width + width2, maxHeight, Bitmap.Config.ARGB_8888)
+        yield()
+        val pool = Glide.get(requireActivity()).bitmapPool
+        val result = pool.get(width + width2, maxHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
         canvas.drawColor(Color.WHITE)
         val upperPart = Rect(
@@ -298,9 +335,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         canvas.drawBitmap(imageBitmap2, imageBitmap2.rect, bottomPart, null)
         progressBar.progress = 99
 
-        val merged = saveMergedPath(cacheDir, result, archiveId!!, page, otherPage)
-        yield()
-        val pool = Glide.get(requireActivity()).bitmapPool
+        val merged = DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, compressType)
         pool.put(result)
         return merged
     }
@@ -402,17 +437,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         createViewCalled = false
         (activity as? ReaderActivity)?.unregisterPage(this)
         (mainImage as? SubsamplingScaleImageView)?.recycle()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        if (otherImagePath != null) {
-            context?.let {
-                val id = archiveId ?: return
-                val cacheDir = it.cacheDir
-                GlobalScope.launch { trashMergedPage(cacheDir, id, page, otherPage) }
-            }
-        }
     }
 
     override fun onScaleTypeChange(scaleType: ScaleType) = updateScaleType(scaleType)
