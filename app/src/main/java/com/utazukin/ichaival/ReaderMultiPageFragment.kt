@@ -76,8 +76,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
-    private val archiveId
-        get() = (activity as? ReaderActivity)?.archive?.id
+    private var archiveId: String? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -86,6 +85,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         arguments?.run {
             page = getInt(PAGE_NUM)
             otherPage = getInt(OTHER_PAGE_ID)
+            archiveId = getString(ARCHIVE_ID)
         }
 
         topLayout = view.findViewById(R.id.reader_layout)
@@ -490,13 +490,15 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     companion object {
         private const val PAGE_NUM = "page"
         private const val OTHER_PAGE_ID = "other_page"
+        private const val ARCHIVE_ID = "id"
 
         @JvmStatic
-        fun createInstance(page: Int, otherPage: Int) =
+        fun createInstance(page: Int, otherPage: Int, archiveId: String?) =
             ReaderMultiPageFragment().apply {
                 arguments = Bundle().apply {
                     putInt(PAGE_NUM, page)
                     putInt(OTHER_PAGE_ID, otherPage)
+                    putString(ARCHIVE_ID, archiveId)
                 }
             }
     }

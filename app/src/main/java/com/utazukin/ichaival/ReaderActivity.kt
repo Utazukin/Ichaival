@@ -683,7 +683,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         override fun createFragment(position: Int): Fragment {
             val page = getPageFromPosition(getAdjustedPage(position))
             return if (loadedPages[position] > 1u)
-                ReaderMultiPageFragment.createInstance(page, page + 1)
+                ReaderMultiPageFragment.createInstance(page, page + 1, archive?.id)
             else
                 ReaderFragment.createInstance(page)
         }
