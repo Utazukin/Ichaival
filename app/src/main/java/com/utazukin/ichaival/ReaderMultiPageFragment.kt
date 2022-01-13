@@ -77,6 +77,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
     private var archiveId: String? = null
+    private var rtol: Boolean = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -87,6 +88,13 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             otherPage = getInt(OTHER_PAGE_ID)
             archiveId = getString(ARCHIVE_ID)
         }
+
+        setHasOptionsMenu(true)
+
+        rtol = if (savedInstanceState == null) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            prefs.getBoolean(getString(R.string.rtol_pref_key), false)
+        } else savedInstanceState.getBoolean("rtol")
 
         topLayout = view.findViewById(R.id.reader_layout)
         pageNum = view.findViewById(R.id.page_num)
@@ -111,6 +119,17 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
         createViewCalled = true
         return view
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.swap_merged_page -> {
+                rtol = !rtol
+                imagePath?.let { displayImage(it, otherImagePath) }
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -216,9 +235,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         }
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val compressString = PreferenceManager.getDefaultSharedPreferences(requireContext()).getString(getString(R.string.compression_type_pref), getString(R.string.jpg_compress))
+            val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            val compressString = prefs.getString(getString(R.string.compression_type_pref), getString(R.string.jpg_compress))
             val compressType = PageCompressFormat.fromString(compressString, requireContext())
-            val mergedPath = DualPageHelper.getMergedPage(requireContext().cacheDir, archiveId!!, page, otherPage, compressType)
+            val mergedPath = DualPageHelper.getMergedPage(requireContext().cacheDir, archiveId!!, page, otherPage, rtol, compressType)
             if (mergedPath != null) {
                 withContext(Dispatchers.Main) { createImageView(mergedPath, !image.endsWith(".webp")) }
                 return@launch
@@ -283,7 +303,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         }
                     }
 
-                    val merged = tryOrNull { mergeBitmaps(firstImg, secondImg, false, requireContext().cacheDir, compressType) }
+                    val merged = tryOrNull { mergeBitmaps(firstImg, secondImg, !rtol, requireContext().cacheDir, compressType) }
                     scaled?.recycle()
                     yield()
                     if (merged == null) {
@@ -335,7 +355,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         canvas.drawBitmap(imageBitmap2, imageBitmap2.rect, bottomPart, null)
         progressBar.progress = 99
 
-        val merged = DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, compressType)
+        val merged = DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, !isLTR, compressType)
         pool.put(result)
         return merged
     }
@@ -476,6 +496,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         with(outState) {
             putInt("page", page)
             putString("pagePath", imagePath)
+            putBoolean("rtol", rtol)
         }
     }
 

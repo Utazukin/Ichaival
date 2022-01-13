@@ -373,6 +373,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.reader_menu, menu)
         optionsMenu = menu
+
+        if (currentAdapter?.run { isSinglePage(getPositionFromPage(currentPage)) } == false)
+            menu?.findItem(R.id.swap_merged_page)?.isVisible = true
+
         archive?.let {
             val bookmarker = menu?.findItem(R.id.bookmark_archive)
             launch { setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(it.id)) }
@@ -641,6 +645,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             supportActionBar?.subtitle = subtitle
             pageSeekBar.progress = currentPage
             progressStartText.text = (currentPage + 1).toString()
+            optionsMenu?.findItem(R.id.swap_merged_page)?.isVisible = false
         }
         if (jumpPage >= 0 && dualPageAdapter.getPositionFromPage(jumpPage) != imagePager.currentItem)
             imagePager.setCurrentItem(dualPageAdapter.getPositionFromPage(jumpPage), false)

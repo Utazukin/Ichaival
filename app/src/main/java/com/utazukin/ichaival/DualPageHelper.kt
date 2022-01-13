@@ -21,6 +21,8 @@ package com.utazukin.ichaival
 import android.graphics.Bitmap
 import com.utazukin.ichaival.PageCompressFormat.Companion.toBitmapFormat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -31,53 +33,93 @@ object DualPageHelper {
     private const val mergedPagePath = "merged_pages"
     private const val mergedPageTrashPath = "merged_page_trash"
     private const val maxCacheSize = 250 * 1024 * 1024
+    private val moveMutex by lazy { Mutex() }
+    private val trashMutex by lazy { Mutex() }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
-    suspend fun getMergedPage(cacheDir: File, archiveId: String, page: Int, otherPage: Int, compressType: PageCompressFormat) : String? {
+    suspend fun getMergedPage(cacheDir: File, archiveId: String, page: Int, otherPage: Int, rtol: Boolean, compressType: PageCompressFormat) : String? {
         val mergedDir = File(cacheDir, mergedPagePath)
         if (!mergedDir.exists()) {
             mergedDir.mkdir()
             return null
         }
-        val filename = if (compressType == PageCompressFormat.PNG) "$archiveId-$page-$otherPage.png" else "$archiveId-$page-$otherPage.jpg"
-        val file = File(mergedDir, filename)
-        if (!file.exists()) {
-            val trashDir = File(cacheDir, mergedPageTrashPath)
-            if (!trashDir.exists())
-                return null
-            val trashFile = File(trashDir, filename)
-            if (!trashFile.exists())
-                return null
-            val t = Path(trashFile.path)
-            withContext(Dispatchers.IO) { t.moveTo(Path(file.path)) }
+
+        val archiveDir = File(mergedDir, archiveId)
+        val filename = getFilename(page, otherPage, rtol, compressType)
+        val file = File(archiveDir, filename)
+        moveMutex.withLock {
+            if (!file.exists()) {
+                val trashDir = File(cacheDir, mergedPageTrashPath)
+                if (!trashDir.exists())
+                    return null
+                val trashArcDir = File(trashDir, archiveId)
+                if (!trashArcDir.exists())
+                    return null
+
+                val trashFile = File(trashArcDir, filename)
+                if (!trashFile.exists())
+                    return null
+                withContext(Dispatchers.IO) { moveDir(trashArcDir, archiveDir) }
+            }
         }
 
         return file.path
     }
 
+    private fun getFilename(page: Int, otherPage: Int, rtol: Boolean, compressType: PageCompressFormat) : String {
+        return when {
+            compressType == PageCompressFormat.JPEG && rtol -> "$page-$otherPage.jpg"
+            compressType == PageCompressFormat.PNG && rtol -> "$page-$otherPage.png"
+            compressType == PageCompressFormat.JPEG -> "$otherPage-$page.jpg"
+            compressType == PageCompressFormat.PNG -> "$otherPage-$page.png"
+            else -> "$page-$otherPage.jpg"
+        }
+    }
+
     @Suppress("BlockingMethodInNonBlockingContext")
-    suspend fun saveMergedPath(cacheDir: File, image: Bitmap, archiveId: String, page: Int, otherPage: Int, compressType: PageCompressFormat) : String {
-        val filename = if (compressType == PageCompressFormat.PNG) "$archiveId-$page-$otherPage.png" else "$archiveId-$page-$otherPage.jpg"
+    private fun moveDir(from: File, to: File) {
+        if (!from.exists())
+            return
+
+        if (!to.exists())
+            to.mkdirs()
+
+        if (from.isDirectory) {
+            from.listFiles()?.forEach { moveDir(it, to) }
+            from.deleteRecursively()
+        } else {
+            val toFile = File(to, from.name)
+            Path(from.path).moveTo(Path(toFile.path))
+        }
+    }
+
+    @Suppress("BlockingMethodInNonBlockingContext")
+    suspend fun saveMergedPath(cacheDir: File, image: Bitmap, archiveId: String, page: Int, otherPage: Int, rtol: Boolean, compressType: PageCompressFormat) : String {
+        val filename = getFilename(page, otherPage, rtol, compressType)
         val mergedDir = File(cacheDir, mergedPagePath)
         if (!mergedDir.exists())
             mergedDir.mkdir()
 
-        var cacheSize = mergedDir.listFiles()?.filterNotNull()?.sumOf { it.length() } ?: 0
-
         val trashDir = File(cacheDir, mergedPageTrashPath)
         if (trashDir.exists()) {
-            val trashFiles = trashDir.listFiles()
-            trashFiles?.let {
-                cacheSize += it.sumOf { f -> f.length() }
+            trashMutex.withLock {
+                var cacheSize = mergedDir.listFiles()?.filterNotNull()?.sumOf { calculateCacheSize(it) } ?: 0
+                val trashFiles = trashDir.listFiles()
+                trashFiles?.let {
+                    cacheSize += it.sumOf { f -> calculateCacheSize(f) }
 
-                if (cacheSize >= maxCacheSize) {
-                    for (f in it)
-                        f.deleteRecursively()
+                    if (cacheSize >= maxCacheSize) {
+                        for (f in it)
+                            f.deleteRecursively()
+                    }
                 }
             }
         }
 
-        val file = File(mergedDir, filename)
+        val archiveDir = File(mergedDir, archiveId)
+        if (!archiveDir.exists())
+            archiveDir.mkdir()
+
+        val file = File(archiveDir, filename)
         withContext(Dispatchers.IO) {
             FileOutputStream(file.path).use {
                 image.compress(compressType.toBitmapFormat(), 100, it)
@@ -96,13 +138,12 @@ object DualPageHelper {
         if (!mergedDir.exists())
             return@withContext
 
-        mergedDir.listFiles()?.forEach {
-            if (it.name.contains(archiveId)) {
-                val file = File(trashDir, it.name)
-                val path = Path(it.path)
-                path.moveTo(Path(file.path))
-            }
-        }
+        val archiveDir = File(mergedDir, archiveId)
+        if (!archiveDir.exists())
+            return@withContext
+
+        val trashArchiveDir = File(trashDir, archiveId)
+        moveDir(archiveDir, trashArchiveDir)
     }
     suspend fun trashMergedPages(cacheDir: File) = withContext(Dispatchers.IO) {
         val trashDir = File(cacheDir, mergedPageTrashPath)
@@ -115,8 +156,7 @@ object DualPageHelper {
 
         mergedDir.listFiles()?.forEach {
             val file = File(trashDir, it.name)
-            val path = Path(it.path)
-            path.moveTo(Path(file.path))
+            moveDir(it, file)
         }
     }
 
@@ -136,11 +176,19 @@ object DualPageHelper {
             val merged = File(cacheDir, mergedPagePath)
             var size = 0L
             if (trash.exists())
-                size += trash.listFiles()?.sumOf { it.length() } ?: 0
+                size += calculateCacheSize(trash)
 
             if (merged.exists())
-                size += merged.listFiles()?.sumOf { it.length() } ?: 0
+                size += calculateCacheSize(merged)
             size
+        }
+    }
+
+    private fun calculateCacheSize(file: File?) : Long {
+        return when {
+            file == null -> 0
+            !file.isDirectory -> file.length()
+            else -> file.listFiles()?.sumOf { calculateCacheSize(it) } ?: 0
         }
     }
 }
