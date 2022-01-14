@@ -339,7 +339,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         val maxHeight = max(height, height2)
         yield()
         val pool = Glide.get(requireActivity()).bitmapPool
-        val result = pool.get(width + width2, maxHeight, Bitmap.Config.ARGB_8888)
+        val result = pool.get(width + width2, maxHeight, if (compressType == PageCompressFormat.PNG) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565)
         val canvas = Canvas(result)
         canvas.drawColor(Color.WHITE)
         val upperPart = Rect(
