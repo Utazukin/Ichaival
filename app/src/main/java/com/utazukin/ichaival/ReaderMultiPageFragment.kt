@@ -93,7 +93,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
         rtol = if (savedInstanceState == null) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-            prefs.getBoolean(getString(R.string.rtol_pref_key), false)
+            prefs.getBoolean(getString(R.string.rtol_pref_key), false) == !prefs.getBoolean(getString(R.string.dual_page_swap_key), false)
         } else savedInstanceState.getBoolean("rtol")
 
         topLayout = view.findViewById(R.id.reader_layout)

@@ -155,6 +155,9 @@
     <string name="compression_pref_title">Merged Page Compression Type</string>
     <string name="swap_merged_page">Swap Pages</string>
     <string name="split_merged_page">Split Page</string>
+    <string name="dual_page_swap_title">Invert Merge Direction</string>
+    <string name="dual_page_swap_summary">Invert RTL from overall RTL setting</string>
+    <string name="dual_page_swap_key">dual_page_swap_key</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>
