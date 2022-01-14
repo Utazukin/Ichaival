@@ -128,6 +128,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 imagePath?.let { displayImage(it, otherImagePath) }
                 true
             }
+            R.id.split_merged_page -> {
+                imagePath?.let { displaySingleImage(it, otherPage, true) }
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -155,8 +159,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
     private suspend fun displaySingleImageMain(image: String, failPage: Int) = withContext(Dispatchers.Main) { displaySingleImage(image, failPage) }
 
-    private fun displaySingleImage(image: String, failPage: Int) {
-        with(activity as ReaderActivity) { onMergeFailed(page, failPage) }
+    private fun displaySingleImage(image: String, failPage: Int, split: Boolean = false) {
+        with(activity as ReaderActivity) { onMergeFailed(page, failPage, split) }
         pageNum.text = (page + 1).toString()
         mainImage = if (image.endsWith(".gif")) {
             PhotoView(activity).also {

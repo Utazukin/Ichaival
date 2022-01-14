@@ -154,6 +154,7 @@
     <string name="compression_type_pref">compression_type_pref</string>
     <string name="compression_pref_title">Merged Page Compression Type</string>
     <string name="swap_merged_page">Swap Pages</string>
+    <string name="split_merged_page">Split Page</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>

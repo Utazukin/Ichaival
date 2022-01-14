@@ -374,8 +374,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         menuInflater.inflate(R.menu.reader_menu, menu)
         optionsMenu = menu
 
-        if (currentAdapter?.run { isSinglePage(getPositionFromPage(currentPage)) } == false)
-            menu?.findItem(R.id.swap_merged_page)?.isVisible = true
+        if (currentAdapter?.run { isSinglePage(getPositionFromPage(currentPage)) } == false) {
+            menu?.run {
+                findItem(R.id.swap_merged_page)?.isVisible = true
+                findItem(R.id.split_merged_page)?.isVisible = true
+            }
+        }
 
         archive?.let {
             val bookmarker = menu?.findItem(R.id.bookmark_archive)
@@ -640,12 +644,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    fun onMergeFailed(page: Int, failPage: Int) {
-        if (dualPageAdapter.onMergeFailed(page, failPage)) {
+    fun onMergeFailed(page: Int, failPage: Int, split: Boolean) {
+        if (dualPageAdapter.onMergeFailed(page, failPage, split)) {
             supportActionBar?.subtitle = subtitle
             pageSeekBar.progress = currentPage
             progressStartText.text = (currentPage + 1).toString()
-            optionsMenu?.findItem(R.id.swap_merged_page)?.isVisible = false
+            optionsMenu?.run {
+                findItem(R.id.swap_merged_page)?.isVisible = false
+                findItem(R.id.split_merged_page)?.isVisible = false
+            }
         }
         if (jumpPage >= 0 && dualPageAdapter.getPositionFromPage(jumpPage) != imagePager.currentItem)
             imagePager.setCurrentItem(dualPageAdapter.getPositionFromPage(jumpPage), false)
@@ -708,23 +715,33 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         override fun isPageLoaded(page: Int) = loadedPages[page] != 0u
 
-        fun onMergeFailed(page: Int, failPage: Int): Boolean {
+        fun onMergeFailed(page: Int, failPage: Int, split: Boolean): Boolean {
             val adapterPage = getPositionFromPage(page)
             if (page < archive!!.numPages - 1) {
                 loadedPages[adapterPage] = 1u
                 notifyItemChanged(adapterPage)
 
-                if (page != failPage && adapterPage < loadedPages.size - 1) {
+                if (split) {
+                    loadedPages.add(adapterPage + 1, 2u)
+                    notifyItemInserted(adapterPage + 1)
+                    if (loadedPages.last() == 2u) {
+                        --loadedPages[loadedPages.lastIndex]
+                        notifyItemChanged(loadedPages.lastIndex)
+                    } else {
+                        loadedPages.removeLast()
+                        notifyItemRemoved(loadedPages.size)
+                    }
+                } else if (page != failPage && adapterPage < loadedPages.lastIndex) {
                     loadedPages.add(adapterPage + 1, 1u)
                     notifyItemInserted(adapterPage + 1)
                 } else if (loadedPages.size < archive!!.numPages) {
-                    val last = loadedPages.size - 1
+                    val last = loadedPages.lastIndex
                     if (loadedPages[last] == 1u && adapterPage != last) {
                         ++loadedPages[last]
                         notifyItemChanged(last)
                     } else {
                         loadedPages.add(1u)
-                        notifyItemInserted(loadedPages.size - 1)
+                        notifyItemInserted(loadedPages.lastIndex)
                     }
                 }
             } else {
