@@ -124,11 +124,24 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.swap_merged_page -> {
+                (mainImage?.parent as? ViewGroup)?.removeView(mainImage)
+                (mainImage as? SubsamplingScaleImageView)?.recycle()
+                mainImage = null
+                pageNum.visibility = View.VISIBLE
+                progressBar.visibility = View.VISIBLE
+                progressBar.progress = 0
+
                 rtol = !rtol
                 imagePath?.let { displayImage(it, otherImagePath) }
                 true
             }
             R.id.split_merged_page -> {
+                (mainImage?.parent as? ViewGroup)?.removeView(mainImage)
+                (mainImage as? SubsamplingScaleImageView)?.recycle()
+                mainImage = null
+                pageNum.visibility = View.VISIBLE
+                progressBar.visibility = View.VISIBLE
+                progressBar.progress = 0
                 imagePath?.let { displaySingleImage(it, otherPage, true) }
                 true
             }
@@ -244,7 +257,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             val compressType = PageCompressFormat.fromString(compressString, requireContext())
             val mergedPath = DualPageHelper.getMergedPage(requireContext().cacheDir, archiveId!!, page, otherPage, rtol, compressType)
             if (mergedPath != null) {
-                withContext(Dispatchers.Main) { createImageView(mergedPath, !image.endsWith(".webp")) }
+                withContext(Dispatchers.Main) { createImageView(mergedPath, !mergedPath.endsWith(".webp")) }
                 return@launch
             }
 
@@ -315,7 +328,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         displaySingleImageMain(image, page)
                     } else {
                         progressBar.progress = 100
-                        withContext(Dispatchers.Main) { createImageView(merged, !image.endsWith(".webp")) }
+                        withContext(Dispatchers.Main) { createImageView(merged, !merged.endsWith(".webp")) }
                     }
                 }
             } finally {
