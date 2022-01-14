@@ -94,7 +94,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         rtol = if (savedInstanceState == null) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
             prefs.getBoolean(getString(R.string.rtol_pref_key), false) == !prefs.getBoolean(getString(R.string.dual_page_swap_key), false)
-        } else savedInstanceState.getBoolean("rtol")
+        } else savedInstanceState.getBoolean(RTOL)
 
         topLayout = view.findViewById(R.id.reader_layout)
         pageNum = view.findViewById(R.id.page_num)
@@ -498,17 +498,22 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         with(outState) {
-            putInt("page", page)
-            putString("pagePath", imagePath)
-            putBoolean("rtol", rtol)
+            putInt(PAGE_NUM, page)
+            putString(PAGE_PATH, imagePath)
+            putInt(OTHER_PAGE_ID, otherPage)
+            putBoolean(RTOL, rtol)
+            if (otherImagePath != null)
+                putString(OTHER_PAGE_PATH, otherImagePath)
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         savedInstanceState?.run {
-            page = getInt("page")
-            imagePath = getString("pagePath")
+            page = getInt(PAGE_NUM)
+            imagePath = getString(PAGE_PATH)
+            otherPage = getInt(OTHER_PAGE_ID)
+            otherImagePath = getString(OTHER_PAGE_PATH)
         }
     }
 
@@ -516,6 +521,9 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         private const val PAGE_NUM = "page"
         private const val OTHER_PAGE_ID = "other_page"
         private const val ARCHIVE_ID = "id"
+        private const val PAGE_PATH = "pagePath"
+        private const val OTHER_PAGE_PATH = "otherPagePath"
+        private const val RTOL = "rtol"
 
         @JvmStatic
         fun createInstance(page: Int, otherPage: Int, archiveId: String?) =
