@@ -662,10 +662,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         if (id != archive?.id || archive?.numPages == currentAdapter?.itemCount)
             return
 
-        pageSeekBar.max = pageCount - 1
-        progressEndText.text = pageCount.toString()
-
         launch {
+            withContext(Dispatchers.Main) {
+                pageSeekBar.max = pageCount - 1
+                progressEndText.text = pageCount.toString()
+            }
+
             pageAdapter.updateLoadedPages(pageCount)
             if (dualPageEnabled)
                 dualPageAdapter.updateLoadedPages(pageCount)
