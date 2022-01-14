@@ -357,6 +357,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             height + (maxHeight - height) / 2
         )
         var bitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
+        if (bitmap.height > height || bitmap.width > width)
+            bitmap = Bitmap.createScaledBitmap(bitmap, width, height, true).also { bitmap.recycle() }
         canvas.drawBitmap(bitmap, imgRect, upperPart, null)
         pool.put(bitmap)
         progressBar.progress = 95
@@ -367,6 +369,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             height2 + (maxHeight - height2) / 2
         )
         bitmap = BitmapFactory.decodeFile(otherImgFile.absolutePath)
+        if (bitmap.height > height2 || bitmap.width > width2)
+            bitmap = Bitmap.createScaledBitmap(bitmap, width2, height2, true).also { bitmap.recycle() }
         canvas.drawBitmap(bitmap, otherImgRect, bottomPart, null)
         pool.put(bitmap)
         progressBar.progress = 99
