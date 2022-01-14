@@ -262,11 +262,11 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             }
 
             val target = Glide.with(requireActivity())
-                .asBitmap()
+                .downloadOnly()
                 .load(imagePath)
                 .submit()
             val otherTarget = Glide.with(requireActivity())
-                .asBitmap()
+                .downloadOnly()
                 .load(otherImage)
                 .submit()
             progressBar.isIndeterminate = false
@@ -276,52 +276,47 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 val dtarget = async { tryOrNull { target.get() } }
                 val dotherTarget = async { tryOrNull { otherTarget.get() } }
 
-                val img = dtarget.await()
-                if (img == null) {
+                val imgFile = dtarget.await()
+                if (imgFile == null) {
                     displaySingleImageMain(image, page)
                     return@launch
                 }
                 progressBar.progress = 45
 
-                val otherImg = dotherTarget.await()
-                if (otherImg == null) {
+                val otherImgFile = dotherTarget.await()
+                if (otherImgFile == null) {
                     displaySingleImageMain(image, otherPage)
                     return@launch
                 }
                 progressBar.progress = 90
 
-                if (img.width > img.height || otherImg.width > otherImg.height) {
-                    val otherImageFail = otherImg.width > otherImg.height
+                val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                val otherImg = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(imgFile.absolutePath, img)
+                BitmapFactory.decodeFile(otherImgFile.absolutePath, otherImg)
+                if (img.outWidth > img.outHeight || otherImg.outWidth > otherImg.outHeight) {
+                    val otherImageFail = otherImg.outWidth > otherImg.outHeight
                     displaySingleImageMain(image, if (otherImageFail) otherPage else page)
                 } else {
                     //Scale one of the images to match the smaller one if their heights differ too much.
-                    val firstImg: Bitmap
-                    val secondImg: Bitmap
-                    val scaled: Bitmap?
+                    val firstImg = img.outRect
+                    val secondImg = otherImg.outRect
                     when {
-                        img.height - otherImg.height < -100 -> {
-                            val ar = otherImg.width / otherImg.height.toFloat()
-                            val width = ceil(img.height * ar).toInt()
-                            scaled = Bitmap.createScaledBitmap(otherImg, width, img.height, true)
-                            secondImg = scaled
-                            firstImg = img
+                        img.outHeight - otherImg.outHeight < -100 -> {
+                            val ar = otherImg.outWidth / otherImg.outHeight.toFloat()
+                            val width = ceil(img.outHeight * ar).toInt()
+                            secondImg.bottom = img.outHeight
+                            secondImg.right = width
                         }
-                        otherImg.height - img.height < -100 -> {
-                            val ar = img.width / img.height.toFloat()
-                            val width = ceil(otherImg.height * ar).toInt()
-                            scaled = Bitmap.createScaledBitmap(img, width, otherImg.height, true)
-                            firstImg = scaled
-                            secondImg = otherImg
-                        }
-                        else -> {
-                            firstImg = img
-                            secondImg = otherImg
-                            scaled = null
+                        otherImg.outHeight - img.outHeight < -100 -> {
+                            val ar = img.outWidth / img.outHeight.toFloat()
+                            val width = ceil(otherImg.outHeight * ar).toInt()
+                            firstImg.bottom = otherImg.outHeight
+                            firstImg.right = width
                         }
                     }
 
-                    val merged = tryOrNull { mergeBitmaps(firstImg, secondImg, !rtol, requireContext().cacheDir, compressType) }
-                    scaled?.recycle()
+                    val merged = tryOrNull { mergeBitmaps(firstImg, secondImg, imgFile, otherImgFile, !rtol, requireContext().cacheDir, compressType) }
                     yield()
                     if (merged == null) {
                         progressBar.isIndeterminate = true
@@ -343,33 +338,37 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     }
 
     //Mostly from TachiyomiJ2K
-    private suspend fun mergeBitmaps(imageBitmap: Bitmap, imageBitmap2: Bitmap, isLTR: Boolean, cacheDir: File, compressType: PageCompressFormat): String {
-        val height = imageBitmap.height
-        val width = imageBitmap.width
+    private suspend fun mergeBitmaps(imgRect: Rect, otherImgRect: Rect, imgFile: File, otherImgFile: File, isLTR: Boolean, cacheDir: File, compressType: PageCompressFormat): String {
+        val height = imgRect.height()
+        val width = imgRect.width()
 
-        val height2 = imageBitmap2.height
-        val width2 = imageBitmap2.width
+        val height2 = otherImgRect.height()
+        val width2 = otherImgRect.width()
         val maxHeight = max(height, height2)
         yield()
         val pool = Glide.get(requireActivity()).bitmapPool
-        val result = pool.get(width + width2, maxHeight, if (compressType == PageCompressFormat.PNG) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565)
+        val result = pool.get(width + width2, maxHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
         canvas.drawColor(Color.WHITE)
         val upperPart = Rect(
             if (isLTR) 0 else width2,
             0,
-            (if (isLTR) 0 else width2) + imageBitmap.width,
-            imageBitmap.height + (maxHeight - imageBitmap.height) / 2
+            (if (isLTR) 0 else width2) + width,
+            height + (maxHeight - height) / 2
         )
-        canvas.drawBitmap(imageBitmap, imageBitmap.rect, upperPart, null)
+        var bitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
+        canvas.drawBitmap(bitmap, imgRect, upperPart, null)
+        pool.put(bitmap)
         progressBar.progress = 95
         val bottomPart = Rect(
             if (!isLTR) 0 else width,
             0,
-            (if (!isLTR) 0 else width) + imageBitmap2.width,
-            imageBitmap2.height + (maxHeight - imageBitmap2.height) / 2
+            (if (!isLTR) 0 else width) + width2,
+            height2 + (maxHeight - height2) / 2
         )
-        canvas.drawBitmap(imageBitmap2, imageBitmap2.rect, bottomPart, null)
+        bitmap = BitmapFactory.decodeFile(otherImgFile.absolutePath)
+        canvas.drawBitmap(bitmap, otherImgRect, bottomPart, null)
+        pool.put(bitmap)
         progressBar.progress = 99
 
         val merged = DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, !isLTR, compressType)
@@ -482,7 +481,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         arguments?.run {
             val page = getInt(PAGE_NUM)
             val otherPage = getInt(OTHER_PAGE_ID)
-            (activity as CoroutineScope).launch {
+            lifecycleScope.launch {
                 val image = withContext(Dispatchers.IO) { archive.getPageImage(page) }
                 val otherImage = withContext(Dispatchers.IO) { archive.getPageImage(otherPage) }
                 if (image != null) {

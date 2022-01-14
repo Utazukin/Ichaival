@@ -21,7 +21,7 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Resources
-import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Rect
 import androidx.preference.PreferenceManager
 import java.util.regex.Pattern
@@ -79,8 +79,8 @@ fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
         removeAt(i--)
 }
 
-val Bitmap.rect: Rect
-    get() = Rect(0, 0, width, height)
+val BitmapFactory.Options.outRect: Rect
+    get() = Rect(0, 0, outWidth, outHeight)
 
 inline fun <T> tryOrNull(body: () -> T) : T? {
     return try {
