@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 import android.graphics.Bitmap
+import android.os.Build
 import com.utazukin.ichaival.PageCompressFormat.Companion.toBitmapFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -26,7 +27,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import kotlin.io.path.Path
 import kotlin.io.path.moveTo
 
 object DualPageHelper {
@@ -75,7 +75,6 @@ object DualPageHelper {
         }
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     private fun moveDir(from: File, to: File) {
         if (!from.exists())
             return
@@ -88,7 +87,16 @@ object DualPageHelper {
             from.deleteRecursively()
         } else {
             val toFile = File(to, from.name)
-            Path(from.path).moveTo(Path(toFile.path))
+            moveFile(from, toFile)
+        }
+    }
+
+    private fun moveFile(from: File, to: File) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            from.toPath().moveTo(to.toPath())
+        else {
+            from.copyTo(to, true)
+            from.delete()
         }
     }
 
