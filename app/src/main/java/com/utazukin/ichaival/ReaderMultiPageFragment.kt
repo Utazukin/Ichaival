@@ -21,7 +21,9 @@ package com.utazukin.ichaival
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
+import android.os.Build
 import android.os.Bundle
+import android.util.Size
 import android.view.*
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
@@ -299,20 +301,24 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     displaySingleImageMain(image, if (otherImageFail) otherPage else page)
                 } else {
                     //Scale one of the images to match the smaller one if their heights differ too much.
-                    val firstImg = img.outRect
-                    val secondImg = otherImg.outRect
+                    val firstImg: Size
+                    val secondImg: Size
                     when {
                         img.outHeight - otherImg.outHeight < -100 -> {
                             val ar = otherImg.outWidth / otherImg.outHeight.toFloat()
                             val width = ceil(img.outHeight * ar).toInt()
-                            secondImg.bottom = img.outHeight
-                            secondImg.right = width
+                            secondImg = Size(width, img.outHeight)
+                            firstImg = img.outSize
                         }
                         otherImg.outHeight - img.outHeight < -100 -> {
                             val ar = img.outWidth / img.outHeight.toFloat()
                             val width = ceil(otherImg.outHeight * ar).toInt()
-                            firstImg.bottom = otherImg.outHeight
-                            firstImg.right = width
+                            firstImg = Size(width, otherImg.outHeight)
+                            secondImg = otherImg.outSize
+                        }
+                        else -> {
+                            firstImg = img.outSize
+                            secondImg = otherImg.outSize
                         }
                     }
 
@@ -338,12 +344,12 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     }
 
     //Mostly from TachiyomiJ2K
-    private suspend fun mergeBitmaps(imgRect: Rect, otherImgRect: Rect, imgFile: File, otherImgFile: File, isLTR: Boolean, cacheDir: File, compressType: PageCompressFormat): String {
-        val height = imgRect.height()
-        val width = imgRect.width()
+    private suspend fun mergeBitmaps(imgSize: Size, otherImgSize: Size, imgFile: File, otherImgFile: File, isLTR: Boolean, cacheDir: File, compressType: PageCompressFormat): String {
+        val height = imgSize.height
+        val width = imgSize.width
 
-        val height2 = otherImgRect.height()
-        val width2 = otherImgRect.width()
+        val height2 = otherImgSize.height
+        val width2 = otherImgSize.width
         val maxHeight = max(height, height2)
         yield()
         val pool = Glide.get(requireActivity()).bitmapPool
@@ -356,10 +362,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             (if (isLTR) 0 else width2) + width,
             height + (maxHeight - height) / 2
         )
-        var bitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
-        if (bitmap.height > height || bitmap.width > width)
-            bitmap = Bitmap.createScaledBitmap(bitmap, width, height, true).also { bitmap.recycle() }
-        canvas.drawBitmap(bitmap, imgRect, upperPart, null)
+        var bitmap = decodeBitmap(imgFile, imgSize)
+        canvas.drawBitmap(bitmap, imgSize.toRect(), upperPart, null)
         pool.put(bitmap)
         progressBar.progress = 95
         val bottomPart = Rect(
@@ -368,16 +372,30 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             (if (!isLTR) 0 else width) + width2,
             height2 + (maxHeight - height2) / 2
         )
-        bitmap = BitmapFactory.decodeFile(otherImgFile.absolutePath)
-        if (bitmap.height > height2 || bitmap.width > width2)
-            bitmap = Bitmap.createScaledBitmap(bitmap, width2, height2, true).also { bitmap.recycle() }
-        canvas.drawBitmap(bitmap, otherImgRect, bottomPart, null)
+        bitmap = decodeBitmap(otherImgFile, otherImgSize)
+        canvas.drawBitmap(bitmap, otherImgSize.toRect(), bottomPart, null)
         pool.put(bitmap)
         progressBar.progress = 99
 
         val merged = DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, !isLTR, compressType)
         pool.put(result)
         return merged
+    }
+
+    private fun decodeBitmap(file: File, size: Size) : Bitmap {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val source = android.graphics.ImageDecoder.createSource(file)
+            android.graphics.ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                decoder.isMutableRequired = true
+                if (info.size.height > size.height || info.size.width > size.width)
+                    decoder.setTargetSize(size.width, size.height)
+            }
+        } else {
+           var bitmap = BitmapFactory.decodeFile(file.absolutePath)
+            if (bitmap.height > size.height || bitmap.width > size.width)
+                bitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true).also { bitmap.recycle() }
+            bitmap
+        }
     }
 
     private fun initializeView(view: View) {

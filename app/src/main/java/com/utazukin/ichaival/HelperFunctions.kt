@@ -23,6 +23,7 @@ import android.content.SharedPreferences
 import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.graphics.Rect
+import android.util.Size
 import androidx.preference.PreferenceManager
 import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
@@ -79,8 +80,10 @@ fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
         removeAt(i--)
 }
 
-val BitmapFactory.Options.outRect: Rect
-    get() = Rect(0, 0, outWidth, outHeight)
+val BitmapFactory.Options.outSize: Size
+    get() = Size(outWidth, outHeight)
+
+fun Size.toRect() = Rect(0, 0, width, height)
 
 inline fun <T> tryOrNull(body: () -> T) : T? {
     return try {
