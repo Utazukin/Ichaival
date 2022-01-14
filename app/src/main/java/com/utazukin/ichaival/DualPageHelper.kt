@@ -93,7 +93,7 @@ object DualPageHelper {
 
     private fun moveFile(from: File, to: File) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            from.toPath().moveTo(to.toPath())
+            from.toPath().moveTo(to.toPath(), true)
         else {
             from.copyTo(to, true)
             from.delete()

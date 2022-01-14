@@ -298,14 +298,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
     fun getPageList(response: JSONObject?) : List<String> {
-        val jsonPages = response?.optJSONArray("pages")
-        if (jsonPages == null) {
-            response?.keys()?.next()?.let { notifyError(it) }
-            return emptyList()
+        return when (val jsonPages = response?.optJSONArray("pages")) {
+            null -> {
+                response?.keys()?.next()?.let { notifyError(it) }
+                emptyList()
+            }
+            else -> List(jsonPages.length()) { jsonPages.getString(it).substring(1) }
         }
-
-        val count = jsonPages.length()
-        return List(count) { jsonPages.getString(it).substring(1) }
     }
 
     suspend fun downloadThumb(id: String, page: Int): String? {
@@ -569,7 +568,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private fun notify(message: String) = listener?.onInfo(message)
 
     override fun onPreferenceChange(pref: Preference, newValue: Any?): Boolean {
-        if ((newValue as String).isEmpty())
+        if (newValue !is String || newValue.isEmpty())
             return false
 
         if (serverLocation == newValue)

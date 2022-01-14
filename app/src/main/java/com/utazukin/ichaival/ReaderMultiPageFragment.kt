@@ -124,24 +124,24 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.swap_merged_page -> {
-                (mainImage?.parent as? ViewGroup)?.removeView(mainImage)
+                topLayout.removeView(mainImage)
                 (mainImage as? SubsamplingScaleImageView)?.recycle()
                 mainImage = null
                 pageNum.visibility = View.VISIBLE
                 progressBar.visibility = View.VISIBLE
-                progressBar.progress = 0
+                progressBar.isIndeterminate = true
 
                 rtol = !rtol
                 imagePath?.let { displayImage(it, otherImagePath) }
                 true
             }
             R.id.split_merged_page -> {
-                (mainImage?.parent as? ViewGroup)?.removeView(mainImage)
+                topLayout.removeView(mainImage)
                 (mainImage as? SubsamplingScaleImageView)?.recycle()
                 mainImage = null
                 pageNum.visibility = View.VISIBLE
                 progressBar.visibility = View.VISIBLE
-                progressBar.progress = 0
+                progressBar.isIndeterminate = true
                 imagePath?.let { displaySingleImage(it, otherPage, true) }
                 true
             }
