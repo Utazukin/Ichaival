@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,9 +32,9 @@ typealias ResourceListener = () -> Unit
 
 class SubsamplingTarget(private val target: SubsamplingScaleImageView,
                         private val useNewDecoder: Boolean,
-                        private val resourceListener: ResourceListener? = null) : Target<File> {
+                        resourceListener: ResourceListener? = null) : Target<File> {
     private var request: Request? = null
-    private val imageEventListener: OnImageEventListener = object: OnImageEventListener {
+    private val imageEventListener = object: OnImageEventListener {
         override fun onImageLoaded() {}
 
         override fun onReady() {
