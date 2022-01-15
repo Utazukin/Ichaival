@@ -644,7 +644,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    fun onMergeFailed(page: Int, failPage: Int, split: Boolean) {
+    fun onMergeFailed(page: Int, failPage: Int, split: Boolean, isOom: Boolean) {
         if (dualPageAdapter.onMergeFailed(page, failPage, split)) {
             supportActionBar?.subtitle = subtitle
             pageSeekBar.progress = currentPage
@@ -654,6 +654,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 findItem(R.id.split_merged_page)?.isVisible = false
             }
         }
+
+        if (isOom)
+            imagePager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
+
         if (jumpPage >= 0 && dualPageAdapter.getPositionFromPage(jumpPage) != imagePager.currentItem)
             imagePager.setCurrentItem(dualPageAdapter.getPositionFromPage(jumpPage), false)
     }

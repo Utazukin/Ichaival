@@ -28,6 +28,7 @@ import android.view.*
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -80,6 +81,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         get() = (activity as? ReaderActivity)?.currentScaleType
     private var archiveId: String? = null
     private var rtol: Boolean = false
+    private var failedMessage: String? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -121,6 +123,12 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
         createViewCalled = true
         return view
+    }
+
+    override fun setMenuVisibility(menuVisible: Boolean) {
+        super.setMenuVisibility(menuVisible)
+        if (menuVisible)
+            failedMessage?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }.also { failedMessage = null }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -172,10 +180,12 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
     }
 
-    private suspend fun displaySingleImageMain(image: String, failPage: Int) = withContext(Dispatchers.Main) { displaySingleImage(image, failPage) }
+    private suspend fun displaySingleImageMain(image: String, failPage: Int, isOom: Boolean = false) = withContext(Dispatchers.Main) {
+        displaySingleImage(image, failPage, isOom = isOom)
+    }
 
-    private fun displaySingleImage(image: String, failPage: Int, split: Boolean = false) {
-        with(activity as ReaderActivity) { onMergeFailed(page, failPage, split) }
+    private fun displaySingleImage(image: String, failPage: Int, split: Boolean = false, isOom: Boolean = false) {
+        with(activity as ReaderActivity) { onMergeFailed(page, failPage, split, isOom) }
         pageNum.text = (page + 1).toString()
         mainImage = if (image.endsWith(".gif")) {
             PhotoView(activity).also {
@@ -232,7 +242,13 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
                 override fun onImageLoaded() {}
                 override fun onPreviewLoadError(e: Exception?) {}
-                override fun onImageLoadError(e: Exception?) {}
+                override fun onImageLoadError(e: Exception?) {
+                    topLayout.removeView(mainImage)
+                    mainImage = null
+                    recycle()
+                    if (activity != null)
+                        imagePath?.let { displaySingleImage(it, page) }
+                }
                 override fun onTileLoadError(e: Exception?) {}
                 override fun onPreviewReleased() {}
             })
@@ -271,8 +287,11 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 .downloadOnly()
                 .load(otherImage)
                 .submit()
-            progressBar.isIndeterminate = false
-            progressBar.progress = 15
+
+            withContext(Dispatchers.Main) {
+                progressBar.isIndeterminate = false
+                progressBar.progress = 15
+            }
 
             try {
                 val dtarget = async { tryOrNull { target.get() } }
@@ -283,14 +302,14 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     displaySingleImageMain(image, page)
                     return@launch
                 }
-                progressBar.progress = 45
+                withContext(Dispatchers.Main) { progressBar.progress = 45 }
 
                 val otherImgFile = dotherTarget.await()
                 if (otherImgFile == null) {
                     displaySingleImageMain(image, otherPage)
                     return@launch
                 }
-                progressBar.progress = 90
+                withContext(Dispatchers.Main) { progressBar.progress = 90 }
 
                 val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 val otherImg = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -322,22 +341,36 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         }
                     }
 
-                    val merged = tryOrNull { mergeBitmaps(firstImg, secondImg, imgFile, otherImgFile, !rtol, requireContext().cacheDir, compressType) }
+                    var oom = false
+                    val merged = try {
+                        mergeBitmaps(firstImg, secondImg, imgFile, otherImgFile, !rtol, requireContext().cacheDir, compressType)
+                    } catch (e: Exception) { null }
+                    catch (e: OutOfMemoryError) {
+                        failedMessage = "Failed to merge pages: Out of Memory"
+                        oom = true
+                        null
+                    }
                     yield()
                     if (merged == null) {
-                        progressBar.isIndeterminate = true
-                        displaySingleImageMain(image, page)
+                        withContext(Dispatchers.Main) {
+                            progressBar.isIndeterminate = true
+                            displaySingleImage(image, page, isOom = oom)
+                        }
                     } else {
-                        progressBar.progress = 100
-                        withContext(Dispatchers.Main) { createImageView(merged, !merged.endsWith(".webp")) }
+                        withContext(Dispatchers.Main) {
+                            progressBar.progress = 100
+                            createImageView(merged, !merged.endsWith(".webp"))
+                        }
                     }
                 }
             } finally {
                 target.cancel(false)
                 otherTarget.cancel(false)
                 activity?.let {
-                    Glide.with(it).clear(target)
-                    Glide.with(it).clear(otherTarget)
+                    with(Glide.with(it)) {
+                        clear(target)
+                        clear(otherTarget)
+                    }
                 }
             }
         }
@@ -362,24 +395,27 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             (if (isLTR) 0 else width2) + width,
             height + (maxHeight - height) / 2
         )
-        var bitmap = decodeBitmap(imgFile, imgSize)
-        canvas.drawBitmap(bitmap, imgSize.toRect(), upperPart, null)
-        pool.put(bitmap)
-        progressBar.progress = 95
-        val bottomPart = Rect(
-            if (!isLTR) 0 else width,
-            0,
-            (if (!isLTR) 0 else width) + width2,
-            height2 + (maxHeight - height2) / 2
-        )
-        bitmap = decodeBitmap(otherImgFile, otherImgSize)
-        canvas.drawBitmap(bitmap, otherImgSize.toRect(), bottomPart, null)
-        pool.put(bitmap)
-        progressBar.progress = 99
 
-        val merged = DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, !isLTR, compressType)
-        pool.put(result)
-        return merged
+        try {
+            var bitmap = decodeBitmap(imgFile, imgSize)
+            canvas.drawBitmap(bitmap, imgSize.toRect(), upperPart, null)
+            pool.put(bitmap)
+            withContext(Dispatchers.Main) { progressBar.progress = 95 }
+            val bottomPart = Rect(
+                if (!isLTR) 0 else width,
+                0,
+                (if (!isLTR) 0 else width) + width2,
+                height2 + (maxHeight - height2) / 2
+            )
+            bitmap = decodeBitmap(otherImgFile, otherImgSize)
+            canvas.drawBitmap(bitmap, otherImgSize.toRect(), bottomPart, null)
+            pool.put(bitmap)
+            withContext(Dispatchers.Main) { progressBar.progress = 99 }
+
+            return DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, !isLTR, compressType)
+        } finally {
+            pool.put(result)
+        }
     }
 
     private fun decodeBitmap(file: File, size: Size) : Bitmap {
