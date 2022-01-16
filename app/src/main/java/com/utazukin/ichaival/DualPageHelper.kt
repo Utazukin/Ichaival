@@ -23,6 +23,7 @@ import android.os.Build
 import com.utazukin.ichaival.PageCompressFormat.Companion.toBitmapFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -35,6 +36,7 @@ object DualPageHelper {
     private const val maxCacheSize = 250 * 1024 * 1024
     private val moveMutex by lazy { Mutex() }
     private val trashMutex by lazy { Mutex() }
+    val mergeSemaphore by lazy { Semaphore(3) }
 
     suspend fun getMergedPage(cacheDir: File, archiveId: String, page: Int, otherPage: Int, rtol: Boolean, compressType: PageCompressFormat) : String? {
         val mergedDir = File(cacheDir, mergedPagePath)

@@ -44,6 +44,7 @@ import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import kotlin.math.ceil
 import kotlin.math.max
@@ -82,6 +83,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private var archiveId: String? = null
     private var rtol: Boolean = false
     private var failedMessage: String? = null
+    private var mergeJob: Job? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -125,10 +127,17 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         return view
     }
 
+
     override fun setMenuVisibility(menuVisible: Boolean) {
         super.setMenuVisibility(menuVisible)
         if (menuVisible)
             failedMessage?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }.also { failedMessage = null }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        mergeJob?.cancel()
+        mergeJob = null
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -180,12 +189,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
     }
 
-    private suspend fun displaySingleImageMain(image: String, failPage: Int, isOom: Boolean = false) = withContext(Dispatchers.Main) {
-        displaySingleImage(image, failPage, isOom = isOom)
-    }
+    private suspend fun displaySingleImageMain(image: String, failPage: Int) = withContext(Dispatchers.Main) { displaySingleImage(image, failPage) }
 
-    private fun displaySingleImage(image: String, failPage: Int, split: Boolean = false, isOom: Boolean = false) {
-        with(activity as ReaderActivity) { onMergeFailed(page, failPage, split, isOom) }
+    private fun displaySingleImage(image: String, failPage: Int, split: Boolean = false) {
+        with(activity as ReaderActivity) { onMergeFailed(page, failPage, split) }
         pageNum.text = (page + 1).toString()
         mainImage = if (image.endsWith(".gif")) {
             PhotoView(activity).also {
@@ -269,7 +276,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             return
         }
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+        mergeJob = lifecycleScope.launch(Dispatchers.IO) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
             val compressString = prefs.getString(getString(R.string.compression_type_pref), getString(R.string.jpg_compress))
             val compressType = PageCompressFormat.fromString(compressString, requireContext())
@@ -341,20 +348,18 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         }
                     }
 
-                    var oom = false
                     val merged = try {
-                        mergeBitmaps(firstImg, secondImg, imgFile, otherImgFile, !rtol, requireContext().cacheDir, compressType)
+                        DualPageHelper.mergeSemaphore.withPermit {  mergeBitmaps(firstImg, secondImg, imgFile, otherImgFile, !rtol, requireContext().cacheDir, compressType) }
                     } catch (e: Exception) { null }
                     catch (e: OutOfMemoryError) {
                         failedMessage = "Failed to merge pages: Out of Memory"
-                        oom = true
                         null
                     }
                     yield()
                     if (merged == null) {
                         withContext(Dispatchers.Main) {
                             progressBar.isIndeterminate = true
-                            displaySingleImage(image, page, isOom = oom)
+                            displaySingleImage(image, page)
                         }
                     } else {
                         withContext(Dispatchers.Main) {

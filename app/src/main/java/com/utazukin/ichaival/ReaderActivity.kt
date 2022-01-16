@@ -644,7 +644,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    fun onMergeFailed(page: Int, failPage: Int, split: Boolean, isOom: Boolean) {
+    fun onMergeFailed(page: Int, failPage: Int, split: Boolean) {
         if (dualPageAdapter.onMergeFailed(page, failPage, split)) {
             supportActionBar?.subtitle = subtitle
             pageSeekBar.progress = currentPage
@@ -655,11 +655,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
         }
 
-        if (isOom)
-            imagePager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
-
         if (jumpPage >= 0 && dualPageAdapter.getPositionFromPage(jumpPage) != imagePager.currentItem)
             imagePager.setCurrentItem(dualPageAdapter.getPositionFromPage(jumpPage), false)
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        imagePager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
     }
 
     override fun onExtract(id: String, pageCount: Int) {
