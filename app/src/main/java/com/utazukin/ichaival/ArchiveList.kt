@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,12 +18,17 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.TextView
 import androidx.preference.PreferenceManager
 import com.google.android.material.navigation.NavigationView
@@ -65,6 +70,23 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             menu?.findItem(R.id.filter_menu)?.isVisible = true
 
         return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (ev?.action == MotionEvent.ACTION_DOWN) {
+            val view = currentFocus
+            if (view is EditText) {
+                val outRect = Rect()
+                view.getLocalVisibleRect(outRect)
+                if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
+                    view.clearFocus()
+                    with(getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager) {
+                        hideSoftInputFromWindow(view.windowToken, 0)
+                    }
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     private fun updatePreferences(prefs: SharedPreferences) {
@@ -117,7 +139,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onLongPressTab(tab: ReaderTab): Boolean {
         val tagFragment = TagDialogFragment.newInstance(tab.id)
 
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
+        val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.run {
             tagFragment.setTagPressListener {
                 tag -> searchView.setQuery(tag, true)
@@ -128,8 +150,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 drawerLayout.closeDrawers()
                 true
             }
-
-            searchView.clearFocus()
         }
 
         tagFragment.show(supportFragmentManager, "tag_popup")

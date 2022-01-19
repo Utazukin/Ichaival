@@ -222,7 +222,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener {
             listAdapter.disableMultiSelect()
-            searchView.clearFocus()
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
                 if (archive != null)
@@ -232,7 +231,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         randomButton.setOnLongClickListener {
             listAdapter.disableMultiSelect()
-            searchView.clearFocus()
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
                 if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
@@ -250,6 +248,18 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         return view
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (requireActivity() is ArchiveSearch) {
+            with(requireActivity().intent) {
+                val tag = getStringExtra(TAG_SEARCH)
+
+                showOnlySearch(true)
+                searchView.setQuery(tag, false)
+            }
+        }
+    }
+
     fun setupArchiveList() {
         lifecycleScope.launch {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -261,9 +271,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             if (isLocalSearch)
                 getViewModel<ArchiveViewModel>(false).init(method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
-            else {
+            else
                 getViewModel<SearchViewModel>(false).init(method, descending, isSearch = activity is ArchiveSearch)
-            }
 
             when {
                 isLocalSearch -> getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
@@ -418,7 +427,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 searchView.setQuery("${searchView.query} $tag", true)
                 true
             }
-            searchView.clearFocus()
             tagFragment.show(it, "tag_popup")
         }
         return true
@@ -445,7 +453,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
     }
 
-    fun showOnlySearch(show: Boolean){
+    private fun showOnlySearch(show: Boolean){
         if (show) {
             randomButton.visibility = View.GONE
             newCheckBox.visibility = View.GONE
