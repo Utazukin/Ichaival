@@ -25,13 +25,14 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 object ReaderTabHolder {
     private var initialized = false
     private var tabCount = 0
+    private val scope by lazy { MainScope() }
 
     private val removeListeners = mutableSetOf<TabRemovedListener>()
 
@@ -96,7 +97,7 @@ object ReaderTabHolder {
     suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)
 
     fun removeTab(id: String) {
-        GlobalScope.launch {
+        scope.launch {
             if (DatabaseReader.removeBookmark(id)) {
                 WebHandler.updateProgress(id, 0)
                 updateRemoveListeners(id)
@@ -105,7 +106,7 @@ object ReaderTabHolder {
     }
 
     fun removeAll() {
-        GlobalScope.launch(Dispatchers.IO) {
+        scope.launch(Dispatchers.IO) {
             val ids = DatabaseReader.clearBookmarks()
             for (id in ids)
                 WebHandler.updateProgress(id, 0)
