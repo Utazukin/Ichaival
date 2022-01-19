@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,16 +23,9 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NavUtils
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.*
 
-class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main + job
-    private val job: Job by lazy { Job() }
+class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, CoroutineScope by MainScope() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme()
@@ -73,7 +66,7 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
 
     override fun onDestroy() {
         super.onDestroy()
-        job.cancel()
+        cancel()
     }
 
     override fun onError(error: String) {

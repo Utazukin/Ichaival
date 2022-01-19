@@ -40,17 +40,13 @@ import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.coroutines.CoroutineContext
 
 const val TAG_SEARCH = "tag"
 
-abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener, CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main + job
+abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener, CoroutineScope by MainScope() {
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
     private lateinit var tabView: RecyclerView
-    private val job: Job by lazy { Job() }
 
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
@@ -153,7 +149,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     override fun onDestroy() {
         super.onDestroy()
-        job.cancel()
+        cancel()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
