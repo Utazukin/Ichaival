@@ -276,7 +276,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             return
         }
 
-        mergeJob = lifecycleScope.launch(Dispatchers.IO) {
+        mergeJob = lifecycleScope.launch(Dispatchers.Default) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
             val compressString = prefs.getString(getString(R.string.compression_type_pref), getString(R.string.jpg_compress))
             val compressType = PageCompressFormat.fromString(compressString, requireContext())
@@ -349,20 +349,19 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     }
 
                     val merged = try {
-                        DualPageHelper.mergeSemaphore.withPermit {  mergeBitmaps(firstImg, secondImg, imgFile, otherImgFile, !rtol, requireContext().cacheDir, compressType) }
+                        val mergeInfo = MergeInfo(firstImg, secondImg, imgFile, otherImgFile, page, otherPage, compressType, archiveId!!, !rtol)
+                        DualPageHelper.mergeBitmaps(mergeInfo, requireContext().cacheDir, Glide.get(requireContext()).bitmapPool) { progressBar.progress = it }
                     } catch (e: Exception) { null }
                     catch (e: OutOfMemoryError) {
                         failedMessage = "Failed to merge pages: Out of Memory"
                         null
                     }
                     yield()
-                    if (merged == null) {
-                        withContext(Dispatchers.Main) {
+                    withContext(Dispatchers.Main) {
+                        if (merged == null) {
                             progressBar.isIndeterminate = true
                             displaySingleImage(image, page)
-                        }
-                    } else {
-                        withContext(Dispatchers.Main) {
+                        } else {
                             progressBar.progress = 100
                             createImageView(merged, !merged.endsWith(".webp"))
                         }
@@ -378,64 +377,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     }
                 }
             }
-        }
-    }
-
-    //Mostly from TachiyomiJ2K
-    private suspend fun mergeBitmaps(imgSize: Size, otherImgSize: Size, imgFile: File, otherImgFile: File, isLTR: Boolean, cacheDir: File, compressType: PageCompressFormat): String {
-        val height = imgSize.height
-        val width = imgSize.width
-
-        val height2 = otherImgSize.height
-        val width2 = otherImgSize.width
-        val maxHeight = max(height, height2)
-        yield()
-        val pool = Glide.get(requireActivity()).bitmapPool
-        val result = pool.get(width + width2, maxHeight, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(result)
-        canvas.drawColor(Color.WHITE)
-        val upperPart = Rect(
-            if (isLTR) 0 else width2,
-            0,
-            (if (isLTR) 0 else width2) + width,
-            height + (maxHeight - height) / 2
-        )
-
-        try {
-            var bitmap = decodeBitmap(imgFile, imgSize)
-            canvas.drawBitmap(bitmap, imgSize.toRect(), upperPart, null)
-            pool.put(bitmap)
-            withContext(Dispatchers.Main) { progressBar.progress = 95 }
-            val bottomPart = Rect(
-                if (!isLTR) 0 else width,
-                0,
-                (if (!isLTR) 0 else width) + width2,
-                height2 + (maxHeight - height2) / 2
-            )
-            bitmap = decodeBitmap(otherImgFile, otherImgSize)
-            canvas.drawBitmap(bitmap, otherImgSize.toRect(), bottomPart, null)
-            pool.put(bitmap)
-            withContext(Dispatchers.Main) { progressBar.progress = 99 }
-
-            return DualPageHelper.saveMergedPath(cacheDir, result, archiveId!!, page, otherPage, !isLTR, compressType)
-        } finally {
-            pool.put(result)
-        }
-    }
-
-    private fun decodeBitmap(file: File, size: Size) : Bitmap {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val source = android.graphics.ImageDecoder.createSource(file)
-            android.graphics.ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                decoder.isMutableRequired = true
-                if (info.size.height > size.height || info.size.width > size.width)
-                    decoder.setTargetSize(size.width, size.height)
-            }
-        } else {
-           var bitmap = BitmapFactory.decodeFile(file.absolutePath)
-            if (bitmap.height > size.height || bitmap.width > size.width)
-                bitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true).also { bitmap.recycle() }
-            bitmap
         }
     }
 
