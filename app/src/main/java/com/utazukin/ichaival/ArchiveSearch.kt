@@ -19,7 +19,12 @@
 package com.utazukin.ichaival
 
 import android.app.Activity
+import android.content.Context
+import android.graphics.Rect
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,5 +65,22 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
     override fun onStop() {
         super.onStop()
         ReaderTabHolder.unregisterAddListener(this)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (ev?.action == MotionEvent.ACTION_DOWN) {
+            val view = currentFocus
+            if (view is EditText) {
+                val outRect = Rect()
+                view.getLocalVisibleRect(outRect)
+                if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
+                    view.clearFocus()
+                    with(getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager) {
+                        hideSoftInputFromWindow(view.windowToken, 0)
+                    }
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 }
