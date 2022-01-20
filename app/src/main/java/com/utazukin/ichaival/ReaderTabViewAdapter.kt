@@ -61,8 +61,7 @@ class ReaderTabViewAdapter (
             holder.pageView.text = (item.page + 1).toString()
             jobs[holder] = activityScope.launch {
                 val thumb = withContext(Dispatchers.Default) {
-                    val context = activityScope as Context
-                    DatabaseReader.getArchiveImage(item.id, context)
+                    DatabaseReader.getArchiveImage(item.id, activityScope as Context)
                 }
                 thumb?.let {
                     val (thumbPath, modifiedTime) = it

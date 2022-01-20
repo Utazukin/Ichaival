@@ -65,12 +65,14 @@ class SubsamplingTarget(private val target: SubsamplingScaleImageView,
     override fun onLoadCleared(placeholder: Drawable?) { }
 
     override fun onResourceReady(resource: File, transition: Transition<in File>?) {
-        if (useNewDecoder) {
-            target.setBitmapDecoderClass(ImageDecoder::class.java)
-            target.setRegionDecoderClass(ImageRegionDecoder::class.java)
+        with(target) {
+            if (useNewDecoder) {
+                setBitmapDecoderClass(ImageDecoder::class.java)
+                setRegionDecoderClass(ImageRegionDecoder::class.java)
+            }
+            setOnImageEventListener(imageEventListener)
+            setImage(ImageSource.uri(resource.absolutePath))
         }
-        target.setOnImageEventListener(imageEventListener)
-        target.setImage(ImageSource.uri(resource.absolutePath))
     }
 
     override fun onStart() { }

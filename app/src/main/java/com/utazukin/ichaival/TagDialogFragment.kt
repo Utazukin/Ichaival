@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2020 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,11 +55,11 @@ class TagDialogFragment : DialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            val archiveId = it.getString(ARCHIVE_PARAM)
+        arguments?.run {
+            val archiveId = getString(ARCHIVE_PARAM)
             archiveId?.let {
                 lifecycleScope.launch {
-                    val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(archiveId) }
+                    val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
                     if (archive != null)
                         setUpTags(archive)
                 }
@@ -85,11 +85,11 @@ class TagDialogFragment : DialogFragment() {
     }
 
     private fun setUpTags(archive: Archive) {
-        for (pair in archive.tags) {
-            if (pair.value.isEmpty())
+        for ((namespace, tags) in archive.tags) {
+            if (tags.isEmpty())
                 continue
 
-            val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
+            val namespace = if (namespace == "global") "Other:" else "${namespace}:"
             val namespaceLayout = FlexboxLayout(context)
             namespaceLayout.flexWrap = FlexWrap.WRAP
             namespaceLayout.flexDirection = FlexDirection.ROW
@@ -102,7 +102,7 @@ class TagDialogFragment : DialogFragment() {
             namespaceLayout.addView(namespaceView)
 
             val isSource = namespace == "source:"
-            for (tag in pair.value) {
+            for (tag in tags) {
                 val tagView = createTagView(tag)
                 if (!isSource) {
                     val searchTag = getSearchTag(tag, namespace)
@@ -123,15 +123,17 @@ class TagDialogFragment : DialogFragment() {
     }
 
     private fun createTagView(tag: String) : TextView {
-        val tagView = TextView(context)
-        tagView.text = tag
-        tagView.background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
-        tagView.setTextColor(Color.WHITE)
-        val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        layoutParams.setMargins(10, 10, 10, 10)
-        tagView.layoutParams = layoutParams
-
-        return tagView
+        return TextView(context).apply {
+            text = tag
+            background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
+            setTextColor(Color.WHITE)
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(10, 10, 10, 10)
+            layoutParams = params
+        }
     }
 
     fun setTagPressListener(listener: TagPressListener?) {

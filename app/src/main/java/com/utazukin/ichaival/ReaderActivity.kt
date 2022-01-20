@@ -191,7 +191,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
                 pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
                 progressStartText.text = if (currentAdapter?.isSinglePage(page) != false) (currentPage + 1).toString() else (currentPage + 2).toString()
-                currentAdapter?.loadImage(currentPage)
+                launch { currentAdapter?.loadImage(currentPage) }
                 supportActionBar?.subtitle = subtitle
                 if (currentAdapter?.containsPage(jumpPage, page) != true)
                     jumpPage = -1
@@ -233,7 +233,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             archive?.let {
                 supportActionBar?.title = it.title
 
-                if (savedPage != null && savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
+                if (savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
                     launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
 
                 //Use the page from the thumbnail over the bookmark
@@ -271,13 +271,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         val currentPage = currentAdapter?.getPageFromPosition(imagePager.currentItem) ?: 0
         super.onConfigurationChanged(newConfig)
         if (dualPageEnabled) {
-            if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                dualPageAdapter.loadImage(currentPage, false)
-                imagePager.adapter = dualPageAdapter
-            } else {
-                pageAdapter.loadImage(currentPage, false)
-                imagePager.adapter = pageAdapter
+            val adapter = when (newConfig.orientation) {
+                Configuration.ORIENTATION_LANDSCAPE -> dualPageAdapter
+                else -> pageAdapter
             }
+
+            adapter.loadImage(currentPage, false)
+            imagePager.adapter = adapter
 
             val position = currentAdapter?.getPositionFromPage(currentPage) ?: 0
             imagePager.setCurrentItem(position, false)
@@ -286,9 +286,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(CURRENT_PAGE_ID, currentPage)
-        outState.putString(PAGE_ID, archive?.id)
-        outState.putInt(SCALE_TYPE, currentScaleType.value)
+        with(outState) {
+            putInt(CURRENT_PAGE_ID, currentPage)
+            putString(PAGE_ID, archive?.id)
+            putInt(SCALE_TYPE, currentScaleType.value)
+        }
     }
 
     override fun onCreateDrawer() {
@@ -415,10 +417,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun startDetailsActivity(id: String) {
         val intent = Intent(this, ArchiveDetails::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", id)
-        if (id == archive?.id)
-            bundle.putInt(FROM_READER_PAGE, currentPage)
+        val bundle = Bundle().apply {
+            putString("id", id)
+            if (id == archive?.id)
+                putInt(FROM_READER_PAGE, currentPage)
+        }
         intent.putExtras(bundle)
         addIntentFlags(intent, id)
         startActivity(intent)
@@ -449,9 +452,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
             R.id.random_archive_button -> {
                 launch {
-                    val randArchive = DatabaseReader.getRandomArchive()
-                    if (randArchive != null) {
-                        startReaderActivity(randArchive.id)
+                    DatabaseReader.getRandomArchive()?.let {
+                        startReaderActivity(it.id)
                         finish()
                     }
                 }
@@ -769,10 +771,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 return loadedPages.size - currentSize
             } else {
                 archive?.let {
-                    if (loadedPages.size < it.numPages / 2) {
-                        for (i in loadedPages.size until it.numPages / 2)
-                            loadedPages.add(defaultPageSize)
-                    }
+                    for (i in loadedPages.size until it.numPages / 2)
+                        loadedPages.add(defaultPageSize)
                 }
             }
             return 0
@@ -878,9 +878,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     val currentSize = loadedPages.size
                     for (i in currentSize until archive!!.numPages)
                         loadedPages.add(true)
-                    for (i in 0 until loadedPages.size) {
-                            loadedPages[i] = true
-                    }
+                    loadedPages.fill(true)
                     return loadedPages.size - currentSize
                 }
                 page >= loadedPages.size -> {
