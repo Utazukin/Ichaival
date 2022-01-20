@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,31 +35,33 @@ import kotlin.math.max
 
 class GlideImageDecoder(private val context: Context, private val pool: BitmapPool) : ResourceDecoder<ByteBuffer, BitmapDrawable> {
     override fun decode(source: ByteBuffer, width: Int, height: Int, options: Options): Resource<BitmapDrawable>? {
-        val info = ImageInfo()
-        val stream = ByteBufferInputStream(source)
-        BitmapDecoder.decode(stream, info)
-        stream.reset()
-        val ratio = if (info.height > info.width)
-            max(floor(info.height / height.toFloat()).toInt(), 2) - 1
-        else
-            max(floor(info.width / width.toFloat()).toInt(), 2) - 1
-        return BitmapDecoder.decode(stream, BitmapDecoder.CONFIG_AUTO, ratio)?.let {
-            BitmapDrawableResource(BitmapDrawable(context.resources, it), pool)
+        ByteBufferInputStream(source).use {
+            val info = ImageInfo()
+            BitmapDecoder.decode(it, info)
+            it.reset()
+            val ratio = if (info.height > info.width)
+                max(floor(info.height / height.toFloat()).toInt(), 2) - 1
+            else
+                max(floor(info.width / width.toFloat()).toInt(), 2) - 1
+            return BitmapDecoder.decode(it, BitmapDecoder.CONFIG_AUTO, ratio)?.let { bitmap ->
+                BitmapDrawableResource(BitmapDrawable(context.resources, bitmap), pool)
+            }
         }
     }
 
     override fun handles(source: ByteBuffer, options: Options) : Boolean  {
-        val info = ImageInfo()
-        val stream = ByteBufferInputStream(source)
-        if (!BitmapDecoder.decode(stream, info) || info.frameCount > 1) {
-            stream.reset()
-            return false
-        }
+        ByteBufferInputStream(source).use {
+            val info = ImageInfo()
+            if (!BitmapDecoder.decode(it, info) || info.frameCount > 1) {
+                it.reset()
+                return false
+            }
 
-        stream.reset()
-        return when (ImageFormat.fromInt(info.format)) {
-            ImageFormat.JPG, ImageFormat.PNG -> true
-            else -> false
+            it.reset()
+            return when (ImageFormat.fromInt(info.format)) {
+                ImageFormat.JPG, ImageFormat.PNG -> true
+                else -> false
+            }
         }
     }
 }

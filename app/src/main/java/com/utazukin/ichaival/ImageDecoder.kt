@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ enum class ImageFormat(val value: Int) {
 
 class ImageDecoder : IImageDecoder {
     override fun decode(context: Context?, uri: Uri): Bitmap {
-        return BitmapDecoder.decode(context?.contentResolver?.openInputStream(uri))!!
+        return context?.contentResolver?.openInputStream(uri)?.use { BitmapDecoder.decode(it) }!!
     }
 }
 
