@@ -78,9 +78,9 @@ class TagDialogFragment : DialogFragment() {
 
     private fun getSearchTag(tag: String, namespace: String) : String {
         return when {
-            namespace == "Other:" -> "\"$tag\""
-            isLocalSearch -> "$namespace\"$tag\""
-            else -> "\"$namespace$tag\"$"
+            namespace == "other" -> "\"$tag\""
+            isLocalSearch -> "$namespace:\"$tag\""
+            else -> "\"$namespace:$tag\"$"
         }
     }
 
@@ -89,7 +89,7 @@ class TagDialogFragment : DialogFragment() {
             if (tags.isEmpty())
                 continue
 
-            val namespace = if (namespace == "global") "Other:" else "${namespace}:"
+            val namespace = if (namespace == "global") "other" else namespace
             val namespaceLayout = FlexboxLayout(context)
             namespaceLayout.flexWrap = FlexWrap.WRAP
             namespaceLayout.flexDirection = FlexDirection.ROW
@@ -98,10 +98,10 @@ class TagDialogFragment : DialogFragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            val namespaceView = createTagView(namespace)
+            val namespaceView = createTagView(namespace, true)
             namespaceLayout.addView(namespaceView)
 
-            val isSource = namespace == "source:"
+            val isSource = namespace == "source"
             for (tag in tags) {
                 val tagView = createTagView(tag)
                 if (!isSource) {
@@ -122,10 +122,13 @@ class TagDialogFragment : DialogFragment() {
         }
     }
 
-    private fun createTagView(tag: String) : TextView {
+    private fun createTagView(tag: String, isNamespace: Boolean = false) : TextView {
         return TextView(context).apply {
             text = tag
-            background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
+            background = if (isNamespace)
+                    ContextCompat.getDrawable(requireContext(), R.drawable.namespace_background)
+                else
+                    ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
             setTextColor(Color.WHITE)
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
   ~ Copyright (C) 2022 Utazukin
@@ -16,17 +17,22 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<resources>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+ 
+ <stroke
+        android:width="2dp"
+        android:color="?namespace_color" />
 
-    <!-- Declare custom theme attributes that allow changing which styles are
-         used for button bars depending on the API level.
-         ?android:attr/buttonBarStyle is new as of API 11 so this is
-         necessary to support previous API levels. -->
-    <declare-styleable name="ButtonBarContainerTheme">
-        <attr name="metaButtonBarStyle" format="reference"/>
-        <attr name="metaButtonBarButtonStyle" format="reference"/>
-        <attr name="tag_color" format="reference"/>
-        <attr name="namespace_color" format="reference"/>
-    </declare-styleable>
-
-</resources>
+    <solid android:color="?tag_color"/>
+ 
+    <corners android:radius="360dp" />
+ 
+    <padding
+        android:left="10dp"
+        android:top="10dp"
+        android:right="10dp"
+        android:bottom="10dp"    >
+    </padding>
+ 
+</shape>

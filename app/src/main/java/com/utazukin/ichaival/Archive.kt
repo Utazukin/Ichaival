@@ -29,7 +29,7 @@ import org.json.JSONObject
 data class Archive (
     @PrimaryKey val id: String,
     @ColumnInfo val title: String,
-    @ColumnInfo var dateAdded: Long,
+    @ColumnInfo val dateAdded: Long,
     @ColumnInfo var isNew: Boolean,
     @ColumnInfo val tags: Map<String, List<String>>,
     @ColumnInfo var currentPage: Int,

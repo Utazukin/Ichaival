@@ -43,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
 
 private const val ARCHIVE_ID = "arcid"
 
@@ -152,9 +153,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     private fun getSearchTag(tag: String, namespace: String) : String {
         return when {
-            namespace == "Other:" -> "\"$tag\""
-            isLocalSearch -> "$namespace\"$tag\""
-            else -> "\"$namespace$tag\"$"
+            namespace == "other" -> "\"$tag\""
+            isLocalSearch -> "$namespace:\"$tag\""
+            else -> "\"$namespace:$tag\"$"
         }
     }
 
@@ -170,11 +171,22 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     }
 
     private fun setUpTags(archive: Archive) {
-        for (pair in archive.tags) {
-            if (pair.value.isEmpty())
+        if (archive.dateAdded > 0) {
+            val namespaceLayout = FlexboxLayout(context).apply {
+                flexWrap = FlexWrap.WRAP
+                flexDirection = FlexDirection.ROW
+            }
+
+            tagLayout.addView(namespaceLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            val namespaceView = createTagView("date added", true)
+            namespaceLayout.addView(namespaceView)
+            namespaceLayout.addView(createTagView(DateFormat.getDateInstance(DateFormat.SHORT).format(archive.dateAdded * 1000)))
+        }
+        for ((namespace, tags) in archive.tags) {
+            if (tags.isEmpty())
                 continue
 
-            val namespace = if (pair.key == "global") "Other:" else "${pair.key}:"
+            val namespace = if (namespace == "global") "other" else namespace
             val namespaceLayout = FlexboxLayout(context).apply {
                 flexWrap = FlexWrap.WRAP
                 flexDirection = FlexDirection.ROW
@@ -183,11 +195,11 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                 namespaceLayout,
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT)
-            val namespaceView = createTagView(namespace)
+            val namespaceView = createTagView(namespace, true)
             namespaceLayout.addView(namespaceView)
 
-            val isSource = namespace == "source:"
-            for (tag in pair.value) {
+            val isSource = namespace == "source"
+            for (tag in tags) {
                 val tagView = createTagView(tag)
                 namespaceLayout.addView(tagView)
 
@@ -203,15 +215,21 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    private fun createTagView(tag: String) : TextView {
-        val tagView = TextView(context)
-        tagView.text = tag
-        tagView.background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
-        tagView.setTextColor(Color.WHITE)
-        val layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        layoutParams.setMargins(10, 10, 10, 10)
-        tagView.layoutParams = layoutParams
-        return tagView
+    private fun createTagView(tag: String, isNamespace: Boolean = false) : TextView {
+        return TextView(context).apply {
+            text = tag
+            background = if (!isNamespace)
+                ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
+            else
+                ContextCompat.getDrawable(requireContext(), R.drawable.namespace_background)
+            setTextColor(Color.WHITE)
+            val params = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            params.setMargins(10, 10, 10, 10)
+            layoutParams = params
+        }
     }
 
     private fun createCatView(category: ArchiveCategory, archiveId: String): TextView {
