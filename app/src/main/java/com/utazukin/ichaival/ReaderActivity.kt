@@ -297,11 +297,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         drawerLayout = findViewById(R.id.drawer_layout)
         navView = drawerLayout.findViewById(R.id.nav_view)
         val tabView: RecyclerView = findViewById(R.id.tab_view)
-        val listener = this
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
+            adapter = ReaderTabViewAdapter(this@ReaderActivity).also {
                 launch(Dispatchers.Default) { viewModel.bookmarks.collectLatest { data -> it.submitData(data) } }
             }
 
@@ -312,8 +311,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         val closeButton: ImageView = findViewById(R.id.clear_bookmark)
         closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
-        val touchHelper = BookmarkTouchHelper(this)
-        touchHelper.leftSwipeListener = { id, _ ->
+        val touchHelper = BookmarkTouchHelper(this) { id, _ ->
             setResult(Activity.RESULT_OK)
             startDetailsActivity(id)
             finish()

@@ -30,12 +30,11 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-typealias DetailsListener = (String, Int) -> Unit
+private typealias DetailsListener = (String, Int) -> Unit
 
-class BookmarkTouchHelper(context: Context) : ItemTouchHelper.SimpleCallback(0, RIGHT or LEFT) {
+class BookmarkTouchHelper(context: Context, private val leftSwipeListener: DetailsListener?) : ItemTouchHelper.SimpleCallback(0, RIGHT or LEFT) {
     private val infoDrawable: Drawable = ContextCompat.getDrawable(context, R.drawable.ic_info_black_24dp)!!
     private val margin: Int = context.resources.getDimension(R.dimen.ic_clear_margin).roundToInt()
-    var leftSwipeListener: DetailsListener? = null
 
     override fun onMove(recyclerView: RecyclerView,
                         viewHolder: RecyclerView.ViewHolder,

@@ -33,7 +33,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.RequestManager
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.signature.ObjectKey
 import com.google.android.material.color.MaterialColors
@@ -44,10 +44,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class ArchiveRecyclerViewAdapter(
-    private val mListener: OnListFragmentInteractionListener?,
-    private val longListener: ((a: Archive) -> Boolean)?,
     fragment: Fragment,
-    private val glideManager: RequestManager
+    private val longListener: ((a: Archive) -> Boolean)?
 ) : PagedListAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
 
     private var multiSelect = false
@@ -56,12 +54,14 @@ class ArchiveRecyclerViewAdapter(
     private val scope = fragment.lifecycleScope
     private val context = fragment.requireContext()
     private val fragmentManager = fragment.childFragmentManager
+    private val listener = fragment.activity as? OnListFragmentInteractionListener
+    private val glideManager = Glide.with(fragment.requireActivity())
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as Archive
         // Notify the active callbacks interface (the activity, if the fragment is attached to
         // one) that an item has been selected.
-        mListener?.onListFragmentInteraction(item)
+        listener?.onListFragmentInteraction(item)
     }
 
     private val onLongClickListener: View.OnLongClickListener = View.OnLongClickListener { v ->

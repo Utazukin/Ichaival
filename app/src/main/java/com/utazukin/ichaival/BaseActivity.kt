@@ -35,7 +35,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.coroutines.*
@@ -94,11 +93,10 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         navView = drawerLayout.findViewById(R.id.nav_view)
         val context = this
         tabView = findViewById(R.id.tab_view)
-        val listener = this
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
         with(tabView) {
             layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(listener, listener, Glide.with(listener)).also {
+            adapter = ReaderTabViewAdapter(this@BaseActivity).also {
                 it.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
                     override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                         super.onItemRangeInserted(positionStart, itemCount)
@@ -117,8 +115,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val closeButton: ImageView = findViewById(R.id.clear_bookmark)
         closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
 
-        val touchHelper = BookmarkTouchHelper(this)
-        touchHelper.leftSwipeListener = { id, position ->
+        val touchHelper = BookmarkTouchHelper(this) { id, position ->
             tabView.adapter?.notifyItemChanged(position)
             startDetailsActivity(id)
         }

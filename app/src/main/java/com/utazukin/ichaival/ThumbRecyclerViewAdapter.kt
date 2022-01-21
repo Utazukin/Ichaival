@@ -25,22 +25,29 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.RequestManager
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ThumbRecyclerViewAdapter(
-    private val listener: ThumbInteractionListener?,
-    private val glide: RequestManager,
-    private val scope: CoroutineScope,
+    fragment: Fragment,
     private val archive: Archive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
+
+    private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
+    private val glide = Glide.with(fragment.requireActivity())
+    private val scope = fragment.lifecycleScope
 
     private val onClickListener = View.OnClickListener { v ->
         val item = v.getTag(R.id.small_thumb) as Int

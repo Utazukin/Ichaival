@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,33 +26,27 @@ import android.widget.TextView
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.RequestManager
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
 import kotlinx.coroutines.*
 
-class ReaderTabViewAdapter (
-    private val listener: OnTabInteractionListener?,
-    private val activityScope: CoroutineScope,
-    private val glideManager: RequestManager
-) : PagingDataAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
+class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
-    private val onClickListener: View.OnClickListener
-    private val onLongClickListener: View.OnLongClickListener
+    private val listener = activity as? OnTabInteractionListener
+    private val activityScope = activity as CoroutineScope
+    private val glideManager = Glide.with(activity)
+
+    private val onClickListener: View.OnClickListener = View.OnClickListener { v ->
+        val item = v.tag as ReaderTab
+        listener?.onTabInteraction(item)
+    }
+    private val onLongClickListener: View.OnLongClickListener = View.OnLongClickListener {
+        val item = it.tag as ReaderTab
+        listener?.onLongPressTab(item) == true
+    }
 
     private val jobs: MutableMap<ViewHolder, Job> = mutableMapOf()
-
-    init {
-        onClickListener = View.OnClickListener { v ->
-            val item = v.tag as ReaderTab
-            listener?.onTabInteraction(item)
-        }
-
-        onLongClickListener = View.OnLongClickListener {
-            val item = it.tag as ReaderTab
-            listener?.onLongPressTab(item) == true
-        }
-    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let { item ->
@@ -61,7 +54,7 @@ class ReaderTabViewAdapter (
             holder.pageView.text = (item.page + 1).toString()
             jobs[holder] = activityScope.launch {
                 val thumb = withContext(Dispatchers.Default) {
-                    DatabaseReader.getArchiveImage(item.id, activityScope as Context)
+                    DatabaseReader.getArchiveImage(item.id, activity)
                 }
                 thumb?.let {
                     val (thumbPath, modifiedTime) = it
