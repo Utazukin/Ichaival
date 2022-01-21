@@ -34,6 +34,7 @@ import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
+import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.signature.ObjectKey
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
@@ -105,7 +106,7 @@ class ArchiveRecyclerViewAdapter(
                 }
                 image?.let { pair ->
                     val (imagePath, modifiedTime) = pair
-                    glideManager.load(imagePath).signature(ObjectKey(modifiedTime)).into(holder.archiveImage)
+                    glideManager.load(imagePath).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(holder.archiveImage)
                 }
             }
             thumbLoadingJobs[holder] = job
@@ -129,9 +130,9 @@ class ArchiveRecyclerViewAdapter(
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
-        thumbLoadingJobs[holder]?.cancel()
-        thumbLoadingJobs.remove(holder)
+        thumbLoadingJobs.remove(holder)?.cancel()
         holder.archiveImage.setImageBitmap(null)
+        glideManager.clear(holder.archiveImage)
         super.onViewRecycled(holder)
     }
 

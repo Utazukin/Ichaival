@@ -28,7 +28,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.RequestManager
 import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
@@ -81,7 +81,7 @@ class ThumbRecyclerViewAdapter(
             glide.load(image)
                 .dontTransform()
                 .override(getDpAdjusted(200))
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .format(DecodeFormat.PREFER_RGB_565)
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .addListener(object: RequestListener<Drawable>{
                     override fun onLoadFailed(e: GlideException?,
@@ -110,10 +110,10 @@ class ThumbRecyclerViewAdapter(
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
-        imageLoadingJobs[holder]?.cancel()
-        imageLoadingJobs.remove(holder)
+        imageLoadingJobs.remove(holder)?.cancel()
 
         holder.thumbView.setImageDrawable(null)
+        glide.clear(holder.thumbView)
         val params = holder.thumbView.layoutParams
         params.height = getDpAdjusted(200)
         holder.thumbView.adjustViewBounds = false
