@@ -88,8 +88,8 @@ data class Archive (
         }
         else {
             val normalized = tag.trim().replace("_", " ")
-            for (pair in tags) {
-                if (pair.value.any { it.contains(normalized, ignoreCase = true)})
+            for ((_, t) in tags) {
+                if (t.any { it.contains(normalized, ignoreCase = true)})
                     return true
             }
         }
@@ -109,30 +109,28 @@ class ArchiveJson(json: JSONObject) {
     init {
         val tagString = json.getString("tags")
         val tagList = tagString.split(",")
-        val mutableTags = mutableMapOf<String, MutableList<String>>()
-        var dateAdded = 0L
-        for (tag in tagList) {
-            val trimmed = tag.trim()
-            if (trimmed.contains(":")) {
-                val split = trimmed.split(":")
-                val namespace = split[0]
-                if (namespace == "date_added")
-                    dateAdded = split[1].toLong()
-                else {
-                    val namespaceList = mutableTags.getOrPut(namespace) { mutableListOf() }
-                    namespaceList.add(split[1])
+        tags = buildMap<String, MutableList<String>> {
+            var timestamp = 0L
+            for (tag in tagList) {
+                val trimmed = tag.trim()
+                if (trimmed.contains(":")) {
+                    val split = trimmed.split(":")
+                    val namespace = split[0]
+                    if (namespace == "date_added")
+                        timestamp = split[1].toLong()
+                    else {
+                        val namespaceList = getOrPut(namespace) { mutableListOf() }
+                        namespaceList.add(split[1])
+                    }
+                } else if (tag.isNotEmpty()) {
+                    val global = getOrPut("global") { mutableListOf() }
+                    global.add(trimmed)
                 }
             }
-            else if (tag.isNotEmpty()) {
-                val global = mutableTags.getOrPut("global") { mutableListOf() }
-                global.add(trimmed)
-            }
+            dateAdded = timestamp
         }
-        this.dateAdded = dateAdded
-        tags = mutableTags
 
-        val isNewString = json.getString("isnew")
-        isNew = isNewString == "block" || isNewString == "true"
+        json.getString("isnew").let { isNew = it == "block" || it == "true" }
     }
 
 }
