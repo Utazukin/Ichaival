@@ -133,7 +133,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     }
 
     override fun onTabsAdded(ids: List<String>) {
-        if (ids.contains(archiveId))
+        if (archiveId in ids)
             lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 

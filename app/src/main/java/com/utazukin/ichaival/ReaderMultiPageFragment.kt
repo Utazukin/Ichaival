@@ -21,7 +21,6 @@ package com.utazukin.ichaival
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
-import android.os.Build
 import android.os.Bundle
 import android.util.Size
 import android.view.*
@@ -38,16 +37,13 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.DrawableImageViewTarget
 import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import kotlin.math.ceil
-import kotlin.math.max
 
 enum class PageCompressFormat {
     JPEG,
@@ -233,8 +229,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         override fun onReady() {
                             pageNum.visibility = View.GONE
                             progressBar.visibility = View.GONE
-                            view?.setOnClickListener(null)
-                            view?.setOnLongClickListener(null)
+                            view?.run {
+                                setOnClickListener(null)
+                                setOnLongClickListener(null)
+                            }
                             updateScaleType(it, currentScaleType)
                         }
                     })

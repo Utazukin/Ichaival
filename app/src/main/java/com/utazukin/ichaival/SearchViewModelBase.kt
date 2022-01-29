@@ -176,7 +176,7 @@ open class ArchiveViewModel : SearchViewModelBase() {
         else {
             val spaceRegex by lazy { Regex("\\s") }
             for (archive in allArchives) {
-                if (archive.title.contains(filter, ignoreCase = true) && !mValues.contains(archive.id))
+                if (archive.title.contains(filter, ignoreCase = true) && archive.id !in mValues)
                     addIfNew(archive)
                 else {
                     val terms = filter.split(spaceRegex)
@@ -185,17 +185,17 @@ open class ArchiveViewModel : SearchViewModelBase() {
                     while (i < terms.size) {
                         var term = terms[i]
                         val colonIndex = term.indexOf(':')
-                        if (term.startsWith("\"") || (colonIndex in 0..(term.length - 2) && term[colonIndex + 1] == '"')) {
+                        if (term.startsWith('"') || (colonIndex in 0..(term.length - 2) && term[colonIndex + 1] == '"')) {
                             val builder = StringBuilder(term)
-                            if (!term.endsWith("\"")) {
+                            if (!term.endsWith('"')) {
                                 var k = i + 1
-                                while (k < terms.size && !terms[k].endsWith("\"")) {
+                                while (k < terms.size && !terms[k].endsWith('"')) {
                                     builder.append(" ")
                                     builder.append(terms[k])
                                     ++k
                                 }
 
-                                if (k < terms.size && terms[k].endsWith("\"")) {
+                                if (k < terms.size && terms[k].endsWith('"')) {
                                     builder.append(" ")
                                     builder.append(terms[k])
                                 }
@@ -205,7 +205,7 @@ open class ArchiveViewModel : SearchViewModelBase() {
                         }
 
                         val containsTag = archive.containsTag(term.removePrefix("-"))
-                        val isNegative = term.startsWith("-")
+                        val isNegative = term.startsWith('-')
                         if (containsTag == isNegative) {
                             hasAll = false
                             break
@@ -213,7 +213,7 @@ open class ArchiveViewModel : SearchViewModelBase() {
                         ++i
                     }
 
-                    if (hasAll && !mValues.contains(archive.id))
+                    if (hasAll && archive.id !in mValues)
                         addIfNew(archive)
                 }
             }

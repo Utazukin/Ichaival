@@ -160,8 +160,10 @@ class ReaderFragment : Fragment(), PageFragment {
                         override fun onReady() {
                             pageNum.visibility = View.GONE
                             progressBar.visibility = View.GONE
-                            view?.setOnClickListener(null)
-                            view?.setOnLongClickListener(null)
+                            view?.run {
+                                setOnClickListener(null)
+                                setOnLongClickListener(null)
+                            }
                             updateScaleType(it, currentScaleType)
                         }
                     })
@@ -204,8 +206,10 @@ class ReaderFragment : Fragment(), PageFragment {
             ): Boolean {
                 if (clearOnReady) {
                     pageNum.visibility = View.GONE
-                    view?.setOnClickListener(null)
-                    view?.setOnLongClickListener(null)
+                    view?.run {
+                        setOnClickListener(null)
+                        setOnLongClickListener(null)
+                    }
                 }
                 progressBar.visibility = View.GONE
                 return false

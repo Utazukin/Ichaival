@@ -76,11 +76,11 @@ data class Archive (
     }
 
     fun containsTag(tag: String) : Boolean {
-        if (tag.contains(":")) {
+        if (':' in tag) {
             val split = tag.split(":")
             val namespace = split[0].trim()
             var normalized = split[1].trim().replace("_", " ")
-            val exact = normalized.startsWith("\"") && normalized.endsWith("\"")
+            val exact = normalized.startsWith('"') && normalized.endsWith('"')
             if (exact)
                 normalized = normalized.removeSurrounding("\"")
             val nTags = tags[namespace]
@@ -111,10 +111,9 @@ class ArchiveJson(json: JSONObject) {
         val tagList = tagString.split(",")
         tags = buildMap<String, MutableList<String>> {
             var timestamp = 0L
-            for (tag in tagList) {
-                val trimmed = tag.trim()
-                if (trimmed.contains(":")) {
-                    val split = trimmed.split(":")
+            for (tag in tagList.map { it.trim() }) {
+                if (':' in tag) {
+                    val split = tag.split(":")
                     val namespace = split[0]
                     if (namespace == "date_added")
                         timestamp = split[1].toLong()
@@ -124,7 +123,7 @@ class ArchiveJson(json: JSONObject) {
                     }
                 } else if (tag.isNotEmpty()) {
                     val global = getOrPut("global") { mutableListOf() }
-                    global.add(trimmed)
+                    global.add(tag)
                 }
             }
             dateAdded = timestamp
