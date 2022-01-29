@@ -53,7 +53,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private var sortMethod = SortMethod.Alpha
     private var descending = false
     private var sortUpdated = false
-    private var listener: OnListFragmentInteractionListener? = null
     private var searchJob: Job? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
@@ -85,11 +84,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         else
             ViewModelProviders.of(this)[SearchViewModel::class.java]
 
+        val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
+
         // Set the adapter
         with(listView) {
             post {
-                val dpWidth = getDpWidth(width)
-                val columns = floor(dpWidth / 300f).toInt()
+                val dpWidth = getDpWidth(width).toFloat()
+                val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
+                val columns = floor(dpWidth / itemWidth).toInt()
                 layoutManager = if (columns > 1) {
                     object : GridLayoutManager(context, columns) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
@@ -112,7 +114,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     }
                 }
             }
-            listAdapter = ArchiveRecyclerViewAdapter(listener, ::handleArchiveLongPress, this@ArchiveListFragment, Glide.with(context))
+            listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, ::handleArchiveLongPress)
             adapter = listAdapter
             listAdapter.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
                 override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
@@ -332,7 +334,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
                 override fun onSuggestionClick(index: Int): Boolean {
                     val cursor = suggestionsAdapter.getItem(index) as Cursor
-                    var selection = cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1))
+                    var selection = cursor.getString(cursor.getColumnIndexOrThrow(SearchManager.SUGGEST_COLUMN_TEXT_1))
                     if (!isLocalSearch)
                         selection = "\"$selection\"\\$"
                     else if (selection.split(' ').size > 1)
@@ -476,12 +478,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     override fun onAttach(context: Context) {
         super.onAttach(context)
         DatabaseReader.refreshListener = this
-        if (context is OnListFragmentInteractionListener) {
-            listener = context
-        } else {
-            throw RuntimeException("$context must implement OnListFragmentInteractionListener")
-        }
-
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         prefs.registerOnSharedPreferenceChangeListener(this)
     }
@@ -497,7 +493,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onDetach() {
         super.onDetach()
-        listener = null
         DatabaseReader.refreshListener = null
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)

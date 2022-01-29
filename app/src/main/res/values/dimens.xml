@@ -22,4 +22,6 @@
     <dimen name="status_bar_height">24dp</dimen>
     <dimen name="seek_bar_margin">20dp</dimen>
     <dimen name="ic_clear_margin">16dp</dimen>
+    <dimen name="archive_card_width">300dp</dimen>
+    <dimen name="archive_cover_width">150dp</dimen>
 </resources>

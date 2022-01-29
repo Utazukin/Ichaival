@@ -23,21 +23,21 @@
              android:layout_height="match_parent"
             android:layout_margin="2dp">
 
-        <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/tag_layout"
-                >
+    <LinearLayout
+        android:id="@+id/tag_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tag_header"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/tag_header"
-                android:textAlignment="viewStart"
-                android:textDirection="locale"
-                android:textSize="24sp" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/tag_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/tag_header"
+            android:textAlignment="viewStart"
+            android:textDirection="locale"
+            android:textSize="24sp" />
+    </LinearLayout>
 
 </ScrollView>

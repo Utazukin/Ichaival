@@ -118,7 +118,6 @@
             android:layout_height="wrap_content"
             android:text="@string/tag_header"
             android:textAlignment="viewStart"
-            android:textDirection="locale"
             android:textSize="24sp" />
     </LinearLayout>
 

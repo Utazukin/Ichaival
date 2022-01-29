@@ -80,6 +80,15 @@
             android:title="@string/theme_pref_name"
             app:defaultValue="@string/dark_theme"
             app:iconSpaceReserved="false" />
+        <ListPreference
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/list_type"
+            android:entryValues="@array/list_type"
+            android:key="@string/archive_list_type_key"
+            android:title="@string/archive_list_type_pref_title"
+            app:defaultValue="@string/card_view"
+            app:iconSpaceReserved="false" />
         <Preference
             app:key="@string/thumbnail_pref"
             app:summary="@string/thumbnail_summary"

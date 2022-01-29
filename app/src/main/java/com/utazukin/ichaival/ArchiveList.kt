@@ -111,6 +111,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 setTheme()
                 recreate()
             }
+            getString(R.string.archive_list_type_key) -> needsRefresh = true
         }
     }
 

@@ -72,6 +72,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
+        val listTypePref: Preference? = findPreference(getString(R.string.archive_list_type_key))
+        bindPreferenceSummaryToValue(listTypePref)
+
         val cachePref: Preference? = findPreference(getString(R.string.local_cache_pref))
         cachePref?.let { setupCachePref(it) }
 

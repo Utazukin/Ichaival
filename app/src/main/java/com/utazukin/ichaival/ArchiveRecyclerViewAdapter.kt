@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 
+import android.content.Context
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
@@ -31,6 +32,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.PagedListAdapter
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -42,6 +44,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+enum class ListViewType {
+    Card,
+    Cover;
+
+    companion object {
+        fun fromString(context: Context, s: String?) : ListViewType {
+            return when(s) {
+                context.resources.getString(R.string.cover_view) -> Cover
+                else -> Card
+            }
+        }
+    }
+}
 
 class ArchiveRecyclerViewAdapter(
     fragment: Fragment,
@@ -56,6 +72,7 @@ class ArchiveRecyclerViewAdapter(
     private val fragmentManager = fragment.childFragmentManager
     private val listener = fragment.activity as? OnListFragmentInteractionListener
     private val glideManager = Glide.with(fragment.requireActivity())
+    private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as Archive
@@ -81,10 +98,14 @@ class ArchiveRecyclerViewAdapter(
 
     private fun selectArchive(holder: ViewHolder, archive: Archive, position: Int) {
         if (!selectedArchives.contains(archive)) {
-            holder.mContentView.setCardBackgroundColor(ContextCompat.getColor(holder.mContentView.context, R.color.colorPrimaryDark))
+            holder.mContentView?.let { it.setCardBackgroundColor(ContextCompat.getColor(it.context, R.color.colorPrimaryDark)) }
+            if (listViewType == ListViewType.Cover)
+                holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.colorPrimaryDark))
             selectedArchives[archive] = position
         } else {
-            holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.cardBackgroundColor))
+            holder.mContentView?.let { it.setCardBackgroundColor(MaterialColors.getColor(it, R.attr.cardBackgroundColor)) }
+            if (listViewType == ListViewType.Cover)
+                holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.archive_cover_label))
             selectedArchives.remove(archive)
         }
 
@@ -92,8 +113,11 @@ class ArchiveRecyclerViewAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.fragment_archive, parent, false)
+        val layout = when (listViewType) {
+            ListViewType.Cover -> R.layout.fragment_archive_cover
+            else -> R.layout.fragment_archive
+        }
+        val view = LayoutInflater.from(parent.context).inflate(layout, parent, false)
         return ViewHolder(view)
     }
 
@@ -102,7 +126,7 @@ class ArchiveRecyclerViewAdapter(
             holder.archiveName.text = it.title
             val job = scope.launch(Dispatchers.Main) {
                 val image = withContext(Dispatchers.Default) {
-                    DatabaseReader.getArchiveImage(it, holder.mContentView.context)
+                    DatabaseReader.getArchiveImage(it, holder.mView.context)
                 }
                 image?.let { pair ->
                     val (imagePath, modifiedTime) = pair
@@ -111,10 +135,17 @@ class ArchiveRecyclerViewAdapter(
             }
             thumbLoadingJobs[holder] = job
 
-            if (selectedArchives.contains(it))
-                holder.mContentView.setCardBackgroundColor(ContextCompat.getColor(holder.mContentView.context, R.color.colorPrimaryDark))
-            else
-                holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.cardBackgroundColor))
+            if (listViewType == ListViewType.Card && holder.mContentView != null) {
+                if (selectedArchives.contains(it))
+                    holder.mContentView.setCardBackgroundColor(ContextCompat.getColor(holder.mContentView.context, R.color.colorPrimaryDark))
+                else
+                    holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.cardBackgroundColor))
+            } else if (listViewType == ListViewType.Cover) {
+                if (selectedArchives.contains(it))
+                    holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.colorPrimaryDark))
+                else
+                    holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.archive_cover_label))
+            }
 
             with(holder.mView) {
                 tag = it
@@ -137,9 +168,9 @@ class ArchiveRecyclerViewAdapter(
     }
 
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView) {
-        val mContentView: CardView = mView.findViewById(R.id.archive_card)
-        val archiveName: TextView = mContentView.findViewById(R.id.archive_label)
-        val archiveImage: ImageView = mContentView.findViewById(R.id.archive_thumb)
+        val mContentView: CardView? = mView.findViewById(R.id.archive_card)
+        val archiveName: TextView = mView.findViewById(R.id.archive_label)
+        val archiveImage: ImageView = mView.findViewById(R.id.archive_thumb)
 
         override fun toString(): String {
             return super.toString() + " '" + archiveName + "'"

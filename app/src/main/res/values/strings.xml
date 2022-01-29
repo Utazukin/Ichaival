@@ -149,6 +149,8 @@
     </plurals>
     <string name="png_compress">PNG</string>
     <string name="jpg_compress">JPEG</string>
+    <string name="card_view">Card</string>
+    <string name="cover_view">Cover</string>
     <string name="png_compress_display">PNG (Slow, High Quality)</string>
     <string name="jpg_compress_display">JPEG (Fast, Decent Quality)</string>
     <string name="compression_type_pref">compression_type_pref</string>
@@ -158,9 +160,15 @@
     <string name="dual_page_swap_title">Invert Merge Direction</string>
     <string name="dual_page_swap_summary">Invert RTL from overall RTL setting</string>
     <string name="dual_page_swap_key">dual_page_swap_key</string>
+    <string name="archive_list_type_key">archive_list_type_key</string>
+    <string name="archive_list_type_pref_title">List View</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>
+    </string-array>
+    <string-array name="list_type">
+        <item>@string/card_view</item>
+        <item>@string/cover_view</item>
     </string-array>
     <string-array name="compression_types_display">
         <item>@string/jpg_compress_display</item>
