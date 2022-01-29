@@ -22,7 +22,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.paging.DataSource
 import androidx.paging.PositionalDataSource
 import kotlinx.coroutines.*
-import kotlin.math.floor
 import kotlin.math.min
 
 class ServerSearchResult(val results: List<String>?,
@@ -147,7 +146,7 @@ class ArchiveListServerSource(results: List<String>?,
     private suspend fun loadResults(endIndex: Int) = coroutineScope {
         val remaining = endIndex - totalResults.size
         val currentSize = totalResults.size
-        val pages = floor(remaining.toFloat() / ServerManager.pageSize).toInt()
+        val pages = remaining.floorDiv(ServerManager.pageSize)
         val jobs = buildList(pages + 1) {
             for (i in 0 until pages) {
                 val job = async(Dispatchers.IO) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + i * ServerManager.pageSize, false) }

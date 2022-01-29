@@ -30,7 +30,6 @@ import com.hippo.image.ImageInfo
 import okhttp3.internal.and
 import java.io.InputStream
 import java.nio.ByteBuffer
-import kotlin.math.floor
 import kotlin.math.max
 
 class GlideImageDecoder(private val context: Context, private val pool: BitmapPool) : ResourceDecoder<ByteBuffer, BitmapDrawable> {
@@ -40,9 +39,9 @@ class GlideImageDecoder(private val context: Context, private val pool: BitmapPo
             BitmapDecoder.decode(it, info)
             it.reset()
             val ratio = if (info.height > info.width)
-                max(floor(info.height / height.toFloat()).toInt(), 2) - 1
+                max(info.height.floorDiv(height), 2) - 1
             else
-                max(floor(info.width / width.toFloat()).toInt(), 2) - 1
+                max(info.width.floorDiv(width), 2) - 1
             return BitmapDecoder.decode(it, BitmapDecoder.CONFIG_AUTO, ratio)?.let { bitmap ->
                 BitmapDrawableResource(BitmapDrawable(context.resources, bitmap), pool)
             }

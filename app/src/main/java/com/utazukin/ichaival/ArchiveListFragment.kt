@@ -38,10 +38,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.bumptech.glide.Glide
 import kotlinx.coroutines.*
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.min
 
 private const val RESULTS_KEY = "search_results"
@@ -89,9 +87,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         // Set the adapter
         with(listView) {
             post {
-                val dpWidth = getDpWidth(width).toFloat()
+                val dpWidth = getDpWidth(width)
                 val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
-                val columns = floor(dpWidth / itemWidth).toInt()
+                val columns = dpWidth.floorDiv(itemWidth)
                 layoutManager = if (columns > 1) {
                     object : GridLayoutManager(context, columns) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
