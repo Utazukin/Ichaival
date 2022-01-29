@@ -277,11 +277,17 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             when {
                 isLocalSearch -> getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
                 savedState != null -> {
-                    savedState?.getStringArray(RESULTS_KEY)?.let {
-                        val totalSize = savedState!!.getInt(RESULTS_SIZE_KEY)
-                        val result = ServerSearchResult(it.asList(), totalSize, searchView.query, newCheckBox.isChecked)
-                        getViewModel<SearchViewModel>().filter(result)
+                    savedState?.run {
+                        getStringArray(RESULTS_KEY)?.let {
+                            val totalSize = getInt(RESULTS_SIZE_KEY)
+                            val result = ServerSearchResult(it.asList(), totalSize, searchView.query, newCheckBox.isChecked)
+                            getViewModel<SearchViewModel>().filter(result)
+                        }
                     }
+                }
+                searchView.query == STATIC_CATEGORY_SEARCH -> {
+                    val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
+                    (categoryFragment?.selectedCategory as? StaticCategory)?.let { handleCategoryChange(it) }
                 }
                 searchView.query != null -> {
                     searchView.query?. let {

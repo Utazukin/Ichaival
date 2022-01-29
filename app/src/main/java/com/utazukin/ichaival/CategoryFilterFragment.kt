@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,11 +47,14 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     private var sortMethod = SortMethod.Alpha
     private var descending = false
     private val categoryButtons = mutableListOf<AppCompatRadioButton>()
+    private var savedCategory: StaticCategory? = null
     val selectedCategory: ArchiveCategory?
         get() {
-            if (categoryGroup.checkedRadioButtonId >= 0)
-                return currentCategories?.get(categoryGroup.checkedRadioButtonId)
-            return null
+            return when {
+                currentCategories == null -> savedCategory
+                categoryGroup.checkedRadioButtonId >= 0 -> currentCategories?.get(categoryGroup.checkedRadioButtonId)
+                else -> null
+            }
         }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -87,6 +90,26 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         }
 
         return view
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        with(outState){
+            (selectedCategory as? StaticCategory)?.let {
+                putString("name", it.name)
+                putString("id", it.id)
+                putStringArray("archiveIds", it.archiveIds.toTypedArray())
+            }
+        }
+    }
+
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        savedInstanceState?.run {
+            val name = getString("name")
+            if (name != null)
+                savedCategory = StaticCategory(name, getString("id")!!, false, getStringArray("archiveIds")!!.toList())
+        }
     }
 
     override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
