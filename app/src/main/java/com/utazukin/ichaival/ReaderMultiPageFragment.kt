@@ -194,50 +194,64 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private fun displaySingleImage(image: String, failPage: Int, split: Boolean = false) {
         with(activity as ReaderActivity) { onMergeFailed(page, failPage, split) }
         pageNum.text = (page + 1).toString()
-        mainImage = if (image.endsWith(".gif")) {
-            PhotoView(activity).also {
-                initializeView(it)
-                Glide.with(requireActivity())
-                    .load(image)
-                    .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                    .addListener(getListener())
-                    .into(ProgressTarget(image, DrawableImageViewTarget(it), progressBar))
-            }
-        } else {
-            SubsamplingScaleImageView(activity).also {
-                initializeView(it)
 
-                it.setMaxTileSize(getMaxTextureSize())
-                it.setMinimumTileDpi(160)
-
-                Glide.with(requireActivity())
-                    .downloadOnly()
-                    .load(image)
-                    .addListener(getListener(false))
-                    .into(
-                        ProgressTarget(image, SubsamplingTarget(it, !image.endsWith(".webp")) {
-                                pageNum.visibility = View.GONE
-                                progressBar.visibility = View.GONE
-                                view?.run {
-                                    setOnClickListener(null)
-                                    setOnLongClickListener(null)
-                                }
-                                updateScaleType(it, currentScaleType)
-                            },
-                            progressBar
-                        )
-                    )
+        progressBar.isIndeterminate = false
+        lifecycleScope.launch {
+            val imageFile = withContext(Dispatchers.IO) {
+                var target: Target<File>? = null
+                try {
+                    target = downloadImageWithProgress(requireActivity(), image) { progressBar.progress = it }
+                    target.get()
+                } finally {
+                    activity?.let { Glide.with(it).clear(target) }
+                }
             }
-        }.also { setupImageTapEvents(it) }
+
+            val format = getImageFormat(imageFile)
+            mainImage = if (format == ImageFormat.GIF) {
+                PhotoView(activity).also {
+                    initializeView(it)
+                    Glide.with(requireActivity())
+                        .load(imageFile)
+                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                        .addListener(getListener())
+                        .into(it)
+                }
+            } else {
+                SubsamplingScaleImageView(activity).also {
+                    initializeView(it)
+
+                    it.setMaxTileSize(getMaxTextureSize())
+                    it.setMinimumTileDpi(160)
+
+                    if (format != null) {
+                        it.setBitmapDecoderClass(ImageDecoder::class.java)
+                        it.setRegionDecoderClass(ImageRegionDecoder::class.java)
+                    }
+
+                    it.setOnImageEventListener(object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
+                        override fun onReady() {
+                            pageNum.visibility = View.GONE
+                            progressBar.visibility = View.GONE
+                            view?.setOnClickListener(null)
+                            view?.setOnLongClickListener(null)
+                            updateScaleType(it, currentScaleType)
+                        }
+                    })
+
+                    it.setImage(ImageSource.uri(imageFile.absolutePath))
+                }
+            }.also { setupImageTapEvents(it) }
+        }
     }
 
-    private fun createImageView(mergedPath: String, useNewDecoder: Boolean) {
+    private fun createImageView(mergedPath: String, useNewDecoder: Boolean = true) {
         mainImage = SubsamplingScaleImageView(activity).apply {
             if (useNewDecoder) {
                 setBitmapDecoderClass(ImageDecoder::class.java)
                 setRegionDecoderClass(ImageRegionDecoder::class.java)
             }
-            setOnImageEventListener(object: SubsamplingScaleImageView.OnImageEventListener {
+            setOnImageEventListener(object: SubsamplingScaleImageView.DefaultOnImageEventListener() {
                 override fun onReady() {
                     pageNum.visibility = View.GONE
                     progressBar.visibility = View.GONE
@@ -247,8 +261,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         setOnLongClickListener(null)
                     }
                 }
-                override fun onImageLoaded() {}
-                override fun onPreviewLoadError(e: Exception?) {}
                 override fun onImageLoadError(e: Exception?) {
                     topLayout.removeView(mainImage)
                     mainImage = null
@@ -256,8 +268,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     if (activity != null)
                         imagePath?.let { displaySingleImage(it, page) }
                 }
-                override fun onTileLoadError(e: Exception?) {}
-                override fun onPreviewReleased() {}
             })
             initializeView(this)
             setMaxTileSize(getMaxTextureSize())
@@ -271,7 +281,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         imagePath = image
         otherImagePath = otherImage
 
-        if (otherImage == null || image.endsWith(".gif")) {
+        if (otherImage == null) {
             displaySingleImage(image, page)
             return
         }
@@ -282,22 +292,21 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             val compressType = PageCompressFormat.fromString(compressString, requireContext())
             val mergedPath = DualPageHelper.getMergedPage(requireContext().cacheDir, archiveId!!, page, otherPage, rtol, compressType)
             if (mergedPath != null) {
-                withContext(Dispatchers.Main) { createImageView(mergedPath, !mergedPath.endsWith(".webp")) }
+                withContext(Dispatchers.Main) { createImageView(mergedPath) }
                 return@launch
             }
 
-            val target = Glide.with(requireActivity())
-                .downloadOnly()
-                .load(imagePath)
-                .submit()
-            val otherTarget = Glide.with(requireActivity())
-                .downloadOnly()
-                .load(otherImage)
-                .submit()
+            withContext(Dispatchers.Main) { progressBar.isIndeterminate = false }
 
-            withContext(Dispatchers.Main) {
-                progressBar.isIndeterminate = false
-                progressBar.progress = 15
+            var targetProgess = 0
+            var otherProgress = 0
+            val target = downloadImageWithProgress(requireActivity(), image) {
+                targetProgess = it / 2
+                progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
+            }
+            val otherTarget = downloadImageWithProgress(requireActivity(), otherImage) {
+                otherProgress = it / 2
+                progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
             }
 
             try {
@@ -309,19 +318,25 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     displaySingleImageMain(image, page)
                     return@launch
                 }
-                withContext(Dispatchers.Main) { progressBar.progress = 45 }
+                val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(imgFile.absolutePath, img)
+                if (img.outMimeType == "image/gif") {
+                    displaySingleImageMain(image, page)
+                    return@launch
+                }
 
                 val otherImgFile = dotherTarget.await()
                 if (otherImgFile == null) {
                     displaySingleImageMain(image, otherPage)
                     return@launch
                 }
-                withContext(Dispatchers.Main) { progressBar.progress = 90 }
-
-                val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 val otherImg = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(imgFile.absolutePath, img)
                 BitmapFactory.decodeFile(otherImgFile.absolutePath, otherImg)
+                if (otherImg.outMimeType == "image/gif") {
+                    displaySingleImageMain(image, otherPage)
+                    return@launch
+                }
+
                 if (img.outWidth > img.outHeight || otherImg.outWidth > otherImg.outHeight) {
                     val otherImageFail = otherImg.outWidth > otherImg.outHeight
                     displaySingleImageMain(image, if (otherImageFail) otherPage else page)
@@ -363,7 +378,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             displaySingleImage(image, page)
                         } else {
                             progressBar.progress = 100
-                            createImageView(merged, !merged.endsWith(".webp"))
+                            createImageView(merged)
                         }
                     }
                 }

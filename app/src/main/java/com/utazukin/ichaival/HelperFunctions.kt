@@ -25,6 +25,15 @@ import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.util.Size
 import androidx.preference.PreferenceManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.FutureTarget
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
+import com.hippo.image.BitmapDecoder
+import com.hippo.image.ImageInfo
+import java.io.File
 import java.util.regex.Pattern
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
@@ -46,10 +55,8 @@ fun getLastWord(query: String) : String {
     val regex = "\"([^\"]*)\"|(\\S+)"
     val matcher = Pattern.compile(regex).matcher(query)
     var last = ""
-    while (matcher.find()) {
-        if (matcher.group(2) != null)
-            last = matcher.group(2) ?: ""
-    }
+    while (matcher.find())
+        matcher.group(2)?.let { last = it }
 
     return last
 }
@@ -71,7 +78,7 @@ fun SharedPreferences?.castStringPrefToFloat(pref: String, defaultValue: Float =
 
 fun Context.getCustomTheme() : String {
     val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-    return prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme)) as String
+    return prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme)).toString()
 }
 
 fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
@@ -82,6 +89,55 @@ fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
 
 val BitmapFactory.Options.outSize: Size
     get() = Size(outWidth, outHeight)
+
+fun getImageFormat(imageFile: File) : ImageFormat? {
+    val info = ImageInfo()
+    return imageFile.inputStream().use {
+        if (BitmapDecoder.decode(it, info))
+            ImageFormat.fromInt(info.format)
+        else
+            null
+    }
+}
+
+fun downloadImageWithProgress(context: Context, imagePath: String, uiProgressListener: (Int) -> Unit) : FutureTarget<File> {
+    return downloadImageWithProgress(context, imagePath, object: UIProgressListener {
+        override fun update(progress: Int) {
+            uiProgressListener(progress)
+        }
+    })
+}
+
+private fun downloadImageWithProgress(context: Context, imagePath: String, uiProgressListener: UIProgressListener) : FutureTarget<File> {
+    ResponseProgressListener.expect(imagePath, uiProgressListener)
+    return Glide.with(context)
+        .downloadOnly()
+        .load(imagePath)
+        .listener(object: RequestListener<File> {
+            override fun onLoadFailed(
+                e: GlideException?,
+                model: Any?,
+                target: Target<File>?,
+                isFirstResource: Boolean
+            ): Boolean {
+                ResponseProgressListener.forget(imagePath)
+                return false
+            }
+
+            override fun onResourceReady(
+                resource: File?,
+                model: Any?,
+                target: Target<File>?,
+                dataSource: DataSource?,
+                isFirstResource: Boolean
+            ): Boolean {
+                ResponseProgressListener.forget(imagePath)
+                return false
+            }
+
+        })
+        .submit()
+}
 
 fun Size.toRect() = Rect(0, 0, width, height)
 

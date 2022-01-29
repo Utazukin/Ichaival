@@ -36,13 +36,14 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.DrawableImageViewTarget
 import com.bumptech.glide.request.target.Target
+import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 enum class TouchZone {
     Left,
@@ -121,36 +122,55 @@ class ReaderFragment : Fragment(), PageFragment {
     private fun displayImage(image: String) {
         imagePath = image
 
-        //TODO use something better to detect this.
-        mainImage = if (image.endsWith(".gif")) {
-            PhotoView(activity).also {
-                initializeView(it)
-                Glide.with(requireActivity())
-                    .load(image)
-                    .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                    .addListener(getListener())
-                    .into(ProgressTarget(image, DrawableImageViewTarget(it), progressBar))
+        progressBar.isIndeterminate = false
+        lifecycleScope.launch {
+            val imageFile = withContext(Dispatchers.IO) {
+                var target: Target<File>? = null
+                try {
+                    target = downloadImageWithProgress(requireActivity(), image) { progressBar.progress = it }
+                    target.get()
+                } finally {
+                    activity?.let { Glide.with(it).clear(target) }
+                }
             }
-        } else {
-            SubsamplingScaleImageView(activity).also {
-                initializeView(it)
 
-                it.setMaxTileSize(getMaxTextureSize())
-                it.setMinimumTileDpi(160)
+            val format = getImageFormat(imageFile)
+            mainImage = if (format == ImageFormat.GIF) {
+                PhotoView(activity).also {
+                    initializeView(it)
+                    Glide.with(requireActivity())
+                        .load(imageFile)
+                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                        .addListener(getListener())
+                        .into(it)
+                }
+            } else {
+                SubsamplingScaleImageView(activity).also {
+                    initializeView(it)
 
-                Glide.with(requireActivity())
-                    .downloadOnly()
-                    .load(image)
-                    .addListener(getListener(false))
-                    .into (ProgressTarget(image, SubsamplingTarget(it, !image.endsWith(".webp")) {
-                        pageNum.visibility = View.GONE
-                        progressBar.visibility = View.GONE
-                        view?.setOnClickListener(null)
-                        view?.setOnLongClickListener(null)
-                        updateScaleType(it, currentScaleType)
-                    }, progressBar))
-            }
-        }.also { setupImageTapEvents(it) }
+                    it.setMaxTileSize(getMaxTextureSize())
+                    it.setMinimumTileDpi(160)
+
+                    if (format != null) {
+                        it.setBitmapDecoderClass(ImageDecoder::class.java)
+                        it.setRegionDecoderClass(ImageRegionDecoder::class.java)
+                    }
+
+                    it.setOnImageEventListener(object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
+                        override fun onReady() {
+                            pageNum.visibility = View.GONE
+                            progressBar.visibility = View.GONE
+                            view?.setOnClickListener(null)
+                            view?.setOnLongClickListener(null)
+                            updateScaleType(it, currentScaleType)
+                        }
+                    })
+
+                    it.setImage(ImageSource.uri(imageFile.absolutePath))
+                }
+            }.also { setupImageTapEvents(it) }
+        }
+
     }
 
     private fun initializeView(view: View) {
