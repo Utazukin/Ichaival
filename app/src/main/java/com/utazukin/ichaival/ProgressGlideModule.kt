@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import okhttp3.ResponseBody
 import okio.*
 import java.io.InputStream
 import java.nio.ByteBuffer
+import kotlin.math.floor
 
 @GlideModule
 class ProgressGlideModule : AppGlideModule() {
@@ -98,12 +99,17 @@ private class OkHttpProgressResponseBody(private val url: HttpUrl,
             override fun read(sink: Buffer, byteCount: Long): Long {
                 val bytesRead = super.read(sink, byteCount)
                 val fullLength = responseBody.contentLength()
+                val previousBytesRead = totalBytesRead
                 if (bytesRead == -1L)
                     totalBytesRead = fullLength
                 else
                     totalBytesRead += bytesRead
 
-                progressListener.update(url, totalBytesRead, fullLength)
+
+                val prevPercent = floor((previousBytesRead / fullLength.toFloat()) * 100)
+                val percent = floor((totalBytesRead / fullLength.toFloat()) * 100)
+                if (totalBytesRead >= fullLength || percent > prevPercent)
+                    progressListener.update(url, totalBytesRead, fullLength)
                 return bytesRead
             }
         }
