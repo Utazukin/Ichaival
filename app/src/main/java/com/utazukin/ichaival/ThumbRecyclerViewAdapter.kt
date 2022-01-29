@@ -77,13 +77,13 @@ class ThumbRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, page: Int) {
         holder.pageNumView.text = (page + 1).toString()
 
+        with(holder.thumbView) {
+            setTag(R.id.small_thumb, page)
+            setOnClickListener(onClickListener)
+        }
+
         val job = scope.launch {
             val image = withContext(Dispatchers.Default) { archive.getThumb(page) }
-
-            with(holder.thumbView) {
-                setTag(R.id.small_thumb, page)
-                setOnClickListener(onClickListener)
-            }
 
             glide.load(image)
                 .dontTransform()
