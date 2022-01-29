@@ -584,7 +584,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             //assume http if not present
             serverLocation = "http://$newValue"
             pref.summary = serverLocation
-            pref.sharedPreferences.edit().putString(pref.key, serverLocation).apply()
+            pref.sharedPreferences?.edit()?.putString(pref.key, serverLocation)?.apply()
             return false
         } else {
             notifyError("Invalid URL!")

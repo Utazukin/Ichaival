@@ -62,7 +62,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         categoryGroup = view.findViewById(R.id.category_button_group)
         categoryLabel = view.findViewById(R.id.category_label)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         sortMethod = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
         descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 

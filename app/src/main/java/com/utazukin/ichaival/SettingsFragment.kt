@@ -42,10 +42,10 @@ class LongClickPreference : Preference {
     constructor(context: Context) : super(context)
     constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet)
 
-    override fun onBindViewHolder(holder: PreferenceViewHolder?) {
+    override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
 
-        holder?.itemView?.setOnLongClickListener(longClickListener)
+        holder.itemView.setOnLongClickListener(longClickListener)
     }
 }
 

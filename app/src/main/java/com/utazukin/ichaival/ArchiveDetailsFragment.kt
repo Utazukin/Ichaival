@@ -59,7 +59,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private var thumbLoadJob: Job? = null
     private var tagListener: TagInteractionListener? = null
     private val isLocalSearch by lazy {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.getBoolean(getString(R.string.local_search_key), false)
     }
 

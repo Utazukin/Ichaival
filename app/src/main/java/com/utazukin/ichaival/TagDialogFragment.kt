@@ -49,7 +49,7 @@ class TagDialogFragment : DialogFragment() {
     private var tagPressListener: TagPressListener? = null
     private var tagLongPressListener: TagLongPressListener? = null
     private val isLocalSearch by lazy {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.getBoolean(getString(R.string.local_search_key), false)
     }
 

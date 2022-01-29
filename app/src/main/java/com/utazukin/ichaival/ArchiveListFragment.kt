@@ -73,7 +73,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         savedState = savedInstanceState
         creatingView = true
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
         isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
 
@@ -262,7 +262,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     fun setupArchiveList() {
         lifecycleScope.launch {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
             val listAdapter = listView.adapter as ArchiveRecyclerViewAdapter
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext()) }
 
@@ -421,7 +421,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     fun updateSortMethod(method: SortMethod, desc: Boolean) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireActivity())
         updateSortMethod(method, desc, prefs)
     }
 
@@ -499,7 +499,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         super.onDetach()
         DatabaseReader.refreshListener = null
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.unregisterOnSharedPreferenceChangeListener(this)
     }
 
