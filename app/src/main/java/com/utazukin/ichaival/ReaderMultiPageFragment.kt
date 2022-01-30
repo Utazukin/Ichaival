@@ -80,6 +80,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private var rtol: Boolean = false
     private var failedMessage: String? = null
     private var mergeJob: Job? = null
+    private var verboseFailMessages = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -318,7 +319,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
                 val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeFile(imgFile.absolutePath, img)
-                if (img.outMimeType == "image/gif") {
+                if (ImageFormat.fromMimeType(img.outMimeType) == ImageFormat.GIF) {
+                    dotherTarget.cancel()
                     displaySingleImageMain(image, page)
                     return@launch
                 }
@@ -330,7 +332,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
                 val otherImg = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeFile(otherImgFile.absolutePath, otherImg)
-                if (otherImg.outMimeType == "image/gif") {
+                if (ImageFormat.fromMimeType(otherImg.outMimeType) == ImageFormat.GIF) {
                     displaySingleImageMain(image, otherPage)
                     return@launch
                 }

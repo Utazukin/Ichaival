@@ -28,7 +28,7 @@ import com.hippo.image.BitmapRegionDecoder
 import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder as IImageDecoder
 import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder as IImageRegionDecoder
 
-enum class ImageFormat(val value: Int) {
+enum class ImageFormat(private val value: Int) {
     JPG(2),
     PNG(3),
     GIF(4);
@@ -36,6 +36,14 @@ enum class ImageFormat(val value: Int) {
     companion object {
         private val map by lazy { values().associateBy(ImageFormat::value)}
         fun fromInt(type: Int) = map[type]
+        fun fromMimeType(mime: String) : ImageFormat? {
+            return when (mime) {
+                "image/gif" -> GIF
+                "image/png" -> PNG
+                "image/jpeg" -> JPG
+                else -> null
+            }
+        }
     }
 }
 
