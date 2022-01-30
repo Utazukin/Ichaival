@@ -89,7 +89,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             post {
                 val dpWidth = getDpWidth(width)
                 val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
-                val columns = dpWidth.floorDiv(itemWidth)
+                val columns = if (archiveViewType == ListViewType.Cover)
+                    ceil(dpWidth / itemWidth.toFloat()).toInt()
+                else
+                    dpWidth.floorDiv(itemWidth)
                 layoutManager = if (columns > 1) {
                     object : GridLayoutManager(context, columns) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {

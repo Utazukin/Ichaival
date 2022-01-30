@@ -32,12 +32,12 @@
         <ImageView
             android:id="@+id/archive_thumb"
             android:layout_width="@dimen/archive_cover_width"
-            android:layout_height="200dp"
+            android:layout_height="0dp"
             android:contentDescription="@string/archive_thumb"
-            android:maxWidth="150dp"
             android:scaleType="centerCrop"
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintDimensionRatio="H,3:4"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:srcCompat="@tools:sample/backgrounds/scenic" />
