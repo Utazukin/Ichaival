@@ -37,6 +37,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
@@ -130,7 +131,7 @@ class ArchiveRecyclerViewAdapter(
                 }
                 image?.let { pair ->
                     val (imagePath, modifiedTime) = pair
-                    glideManager.load(imagePath).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(holder.archiveImage)
+                    glideManager.load(imagePath).format(DecodeFormat.PREFER_RGB_565).transition(DrawableTransitionOptions.withCrossFade()).signature(ObjectKey(modifiedTime)).into(holder.archiveImage)
                 }
             }
             thumbLoadingJobs[holder] = job

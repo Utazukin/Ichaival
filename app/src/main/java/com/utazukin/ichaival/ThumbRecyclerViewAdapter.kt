@@ -25,6 +25,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -48,6 +49,7 @@ class ThumbRecyclerViewAdapter(
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
     private val glide = Glide.with(fragment.requireActivity())
     private val scope = fragment.lifecycleScope
+    private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
 
     private val onClickListener = View.OnClickListener { v ->
         val item = v.getTag(R.id.small_thumb) as Int
@@ -86,8 +88,6 @@ class ThumbRecyclerViewAdapter(
             val image = withContext(Dispatchers.Default) { archive.getThumb(page) }
 
             glide.load(image)
-                .dontTransform()
-                .override(getDpAdjusted(200))
                 .format(DecodeFormat.PREFER_RGB_565)
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .addListener(object: RequestListener<Drawable>{
@@ -103,10 +103,10 @@ class ThumbRecyclerViewAdapter(
                                                  target: Target<Drawable>?,
                                                  dataSource: DataSource?,
                                                  isFirstResource: Boolean): Boolean {
-                        val params = holder.thumbView.layoutParams
-                        params.height = RelativeLayout.LayoutParams.WRAP_CONTENT
-                        holder.thumbView.layoutParams = params
-                        holder.thumbView.adjustViewBounds = true
+                        with(holder.thumbView) {
+                            updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
+                            adjustViewBounds = true
+                        }
                         return false
                     }
 
@@ -119,12 +119,12 @@ class ThumbRecyclerViewAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         imageLoadingJobs.remove(holder)?.cancel()
 
-        holder.thumbView.setImageDrawable(null)
-        glide.clear(holder.thumbView)
-        val params = holder.thumbView.layoutParams
-        params.height = getDpAdjusted(200)
-        holder.thumbView.adjustViewBounds = false
-        holder.thumbView.layoutParams = params
+        with(holder.thumbView) {
+            setImageDrawable(null)
+            glide.clear(this)
+            adjustViewBounds = false
+            updateLayoutParams { height = defaultHeight }
+        }
 
         super.onViewRecycled(holder)
     }
@@ -133,7 +133,7 @@ class ThumbRecyclerViewAdapter(
         fun onThumbSelection(page: Int)
     }
 
-    inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val thumbView: ImageView = view.findViewById(R.id.small_thumb)
         val pageNumView: TextView = view.findViewById(R.id.page_num)
     }
