@@ -340,11 +340,15 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     val cursor = suggestionsAdapter.getItem(index) as Cursor
                     var selection = cursor.getString(cursor.getColumnIndexOrThrow(SearchManager.SUGGEST_COLUMN_TEXT_1))
                     if (!isLocalSearch)
-                        selection = "\"$selection\"\\$"
+                        selection = "\"$selection\"\$"
                     else if (selection.split(' ').size > 1)
                         selection = "\"$selection\""
 
-                    val query = searchView.query?.let { it.replace(getLastWord(it.toString().trimStart('-')).toRegex(), selection) }
+                    val query = searchView.query?.let {
+                        val last = getLastWord(it.toString())
+                        val index = it.lastIndexOf(last)
+                        it.replaceRange(index until it.length, selection)
+                    }
                     searchView.setQuery(query, true)
                     return true
                 }
