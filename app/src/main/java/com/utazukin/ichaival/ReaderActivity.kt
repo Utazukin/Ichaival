@@ -48,7 +48,6 @@ import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -69,11 +68,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private set
     private var currentPage = 0
     private var jumpPage = -1
-    private var retryCount = 0
     private var rtol = false
     private var volControl = false
     private var optionsMenu: Menu? = null
-    private lateinit var failedMessage: TextView
     private lateinit var imagePager: ViewPager2
     private lateinit var pageSeekBar: SeekBar
     private lateinit var pageSeekLayout: LinearLayout
@@ -82,7 +79,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private val pageFragments = mutableListOf<PageFragment>()
     private var autoHideDelay = AUTO_HIDE_DELAY_MILLIS
     private var autoHideEnabled = true
-    private val retrying = AtomicBoolean()
     private var updateProgressJob: Job? = null
     private var dualPageEnabled = false
 
@@ -113,7 +109,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         launch { DualPageHelper.trashMergedPages(cacheDir) }
 
-        retryCount = 0
         setContentView(R.layout.activity_reader)
         val appBar: Toolbar = findViewById(R.id.reader_toolbar)
         setSupportActionBar(appBar)
@@ -199,9 +194,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         } )
         imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
-
-        failedMessage = findViewById(R.id.failed_message)
-        failedMessage.setOnClickListener { toggle() }
 
         val bundle = intent.extras
         val arcid = bundle?.getString(ID_STRING) ?: savedInstanceState?.getString(ID_STRING) ?: return
@@ -457,7 +449,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 }
             }
             R.id.refresh_button -> {
-                retryCount = 0
                 closeSettings()
                 archive?.run {
                     invalidateCache()
@@ -621,28 +612,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    override fun onImageLoadError(fragment: PageFragment) : Boolean {
-        return if (retryCount < 3) {
-            archive?.run {
-                if (retrying.compareAndSet(false, true)) {
-                    invalidateCache()
-                    ++retryCount
-                    launch {
-                        withContext(Dispatchers.IO) { extract() }
-                        retrying.set(false)
-                        fragment.reloadImage()
-                    }
-                } else
-                    fragment.reloadImage()
-            }
-
-            true
-        } else {
-            failedMessage.visibility = View.VISIBLE
-            imagePager.visibility = View.INVISIBLE
-            false
-        }
-    }
+    override fun onImageLoadError() { toggle() }
 
     fun onMergeFailed(page: Int, failPage: Int, split: Boolean) {
         if (dualPageAdapter.onMergeFailed(page, failPage, split)) {
@@ -828,13 +798,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         fun loadImage(page: Int, preload: Boolean = true) {
             if (archive?.hasPage(page) == false) {
                 if (archive?.numPages == 0) {
-                    failedMessage.visibility = View.VISIBLE
                     imagePager.visibility = View.INVISIBLE
                 }
                 return
             }
             imagePager.visibility = View.VISIBLE
-            failedMessage.visibility = View.GONE
 
             val addedPages = adjustLoadedPages(page)
             if (addedPages > 0)

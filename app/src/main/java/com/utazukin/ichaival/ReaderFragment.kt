@@ -65,6 +65,7 @@ class ReaderFragment : Fragment(), PageFragment {
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
+    private lateinit var failedMessage: TextView
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
@@ -85,6 +86,20 @@ class ReaderFragment : Fragment(), PageFragment {
         progressBar = view.findViewById(R.id.progressBar)
         progressBar.isIndeterminate = true
         progressBar.visibility = View.VISIBLE
+
+        failedMessage = view.findViewById(R.id.failed_message)
+        failedMessage.setOnClickListener { listener?.onImageLoadError() }
+        val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+                if (e != null)
+                    listener?.onFragmentTap(getTouchZone(e.x, view))
+                return true
+            }
+        })
+        failedMessage.setOnTouchListener { _, motionEvent ->
+            gestureDetector.onTouchEvent(motionEvent)
+            true
+        }
 
         //Tapping the view will display the toolbar until the image is displayed.
         view.setOnClickListener { listener?.onFragmentTap(TouchZone.Center) }
@@ -166,6 +181,12 @@ class ReaderFragment : Fragment(), PageFragment {
                             }
                             updateScaleType(it, currentScaleType)
                         }
+                        override fun onImageLoadError(e: Exception?) {
+                            failedMessage.visibility = View.VISIBLE
+                            pageNum.visibility = View.GONE
+                            progressBar.visibility = View.GONE
+                            it.visibility = View.GONE
+                        }
                     })
 
                     it.setImage(ImageSource.uri(imageFile.absolutePath))
@@ -186,7 +207,6 @@ class ReaderFragment : Fragment(), PageFragment {
     }
 
     private fun <T> getListener(clearOnReady: Boolean = true) : RequestListener<T> {
-        val fragment = this
         return object: RequestListener<T> {
             override fun onLoadFailed(
                 e: GlideException?,
@@ -194,7 +214,8 @@ class ReaderFragment : Fragment(), PageFragment {
                 target: Target<T>?,
                 isFirstResource: Boolean
             ): Boolean {
-                return listener?.onImageLoadError(fragment) == true
+                failedMessage.visibility = View.VISIBLE
+                return false
             }
 
             override fun onResourceReady(
@@ -287,7 +308,7 @@ class ReaderFragment : Fragment(), PageFragment {
                     else
                         imagePath = image
                 } else
-                    listener?.onImageLoadError(this@ReaderFragment)
+                    failedMessage.visibility = View.VISIBLE
             }
         }
     }
@@ -319,9 +340,7 @@ class ReaderFragment : Fragment(), PageFragment {
 
     interface OnFragmentInteractionListener {
         fun onFragmentTap(zone: TouchZone)
-
-        fun onImageLoadError(fragment: PageFragment) : Boolean
-
+        fun onImageLoadError()
         fun onFragmentLongPress() : Boolean
     }
 

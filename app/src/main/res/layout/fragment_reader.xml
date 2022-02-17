@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2020 Utazukin
+  ~ Copyright (C) 2022 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -45,5 +45,15 @@
         android:layout_centerInParent="true"
         android:indeterminate="true"
         android:indeterminateOnly="false" />
+
+    <TextView
+        android:id="@+id/failed_message"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:text="@string/failed_image"
+        android:textAlignment="center"
+        android:textSize="30sp"
+        android:visibility="gone" />
 
 </RelativeLayout>

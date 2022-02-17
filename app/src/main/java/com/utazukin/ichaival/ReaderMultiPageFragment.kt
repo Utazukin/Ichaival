@@ -73,6 +73,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private lateinit var pageNum: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
+    private lateinit var failedMessageText: TextView
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
@@ -117,6 +118,18 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             setOnClickListener { listener?.onFragmentTap(TouchZone.Center) }
             setOnLongClickListener { listener?.onFragmentLongPress() == true }
         }
+
+        failedMessageText = view.findViewById(R.id.failed_message)
+        failedMessageText.setOnClickListener { listener?.onImageLoadError() }
+        val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
+                    if (e != null)
+                        listener?.onFragmentTap(getTouchZone(e.x, view))
+                    return true
+                }
+            })
+
+        failedMessageText.setOnTouchListener { _, e -> gestureDetector.onTouchEvent(e) }
 
         imagePath?.let { displayImage(it, otherImagePath) }
 
@@ -236,6 +249,12 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             }
                             updateScaleType(it, currentScaleType)
                         }
+                        override fun onImageLoadError(e: Exception?) {
+                            failedMessageText.visibility = View.VISIBLE
+                            pageNum.visibility = View.GONE
+                            progressBar.visibility = View.GONE
+                            it.visibility = View.GONE
+                        }
                     })
 
                     it.setImage(ImageSource.uri(imageFile.absolutePath))
@@ -319,7 +338,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
                 val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeFile(imgFile.absolutePath, img)
-                if (ImageFormat.fromMimeType(img.outMimeType) == ImageFormat.GIF) {
+                if (img.outMimeType == null || ImageFormat.fromMimeType(img.outMimeType) == ImageFormat.GIF) {
                     dotherTarget.cancel()
                     displaySingleImageMain(image, page)
                     return@launch
@@ -332,7 +351,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
                 val otherImg = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeFile(otherImgFile.absolutePath, otherImg)
-                if (ImageFormat.fromMimeType(otherImg.outMimeType) == ImageFormat.GIF) {
+                if (img.outMimeType == null || ImageFormat.fromMimeType(otherImg.outMimeType) == ImageFormat.GIF) {
                     displaySingleImageMain(image, otherPage)
                     return@launch
                 }
@@ -408,7 +427,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     }
 
     private fun <T> getListener(clearOnReady: Boolean = true) : RequestListener<T> {
-        val fragment = this
         return object: RequestListener<T> {
             override fun onLoadFailed(
                 e: GlideException?,
@@ -416,7 +434,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 target: Target<T>?,
                 isFirstResource: Boolean
             ): Boolean {
-                return listener?.onImageLoadError(fragment) == true
+                return false
             }
 
             override fun onResourceReady(
@@ -511,7 +529,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         otherImagePath = otherImage
                     }
                 } else
-                    listener?.onImageLoadError(this@ReaderMultiPageFragment)
+                    failedMessageText.visibility = View.VISIBLE
             }
         }
     }

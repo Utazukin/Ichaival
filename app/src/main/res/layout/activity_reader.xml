@@ -37,16 +37,6 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
-        <TextView
-            android:id="@+id/failed_message"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:text="@string/failed_image"
-            android:textAlignment="center"
-            android:textSize="30sp"
-            android:visibility="gone" />
-
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/reader_toolbar"
             android:layout_width="match_parent"
