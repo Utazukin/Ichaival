@@ -32,19 +32,17 @@
 
 
     <ImageView
-            android:layout_width="175dp"
-            tools:srcCompat="@tools:sample/backgrounds/scenic"
-            android:id="@+id/cover"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            app:layout_constraintTop_toTopOf="parent"
-            android:layout_height="240dp"
-            android:scaleType="fitStart"
-            android:adjustViewBounds="true"
-            android:maxWidth="200dp"
-            android:minWidth="200dp"
-            />
+        android:id="@+id/cover"
+        android:layout_width="175dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitStart"
+        app:layout_constraintDimensionRatio="H,2:3"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:srcCompat="@tools:sample/backgrounds/scenic" />
 
     <TextView
             android:layout_width="0dp"
