@@ -437,7 +437,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             R.id.thumb_button -> archive?.let {
                 launch {
                     withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(it.id, this@ReaderActivity, currentPage) }
-                    Toast.makeText(this@ReaderActivity, "Thumbnail will be updated after restart.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ReaderActivity, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
                 }
             }
             R.id.random_archive_button -> {
@@ -454,7 +454,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     invalidateCache()
                     launch {
                         currentAdapter?.clearPages()
-                        withContext(Dispatchers.IO) { extract() }
+                        withContext(Dispatchers.IO) { extract(this@ReaderActivity) }
                         currentAdapter?.loadImage(currentPage)
                     }
                 }

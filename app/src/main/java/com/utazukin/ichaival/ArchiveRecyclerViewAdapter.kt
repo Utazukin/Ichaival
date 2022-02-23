@@ -110,7 +110,7 @@ class ArchiveRecyclerViewAdapter(
             selectedArchives.remove(archive)
         }
 
-        actionMode?.title = "${selectedArchives.size} selected"
+        actionMode?.title = context.getString(R.string.selected_archives, selectedArchives.size)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

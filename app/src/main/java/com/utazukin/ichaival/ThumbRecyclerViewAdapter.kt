@@ -49,6 +49,7 @@ class ThumbRecyclerViewAdapter(
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
     private val glide = Glide.with(fragment.requireActivity())
     private val scope = fragment.lifecycleScope
+    private val context = fragment.requireContext()
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
 
     private val onClickListener = View.OnClickListener { v ->
@@ -85,7 +86,7 @@ class ThumbRecyclerViewAdapter(
         }
 
         val job = scope.launch {
-            val image = withContext(Dispatchers.Default) { archive.getThumb(page) }
+            val image = withContext(Dispatchers.Default) { archive.getThumb(context, page) }
 
             glide.load(image)
                 .format(DecodeFormat.PREFER_RGB_565)

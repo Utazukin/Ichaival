@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -66,8 +67,8 @@ object CategoryManager {
         return categories?.mapNotNull { it as? StaticCategory }?.filter { it.archiveIds.contains(id) }
     }
 
-    suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : ArchiveCategory? {
-        val json = withContext(Dispatchers.IO) { WebHandler.createCategory(name, search, pinned) }
+    suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false) : ArchiveCategory? {
+        val json = withContext(Dispatchers.IO) { WebHandler.createCategory(context, name, search, pinned) }
         return json?.run {
             if (search.isNullOrBlank())
                 StaticCategory(name, getString("category_id"), pinned, emptyList())

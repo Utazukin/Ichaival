@@ -187,7 +187,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             if (tags.isEmpty())
                 continue
 
-            val namespace = if (namespace == "global") "other" else namespace
+            val namespace = if (namespace == "global") getString(R.string.other_namespace) else namespace
             val namespaceLayout = FlexboxLayout(context).apply {
                 flexWrap = FlexWrap.WRAP
                 flexDirection = FlexDirection.ROW
@@ -254,10 +254,10 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                 setPositiveButton("Yes") { dialog, _ ->
                     dialog.dismiss()
                     lifecycleScope.launch {
-                        val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(category.id, archiveId) }
+                        val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(requireContext(), category.id, archiveId) }
                         if (success) {
                             catFlexLayout.removeView(catView)
-                            Snackbar.make(requireView(), "Removed from ${category.name}.", Snackbar.LENGTH_SHORT).show()
+                            Snackbar.make(requireView(), getString(R.string.category_remove_message, category.name), Snackbar.LENGTH_SHORT).show()
                             ServerManager.parseCategories(requireContext())
                         }
                     }
@@ -321,7 +321,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val catView = createCatView(category, id)
         catFlexLayout.addView(catView)
 
-        Snackbar.make(requireView(), "Added to ${category.name}.", Snackbar.LENGTH_SHORT).show()
+        Snackbar.make(requireView(), getString(R.string.category_add_message, category.name), Snackbar.LENGTH_SHORT).show()
     }
 
     interface TagInteractionListener {

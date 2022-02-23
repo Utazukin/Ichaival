@@ -89,7 +89,7 @@ class TagDialogFragment : DialogFragment() {
             if (tags.isEmpty())
                 continue
 
-            val namespace = if (namespace == "global") "other" else namespace
+            val namespace = if (namespace == "global") getString(R.string.other_namespace) else namespace
             val namespaceLayout = FlexboxLayout(context)
             namespaceLayout.flexWrap = FlexWrap.WRAP
             namespaceLayout.flexDirection = FlexDirection.ROW

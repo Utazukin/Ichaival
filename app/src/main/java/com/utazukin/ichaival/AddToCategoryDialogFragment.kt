@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -93,9 +93,9 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                 if (catText.text.isNotBlank()) {
                     lifecycleScope.launch {
                         val name = catText.text.toString()
-                        val category = withContext(Dispatchers.IO) { CategoryManager.createCategory(name) }
+                        val category = withContext(Dispatchers.IO) { CategoryManager.createCategory(requireContext(), name) }
                         category?.let {
-                            val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveIds) }
+                            val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(requireContext(), it.id, archiveIds) }
                             if (success) {
                                 withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
                                 listener?.onAddedToCategory(it, archiveIds)
@@ -108,7 +108,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                 lifecycleScope.launch {
                     val category = categories?.get(catGroup.checkedRadioButtonId)
                     category?.let {
-                        val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(it.id, archiveIds) }
+                        val success = withContext(Dispatchers.IO) { WebHandler.addToCategory(requireContext(), it.id, archiveIds) }
                         if (success) {
                             withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
                             listener?.onAddedToCategory(it, archiveIds)

@@ -69,7 +69,7 @@ object DatabaseReader {
         if (forceUpdate || checkDirty(cacheDir)) {
             refreshListener?.isRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
-            val archiveJson = withContext(Dispatchers.IO) { WebHandler.downloadArchiveList() }
+            val archiveJson = withContext(Dispatchers.IO) { WebHandler.downloadArchiveList(context) }
             archiveJson?.let {
                 jsonFile.writeText(it.toString())
                 val serverArchives = readArchiveList(it)
@@ -106,12 +106,12 @@ object DatabaseReader {
             listener.onDelete()
     }
 
-    suspend fun getPageList(id: String) : List<String> {
+    suspend fun getPageList(context: Context, id: String) : List<String> {
         val mutex = extractingMutex.withLock { extractingArchives.getOrPut(id) { Mutex() } }
 
         return mutex.withLock {
             archivePageMap.getOrPut(id) {
-                WebHandler.getPageList(WebHandler.extractArchive(id)).also {
+                WebHandler.getPageList(WebHandler.extractArchive(context, id)).also {
                     database.archiveDao().updatePageCount(id, it.size)
                     notifyExtractListeners(id, it.size)
                 }
@@ -209,7 +209,7 @@ object DatabaseReader {
 
         var image: File? = File(thumbDir, "$id.jpg")
         if (image?.exists() == false)
-            image = withContext(Dispatchers.IO) { WebHandler.downloadThumb(id, thumbDir, page) }
+            image = withContext(Dispatchers.IO) { WebHandler.downloadThumb(context, id, thumbDir, page) }
 
         return image?.run { Pair(path, lastModified()) }
     }

@@ -109,21 +109,21 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                     launch {
                         withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }?.let { arc ->
                             val builder = AlertDialog.Builder(this@ArchiveDetails).apply {
-                                setTitle("Delete archive")
-                                setMessage("Delete \"${arc.title}\"?")
-                                setPositiveButton("Yes") { dialog, _ ->
+                                setTitle(R.string.delete_archive_item)
+                                setMessage(getString(R.string.delete_archive_prompt, arc.title))
+                                setPositiveButton(R.string.yes) { dialog, _ ->
                                     dialog.dismiss()
                                     lifecycleScope.launch {
                                         val success = withContext(Dispatchers.IO) { WebHandler.deleteArchive(it) }
                                         if (success) {
-                                            Toast.makeText(applicationContext, "Deleted \"${arc.title}\"", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(applicationContext, getString(R.string.deleted_archive, arc.title), Toast.LENGTH_SHORT).show()
                                             DatabaseReader.deleteArchive(it)
                                             finish()
                                         }
                                     }
                                 }
 
-                                setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
+                                setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
                             }
                             val dialog = builder.create()
                             dialog.show()
@@ -144,7 +144,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         a?.let {
             menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
             if (it.numPages <= 0)
-                withContext(Dispatchers.IO) { it.extract() }
+                withContext(Dispatchers.IO) { it.extract(this@ArchiveDetails) }
             pageCount = it.numPages
             if (pager.currentItem == 1)
                 supportActionBar?.subtitle = "$pageCount pages"
@@ -169,7 +169,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                     }
                     1 -> supportActionBar?.run {
                         title = getString(R.string.thumbs_title)
-                        subtitle = if (pageCount >= 0) "$pageCount pages" else null
+                        subtitle = if (pageCount >= 0) resources.getQuantityString(R.plurals.page_count, pageCount) else null
                     }
                 }
             }

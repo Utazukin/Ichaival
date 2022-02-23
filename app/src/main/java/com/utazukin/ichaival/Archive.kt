@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -45,8 +46,8 @@ data class Archive (
     val numPages: Int
         get() = if (ServerManager.checkVersionAtLeast(0, 7, 7) && pageCount > 0) pageCount else DatabaseReader.getPageCount(id)
 
-    suspend fun extract() {
-        val pages = DatabaseReader.getPageList(id)
+    suspend fun extract(context: Context) {
+        val pages = DatabaseReader.getPageList(context, id)
         if (pageCount <= 0)
             pageCount = pages.size
     }
@@ -64,14 +65,14 @@ data class Archive (
         isNew = false
     }
 
-    suspend fun getPageImage(page: Int) : String? {
-        return downloadPage(page)
+    suspend fun getPageImage(context: Context, page: Int) : String? {
+        return downloadPage(context, page)
     }
 
-    suspend fun getThumb(page: Int) = WebHandler.downloadThumb(id, page) ?: downloadPage(page)
+    suspend fun getThumb(context: Context, page: Int) = WebHandler.downloadThumb(id, page) ?: downloadPage(context, page)
 
-    private suspend fun downloadPage(page: Int) : String? {
-        val pages = DatabaseReader.getPageList(id)
+    private suspend fun downloadPage(context: Context, page: Int) : String? {
+        val pages = DatabaseReader.getPageList(context.applicationContext, id)
         return if (page < pages.size) WebHandler.getRawImageUrl(pages[page]) else null
     }
 

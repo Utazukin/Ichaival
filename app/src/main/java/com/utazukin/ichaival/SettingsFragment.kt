@@ -111,7 +111,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val tempPref: Preference? = findPreference(getString(R.string.temp_folder_pref))
         tempPref?.setOnPreferenceClickListener {
             lifecycleScope.launch(Dispatchers.IO) {
-                WebHandler.clearTempFolder()
+                WebHandler.clearTempFolder(requireContext())
                 if (!ServerManager.checkVersionAtLeast(0, 8, 2))
                     DatabaseReader.invalidateImageCache()
                 with(Glide.get(requireContext())) {
@@ -132,8 +132,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 ShareCompat.IntentBuilder(requireContext())
                     .setText(logFile.readText())
                     .setType("text/plain")
-                    .setSubject("Crash Log")
-                    .setChooserTitle("Copy Crash log")
+                    .setSubject(getString(R.string.crash_log_subject))
+                    .setChooserTitle(getString(R.string.copy_log_title))
                     .startChooser()
                 true
             }
@@ -141,7 +141,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             it.longClickListener = View.OnLongClickListener { _ ->
                 if (exists) {
                     logFile.delete()
-                    Toast.makeText(context, "Log deleted!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, getString(R.string.log_delete_message), Toast.LENGTH_SHORT).show()
                     it.isVisible = false
                     true
                 } else false

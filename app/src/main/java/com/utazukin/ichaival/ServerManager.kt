@@ -44,7 +44,7 @@ object ServerManager {
 
         val infoFile = File(context.filesDir, serverInfoFilename)
         val serverInfo = if (!useCachedInfo || force) {
-            val info = WebHandler.getServerInfo()
+            val info = WebHandler.getServerInfo(context)
             if (info == null) {
                 if (infoFile.exists())
                     JSONObject(infoFile.readText())

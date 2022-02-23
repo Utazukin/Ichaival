@@ -23,7 +23,10 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NavUtils
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, CoroutineScope by MainScope() {
 
@@ -70,7 +73,7 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
     }
 
     override fun onError(error: String) {
-        launch { Toast.makeText(this@SettingsActivity, "Error: $error", Toast.LENGTH_LONG).show() }
+        launch { Toast.makeText(this@SettingsActivity, getString(R.string.error_message, error), Toast.LENGTH_LONG).show() }
     }
 
     override fun onInfo(message: String) {

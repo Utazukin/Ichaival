@@ -519,8 +519,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             val page = getInt(PAGE_NUM)
             val otherPage = getInt(OTHER_PAGE_ID)
             lifecycleScope.launch {
-                val image = withContext(Dispatchers.IO) { archive.getPageImage(page) }
-                val otherImage = withContext(Dispatchers.IO) { archive.getPageImage(otherPage) }
+                val image = withContext(Dispatchers.IO) { archive.getPageImage(requireContext(), page) }
+                val otherImage = withContext(Dispatchers.IO) { archive.getPageImage(requireContext(), otherPage) }
                 if (image != null) {
                     if (createViewCalled)
                         displayImage(image, otherImage)
