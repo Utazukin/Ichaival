@@ -154,7 +154,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     private fun getSearchTag(tag: String, namespace: String) : String {
         return when {
-            namespace == "other" -> "\"$tag\""
+            namespace == requireContext().getString(R.string.other_namespace) -> "\"$tag\""
             isLocalSearch -> "$namespace:\"$tag\""
             else -> "\"$namespace:$tag\"$"
         }

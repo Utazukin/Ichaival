@@ -95,12 +95,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             return archive.let {
                 if (it != null && it.numPages > 0) {
                     if (!useDoublePage || currentAdapter?.run { isSinglePage(getPositionFromPage(currentPage)) } == true)
-                        "Page ${currentPage + 1}/${it.numPages}"
+                        getString(R.string.single_page_display, currentPage + 1, it.numPages)
                     else
-                        "Pages ${currentPage + 1}-${currentPage + 2}/${it.numPages}"
+                        getString(R.string.dual_page_display, currentPage + 1, currentPage + 2, it.numPages)
                 }
                 else
-                    "Page ${currentPage + (if (useDoublePage) 2 else 1)}"
+                    getString(R.string.no_page_display, currentPage + (if (useDoublePage) 2 else 1))
             }
         }
 

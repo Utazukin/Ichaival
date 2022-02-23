@@ -186,10 +186,13 @@
     <string name="thumb_set_fail_message">Failed to set new thumbnail.</string>
     <string name="get_archives_fail_message">Error getting archive list</string>
     <string name="archive_extract_fail_message">Failed to extract archive!</string>
-    <string name="archive_extract_message">Extracting...</string>
+    <string name="archive_extract_message">Extracting…</string>
     <string name="category_add_fail_message">Failed to add to category.</string>
     <string name="no_net_connection">No network connection!</string>
     <string name="temp_clear_success_message">Temp folder cleared.</string>
+    <string name="no_page_display">Page %1$d</string>
+    <string name="single_page_display">Page %1$d/%2$d</string>
+    <string name="dual_page_display">Pages %1$d-%2$d/%3$d</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>

@@ -157,7 +157,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     override fun onError(error: String) {
-        launch { Toast.makeText(this@BaseActivity, "Error: $error", Toast.LENGTH_LONG).show() }
+        launch { Toast.makeText(this@BaseActivity, getString(R.string.error_message, error), Toast.LENGTH_LONG).show() }
     }
 
     override fun onInfo(message: String) {
