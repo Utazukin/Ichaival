@@ -149,7 +149,7 @@
     </plurals>
     <plurals name="page_count">
         <item quantity="one">%d page</item>
-        <item quantity="other">$d pages</item>
+        <item quantity="other">%d pages</item>
     </plurals>
     <string name="png_compress">PNG</string>
     <string name="jpg_compress">JPEG</string>

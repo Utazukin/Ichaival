@@ -169,7 +169,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                     }
                     1 -> supportActionBar?.run {
                         title = getString(R.string.thumbs_title)
-                        subtitle = if (pageCount >= 0) resources.getQuantityString(R.plurals.page_count, pageCount) else null
+                        subtitle = if (pageCount >= 0) resources.getQuantityString(R.plurals.page_count, pageCount, pageCount) else null
                     }
                 }
             }

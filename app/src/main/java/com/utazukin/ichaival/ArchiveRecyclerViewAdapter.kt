@@ -194,7 +194,7 @@ class ArchiveRecyclerViewAdapter(
             R.id.delete_select_archive -> {
                 val builder = AlertDialog.Builder(context).apply {
                     setTitle("Delete Archives")
-                    setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size).format(selectedArchives.size))
+                    setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size, selectedArchives.size))
                     setPositiveButton("Yes") { dialog, _ ->
                         dialog.dismiss()
                         scope.launch(Dispatchers.IO) {
