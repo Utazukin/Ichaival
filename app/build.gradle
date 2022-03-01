@@ -85,17 +85,17 @@ dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     implementation 'com.github.seven332.Image:singlelib:a7b102262a'
-    implementation 'androidx.room:room-runtime:2.4.1'
-    kapt 'androidx.room:room-compiler:2.4.1'
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
     implementation "androidx.paging:paging-runtime-ktx:3.1.0"
     implementation "android.arch.lifecycle:extensions:1.1.1"
     implementation "android.arch.lifecycle:viewmodel:1.1.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0"
-    implementation "androidx.room:room-ktx:2.4.1"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.4.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1"
+    implementation "androidx.room:room-ktx:$room_version"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.4.1"
     implementation "androidx.preference:preference-ktx:1.2.0"
     implementation "androidx.fragment:fragment-ktx:1.4.1"
     implementation "com.squareup.okhttp3:okhttp:4.9.0"
     implementation "androidx.paging:paging-runtime-ktx:3.1.0"
-    implementation "androidx.room:room-paging:2.4.1"
+    implementation "androidx.room:room-paging:$room_version"
 }
