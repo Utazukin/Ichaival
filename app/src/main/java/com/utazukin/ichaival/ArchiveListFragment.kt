@@ -50,12 +50,13 @@ private const val STATIC_CATEGORY_SEARCH = "\b"
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
     private var sortMethod = SortMethod.Alpha
     private var descending = false
-    private var sortUpdated = false
+    private var jumpToTop = false
     private var searchJob: Job? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var newCheckBox: CheckBox
     private lateinit var randomButton: Button
+    private var menu: Menu? = null
     private var viewModel: SearchViewModelBase? = null
     lateinit var searchView: SearchView
         private set
@@ -63,6 +64,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private var isLocalSearch: Boolean = false
     private var creatingView = false
     private var savedState: Bundle? = null
+    private var canSwipeRefresh = false
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -94,9 +96,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     object : GridLayoutManager(context, columns) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
                             super.onLayoutCompleted(state)
-                            if (sortUpdated) {
+                            if (jumpToTop) {
                                 scrollToPosition(0)
-                                sortUpdated = false
+                                jumpToTop = false
                             }
                         }
                     }
@@ -104,9 +106,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     object : LinearLayoutManager(context) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
                             super.onLayoutCompleted(state)
-                            if (sortUpdated) {
+                            if (jumpToTop) {
                                 scrollToPosition(0)
-                                sortUpdated = false
+                                jumpToTop = false
                             }
                         }
                     }
@@ -118,12 +120,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                     super.onItemRangeInserted(positionStart, itemCount)
                     val size = listAdapter.itemCount
+                    jumpToTop = true
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
 
                 override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
                     super.onItemRangeRemoved(positionStart, itemCount)
                     val size = listAdapter.itemCount
+                    jumpToTop = true
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
             })
@@ -170,6 +174,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         }
                     }
                 }
+                enableRefresh(query.isNullOrEmpty())
                 searchView.clearFocus()
                 return true
             }
@@ -193,6 +198,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     return false
                 }
 
+                enableRefresh(query.isNullOrEmpty())
                 if (searchDelay <= 0 && !query.isNullOrBlank())
                     return true
 
@@ -241,7 +247,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
 
-        val canSwipeRefresh = prefs.getBoolean(getString(R.string.swipe_refresh_key), true)
+        canSwipeRefresh = prefs.getBoolean(getString(R.string.swipe_refresh_key), true)
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
         swipeRefreshLayout.isEnabled = canSwipeRefresh
 
@@ -310,10 +316,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         if (category is DynamicCategory) {
             searchView.setQuery(category.search, true)
             searchView.clearFocus()
+            enableRefresh(false)
         }
         else if (category is StaticCategory) {
             searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
             searchView.clearFocus()
+            enableRefresh(false)
 
             val model = ViewModelProviders.of(this)[StaticCategoryModel::class.java].apply {
                 init(category.archiveIds, category.id, sortMethod, descending, newCheckBox.isChecked)
@@ -371,8 +379,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
     }
 
+    private fun enableRefresh(enable: Boolean) {
+        menu?.findItem(R.id.refresh_archives)?.isVisible = enable
+        swipeRefreshLayout.isEnabled = canSwipeRefresh && enable
+    }
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.archive_list_menu, menu)
+        this.menu = menu
         if (activity is ArchiveSearch) {
             with (menu) {
                 findItem(R.id.refresh_archives)?.isVisible = false
@@ -459,7 +473,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         if (updated) {
             viewModel?.updateSort(method, descending)
-            sortUpdated = true
+            jumpToTop = true
         }
     }
 
@@ -578,7 +592,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
             getString(R.string.search_page_key) -> resetSearch(isLocalSearch, true)
             getString(R.string.search_delay_key) -> { searchDelay = prefs.castStringPrefToLong(prefName, DEFAULT_SEARCH_DELAY) }
-            getString(R.string.swipe_refresh_key) -> swipeRefreshLayout.isEnabled = prefs?.getBoolean(prefName, true) ?: true
+            getString(R.string.swipe_refresh_key) -> {
+                canSwipeRefresh = prefs?.getBoolean(prefName, true) ?: true
+                swipeRefreshLayout.isEnabled = canSwipeRefresh
+            }
         }
     }
 

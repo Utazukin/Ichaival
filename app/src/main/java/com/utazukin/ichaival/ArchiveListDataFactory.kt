@@ -181,8 +181,7 @@ class ArchiveListServerSource(results: List<String>?,
                 val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
                 val archives = getArchives(ids)
                 DatabaseReader.refreshListener?.isRefreshing(false)
-                val startPosition = if (params.requestedStartPosition + archives.size > archives.size) 0 else params.requestedStartPosition
-                callback.onResult(archives, startPosition, if (archives.size < ids.size) archives.size else totalSize)
+                callback.onResult(archives, params.requestedStartPosition, if (archives.size < ids.size) archives.size else totalSize)
             }
         }
     }
