@@ -210,11 +210,22 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             val imageFile = withContext(Dispatchers.IO) {
                 var target: Target<File>? = null
                 try {
-                    target = downloadImageWithProgress(requireActivity(), image) { progressBar.progress = it }
+                    target = downloadImageWithProgress(requireActivity(), image) {
+                        progressBar.progress = it
+                    }
                     target.get()
+                } catch (e: Exception) {
+                    null
                 } finally {
                     activity?.let { Glide.with(it).clear(target) }
                 }
+            }
+
+            if (imageFile == null) {
+                failedMessageText.visibility = View.VISIBLE
+                pageNum.visibility = View.GONE
+                progressBar.visibility = View.GONE
+                return@launch
             }
 
             val format = getImageFormat(imageFile)
