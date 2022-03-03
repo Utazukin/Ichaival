@@ -600,7 +600,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     override fun isRefreshing(refreshing: Boolean) {
-        lifecycleScope.launch { swipeRefreshLayout.isRefreshing = refreshing }
+        lifecycleScope.launch {
+            if (refreshing)
+                swipeRefreshLayout.isEnabled = true
+            swipeRefreshLayout.isRefreshing = refreshing
+            if (!refreshing)
+                swipeRefreshLayout.isEnabled = canSwipeRefresh
+        }
     }
 
     interface OnListFragmentInteractionListener {
