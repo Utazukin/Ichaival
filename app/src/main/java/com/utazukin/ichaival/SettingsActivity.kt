@@ -34,7 +34,8 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
         setTheme()
         super.onCreate(savedInstanceState)
 
-        supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingsFragment()).commit()
+        if (savedInstanceState == null)
+            supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingsFragment()).commit()
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
