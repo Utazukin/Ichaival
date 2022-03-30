@@ -34,7 +34,6 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:contentDescription="@string/archive_thumb"
-            android:scaleType="centerCrop"
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintDimensionRatio="H,2:3"
