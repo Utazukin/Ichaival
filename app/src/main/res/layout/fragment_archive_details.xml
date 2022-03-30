@@ -30,37 +30,40 @@
         android:layout_height="match_parent"
         tools:context=".ArchiveDetailsFragment">
 
-
     <ImageView
         android:id="@+id/cover"
-        android:layout_width="175dp"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="250dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:adjustViewBounds="true"
-        android:scaleType="fitStart"
-        app:layout_constraintDimensionRatio="H,2:3"
+        android:scaleType="fitCenter"
+        app:layout_constraintHorizontal_chainStyle="spread_inside"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_max="wrap"
+        app:layout_constraintWidth_percent=".5"
         tools:srcCompat="@tools:sample/backgrounds/scenic" />
 
+
     <TextView
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:id="@+id/title"
-            android:textSize="24sp"
-            tools:text="Title"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="8dp"
-            app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/read_button"
-            app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="12sp"
-            app:autoSizeMaxTextSize="24sp"
-            android:layout_marginEnd="8dp"
-            app:layout_constraintStart_toEndOf="@+id/cover"
-            android:layout_marginStart="8dp"/>
+        android:id="@+id/title"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:textSize="24sp"
+        app:autoSizeMaxTextSize="24sp"
+        app:autoSizeMinTextSize="12sp"
+        app:autoSizeTextType="uniform"
+        app:layout_constraintBottom_toTopOf="@+id/read_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_chainStyle="spread_inside"
+        app:layout_constraintStart_toEndOf="@+id/cover"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Title" />
 
     <Button
             android:text="@string/bookmark"
@@ -89,26 +92,25 @@
             android:layout_marginEnd="8dp"/>
 
     <View
-            android:id="@+id/divider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?android:attr/listDivider"
-            app:layout_constraintTop_toBottomOf="@id/cover"
-            android:layout_marginTop="16dp"
-            app:layout_constraintBottom_toTopOf="@+id/tag_layout"
-            android:layout_marginBottom="8dp"/>
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="?android:attr/listDivider"
+        app:layout_constraintBottom_toTopOf="@+id/tag_layout"
+        app:layout_constraintTop_toBottomOf="@id/cover" />
 
     <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toBottomOf="@id/bookmark_button"
-            android:layout_marginTop="8dp"
-            android:id="@+id/tag_layout"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginEnd="8dp">
+        android:id="@+id/tag_layout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bookmark_button">
 
         <TextView
             android:id="@+id/tag_header"
