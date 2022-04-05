@@ -56,6 +56,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private lateinit var listView: RecyclerView
     private lateinit var newCheckBox: CheckBox
     private lateinit var randomButton: Button
+    private lateinit var listAdapter: ArchiveRecyclerViewAdapter
     private var menu: Menu? = null
     private var viewModel: SearchViewModelBase? = null
     lateinit var searchView: SearchView
@@ -70,7 +71,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
-        lateinit var listAdapter: ArchiveRecyclerViewAdapter
         setHasOptionsMenu(true)
 
         savedState = savedInstanceState
@@ -115,19 +115,18 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 }
             }
             listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, ::handleArchiveLongPress)
-            adapter = listAdapter
             listAdapter.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
                 override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                     super.onItemRangeInserted(positionStart, itemCount)
                     val size = listAdapter.itemCount
-                    jumpToTop = true
+                    jumpToTop = savedState == null
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
 
                 override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
                     super.onItemRangeRemoved(positionStart, itemCount)
                     val size = listAdapter.itemCount
-                    jumpToTop = true
+                    jumpToTop = savedState == null
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
             })
@@ -269,7 +268,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     fun setupArchiveList() {
         lifecycleScope.launch {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-            val listAdapter = listView.adapter as ArchiveRecyclerViewAdapter
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext()) }
 
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
@@ -305,7 +303,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 }
             }
             viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
-            updateSortMethod(method, descending, prefs)
+            listView.adapter = listAdapter
+            if (savedState == null)
+                updateSortMethod(method, descending, prefs)
+            else
+                sortMethod = method
 
             savedState = null
             creatingView = false
