@@ -573,7 +573,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     override fun onPreferenceChange(pref: Preference, newValue: Any?): Boolean {
         if (newValue !is String || newValue.isEmpty())
-            return false
+            return true
 
         if (serverLocation == newValue)
             return true
