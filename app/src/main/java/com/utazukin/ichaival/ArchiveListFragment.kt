@@ -234,7 +234,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             if (randomCount > 1) {
                 val intent = Intent(context, ArchiveRandomActivity::class.java)
                 val bundle = Bundle().apply {
-                    if (searchView.query.isNotBlank())
+                    if (searchView.query.isNotBlank() && searchView.query?.startsWith(STATIC_CATEGORY_SEARCH) != true)
                         putString(RANDOM_SEARCH, searchView.query.toString())
                     val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                     categoryFragment?.selectedCategory?.run { putString(RANDOM_CAT, id) }
