@@ -196,9 +196,9 @@ class ArchiveRecyclerViewAdapter(
         when (item?.itemId) {
             R.id.delete_select_archive -> {
                 val builder = AlertDialog.Builder(context).apply {
-                    setTitle("Delete Archives")
+                    setTitle(R.string.delete_archive_item)
                     setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size, selectedArchives.size))
-                    setPositiveButton("Yes") { dialog, _ ->
+                    setPositiveButton(R.string.yes) { dialog, _ ->
                         dialog.dismiss()
                         scope.launch(Dispatchers.IO) {
                             val deleted = WebHandler.deleteArchives(selectedArchives.keys.map { it.id }.toList())
@@ -207,7 +207,7 @@ class ArchiveRecyclerViewAdapter(
                         }
                         mode?.finish()
                     }
-                    setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
+                    setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
                 }
                 builder.create().show()
             }

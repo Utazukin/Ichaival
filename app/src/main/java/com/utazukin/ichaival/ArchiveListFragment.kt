@@ -231,7 +231,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton.setOnClickListener {
             listAdapter.disableMultiSelect()
             val randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 1)
-            if (randomCount > 1) {
+            if (randomCount > 1 && ServerManager.checkVersionAtLeast(0, 8, 2)) {
                 val intent = Intent(context, ArchiveRandomActivity::class.java)
                 val bundle = Bundle().apply {
                     if (searchView.query.isNotBlank() && searchView.query?.startsWith(STATIC_CATEGORY_SEARCH) != true)
@@ -297,16 +297,30 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 }
                 randomCount = count
 
-                val result = WebHandler.getRandomArchives(count, filter, category)
-                if (result.results == null)
-                    requireActivity().finish()
-                else {
-                    getViewModel<RandomViewModel>().filter(result)
+                if (savedState == null) {
+                    val result = WebHandler.getRandomArchives(count, filter, category)
+                    if (result.results == null)
+                        requireActivity().finish()
+                    else {
+                        getViewModel<RandomViewModel>().filter(result)
+                        jumpToTop = true
+                        viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
+                        if (listView.adapter == null)
+                            listView.adapter = listAdapter
+                    }
+                } else {
+                    savedState?.run {
+                        getStringArray(RESULTS_KEY)?.let {
+                            val totalSize = getInt(RESULTS_SIZE_KEY)
+                            val result = ServerSearchResult(it.asList(), totalSize)
+                            getViewModel<RandomViewModel>().filter(result)
+                        }
+                    }
                     viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
                     listView.adapter = listAdapter
                     savedState = null
-                    creatingView = false
                 }
+                creatingView = false
             }
         }
     }
@@ -559,12 +573,20 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        val serverSource = viewModel?.archiveList?.value?.dataSource as? ArchiveListServerSource
-        serverSource?.run {
-            searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
-            outState.putInt(RESULTS_SIZE_KEY, totalSize)
+        when (val serverSource = viewModel?.archiveList?.value?.dataSource) {
+            is ArchiveListServerSource ->
+                with(serverSource) {
+                    searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
+                    outState.putInt(RESULTS_SIZE_KEY, totalSize)
+                }
+            is RandomServerSource -> {
+                with(serverSource) {
+                    outState.putStringArray(RESULTS_KEY, searchResults.toTypedArray())
+                    outState.putInt(RESULTS_SIZE_KEY, searchResults.size)
+                }
+                randomCount?.let { outState.putInt(RANDOM_COUNT_KEY, it.toInt()) }
+            }
         }
-        randomCount?.let { outState.putInt(RANDOM_COUNT_KEY, it.toInt()) }
     }
 
     override fun onViewStateRestored(savedInstanceState: Bundle?) {

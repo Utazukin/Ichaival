@@ -83,8 +83,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         bindPreferenceSummaryToValue(compressPref)
 
         findPreference<EditTextPreference>(getString(R.string.random_count_pref))?.let {
-            it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER }
-            bindPreferenceSummaryFormat(it)
+            if (ServerManager.checkVersionAtLeast(0, 8, 2)) {
+                it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER }
+                bindPreferenceSummaryFormat(it)
+            } else {
+                it.isVisible = false
+                it.parent?.isVisible = false
+            }
         }
 
         findPreference<EditTextPreference>(getString(R.string.search_delay_key))?.let {

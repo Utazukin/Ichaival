@@ -272,7 +272,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
             getArchives(ids, offset, limit, archiveDao()::getDateAscending)
     }
 
-    fun getArchives(ids: List<String>, offset: Int, limit: Int) = getArchives(ids, offset, limit, archiveDao()::getArchives)
+    fun getArchives(ids: List<String>, offset: Int, limit: Int) : List<Archive> {
+        val idOrder = ids.withIndex().associate { it.value to it.index }
+        return getArchives(ids, offset, limit, archiveDao()::getArchives).sortedBy { idOrder[it.id] }
+    }
 
     private fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
         return if (ids.size <= MAX_PARAMETER_COUNT - 2)
