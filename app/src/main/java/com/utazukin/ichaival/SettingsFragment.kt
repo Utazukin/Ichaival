@@ -22,6 +22,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputType
 import android.util.AttributeSet
 import android.view.MenuItem
 import android.view.View
@@ -80,6 +81,21 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val compressPref: Preference? = findPreference(getString(R.string.compression_type_pref))
         bindPreferenceSummaryToValue(compressPref)
+
+        findPreference<EditTextPreference>(getString(R.string.random_count_pref))?.let {
+            it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER }
+            bindPreferenceSummaryFormat(it)
+        }
+
+        findPreference<EditTextPreference>(getString(R.string.search_delay_key))?.let {
+            it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED }
+            bindPreferenceSummaryFormat(it)
+        }
+
+        findPreference<EditTextPreference>(getString(R.string.fullscreen_timeout_key))?.let {
+            it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED }
+            bindPreferenceSummaryFormat(it)
+        }
 
         val licensePref: Preference? = findPreference(getString(R.string.license_key))
         licensePref?.setOnPreferenceClickListener {
@@ -224,6 +240,32 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
+        private fun getPreferenceSummaryFormatListener(pref: Preference) : Preference.OnPreferenceChangeListener {
+            val formatString = pref.summary?.toString()
+            return Preference.OnPreferenceChangeListener { preference, value ->
+                val stringValue = value.toString()
+
+                if (preference is ListPreference) {
+                    // For list preferences, look up the correct display value in
+                    // the preference's 'entries' list.
+                    val index = preference.findIndexOfValue(stringValue)
+
+                    // Set the summary to reflect the new value.
+                    preference.setSummary(formatString?.format(
+                        if (index >= 0)
+                            preference.entries[index]
+                        else
+                            null
+                    ))
+                } else {
+                    // For all other preferences, set the summary to the value's
+                    // simple string representation.
+                    preference.summary = formatString?.format(stringValue)
+                }
+                true
+            }
+        }
+
         private val bindAndNotifyPreferenceListener = Preference.OnPreferenceChangeListener { pref, value ->
             if (WebHandler.onPreferenceChange(pref, value))
                 sBindPreferenceSummaryToValueListener.onPreferenceChange(pref, value)
@@ -253,6 +295,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         .getDefaultSharedPreferences(it.context)
                         .getString(it.key, "")
                 )
+            }
+        }
+
+        private fun bindPreferenceSummaryFormat(preference: Preference?) {
+            preference?.let {
+                val listener = getPreferenceSummaryFormatListener(it)
+                it.onPreferenceChangeListener = listener
+                listener.onPreferenceChange(it, PreferenceManager.getDefaultSharedPreferences(it.context).getString(it.key, ""))
             }
         }
 

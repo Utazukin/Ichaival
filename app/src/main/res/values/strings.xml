@@ -89,13 +89,10 @@
     <string name="local_search_sum">Searches using the built-in app search instead of making a request to the server.</string>
     <string name="search_delay_key">search_delay_key</string>
     <string name="search_delay_pref">Search Delay</string>
-    <string name="search_delay_summary">Amount of time (in ms) to wait between key presses before making the search request. (Default 750 ms)</string>
+    <string name="search_delay_summary">Amount of time to wait between key presses before making the search request. Current: %s ms (Default 750 ms)</string>
     <string name="refresh_archive_menu">Refresh Archives</string>
     <string name="swipe_refresh_key">swipe_refresh_key</string>
     <string name="swipe_refresh_pref">Enable Swipe to Refresh</string>
-    <string name="search_page_key">search_page</string>
-    <string name="search_page_key_title">Server Search Paging</string>
-    <string name="search_page_desc">Number of items to get at a time from the server.  Should match the server preference for best performance.  (Default: 100)</string>
     <string name="scale_type_menu">Scale Type</string>
     <string-array name="scale_types">
         <item>Fit Page</item>
@@ -110,7 +107,7 @@
     </string-array>
     <string name="fullscreen_timeout_key">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
-    <string name="fullscreen_timeout_summary">The amount of time, in seconds, before hiding the buttons.  -1 for never.</string>
+    <string name="fullscreen_timeout_summary">The amount of time before hiding the buttons.  -1 for never.  Current: %s seconds</string>
     <string name="search_header_key">search_header_key</string>
     <string name="category_label">Categories</string>
     <string name="clear_category_button">Clear Category</string>
@@ -193,6 +190,12 @@
     <string name="no_page_display">Page %1$d</string>
     <string name="single_page_display">Page %1$d/%2$d</string>
     <string name="dual_page_display">Pages %1$d-%2$d/%3$d</string>
+    <string name="random_count_menu">Change Count</string>
+    <string name="random_header">Random Archives</string>
+    <string name="random_count_pref">random_count_pref</string>
+    <string name="random_count_pref_title">Random Archive Count</string>
+    <string name="random_count_pref_summary">The amount of random archives that should be picked when pressing the random button. Current: %s</string>
+    <string name="random_count_dialog_title">Number of Random Archives</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>

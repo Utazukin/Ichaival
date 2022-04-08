@@ -23,6 +23,7 @@
         <activity android:name="com.utazukin.ichaival.ArchiveDetails">
         </activity>
         <activity android:name="com.utazukin.ichaival.ArchiveSearch"/>
+        <activity android:name="com.utazukin.ichaival.ArchiveRandomActivity"/>
         <activity android:name="com.utazukin.ichaival.WebViewActivity"
             android:parentActivityName="com.utazukin.ichaival.SettingsActivity"/>
         <activity

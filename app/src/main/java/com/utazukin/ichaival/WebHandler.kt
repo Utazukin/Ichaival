@@ -63,6 +63,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val tagsPath = "$databasePath/stats"
     private const val clearNewPath = "$archiveListPath/%s/isnew"
     private const val searchPath = "$apiPath/search"
+    private const val randomPath = "$searchPath/random"
     private const val infoPath = "$apiPath/info"
     private const val categoryPath = "$apiPath/categories"
     private const val clearTempPath = "$apiPath/tempfolder"
@@ -273,6 +274,33 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             refreshListener?.isRefreshing(false)
 
         return ServerSearchResult(results, totalResults, search, onlyNew)
+    }
+
+    suspend fun getRandomArchives(count: UInt, filter: CharSequence? = null, categoryId: String? = null) : ServerSearchResult {
+        if (!canConnect())
+            return ServerSearchResult(null)
+
+        refreshListener?.isRefreshing(true)
+
+        val encodedSearch = if (filter == null) null else withContext(Dispatchers.IO) { URLEncoder.encode(filter.toString(), "utf-8") }
+        val url = "$serverLocation$randomPath?count=$count${if (encodedSearch == null) "" else "&filter=$encodedSearch"}${if (categoryId == null) "" else "&category=$categoryId"}"
+
+        val connection = createServerConnection(url)
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+        val result = response?.use {
+            if (!it.isSuccessful)
+                ServerSearchResult(null)
+            else {
+                it.body?.run { JSONObject(suspendString()) }?.let { json ->
+                    val dataArray = json.getJSONArray("data")
+                    val results = List(dataArray.length()) { i -> dataArray.getJSONObject(i).getString("id") }
+                    ServerSearchResult(results, results.size)
+                }
+            }
+        } ?: ServerSearchResult(null)
+
+        refreshListener?.isRefreshing(false)
+        return result
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")

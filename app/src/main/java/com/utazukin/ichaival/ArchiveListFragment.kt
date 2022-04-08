@@ -46,6 +46,7 @@ private const val RESULTS_KEY = "search_results"
 private const val RESULTS_SIZE_KEY = "search_size"
 private const val DEFAULT_SEARCH_DELAY = 750L
 private const val STATIC_CATEGORY_SEARCH = "\b"
+private const val RANDOM_COUNT_KEY = "random_count"
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
     private var sortMethod = SortMethod.Alpha
@@ -66,6 +67,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private var creatingView = false
     private var savedState: Bundle? = null
     private var canSwipeRefresh = false
+    private var randomCount: UInt? = null
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -79,10 +81,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
         isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
 
-        viewModel = if (isLocalSearch)
-            ViewModelProviders.of(this)[ArchiveViewModel::class.java]
-        else
-            ViewModelProviders.of(this)[SearchViewModel::class.java]
+        viewModel = when {
+            isLocalSearch -> ViewModelProviders.of(this)[ArchiveViewModel::class.java]
+            activity is ArchiveRandomActivity -> ViewModelProviders.of(this)[RandomViewModel::class.java]
+            else -> ViewModelProviders.of(this)[SearchViewModel::class.java]
+        }
 
         val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
 
@@ -227,10 +230,23 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener {
             listAdapter.disableMultiSelect()
-            lifecycleScope.launch {
-                val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
-                if (archive != null)
-                    startDetailsActivity(archive.id, requireContext())
+            val randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 1)
+            if (randomCount > 1) {
+                val intent = Intent(context, ArchiveRandomActivity::class.java)
+                val bundle = Bundle().apply {
+                    if (searchView.query.isNotBlank())
+                        putString(RANDOM_SEARCH, searchView.query.toString())
+                    val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
+                    categoryFragment?.selectedCategory?.run { putString(RANDOM_CAT, id) }
+                }
+                intent.putExtras(bundle)
+                startActivity(intent)
+            } else {
+                lifecycleScope.launch {
+                    val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
+                    if (archive != null)
+                        startDetailsActivity(archive.id, requireContext())
+                }
             }
         }
 
@@ -255,12 +271,42 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onStart() {
         super.onStart()
-        if (requireActivity() is ArchiveSearch) {
+        if (activity is ArchiveSearch || activity is ArchiveRandomActivity) {
             with(requireActivity().intent) {
                 val tag = getStringExtra(TAG_SEARCH)
 
                 showOnlySearch(true)
-                searchView.setQuery(tag, false)
+                if (activity is ArchiveSearch)
+                    searchView.setQuery(tag, false)
+                else
+                    searchView.visibility = View.GONE
+            }
+        }
+    }
+
+    fun setupRandomList(count: Int = -1) {
+        lifecycleScope.launch {
+            with(requireActivity().intent) {
+                val filter = getStringExtra(RANDOM_SEARCH)
+                val category = getStringExtra(RANDOM_CAT)
+                val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+                val count = when {
+                    count > 0 -> count.toUInt()
+                    randomCount != null -> randomCount!!
+                    else -> prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5).toUInt()
+                }
+                randomCount = count
+
+                val result = WebHandler.getRandomArchives(count, filter, category)
+                if (result.results == null)
+                    requireActivity().finish()
+                else {
+                    getViewModel<RandomViewModel>().filter(result)
+                    viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
+                    listView.adapter = listAdapter
+                    savedState = null
+                    creatingView = false
+                }
             }
         }
     }
@@ -280,7 +326,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             when {
                 isLocalSearch -> getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
-                savedState != null -> {
+                savedState?.getInt(RESULTS_SIZE_KEY, -1) ?: -1 > 0 -> {
                     savedState?.run {
                         getStringArray(RESULTS_KEY)?.let {
                             val totalSize = getInt(RESULTS_SIZE_KEY)
@@ -390,6 +436,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         inflater.inflate(R.menu.archive_list_menu, menu)
         this.menu = menu
         if (activity is ArchiveSearch) {
+            with (menu) {
+                findItem(R.id.refresh_archives)?.isVisible = false
+                findItem(R.id.filter_menu)?.isVisible = false
+            }
+        } else if (activity is ArchiveRandomActivity) {
             with (menu) {
                 findItem(R.id.refresh_archives)?.isVisible = false
                 findItem(R.id.filter_menu)?.isVisible = false
@@ -513,6 +564,16 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
             outState.putInt(RESULTS_SIZE_KEY, totalSize)
         }
+        randomCount?.let { outState.putInt(RANDOM_COUNT_KEY, it.toInt()) }
+    }
+
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        savedInstanceState?.run {
+            val count = getInt(RANDOM_COUNT_KEY, -1)
+            if (count > 0)
+                randomCount = count.toUInt()
+        }
     }
 
     override fun onDetach() {
@@ -553,15 +614,19 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun initViewModel(localSearch: Boolean, force: Boolean = false, init: Boolean = true) {
-        val model = if (localSearch) {
-            ViewModelProviders.of(this)[ArchiveViewModel::class.java].also {
-                if (init)
-                    it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
+        val model = when {
+            localSearch -> {
+                ViewModelProviders.of(this)[ArchiveViewModel::class.java].also {
+                    if (init)
+                        it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
+                }
             }
-        } else {
-            ViewModelProviders.of(this)[SearchViewModel::class.java].also {
-                if (init)
-                    it.init(sortMethod, descending, force)
+            activity is ArchiveRandomActivity -> ViewModelProviders.of(this)[RandomViewModel::class.java]
+            else -> {
+                ViewModelProviders.of(this)[SearchViewModel::class.java].also {
+                    if (init)
+                        it.init(sortMethod, descending, force)
+                }
             }
         }
 
@@ -592,7 +657,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 if (local != isLocalSearch)
                     resetSearch(local)
             }
-            getString(R.string.search_page_key) -> resetSearch(isLocalSearch, true)
             getString(R.string.search_delay_key) -> { searchDelay = prefs.castStringPrefToLong(prefName, DEFAULT_SEARCH_DELAY) }
             getString(R.string.swipe_refresh_key) -> {
                 canSwipeRefresh = prefs?.getBoolean(prefName, true) ?: true

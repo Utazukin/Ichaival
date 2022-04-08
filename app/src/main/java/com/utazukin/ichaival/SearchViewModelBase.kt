@@ -34,7 +34,7 @@ class ReaderTabViewModel : ViewModel() {
 abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
     var archiveList: LiveData<PagedList<Archive>>? = null
         protected set
-    protected abstract val archiveDataFactory: ArchiveListDataFactory
+    protected abstract val archiveDataFactory: ArchiveListDataFactoryBase
     protected val archiveDao by lazy { DatabaseReader.database.archiveDao() }
 
     init {
@@ -59,6 +59,16 @@ abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
     fun reset() = archiveDataFactory.reset()
     override fun onDelete() {
         reset()
+    }
+}
+
+class RandomViewModel : SearchViewModelBase() {
+    override val archiveDataFactory = RandomArchiveListDataFactory()
+    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {}
+    fun filter(searchResult: ServerSearchResult) = archiveDataFactory.updateSearchResults(searchResult)
+
+    init {
+        archiveList = archiveDataFactory.toLiveData(ServerManager.pageSize)
     }
 }
 

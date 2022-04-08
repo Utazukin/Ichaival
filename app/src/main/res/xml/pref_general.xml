@@ -136,7 +136,7 @@
             app:dependency="@string/dualpage_key"
             app:iconSpaceReserved="false" />
         <EditTextPreference
-            android:inputType="numberDecimal"
+            app:defaultValue="@integer/default_fullscreen_timeout"
             android:selectAllOnFocus="true"
             app:iconSpaceReserved="false"
             app:key="@string/fullscreen_timeout_key"
@@ -156,13 +156,26 @@
             app:summary="@string/local_search_sum"
             app:title="@string/local_search_pref" />
         <EditTextPreference
-            android:inputType="number"
+            android:defaultValue="@integer/default_search_delay"
             android:selectAllOnFocus="true"
             app:iconSpaceReserved="false"
             app:key="@string/search_delay_key"
             app:singleLine="true"
             app:summary="@string/search_delay_summary"
             app:title="@string/search_delay_pref" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        android:title="@string/random_header">
+
+        <EditTextPreference
+            android:defaultValue="@integer/default_random_count"
+            android:key="@string/random_count_pref"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="@string/random_count_pref_summary"
+            android:title="@string/random_count_pref_title"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
     <PreferenceCategory
         app:iconSpaceReserved="false"

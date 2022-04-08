@@ -69,6 +69,9 @@ interface ArchiveDao {
     @Query("Select * from archive where id = :id limit 1")
     suspend fun getArchive(id: String) : Archive?
 
+    @Query("Select * from archive where id in (:ids) limit :limit offset :offset")
+    fun getArchives(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+
     @Query("Select title from archive where id = :id limit 1")
     fun getArchiveTitle(id: String) : String?
 
@@ -268,6 +271,8 @@ abstract class ArchiveDatabase : RoomDatabase() {
         else
             getArchives(ids, offset, limit, archiveDao()::getDateAscending)
     }
+
+    fun getArchives(ids: List<String>, offset: Int, limit: Int) = getArchives(ids, offset, limit, archiveDao()::getArchives)
 
     private fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
         return if (ids.size <= MAX_PARAMETER_COUNT - 2)
