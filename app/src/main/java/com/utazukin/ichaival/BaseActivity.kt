@@ -46,6 +46,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
     private lateinit var tabView: RecyclerView
+    protected var needsRefresh = false
 
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
@@ -70,11 +71,13 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         super.onCreate(savedInstanceState)
 
         if (WebHandler.serverLocation.isNotEmpty()) {
+            val refresh = needsRefresh
             launch {
-                withContext(Dispatchers.IO) { ServerManager.init(applicationContext, savedInstanceState != null) }
+                withContext(Dispatchers.IO) { ServerManager.init(applicationContext, !refresh && savedInstanceState != null, refresh) }
                 onServerInitialized()
             }
         }
+        needsRefresh = false
 
     }
 

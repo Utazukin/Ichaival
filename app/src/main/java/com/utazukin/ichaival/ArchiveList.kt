@@ -40,7 +40,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     private lateinit var setupText: TextView
     private lateinit var categoryView: NavigationView
     private var menu: Menu? = null
-    private var needsRefresh = false
 
     override fun onListFragmentInteraction(archive: Archive?) {
         if (archive != null)
@@ -200,7 +199,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         super.onResume()
 
         if (needsRefresh) {
-            needsRefresh = false
             recreate()
         }
     }
