@@ -126,12 +126,11 @@ class ArchiveRecyclerViewAdapter(
         getItem(position)?.let {
             holder.archiveName.text = it.title
             val job = scope.launch(Dispatchers.Main) {
-                val image = withContext(Dispatchers.Default) {
+                val (imagePath, modifiedTime) = withContext(Dispatchers.Default) {
                     DatabaseReader.getArchiveImage(it, holder.mView.context)
                 }
-                image?.let { pair ->
-                    val (imagePath, modifiedTime) = pair
-                    var builder = glideManager.load(imagePath).format(DecodeFormat.PREFER_RGB_565).transition(DrawableTransitionOptions.withCrossFade()).signature(ObjectKey(modifiedTime))
+                imagePath?.let { path ->
+                    var builder = glideManager.load(path).format(DecodeFormat.PREFER_RGB_565).transition(DrawableTransitionOptions.withCrossFade()).signature(ObjectKey(modifiedTime))
                     if (listViewType == ListViewType.Cover)
                         builder = builder.transform(StartCrop())
                     builder.into(holder.archiveImage)

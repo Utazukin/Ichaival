@@ -115,10 +115,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     thumbLoadJob?.cancel()
                     thumbView.setImageDrawable(null)
                     lifecycleScope.launch {
-                        val thumb = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext()) }
-                        thumb?.let {
-                            val (imagePath, modifiedTime) = it
-                            Glide.with(thumbView).load(imagePath).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
+                        val (thumbPath, modifiedTime) = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext()) }
+                        thumbPath?.let { path ->
+                            Glide.with(thumbView).load(path).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
                         }
                     }
                 }
@@ -305,10 +304,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
         thumbLoadJob = lifecycleScope.launch {
             thumbView = view.findViewById(R.id.cover)
-            val thumb = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
-            thumb?.let {
-                val (thumbPath, modifiedTime) = it
-                Glide.with(thumbView).load(thumbPath).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
+            val (thumbPath, modifiedTime) = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
+            thumbPath?.let {
+                Glide.with(thumbView).load(it).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
             }
         }
     }
