@@ -171,13 +171,13 @@ class ArchiveListServerSource(results: List<String>?,
                 val archives = getArchives(ids)
                 callback.onResult(archives)
             } else {
-                DatabaseReader.refreshListener?.isRefreshing(true)
+                WebHandler.updateRefreshing(true)
 
                 runBlocking { loadResults(endIndex) }
                 endIndex = min(params.startPosition + params.loadSize, totalResults.size)
                 val ids = totalResults.subList(params.startPosition, endIndex)
                 val archives = getArchives(ids)
-                DatabaseReader.refreshListener?.isRefreshing(false)
+                WebHandler.updateRefreshing(false)
                 callback.onResult(archives)
             }
         }
@@ -215,12 +215,12 @@ class ArchiveListServerSource(results: List<String>?,
                 val archives = getArchives(ids)
                 callback.onResult(archives, params.requestedStartPosition, totalSize)
             } else {
-                DatabaseReader.refreshListener?.isRefreshing(true)
+                WebHandler.updateRefreshing(true)
                 runBlocking { loadResults(endIndex) }
                 endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalResults.size)
                 val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
                 val archives = getArchives(ids)
-                DatabaseReader.refreshListener?.isRefreshing(false)
+                WebHandler.updateRefreshing(false)
                 callback.onResult(archives, params.requestedStartPosition, if (archives.size < ids.size) archives.size else totalSize)
             }
         }

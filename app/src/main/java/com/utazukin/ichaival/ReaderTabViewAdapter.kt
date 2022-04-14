@@ -53,13 +53,12 @@ class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdap
             holder.titleView.text = item.title
             holder.pageView.text = (item.page + 1).toString()
             jobs[holder] = activityScope.launch {
-                val thumb = withContext(Dispatchers.Default) {
+                val (thumbPath, modifiedTime) = withContext(Dispatchers.Default) {
                     DatabaseReader.getArchiveImage(item.id, activity)
                 }
-                thumb?.let {
-                    val (thumbPath, modifiedTime) = it
+                thumbPath?.let {
                     glideManager
-                        .load(thumbPath)
+                        .load(it)
                         .signature(ObjectKey(modifiedTime))
                         .transition(DrawableTransitionOptions.withCrossFade())
                         .into(holder.thumbView)

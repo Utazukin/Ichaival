@@ -284,6 +284,16 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        WebHandler.registerRefreshListener(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        WebHandler.unregisterRefreshListener(this)
+    }
+
     fun setupRandomList(count: Int = -1) {
         lifecycleScope.launch {
             with(requireActivity().intent) {
@@ -449,15 +459,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.archive_list_menu, menu)
         this.menu = menu
-        if (activity is ArchiveSearch) {
-            with (menu) {
-                findItem(R.id.refresh_archives)?.isVisible = false
-                findItem(R.id.filter_menu)?.isVisible = false
-            }
-        } else if (activity is ArchiveRandomActivity) {
-            with (menu) {
-                findItem(R.id.refresh_archives)?.isVisible = false
-                findItem(R.id.filter_menu)?.isVisible = false
+        when (activity) {
+            is ArchiveSearch, is ArchiveRandomActivity -> {
+                with (menu) {
+                    findItem(R.id.refresh_archives)?.isVisible = false
+                    findItem(R.id.filter_menu)?.isVisible = false
+                }
             }
         }
     }
@@ -566,7 +573,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        DatabaseReader.refreshListener = this
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         prefs.registerOnSharedPreferenceChangeListener(this)
     }
@@ -600,7 +606,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onDetach() {
         super.onDetach()
-        DatabaseReader.refreshListener = null
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.unregisterOnSharedPreferenceChangeListener(this)

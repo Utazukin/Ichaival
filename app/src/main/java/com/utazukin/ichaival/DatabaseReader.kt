@@ -48,12 +48,8 @@ object DatabaseReader {
         }
     }
 
-
     lateinit var database: ArchiveDatabase
         private set
-    var refreshListener: DatabaseRefreshListener?
-        get() = WebHandler.refreshListener
-        set(value) { WebHandler.refreshListener = value }
 
     fun init(context: Context) {
         if (!this::database.isInitialized) {
@@ -67,7 +63,7 @@ object DatabaseReader {
     suspend fun updateArchiveList(context: Context, forceUpdate: Boolean = false) = coroutineScope {
         val cacheDir = context.noBackupFilesDir
         if (forceUpdate || checkDirty(cacheDir)) {
-            refreshListener?.isRefreshing(true)
+            WebHandler.updateRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
             val archiveJson = withContext(Dispatchers.IO) { WebHandler.downloadArchiveList(context) }
             archiveJson?.let {
@@ -79,7 +75,7 @@ object DatabaseReader {
                 else
                     database.updateExisting(serverArchives)
             }
-            refreshListener?.isRefreshing(false)
+            WebHandler.updateRefreshing(false)
             isDirty = false
         }
     }

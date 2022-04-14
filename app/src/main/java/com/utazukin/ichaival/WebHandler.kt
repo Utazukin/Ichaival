@@ -83,7 +83,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     var verboseMessages = false
     var listener: DatabaseMessageListener? = null
-    var refreshListener: DatabaseRefreshListener? = null
+    private val refreshListeners = mutableListOf<DatabaseRefreshListener>()
     var connectivityManager: ConnectivityManager? = null
     val encodedKey
         get() = "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.NO_WRAP)}"
@@ -92,7 +92,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect(context))
             return null
 
-        refreshListener?.isRefreshing(true)
+        updateRefreshing(true)
         val errorMessage = context.getString(R.string.failed_to_connect_message)
         val url = "$serverLocation$infoPath"
         val connection = createServerConnection(url)
@@ -100,17 +100,24 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         response?.use {
             if (!it.isSuccessful) {
                 handleErrorMessage(it.code, errorMessage)
-                refreshListener?.isRefreshing(false)
+                updateRefreshing(false)
                 return null
             }
 
             val json = it.body?.run { JSONObject(suspendString()) }
-            refreshListener?.isRefreshing(false)
+            updateRefreshing(false)
             return json
         }
 
-        refreshListener?.isRefreshing(false)
+        updateRefreshing(false)
         return null
+    }
+
+    fun registerRefreshListener(listener: DatabaseRefreshListener) = refreshListeners.add(listener)
+    fun unregisterRefreshListener(listener: DatabaseRefreshListener) = refreshListeners.remove(listener)
+    fun updateRefreshing(refreshing: Boolean) {
+        for (listener in refreshListeners)
+            listener.isRefreshing(refreshing)
     }
 
     suspend fun clearTempFolder(context: Context) {
@@ -256,12 +263,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             return ServerSearchResult(null)
 
         if (showRefresh)
-            refreshListener?.isRefreshing(true)
+            updateRefreshing(true)
 
         val jsonResults = runBlocking { internalSearchServer(search, onlyNew, sortMethod, descending, start) }
         if (jsonResults == null) {
             if (showRefresh)
-                refreshListener?.isRefreshing(false)
+                updateRefreshing(false)
             return ServerSearchResult(null)
         }
 
@@ -271,7 +278,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val results = List(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
 
         if (showRefresh)
-            refreshListener?.isRefreshing(false)
+            updateRefreshing(false)
 
         return ServerSearchResult(results, totalResults, search, onlyNew)
     }
@@ -280,7 +287,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect())
             return ServerSearchResult(null)
 
-        refreshListener?.isRefreshing(true)
+        updateRefreshing(true)
 
         val encodedSearch = if (filter == null) null else withContext(Dispatchers.IO) { URLEncoder.encode(filter.toString(), "utf-8") }
         val url = "$serverLocation$randomPath?count=$count${if (encodedSearch == null) "" else "&filter=$encodedSearch"}${if (categoryId == null) "" else "&category=$categoryId"}"
@@ -299,7 +306,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             }
         } ?: ServerSearchResult(null)
 
-        refreshListener?.isRefreshing(false)
+        updateRefreshing(false)
         return result
     }
 
