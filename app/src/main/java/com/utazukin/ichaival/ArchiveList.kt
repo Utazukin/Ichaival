@@ -169,6 +169,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun onServerInitialized() {
         super.onServerInitialized()
+        ServerManager.serverName?.let { supportActionBar?.title = it }
         val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.setupArchiveList()
     }

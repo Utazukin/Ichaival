@@ -36,6 +36,8 @@ object ServerManager {
         private set
     var serverTracksProgress = false
         private set
+    var serverName: String? = null
+        private set
     val canEdit
         get() = !hasPassword || WebHandler.apiKey.isNotBlank()
     private var initialized = false
@@ -76,6 +78,7 @@ object ServerManager {
             pageSize = serverInfo.getInt("archives_per_page")
             serverTracksProgress = serverInfo.optInt("server_tracks_progress", 1) == 1 && checkVersionAtLeast(0,7,7)
             hasPassword = serverInfo.getInt("has_password") == 1
+            serverName = serverInfo.getString("name")
         }
 
         parseCategories(context)
