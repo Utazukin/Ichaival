@@ -147,7 +147,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (!it.isSuccessful)
                 null
             else
-                it.body?.run { parseJsonArray(suspendString()) }
+                tryOrNull { it.body?.run { parseJsonArray(suspendString()) } }
         }
     }
 
