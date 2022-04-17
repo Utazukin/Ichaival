@@ -55,7 +55,7 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
         val bookmarkButton: Button = view.findViewById(R.id.bookmark_button)
         val randomButton: Button = view.findViewById(R.id.random_archive_button)
 
-        if (!ServerManager.checkVersionAtLeast(0, 8, 4))
+        if (!ServerManager.checkVersionAtLeast(0, 8, 4) || !ServerManager.canEdit)
             thumbButton.visibility = View.GONE
 
         detailsButton.setOnClickListener{ handler?.handleButton(R.id.detail_button) }

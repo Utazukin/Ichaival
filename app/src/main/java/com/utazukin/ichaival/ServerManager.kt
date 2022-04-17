@@ -36,7 +36,10 @@ object ServerManager {
         private set
     var serverTracksProgress = false
         private set
+    val canEdit
+        get() = !hasPassword || WebHandler.apiKey.isNotBlank()
     private var initialized = false
+    private var hasPassword = false
 
     suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
         if (initialized && !force)
@@ -72,6 +75,7 @@ object ServerManager {
 
             pageSize = serverInfo.getInt("archives_per_page")
             serverTracksProgress = serverInfo.optInt("server_tracks_progress", 1) == 1 && checkVersionAtLeast(0,7,7)
+            hasPassword = serverInfo.getInt("has_password") == 1
         }
 
         parseCategories(context)

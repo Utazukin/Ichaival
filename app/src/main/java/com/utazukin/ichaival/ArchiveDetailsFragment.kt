@@ -29,6 +29,7 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
+import androidx.core.view.isVisible
 import androidx.core.view.setMargins
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -85,6 +86,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
         }
 
+        addToCatButton.isVisible = ServerManager.canEdit
         addToCatButton.setOnClickListener {
             val dialog = AddToCategoryDialogFragment.newInstance(listOf(archiveId!!))
             dialog.show(childFragmentManager, "add_category")
@@ -246,11 +248,15 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             gravity = Gravity.CENTER_VERTICAL
             setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear_black_24dp), null)
         }
+
+        if (!ServerManager.canEdit)
+            return catView
+
         catView.setOnClickListener {
             val builder = AlertDialog.Builder(requireContext()).apply {
                 setTitle("Remove from category")
                 setMessage("Remove from ${category.name}?")
-                setPositiveButton("Yes") { dialog, _ ->
+                setPositiveButton(R.string.yes) { dialog, _ ->
                     dialog.dismiss()
                     lifecycleScope.launch {
                         val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(requireContext(), category.id, archiveId) }
@@ -262,7 +268,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     }
                 }
 
-                setNegativeButton("No") { dialog, _ -> dialog.dismiss() }
+                setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
             }
             val dialog = builder.create()
             dialog.show()

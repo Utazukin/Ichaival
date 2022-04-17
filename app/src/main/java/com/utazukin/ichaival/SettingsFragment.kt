@@ -61,7 +61,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setHasOptionsMenu(true)
 
         val pref: Preference? = findPreference(getString(R.string.server_address_preference))
-        binPrefSummaryNotify(pref)
+        bindPrefSummaryNotify(pref)
 
         val apiPref: Preference? = findPreference(getString(R.string.api_key_pref))
         bindPreferenceSummaryToValue(apiPref)
@@ -129,19 +129,24 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        val tempPref: Preference? = findPreference(getString(R.string.temp_folder_pref))
-        tempPref?.setOnPreferenceClickListener {
-            lifecycleScope.launch(Dispatchers.IO) {
-                WebHandler.clearTempFolder(requireContext())
-                if (!ServerManager.checkVersionAtLeast(0, 8, 2))
-                    DatabaseReader.invalidateImageCache()
-                with(Glide.get(requireContext())) {
-                    withContext(Dispatchers.Main) { clearMemory() }
-                    clearDiskCache()
+        findPreference<Preference>(getString(R.string.temp_folder_pref))?.run {
+            if (ServerManager.canEdit) {
+                setOnPreferenceClickListener {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        WebHandler.clearTempFolder(requireContext())
+                        if (!ServerManager.checkVersionAtLeast(0, 8, 2))
+                            DatabaseReader.invalidateImageCache()
+                        with(Glide.get(requireContext())) {
+                            withContext(Dispatchers.Main) { clearMemory() }
+                            clearDiskCache()
+                        }
+                        DualPageHelper.clearMergedPages(requireContext().cacheDir)
+                    }
+                    true
                 }
-                DualPageHelper.clearMergedPages(requireContext().cacheDir)
             }
-            true
+            else
+                isVisible = false
         }
 
         val saveLogPref: LongClickPreference? = findPreference(getString(R.string.log_save_pref))
@@ -311,7 +316,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
 
-        private fun binPrefSummaryNotify(preference: Preference?) {
+        private fun bindPrefSummaryNotify(preference: Preference?) {
             preference?.let {
                 it.onPreferenceChangeListener = bindAndNotifyPreferenceListener
                 bindAndNotifyPreferenceListener.onPreferenceChange(

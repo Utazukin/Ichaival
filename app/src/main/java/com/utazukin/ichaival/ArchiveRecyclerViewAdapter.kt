@@ -182,6 +182,12 @@ class ArchiveRecyclerViewAdapter(
 
     override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
         mode?.menuInflater?.inflate(R.menu.archive_select_menu, menu) ?: return false
+        if (!ServerManager.canEdit) {
+            menu?.run {
+                findItem(R.id.delete_select_archive)?.isVisible = false
+                findItem(R.id.category_select_item)?.isVisible = false
+            }
+        }
         actionMode = mode
         return true
     }

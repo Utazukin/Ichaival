@@ -83,6 +83,8 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             }
         }
 
+        menu?.findItem(R.id.delete_archive_item)?.isVisible = ServerManager.canEdit
+
         return super.onCreateOptionsMenu(menu)
     }
 
