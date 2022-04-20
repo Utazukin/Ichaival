@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2021 Utazukin
+ * Copyright (C) 2022 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,12 +18,12 @@
 
 package com.utazukin.ichaival
 
-import android.app.Activity
+import android.content.Context
 import androidx.preference.PreferenceManager
 import java.io.File
 import java.io.IOException
 
-class CrashLogger private constructor(private val activity: Activity) : Thread.UncaughtExceptionHandler {
+class CrashLogger private constructor(private val context: Context) : Thread.UncaughtExceptionHandler {
     private val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
 
     override fun uncaughtException(t: Thread, e: Throwable) {
@@ -44,7 +44,7 @@ class CrashLogger private constructor(private val activity: Activity) : Thread.U
         report += "--------------------------------\n\n"
 
         try {
-            val file = File(activity.noBackupFilesDir, "crash.log")
+            val file = File(context.noBackupFilesDir, "crash.log")
             file.writeText(report)
         } catch (e: IOException) {}
 
@@ -53,11 +53,11 @@ class CrashLogger private constructor(private val activity: Activity) : Thread.U
 
     companion object {
         @JvmStatic
-        fun createCrashLogger(activity: Activity) {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(activity)
-            val crashLogEnabled = prefs.getBoolean(activity.getString(R.string.log_pref), false)
+        fun createCrashLogger(context: Context) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val crashLogEnabled = prefs.getBoolean(context.getString(R.string.log_pref), false)
             if (crashLogEnabled)
-                Thread.setDefaultUncaughtExceptionHandler(CrashLogger(activity))
+                Thread.setDefaultUncaughtExceptionHandler(CrashLogger(context))
         }
     }
 }

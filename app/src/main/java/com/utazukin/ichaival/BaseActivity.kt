@@ -18,9 +18,7 @@
 
 package com.utazukin.ichaival
 
-import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.ImageView
@@ -62,9 +60,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        CrashLogger.createCrashLogger(this)
-        DatabaseReader.init(applicationContext)
-        WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         ReaderTabHolder.initialize(this)
         setTheme()
 
@@ -94,11 +89,10 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     protected open fun onCreateDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)
         navView = drawerLayout.findViewById(R.id.nav_view)
-        val context = this
         tabView = findViewById(R.id.tab_view)
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
         with(tabView) {
-            layoutManager = LinearLayoutManager(context)
+            layoutManager = LinearLayoutManager(this@BaseActivity)
             adapter = ReaderTabViewAdapter(this@BaseActivity).also {
                 it.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
                     override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
@@ -111,7 +105,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                 }
             }
 
-            val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
+            val dividerDecoration = DividerItemDecoration(this@BaseActivity, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)
         }
 
