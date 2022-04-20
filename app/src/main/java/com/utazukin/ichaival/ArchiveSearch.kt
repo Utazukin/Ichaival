@@ -20,22 +20,35 @@ package com.utazukin.ichaival
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import androidx.core.app.ActivityOptionsCompat
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
 
-    override fun onListFragmentInteraction(archive: Archive?) {
+    override fun onListFragmentInteraction(archive: Archive?, view: View) {
         if (archive != null) {
             setResult(Activity.RESULT_OK)
-            startDetailsActivity(archive.id)
+            startDetailsActivity(archive.id, view)
         }
+    }
+
+    private fun startDetailsActivity(id: String, view: View) {
+        val intent = Intent(this, ArchiveDetails::class.java)
+        val bundle = Bundle()
+        bundle.putString("id", id)
+        intent.putExtras(bundle)
+        addIntentFlags(intent, id)
+        val coverView: View = view.findViewById(R.id.archive_thumb)
+        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverView, COVER_TRANSITION).toBundle())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

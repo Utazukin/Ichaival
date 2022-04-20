@@ -56,6 +56,8 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_details)
+        supportPostponeEnterTransition()
+
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.run {
@@ -94,7 +96,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                 launch {
                     DatabaseReader.getRandomArchive()?.let {
                         startDetailsActivity(it.id)
-                        finish()
+                        supportFinishAfterTransition()
                     }
                 }
             }

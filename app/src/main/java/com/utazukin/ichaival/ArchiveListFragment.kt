@@ -703,6 +703,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     interface OnListFragmentInteractionListener {
-        fun onListFragmentInteraction(archive: Archive?)
+        fun onListFragmentInteraction(archive: Archive?, view: View)
     }
 }

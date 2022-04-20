@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
@@ -28,6 +29,7 @@ import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.core.view.setMargins
@@ -35,7 +37,11 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.signature.ObjectKey
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
@@ -73,12 +79,13 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_archive_details, container, false)
         tagLayout = view.findViewById(R.id.tag_layout)
         catLayout = view.findViewById(R.id.cat_layout)
         catFlexLayout = view.findViewById(R.id.cat_flex)
         addToCatButton = view.findViewById(R.id.add_to_cat_button)
+        thumbView = view.findViewById(R.id.cover)
+        ViewCompat.setTransitionName(thumbView, COVER_TRANSITION)
 
         lifecycleScope.launch {
             val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
@@ -309,17 +316,29 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         titleView.text = archive.title
 
         thumbLoadJob = lifecycleScope.launch {
-            thumbView = view.findViewById(R.id.cover)
             val (thumbPath, modifiedTime) = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
             thumbPath?.let {
-                Glide.with(thumbView).load(it).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
+                Glide.with(thumbView).load(it).format(DecodeFormat.PREFER_RGB_565).
+                    addListener(object: RequestListener<Drawable> {
+                        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
+                            requireActivity().supportStartPostponedEnterTransition()
+                            return false
+                        }
+
+                        override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+                            requireActivity().supportStartPostponedEnterTransition()
+                            return false
+                        }
+
+                    })
+                    .signature(ObjectKey(modifiedTime)).into(thumbView)
             }
         }
     }
 
     override fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>) {
         val id = archiveIds.firstOrNull() ?: return
-        if (id != archiveId || catFlexLayout.children.mapNotNull { it as TextView }.any { it.text == category.name })
+        if (id != archiveId || catFlexLayout.children.mapNotNull { it as? TextView }.any { it.text == category.name })
             return
 
         val catView = createCatView(category, id)
