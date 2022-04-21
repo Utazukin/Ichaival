@@ -253,7 +253,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             params.setMargins(10)
             layoutParams = params
             gravity = Gravity.CENTER_VERTICAL
-            setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear_black_24dp), null)
+            if (ServerManager.canEdit)
+                setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear_black_24dp), null)
         }
 
         if (!ServerManager.canEdit)
@@ -261,15 +262,15 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
         catView.setOnClickListener {
             val builder = AlertDialog.Builder(requireContext()).apply {
-                setTitle("Remove from category")
-                setMessage("Remove from ${category.name}?")
+                setTitle(getString(R.string.category_remove_title))
+                setMessage(getString(R.string.category_remove_message, category.name))
                 setPositiveButton(R.string.yes) { dialog, _ ->
                     dialog.dismiss()
                     lifecycleScope.launch {
                         val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(requireContext(), category.id, archiveId) }
                         if (success) {
                             catFlexLayout.removeView(catView)
-                            Snackbar.make(requireView(), getString(R.string.category_remove_message, category.name), Snackbar.LENGTH_SHORT).show()
+                            Snackbar.make(requireView(), getString(R.string.category_removed_message, category.name), Snackbar.LENGTH_SHORT).show()
                             ServerManager.parseCategories(requireContext())
                         }
                     }

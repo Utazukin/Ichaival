@@ -164,7 +164,8 @@
     <string name="archive_list_type_key">archive_list_type_key</string>
     <string name="archive_list_type_pref_title">List View</string>
     <string name="other_namespace">other</string>
-    <string name="category_remove_message">Removed from %1$s.</string>
+    <string name="category_removed_message">Removed from %1$s.</string>
+    <string name="category_remove_message">Remove from %1$s.</string>
     <string name="category_add_message">Added to %1$s.</string>
     <string name="update_thumbnail_message">Thumbnail will be updated after restart.</string>
     <string name="selected_archives">%1$d selected</string>
@@ -196,6 +197,7 @@
     <string name="random_count_pref_title">Random Archive Count</string>
     <string name="random_count_pref_summary">The amount of random archives that should be picked when pressing the random button. Current: %s</string>
     <string name="random_count_dialog_title">Number of Random Archives</string>
+    <string name="category_remove_title">Remove from category</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>
