@@ -351,9 +351,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).await()
         return response.use {
-            when (it.code) {
-                HttpURLConnection.HTTP_OK -> url
-                HttpURLConnection.HTTP_ACCEPTED -> {
+            when {
+                it.code == HttpURLConnection.HTTP_OK -> url
+                //The minion api is protected before v0.8.5, so return null if the thumbnail hasn't been generated yet
+                it.code == HttpURLConnection.HTTP_ACCEPTED && !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> null
+                it.code == HttpURLConnection.HTTP_ACCEPTED -> {
                     it.body?.run {
                         val json = JSONObject(suspendString())
                         val job = json.getInt("job")
