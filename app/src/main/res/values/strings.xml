@@ -17,11 +17,10 @@
   -->
 
 <resources>
-    <string name="app_name">Ichaival</string>
-    <string name="archive_thumb">thumb</string>
-    <string name="archive_label">name</string>
+    <string name="app_name" translatable="false">Ichaival</string>
+    <string name="archive_thumb" translatable="false">thumb</string>
+    <string name="archive_label" translatable="false">name</string>
 
-    <string name="title_activity_reader">ReaderActivity</string>
     <string name="random">Random</string>
     <string name="title_activity_settings">Settings</string>
 
@@ -29,7 +28,7 @@
     <string name="pref_header_general">General</string>
 
 
-    <string name="server_address_preference">server_address</string>
+    <string name="server_address_preference" translatable="false">server_address</string>
     <string name="server_location_name">Server Address</string>
     <string name="clear_cache">Clearing cache…</string>
 
@@ -42,15 +41,15 @@
     <string name="tag_header">Tags</string>
     <string name="bookmark_label">Bookmarks</string>
     <string name="detail_menu_item">Details</string>
-    <string name="api_key_pref">api_key</string>
+    <string name="api_key_pref" translatable="false">api_key</string>
     <string name="api_key_pref_name">API Key</string>
     <string name="details_title">Details</string>
     <string name="thumbs_title">Thumbs</string>
-    <string name="license_key">licenses</string>
-    <string name="gpl_key">gpl</string>
-    <string name="git_key">github</string>
+    <string name="license_key" translatable="false">licenses</string>
+    <string name="gpl_key" translatable="false">gpl</string>
+    <string name="git_key" translatable="false">github</string>
     <string name="thumbnail_setting">Clear thumbnail cache</string>
-    <string name="thumbnail_pref">clear_thumbs</string>
+    <string name="thumbnail_pref" translatable="false">clear_thumbs</string>
     <string name="thumbnail_summary">Tap to delete thumbnail cache</string>
     <string name="press_for_tags">Long press for tags</string>
     <string name="first_time_text">Tap to set up server settings.</string>
@@ -60,7 +59,7 @@
         <item quantity="other">%d archives</item>
     </plurals>
     <string name="failed_image">Failed to Load</string>
-    <string name="verbose_pref">verbose_key</string>
+    <string name="verbose_pref" translatable="false">verbose_key</string>
     <string name="verbose_pref_name">Verbose Messages</string>
     <string name="verbose_pref_summary">Enable more verbose error messages</string>
     <string name="sort_method">Sort Method</string>
@@ -68,30 +67,30 @@
     <string name="sort_date">By Date Added</string>
     <string name="save_button">Save</string>
     <string name="sort_menu">Sort</string>
-    <string name="sort_pref">sort_pref</string>
+    <string name="sort_pref" translatable="false">sort_pref</string>
     <string name="sort_asc">Ascending</string>
     <string name="sort_desc">Descending</string>
     <string name="sort_direction">Direction</string>
-    <string name="desc_pref">desc_pref</string>
+    <string name="desc_pref" translatable="false">desc_pref</string>
     <string name="tag_menu">Tags</string>
     <string name="goto_page">Go to Page</string>
     <string name="refresh_menu_item">Force Refresh</string>
-    <string name="rtol_pref_key">right to left pref</string>
-    <string name="rtol_pref_name">Right to Left Reader</string>
+    <string name="rtol_pref_key" translatable="false">right to left pref</string>
+    <string name="rtol_pref_name" translatable="false">Right to Left Reader</string>
     <string name="reader_pref_header">Reader</string>
     <string name="source_pref_header">Source</string>
     <string name="vol_key_pref_name">Volume Key Navigation</string>
-    <string name="vol_key_pref_key">vol_key_pref</string>
+    <string name="vol_key_pref_key" translatable="false">vol_key_pref</string>
     <string name="random_archive">View Random Archive</string>
     <string name="search_header">Search</string>
-    <string name="local_search_key">local_search_key</string>
+    <string name="local_search_key" translatable="false">local_search_key</string>
     <string name="local_search_pref">Local Search</string>
     <string name="local_search_sum">Searches using the built-in app search instead of making a request to the server.</string>
-    <string name="search_delay_key">search_delay_key</string>
-    <string name="search_delay_pref">Search Delay</string>
+    <string name="search_delay_key" translatable="false">search_delay_key</string>
+    <string name="search_delay_pref" translatable="false">Search Delay</string>
     <string name="search_delay_summary">Amount of time to wait between key presses before making the search request. Current: %s ms (Default 750 ms)</string>
     <string name="refresh_archive_menu">Refresh Archives</string>
-    <string name="swipe_refresh_key">swipe_refresh_key</string>
+    <string name="swipe_refresh_key" translatable="false">swipe_refresh_key</string>
     <string name="swipe_refresh_pref">Enable Swipe to Refresh</string>
     <string name="scale_type_menu">Scale Type</string>
     <string-array name="scale_types">
@@ -105,41 +104,41 @@
         <item>@string/dark_theme</item>
         <item>@string/black_theme</item>
     </string-array>
-    <string name="fullscreen_timeout_key">fullscreen_timeout_key</string>
+    <string name="fullscreen_timeout_key" translatable="false">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
     <string name="fullscreen_timeout_summary">The amount of time before hiding the buttons.  -1 for never.  Current: %s seconds</string>
-    <string name="search_header_key">search_header_key</string>
+    <string name="search_header_key" translatable="false">search_header_key</string>
     <string name="category_label">Categories</string>
     <string name="clear_category_button">Clear Category</string>
     <string name="filter_label">Filters</string>
-    <string name="temp_folder_pref">temp_folder_pref</string>
+    <string name="temp_folder_pref" translatable="false">temp_folder_pref</string>
     <string name="temp_folder_pref_summary">Clear the server temp folder</string>
     <string name="temp_folder_pref_title">Clear Temp Folder</string>
     <string name="server_pref_header">Server</string>
     <string name="mark_read_item">Mark Read</string>
-    <string name="server_header_key">server_header_key</string>
+    <string name="server_header_key" translatable="false">server_header_key</string>
     <string name="refresh_thumb_menu_item">Refresh Thumbnail</string>
     <string name="list_top">Top</string>
     <string name="list_bottom">Bottom</string>
     <string name="debug_settings">Debug</string>
-    <string name="log_pref">log_pref</string>
+    <string name="log_pref" translatable="false">log_pref</string>
     <string name="log_pref_name">Enable Crash Logging</string>
-    <string name="log_save_pref">log_save_pref</string>
+    <string name="log_save_pref" translatable="false">log_save_pref</string>
     <string name="log_save_summary">Copy crash log to the clipboard</string>
     <string name="log_save_title">Copy Crash Log</string>
-    <string name="theme_pref">theme_pref</string>
+    <string name="theme_pref" translatable="false">theme_pref</string>
     <string name="theme_pref_name">Theme</string>
     <string name="add_to_cat_button">Add to Category</string>
     <string name="new_category_button">New Category</string>
     <string name="delete_archive_item">Delete Archive</string>
     <string name="select_archives">Select Archives</string>
-    <string name="dualpage_key">dualpage_key</string>
+    <string name="dualpage_key" translatable="false">dualpage_key</string>
     <string name="dualpage_pref_title">Merge Dual Pages</string>
     <string name="dualpage_pref_summary">Merge portrait images when device is landscape</string>
     <string name="use_thumb">Use as Thumbnail</string>
     <string name="cache_header">Cache</string>
     <string name="local_cache_pref_title">Clear Local Cache</string>
-    <string name="local_cache_pref">local_cache_pref</string>
+    <string name="local_cache_pref" translatable="false">local_cache_pref</string>
     <plurals name="delete_archive_count">
         <item quantity="one">Delete %d archive?</item>
         <item quantity="other">Delete %d archives?</item>
@@ -148,20 +147,20 @@
         <item quantity="one">%d page</item>
         <item quantity="other">%d pages</item>
     </plurals>
-    <string name="png_compress">PNG</string>
-    <string name="jpg_compress">JPEG</string>
+    <string name="png_compress" translatable="false">PNG</string>
+    <string name="jpg_compress" translatable="false">JPEG</string>
     <string name="card_view">Card</string>
     <string name="cover_view">Cover</string>
     <string name="png_compress_display">PNG (Slow, High Quality)</string>
     <string name="jpg_compress_display">JPEG (Fast, Decent Quality)</string>
-    <string name="compression_type_pref">compression_type_pref</string>
+    <string name="compression_type_pref" translatable="false">compression_type_pref</string>
     <string name="compression_pref_title">Merged Page Compression Type</string>
     <string name="swap_merged_page">Swap Pages</string>
     <string name="split_merged_page">Split Page</string>
     <string name="dual_page_swap_title">Invert Merge Direction</string>
     <string name="dual_page_swap_summary">Invert RTL from overall RTL setting</string>
-    <string name="dual_page_swap_key">dual_page_swap_key</string>
-    <string name="archive_list_type_key">archive_list_type_key</string>
+    <string name="dual_page_swap_key" translatable="false">dual_page_swap_key</string>
+    <string name="archive_list_type_key" translatable="false">archive_list_type_key</string>
     <string name="archive_list_type_pref_title">List View</string>
     <string name="other_namespace">other</string>
     <string name="category_removed_message">Removed from %1$s.</string>
@@ -193,7 +192,7 @@
     <string name="dual_page_display">Pages %1$d-%2$d/%3$d</string>
     <string name="random_count_menu">Change Count</string>
     <string name="random_header">Random Archives</string>
-    <string name="random_count_pref">random_count_pref</string>
+    <string name="random_count_pref" translatable="false">random_count_pref</string>
     <string name="random_count_pref_title">Random Archive Count</string>
     <string name="random_count_pref_summary">The amount of random archives that should be picked when pressing the random button. Current: %s</string>
     <string name="random_count_dialog_title">Number of Random Archives</string>
