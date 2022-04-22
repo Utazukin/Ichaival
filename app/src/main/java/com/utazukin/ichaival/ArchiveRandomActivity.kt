@@ -64,6 +64,10 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
         setContentView(R.layout.activity_archive_search)
         setSupportActionBar(findViewById(R.id.toolbar))
         title = getString(R.string.random)
+        supportActionBar?.run {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -95,6 +99,10 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
                 }
                 val dialog = builder.create()
                 dialog.show()
+            }
+            android.R.id.home -> {
+                onBackPressed()
+                return true
             }
         }
         return super.onOptionsItemSelected(item)
