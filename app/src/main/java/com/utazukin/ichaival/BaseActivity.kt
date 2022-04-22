@@ -39,12 +39,12 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 
 const val TAG_SEARCH = "tag"
+const val REFRESH_KEY = "refresh"
 
 abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener, CoroutineScope by MainScope() {
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
     private lateinit var tabView: RecyclerView
-    protected var needsRefresh = false
 
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
@@ -66,14 +66,13 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         super.onCreate(savedInstanceState)
 
         if (WebHandler.serverLocation.isNotEmpty()) {
-            val refresh = needsRefresh
+            val refresh = intent.getBooleanExtra(REFRESH_KEY, false)
             launch {
                 withContext(Dispatchers.IO) { ServerManager.init(applicationContext, !refresh && savedInstanceState != null, refresh) }
                 onServerInitialized()
             }
         }
-        needsRefresh = false
-
+        intent.removeExtra(REFRESH_KEY)
     }
 
     protected open fun onServerInitialized() {}

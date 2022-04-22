@@ -110,20 +110,20 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         when (key) {
             getString(R.string.server_address_preference) -> {
                 val location = pref.getString(key, "") as String
-                needsRefresh = true
+                intent.putExtra(REFRESH_KEY, true)
                 WebHandler.serverLocation = location
                 handleSetupText(location.isEmpty())
             }
             getString(R.string.api_key_pref) -> {
                 WebHandler.apiKey = pref.getString(key, "") as String
-                needsRefresh = true
+                intent.putExtra(REFRESH_KEY, true)
             }
             getString(R.string.verbose_pref) -> WebHandler.verboseMessages = pref.getBoolean(key, false)
             getString(R.string.theme_pref) -> {
                 setTheme()
                 recreate()
             }
-            getString(R.string.archive_list_type_key) -> needsRefresh = true
+            getString(R.string.archive_list_type_key) -> intent.putExtra(REFRESH_KEY, true)
         }
     }
 
@@ -212,8 +212,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onResume() {
         super.onResume()
 
-        if (needsRefresh) {
-            recreate()
+        if (intent.getBooleanExtra(REFRESH_KEY, false)) {
+            finish()
+            startActivity(intent)
+            overridePendingTransition(0, 0)
         }
     }
 
