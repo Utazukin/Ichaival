@@ -187,7 +187,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             }
 
             tagLayout.addView(namespaceLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            val namespaceView = createTagView("date added", true)
+            val namespaceView = createTagView(getString(R.string.date_added_tag), true)
             namespaceLayout.addView(namespaceView)
             namespaceLayout.addView(createTagView(DateFormat.getDateInstance(DateFormat.SHORT).format(archive.dateAdded * 1000)))
         }

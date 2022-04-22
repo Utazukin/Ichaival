@@ -197,6 +197,7 @@
     <string name="random_count_pref_summary">The amount of random archives that should be picked when pressing the random button. Current: %s</string>
     <string name="random_count_dialog_title">Number of Random Archives</string>
     <string name="category_remove_title">Remove from category</string>
+    <string name="date_added_tag">date added</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>
