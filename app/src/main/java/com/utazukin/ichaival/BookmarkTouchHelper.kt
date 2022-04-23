@@ -30,9 +30,9 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-private typealias DetailsListener = (String, Int) -> Unit
+private typealias DetailsListener = (ReaderTab, Int, Int) -> Unit
 
-class BookmarkTouchHelper(context: Context, private val leftSwipeListener: DetailsListener?) : ItemTouchHelper.SimpleCallback(0, RIGHT or LEFT) {
+class BookmarkTouchHelper(context: Context, private val swipeListener: DetailsListener?) : ItemTouchHelper.SimpleCallback(0, RIGHT or LEFT) {
     private val infoDrawable: Drawable = ContextCompat.getDrawable(context, R.drawable.ic_info_black_24dp)!!
     private val margin: Int = context.resources.getDimension(R.dimen.ic_clear_margin).roundToInt()
 
@@ -42,10 +42,7 @@ class BookmarkTouchHelper(context: Context, private val leftSwipeListener: Detai
 
     override fun onSwiped(holder: RecyclerView.ViewHolder, direction: Int) {
         val tab = holder.itemView.tag as? ReaderTab ?: return
-        when (direction) {
-            RIGHT -> ReaderTabHolder.removeTab(tab.id)
-            LEFT -> leftSwipeListener?.invoke(tab.id, holder.absoluteAdapterPosition)
-        }
+        swipeListener?.invoke(tab, holder.absoluteAdapterPosition, direction)
     }
 
     override fun onChildDraw(c: Canvas,

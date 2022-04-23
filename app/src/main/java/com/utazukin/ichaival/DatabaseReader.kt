@@ -156,6 +156,8 @@ object DatabaseReader {
 
     suspend fun clearBookmarks() : List<String> = withContext(Dispatchers.IO) { database.clearBookmarks() }
 
+    suspend fun insertBookmark(tab: ReaderTab) = withContext(Dispatchers.IO) { database.insertBookmark(tab) }
+
     suspend fun setArchiveNewFlag(id: String) {
         database.archiveDao().updateNewFlag(id, false)
         WebHandler.setArchiveNewFlag(id)

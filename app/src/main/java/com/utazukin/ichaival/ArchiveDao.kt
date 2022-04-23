@@ -301,6 +301,18 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     @Transaction
+    suspend fun insertBookmark(tab: ReaderTab) {
+        val tabs = archiveDao().getBookmarks()
+        val adjustedTabs = tabs.filter { it.index >= tab.index }
+        for (adjustedTab in adjustedTabs)
+            ++adjustedTab.index
+
+        archiveDao().addBookmark(tab)
+        archiveDao().updateBookmark(tab.id, tab.page)
+        archiveDao().updateBookmarks(adjustedTabs)
+    }
+
+    @Transaction
     fun clearBookmarks() : List<String> {
         val tabs = archiveDao().getBookmarks()
         val removedTabs = tabs.map { it.id }

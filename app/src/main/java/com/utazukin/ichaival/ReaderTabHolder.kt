@@ -65,6 +65,11 @@ object ReaderTabHolder {
         }
     }
 
+    fun insertTab(tab: ReaderTab) {
+        scope.launch { DatabaseReader.insertBookmark(tab) }
+        updateAddListeners(tab.id)
+    }
+
     suspend fun addTabs(archives: List<Archive>) {
         val ids = buildList(archives.size) {
             for (archive in archives) {
@@ -78,6 +83,14 @@ object ReaderTabHolder {
         }
 
         updateAddListeners(ids)
+    }
+
+    fun addReaderTabs(tabs: List<ReaderTab>) {
+        scope.launch(Dispatchers.IO) {
+            for (tab in tabs)
+                DatabaseReader.addBookmark(tab)
+        }
+        updateAddListeners(tabs.map { it.id })
     }
 
     fun createTab(id: String, title: String, page: Int) = ReaderTab(id, title, tabCount, page)
@@ -99,19 +112,23 @@ object ReaderTabHolder {
     fun removeTab(id: String) {
         scope.launch {
             if (DatabaseReader.removeBookmark(id)) {
-                WebHandler.updateProgress(id, 0)
                 updateRemoveListeners(id)
             }
         }
     }
 
+    fun resetServerProgress(id: String) = scope.launch {
+        WebHandler.updateProgress(id, 0)
+    }
+
     fun removeAll() {
-        scope.launch(Dispatchers.IO) {
-            val ids = DatabaseReader.clearBookmarks()
-            for (id in ids)
-                WebHandler.updateProgress(id, 0)
-        }
+        scope.launch(Dispatchers.IO) { DatabaseReader.clearBookmarks() }
         updateClearListeners()
+    }
+
+    fun resetServerProgress(tabs: List<ReaderTab>) = scope.launch(Dispatchers.IO) {
+        for (tab in tabs)
+            WebHandler.updateProgress(tab.id, 0)
     }
 
     private fun updateRemoveListeners(id: String) {

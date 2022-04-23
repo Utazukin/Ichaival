@@ -198,6 +198,9 @@
     <string name="random_count_dialog_title">Number of Random Archives</string>
     <string name="category_remove_title">Remove from category</string>
     <string name="date_added_tag">date added</string>
+    <string name="bookmark_removed_snack">Bookmark removed</string>
+    <string name="undo">Undo</string>
+    <string name="cleared_bookmarks_snack">Cleared bookmarks</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>

@@ -34,6 +34,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -109,11 +110,47 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         }
 
         val closeButton: ImageView = findViewById(R.id.clear_bookmark)
-        closeButton.setOnClickListener{ ReaderTabHolder.removeAll() }
+        closeButton.setOnClickListener{
+            launch {
+                val bookmarks = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmarks() }
+                Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_INDEFINITE).run {
+                    val job = launch {
+                        ReaderTabHolder.removeAll()
+                        delay(2000)
+                        dismiss()
+                        ReaderTabHolder.resetServerProgress(bookmarks)
+                    }
+                    setAction(R.string.undo) {
+                        job.cancel()
+                        ReaderTabHolder.addReaderTabs(bookmarks)
+                    }
+                    show()
+                }
+            }
+        }
 
-        val touchHelper = BookmarkTouchHelper(this) { id, position ->
-            tabView.adapter?.notifyItemChanged(position)
-            startDetailsActivity(id)
+        val touchHelper = BookmarkTouchHelper(this) { tab, position, direction ->
+            when (direction) {
+                ItemTouchHelper.LEFT -> {
+                    tabView.adapter?.notifyItemChanged(position)
+                    startDetailsActivity(tab.id)
+                }
+                ItemTouchHelper.RIGHT -> {
+                    Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_INDEFINITE).run {
+                        val job = launch {
+                            ReaderTabHolder.removeTab(tab.id)
+                            delay(2000)
+                            dismiss()
+                            ReaderTabHolder.resetServerProgress(tab.id)
+                        }
+                        setAction(R.string.undo) {
+                            job.cancel()
+                            ReaderTabHolder.insertTab(tab)
+                        }
+                        show()
+                    }
+                }
+            }
         }
         ItemTouchHelper(touchHelper).attachToRecyclerView(tabView)
     }
