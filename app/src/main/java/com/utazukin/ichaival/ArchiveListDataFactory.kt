@@ -213,7 +213,8 @@ class ArchiveListServerSource(results: List<String>?,
             if (params.requestedStartPosition < totalResults.size && endIndex <= totalResults.size) {
                 val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
                 val archives = getArchives(ids)
-                callback.onResult(archives, params.requestedStartPosition, totalSize)
+                val size = if (archives.size < ids.size && totalSize < params.requestedLoadSize) archives.size else totalSize
+                callback.onResult(archives, params.requestedStartPosition, size)
             } else {
                 WebHandler.updateRefreshing(true)
                 runBlocking { loadResults(endIndex) }
