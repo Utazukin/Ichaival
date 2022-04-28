@@ -97,7 +97,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                 it.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
                     override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                         super.onItemRangeInserted(positionStart, itemCount)
-                        scrollToPosition(positionStart)
+                        if (itemCount == 1 && positionStart == it.itemCount - 1)
+                            scrollToPosition(positionStart)
                     }
                 })
                 launch(Dispatchers.Default) {
