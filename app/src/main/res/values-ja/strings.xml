@@ -53,50 +53,50 @@
     <string name="thumbnail_summary">タップしてサムネイルキャッシュを削除</string>
     <string name="press_for_tags">タグを長押し</string>
     <string name="first_time_text">タップしてサーバー設定をセットアップします。</string>
-    <string name="new_checkbox">New</string>
+    <string name="new_checkbox">新しい</string>
     <plurals name="archive_count">
-        <item quantity="one">%d archive</item>
-        <item quantity="other">%d archives</item>
+        <item quantity="one">%dアーカイブ</item>
+        <item quantity="other">%dアーカイブ</item>
     </plurals>
-    <string name="failed_image">Failed to Load</string>
+    <string name="failed_image">読み込みに失敗しました</string>
     <string name="verbose_pref" translatable="false">verbose_key</string>
-    <string name="verbose_pref_name">Verbose Messages</string>
-    <string name="verbose_pref_summary">Enable more verbose error messages</string>
-    <string name="sort_method">Sort Method</string>
-    <string name="alpha_sort">By Name</string>
-    <string name="sort_date">By Date Added</string>
-    <string name="save_button">Save</string>
+    <string name="verbose_pref_name">詳細なメッセージ</string>
+    <string name="verbose_pref_summary">より詳細なエラーメッセージを有効にする</string>
+    <string name="sort_method">ソート方法</string>
+    <string name="alpha_sort">名前</string>
+    <string name="sort_date">追加日</string>
+    <string name="save_button">保存</string>
     <string name="sort_menu">ソート</string>
     <string name="sort_pref" translatable="false">sort_pref</string>
-    <string name="sort_asc">Ascending</string>
-    <string name="sort_desc">Descending</string>
-    <string name="sort_direction">Direction</string>
+    <string name="sort_asc">昇順</string>
+    <string name="sort_desc">降順</string>
+    <string name="sort_direction">方向</string>
     <string name="desc_pref" translatable="false">desc_pref</string>
     <string name="tag_menu">タグ</string>
-    <string name="goto_page">Go to Page</string>
-    <string name="refresh_menu_item">Force Refresh</string>
+    <string name="goto_page">ページに移動</string>
+    <string name="refresh_menu_item">強制更新</string>
     <string name="rtol_pref_key" translatable="false">right to left pref</string>
     <string name="rtol_pref_name" translatable="false">Right to Left Reader</string>
-    <string name="reader_pref_header">Reader</string>
+    <string name="reader_pref_header">リーダー</string>
     <string name="source_pref_header">ソース</string>
-    <string name="vol_key_pref_name">Volume Key Navigation</string>
+    <string name="vol_key_pref_name">ボリュームキーナビゲーション</string>
     <string name="vol_key_pref_key" translatable="false">vol_key_pref</string>
-    <string name="random_archive">View Random Archive</string>
+    <string name="random_archive">ランダムアーカイブを表示</string>
     <string name="search_header">検索</string>
     <string name="local_search_key" translatable="false">local_search_key</string>
     <string name="local_search_pref">ローカル検索</string>
-    <string name="local_search_sum">Searches using the built-in app search instead of making a request to the server.</string>
+    <string name="local_search_sum">サーバーにリクエストを送信する代わりに、組み込みのアプリ検索を使用して検索します。</string>
     <string name="search_delay_key" translatable="false">search_delay_key</string>
     <string name="search_delay_pref" translatable="false">Search Delay</string>
-    <string name="search_delay_summary">Amount of time to wait between key presses before making the search request. Current: %s ms (Default 750 ms)</string>
-    <string name="refresh_archive_menu">Refresh Archives</string>
+    <string name="search_delay_summary">検索要求を行う前にキーが押されるまで待機する時間。 現在：％s ms（デフォルトは750ms）</string>
+    <string name="refresh_archive_menu">アーカイブを更新</string>
     <string name="swipe_refresh_key" translatable="false">swipe_refresh_key</string>
-    <string name="swipe_refresh_pref">Enable Swipe to Refresh</string>
-    <string name="scale_type_menu">Scale Type</string>
+    <string name="swipe_refresh_pref">スワイプして更新を有効にする</string>
+    <string name="scale_type_menu">スケールタイプ</string>
     <string-array name="scale_types">
-        <item>Fit Page</item>
-        <item>Fit Height</item>
-        <item>Fit Width</item>
+        <item>ページに合わせる</item>
+        <item>フィットの高さ</item>
+        <item>フィットの幅</item>
     </string-array>
     <string name="dark_theme">ダーク</string>
     <string name="black_theme">ブラック</string>
@@ -105,7 +105,7 @@
         <item>@string/ブラックテーマ</item>
     </string-array>
     <string name="fullscreen_timeout_key" translatable="false">fullscreen_timeout_key</string>
-    <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
+    <string name="fullscreen_timeout_title">フルスクリーンタイムアウト</string>
     <string name="fullscreen_timeout_summary">The amount of time before hiding the buttons.  -1 for never.  Current: %s seconds</string>
     <string name="search_header_key" translatable="false">search_header_key</string>
     <string name="category_label">カテゴリー</string>
