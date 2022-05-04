@@ -88,7 +88,7 @@
     <string name="local_search_sum">サーバーにリクエストを送信する代わりに、組み込みのアプリ検索を使用して検索します。</string>
     <string name="search_delay_key" translatable="false">search_delay_key</string>
     <string name="search_delay_pref" translatable="false">Search Delay</string>
-    <string name="search_delay_summary">検索要求を行う前にキーが押されるまで待機する時間。 現在：％s ms（デフォルトは750ms）</string>
+    <string name="search_delay_summary">検索要求を行う前にキーが押されるまで待機する時間。 現在：％sms（デフォルトは750ms）</string>
     <string name="refresh_archive_menu">アーカイブを更新</string>
     <string name="swipe_refresh_key" translatable="false">swipe_refresh_key</string>
     <string name="swipe_refresh_pref">スワイプして更新を有効にする</string>
@@ -106,63 +106,63 @@
     </string-array>
     <string name="fullscreen_timeout_key" translatable="false">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">フルスクリーンタイムアウト</string>
-    <string name="fullscreen_timeout_summary">The amount of time before hiding the buttons.  -1 for never.  Current: %s seconds</string>
+    <string name="fullscreen_timeout_summary">ボタンを非表示にするまでの時間。 -1は決してありません。 現在：％s秒</string>
     <string name="search_header_key" translatable="false">search_header_key</string>
     <string name="category_label">カテゴリー</string>
     <string name="clear_category_button">カテゴリーを削除</string>
     <string name="filter_label">フィルター</string>
     <string name="temp_folder_pref" translatable="false">temp_folder_pref</string>
-    <string name="temp_folder_pref_summary">Clear the server temp folder</string>
-    <string name="temp_folder_pref_title">Clear Temp Folder</string>
+    <string name="temp_folder_pref_summary">サーバーの一時フォルダーをクリアします</string>
+    <string name="temp_folder_pref_title">一時フォルダーをクリア</string>
     <string name="server_pref_header">サーバー</string>
-    <string name="mark_read_item">Mark Read</string>
+    <string name="mark_read_item">マークリード</string>
     <string name="server_header_key" translatable="false">server_header_key</string>
-    <string name="refresh_thumb_menu_item">Refresh Thumbnail</string>
+    <string name="refresh_thumb_menu_item">サムネイルを更新</string>
     <string name="list_top">トップ</string>
-    <string name="list_bottom">Bottom</string>
-    <string name="debug_settings">Debug</string>
+    <string name="list_bottom">下</string>
+    <string name="debug_settings">デバッグ</string>
     <string name="log_pref" translatable="false">log_pref</string>
-    <string name="log_pref_name">Enable Crash Logging</string>
+    <string name="log_pref_name">クラッシュロギングを有効にする</string>
     <string name="log_save_pref" translatable="false">log_save_pref</string>
-    <string name="log_save_summary">Copy crash log to the clipboard</string>
-    <string name="log_save_title">Copy Crash Log</string>
+    <string name="log_save_summary">クラッシュログをクリップボードにコピー</string>
+    <string name="log_save_title">クラッシュログのコピー</string>
     <string name="theme_pref" translatable="false">theme_pref</string>
     <string name="theme_pref_name">テーマ</string>
     <string name="add_to_cat_button">カテゴリーを追加</string>
     <string name="new_category_button">新しいカテゴリー</string>
-    <string name="delete_archive_item">Delete Archive</string>
-    <string name="select_archives">Select Archives</string>
+    <string name="delete_archive_item">アーカイブを削除</string>
+    <string name="select_archives">アーカイブを選択</string>
     <string name="dualpage_key" translatable="false">dualpage_key</string>
-    <string name="dualpage_pref_title">Merge Dual Pages</string>
-    <string name="dualpage_pref_summary">Merge portrait images when device is landscape</string>
-    <string name="use_thumb">Use as Thumbnail</string>
+    <string name="dualpage_pref_title">デュアルページをマージ</string>
+    <string name="dualpage_pref_summary">デバイスが横向きの場合に縦向きの画像をマージする</string>
+    <string name="use_thumb">サムネイルとして使用</string>
     <string name="cache_header">キャッシュ</string>
-    <string name="local_cache_pref_title">Clear Local Cache</string>
+    <string name="local_cache_pref_title">ローカルキャッシュをクリア</string>
     <string name="local_cache_pref" translatable="false">local_cache_pref</string>
     <plurals name="delete_archive_count">
-        <item quantity="one">Delete %d archive?</item>
-        <item quantity="other">Delete %d archives?</item>
+        <item quantity="one">％dアーカイブを削除しますか？</item>
+        <item quantity="other">％dアーカイブを削除しますか？</item>
     </plurals>
     <plurals name="page_count">
-        <item quantity="one">%d page</item>
-        <item quantity="other">%d pages</item>
+        <item quantity="one">%dページ</item>
+        <item quantity="other">%dページ</item>
     </plurals>
     <string name="png_compress" translatable="false">PNG</string>
     <string name="jpg_compress" translatable="false">JPEG</string>
-    <string name="card_view">Card</string>
-    <string name="cover_view">Cover</string>
-    <string name="png_compress_display">PNG (Slow, High Quality)</string>
-    <string name="jpg_compress_display">JPEG (Fast, Decent Quality)</string>
+    <string name="card_view">カード</string>
+    <string name="cover_view">カバー</string>
+    <string name="png_compress_display">PNG（低速、高品質）</string>
+    <string name="jpg_compress_display">JPEG（高速、まともな品質）</string>
     <string name="compression_type_pref" translatable="false">compression_type_pref</string>
-    <string name="compression_pref_title">Merged Page Compression Type</string>
-    <string name="swap_merged_page">Swap Pages</string>
-    <string name="split_merged_page">Split Page</string>
-    <string name="dual_page_swap_title">Invert Merge Direction</string>
-    <string name="dual_page_swap_summary">Invert RTL from overall RTL setting</string>
+    <string name="compression_pref_title">マージされたページ圧縮タイプ</string>
+    <string name="swap_merged_page">ページを入れ替える</string>
+    <string name="split_merged_page">ページを分割</string>
+    <string name="dual_page_swap_title">マージ方向を反転</string>
+    <string name="dual_page_swap_summary">全体的なRTL設定からRTLを反転する</string>
     <string name="dual_page_swap_key" translatable="false">dual_page_swap_key</string>
     <string name="archive_list_type_key" translatable="false">archive_list_type_key</string>
-    <string name="archive_list_type_pref_title">List View</string>
-    <string name="other_namespace">other</string>
+    <string name="archive_list_type_pref_title">リストビュー</string>
+    <string name="other_namespace">他の</string>
     <string name="category_removed_message">Removed from %1$s.</string>
     <string name="category_remove_message">Remove from %1$s.</string>
     <string name="category_add_message">Added to %1$s.</string>
