@@ -18,8 +18,8 @@
 
 <resources>
     <string name="app_name" translatable="false">Ichaival</string>
-    <string name="archive_thumb" translatable="false">親指</string>
-    <string name="archive_label" translatable="false">名前</string>
+    <string name="archive_thumb" translatable="false">thumb</string>
+    <string name="archive_label" translatable="false">name</string>
 
     <string name="random">ランダム</string>
     <string name="title_activity_settings">設定</string>
