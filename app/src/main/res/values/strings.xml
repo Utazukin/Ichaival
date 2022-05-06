@@ -22,30 +22,30 @@
     <string name="archive_label" translatable="false">name</string>
 
     <string name="random">Random</string>
-    <string name="title_activity_settings">設定</string>
+    <string name="title_activity_settings">Settings</string>
 
     <!-- Example General settings -->
-    <string name="pref_header_general">全般</string>
+    <string name="pref_header_general">General</string>
 
 
     <string name="server_address_preference" translatable="false">server_address</string>
-    <string name="server_location_name">サーバーアドレス</string>
+    <string name="server_location_name">Server Address</string>
     <string name="clear_cache">Clearing cache…</string>
 
     <string name="load_previews">Load more thumbs</string>
-    <string name="bookmark">ブックマーク</string>
+    <string name="bookmark">Bookmark</string>
     <string name="unbookmark">Unbookmark</string>
     <string name="archive_details">Details</string>
     <string name="archive_gallery">Thumbs</string>
     <string name="read_button">Read</string>
-    <string name="tag_header">タグ</string>
+    <string name="tag_header">Tags</string>
     <string name="bookmark_label">Bookmarks</string>
     <string name="detail_menu_item">Details</string>
     <string name="api_key_pref" translatable="false">api_key</string>
-    <string name="api_key_pref_name">APIキー</string>
+    <string name="api_key_pref_name">API Key</string>
     <string name="details_title">Details</string>
     <string name="thumbs_title">Thumbs</string>
-    <string name="license_key" translatable="false">ライセンス</string>
+    <string name="license_key" translatable="false">licenses</string>
     <string name="gpl_key" translatable="false">gpl</string>
     <string name="git_key" translatable="false">github</string>
     <string name="thumbnail_setting">Clear thumbnail cache</string>
@@ -66,25 +66,25 @@
     <string name="alpha_sort">By Name</string>
     <string name="sort_date">By Date Added</string>
     <string name="save_button">Save</string>
-    <string name="sort_menu">ソート</string>
+    <string name="sort_menu">Sort</string>
     <string name="sort_pref" translatable="false">sort_pref</string>
     <string name="sort_asc">Ascending</string>
     <string name="sort_desc">Descending</string>
     <string name="sort_direction">Direction</string>
     <string name="desc_pref" translatable="false">desc_pref</string>
-    <string name="tag_menu">タグ</string>
+    <string name="tag_menu">Tags</string>
     <string name="goto_page">Go to Page</string>
     <string name="refresh_menu_item">Force Refresh</string>
     <string name="rtol_pref_key" translatable="false">right to left pref</string>
     <string name="rtol_pref_name" translatable="false">Right to Left Reader</string>
     <string name="reader_pref_header">Reader</string>
-    <string name="source_pref_header">ソース</string>
+    <string name="source_pref_header">Source</string>
     <string name="vol_key_pref_name">Volume Key Navigation</string>
     <string name="vol_key_pref_key" translatable="false">vol_key_pref</string>
     <string name="random_archive">View Random Archive</string>
-    <string name="search_header">検索</string>
+    <string name="search_header">Search</string>
     <string name="local_search_key" translatable="false">local_search_key</string>
-    <string name="local_search_pref">ローカル検索</string>
+    <string name="local_search_pref">Local Search</string>
     <string name="local_search_sum">Searches using the built-in app search instead of making a request to the server.</string>
     <string name="search_delay_key" translatable="false">search_delay_key</string>
     <string name="search_delay_pref" translatable="false">Search Delay</string>
@@ -98,27 +98,27 @@
         <item>Fit Height</item>
         <item>Fit Width</item>
     </string-array>
-    <string name="dark_theme">ダーク</string>
-    <string name="black_theme">ブラック</string>
+    <string name="dark_theme">Dark</string>
+    <string name="black_theme">Black</string>
     <string-array name="theme_names">
-        <item>@string/ダークテーマ</item>
-        <item>@string/ブラックテーマ</item>
+        <item>@string/dark_theme</item>
+        <item>@string/black_theme</item>
     </string-array>
     <string name="fullscreen_timeout_key" translatable="false">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
     <string name="fullscreen_timeout_summary">The amount of time before hiding the buttons.  -1 for never.  Current: %s seconds</string>
     <string name="search_header_key" translatable="false">search_header_key</string>
-    <string name="category_label">カテゴリー</string>
-    <string name="clear_category_button">カテゴリーを削除</string>
-    <string name="filter_label">フィルター</string>
+    <string name="category_label">Categories</string>
+    <string name="clear_category_button">Clear Category</string>
+    <string name="filter_label">Filters</string>
     <string name="temp_folder_pref" translatable="false">temp_folder_pref</string>
     <string name="temp_folder_pref_summary">Clear the server temp folder</string>
     <string name="temp_folder_pref_title">Clear Temp Folder</string>
-    <string name="server_pref_header">サーバー</string>
+    <string name="server_pref_header">Server</string>
     <string name="mark_read_item">Mark Read</string>
     <string name="server_header_key" translatable="false">server_header_key</string>
     <string name="refresh_thumb_menu_item">Refresh Thumbnail</string>
-    <string name="list_top">トップ</string>
+    <string name="list_top">Top</string>
     <string name="list_bottom">Bottom</string>
     <string name="debug_settings">Debug</string>
     <string name="log_pref" translatable="false">log_pref</string>
@@ -127,16 +127,16 @@
     <string name="log_save_summary">Copy crash log to the clipboard</string>
     <string name="log_save_title">Copy Crash Log</string>
     <string name="theme_pref" translatable="false">theme_pref</string>
-    <string name="theme_pref_name">テーマ</string>
-    <string name="add_to_cat_button">カテゴリーを追加</string>
-    <string name="new_category_button">新しいカテゴリー</string>
+    <string name="theme_pref_name">Theme</string>
+    <string name="add_to_cat_button">Add to Category</string>
+    <string name="new_category_button">New Category</string>
     <string name="delete_archive_item">Delete Archive</string>
     <string name="select_archives">Select Archives</string>
     <string name="dualpage_key" translatable="false">dualpage_key</string>
     <string name="dualpage_pref_title">Merge Dual Pages</string>
     <string name="dualpage_pref_summary">Merge portrait images when device is landscape</string>
     <string name="use_thumb">Use as Thumbnail</string>
-    <string name="cache_header">キャッシュ</string>
+    <string name="cache_header">Cache</string>
     <string name="local_cache_pref_title">Clear Local Cache</string>
     <string name="local_cache_pref" translatable="false">local_cache_pref</string>
     <plurals name="delete_archive_count">
@@ -170,12 +170,12 @@
     <string name="selected_archives">%1$d selected</string>
     <string name="deleted_archive">Deleted "%1$s"</string>
     <string name="delete_archive_prompt">Delete "%1$s"?</string>
-    <string name="yes">はい</string>
-    <string name="no">いいえ</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
     <string name="log_delete_message">Log deleted!</string>
-    <string name="copy_log_title">クラッシュログをコピー</string>
-    <string name="crash_log_subject">クラッシュログ</string>
-    <string name="error_message">エラー: %1$s</string>
+    <string name="copy_log_title">Copy Crash log</string>
+    <string name="crash_log_subject">Crash Log</string>
+    <string name="error_message">Error: %1$s</string>
     <string name="failed_to_connect_message">Failed to connect to server!</string>
     <string name="temp_clear_fail_message">Failed to clear temp folder.</string>
     <string name="category_remove_fail_message">Failed to remove from category.</string>
@@ -187,9 +187,9 @@
     <string name="category_add_fail_message">Failed to add to category.</string>
     <string name="no_net_connection">No network connection!</string>
     <string name="temp_clear_success_message">Temp folder cleared.</string>
-    <string name="no_page_display">ページ %1$d</string>
-    <string name="single_page_display">ページ %1$d/%2$d</string>
-    <string name="dual_page_display">ページ %1$d-%2$d/%3$d</string>
+    <string name="no_page_display">Page %1$d</string>
+    <string name="single_page_display">Page %1$d/%2$d</string>
+    <string name="dual_page_display">Pages %1$d-%2$d/%3$d</string>
     <string name="random_count_menu">Change Count</string>
     <string name="random_header">Random Archives</string>
     <string name="random_count_pref" translatable="false">random_count_pref</string>
