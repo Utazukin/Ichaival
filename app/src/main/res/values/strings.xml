@@ -87,7 +87,7 @@
     <string name="local_search_pref">Local Search</string>
     <string name="local_search_sum">Searches using the built-in app search instead of making a request to the server.</string>
     <string name="search_delay_key" translatable="false">search_delay_key</string>
-    <string name="search_delay_pref" translatable="false">Search Delay</string>
+    <string name="search_delay_pref">Search Delay</string>
     <string name="search_delay_summary">Amount of time to wait between key presses before making the search request. Current: %s ms (Default 750 ms)</string>
     <string name="refresh_archive_menu">Refresh Archives</string>
     <string name="swipe_refresh_key" translatable="false">swipe_refresh_key</string>
