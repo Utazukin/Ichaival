@@ -45,7 +45,7 @@
     <string name="api_key_pref_name">APIキー</string>
     <string name="details_title">詳細</string>
     <string name="thumbs_title">親指</string>
-    <string name="license_key" translatable="false">ライセンス</string>
+    <string name="license_key" translatable="false">licenses</string>
     <string name="gpl_key" translatable="false">gpl</string>
     <string name="git_key" translatable="false">github</string>
     <string name="thumbnail_setting">サムネイルキャッシュをクリアする</string>
@@ -76,7 +76,7 @@
     <string name="goto_page">ページに移動</string>
     <string name="refresh_menu_item">強制更新</string>
     <string name="rtol_pref_key" translatable="false">right to left pref</string>
-    <string name="rtol_pref_name" translatable="false">Right to Left Reader</string>
+    <string name="rtol_pref_name">右から左へのリーダー</string>
     <string name="reader_pref_header">リーダー</string>
     <string name="source_pref_header">ソース</string>
     <string name="vol_key_pref_name">ボリュームキーナビゲーション</string>
@@ -87,7 +87,7 @@
     <string name="local_search_pref">ローカル検索</string>
     <string name="local_search_sum">サーバーにリクエストを送信する代わりに、組み込みのアプリ検索を使用して検索します。</string>
     <string name="search_delay_key" translatable="false">search_delay_key</string>
-    <string name="search_delay_pref" translatable="false">Search Delay</string>
+    <string name="search_delay_pref">検索の遅延</string>
     <string name="search_delay_summary">検索要求を行う前にキーが押されるまで待機する時間。 現在：％sms（デフォルトは750ms）</string>
     <string name="refresh_archive_menu">アーカイブを更新</string>
     <string name="swipe_refresh_key" translatable="false">swipe_refresh_key</string>
@@ -101,8 +101,8 @@
     <string name="dark_theme">ダーク</string>
     <string name="black_theme">ブラック</string>
     <string-array name="theme_names">
-        <item>@string/ダークテーマ</item>
-        <item>@string/ブラックテーマ</item>
+        <item>@string/dark_theme</item>
+        <item>@string/black_theme</item>
     </string-array>
     <string name="fullscreen_timeout_key" translatable="false">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">フルスクリーンタイムアウト</string>
