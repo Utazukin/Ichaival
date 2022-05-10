@@ -1,0 +1,216 @@
+<!--
+  ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
+  ~ Copyright (C) 2022 Utazukin
+  ~
+  ~  This program is free software: you can redistribute it and/or modify
+  ~  it under the terms of the GNU General Public License as published by
+  ~  the Free Software Foundation, either version 3 of the License, or
+  ~  (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name" translatable="false">Ichaival</string>
+    <string name="archive_thumb" translatable="false">thumb</string>
+    <string name="archive_label" translatable="false">name</string>
+
+    <string name="random">ランダム</string>
+    <string name="title_activity_settings">設定</string>
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">全般</string>
+
+
+    <string name="server_address_preference" translatable="false">server_address</string>
+    <string name="server_location_name">サーバーアドレス</string>
+    <string name="clear_cache">キャッシュをクリアしています…</string>
+
+    <string name="load_previews">より多くの親指をロード</string>
+    <string name="bookmark">ブックマーク</string>
+    <string name="unbookmark">ブックマークを外す</string>
+    <string name="archive_details">詳細</string>
+    <string name="archive_gallery">親指</string>
+    <string name="read_button">読む</string>
+    <string name="tag_header">タグ</string>
+    <string name="bookmark_label">ブックマーク</string>
+    <string name="detail_menu_item">詳細</string>
+    <string name="api_key_pref" translatable="false">api_key</string>
+    <string name="api_key_pref_name">APIキー</string>
+    <string name="details_title">詳細</string>
+    <string name="thumbs_title">親指</string>
+    <string name="license_key" translatable="false">licenses</string>
+    <string name="gpl_key" translatable="false">gpl</string>
+    <string name="git_key" translatable="false">github</string>
+    <string name="thumbnail_setting">サムネイルキャッシュをクリアする</string>
+    <string name="thumbnail_pref" translatable="false">clear_thumbs</string>
+    <string name="thumbnail_summary">タップしてサムネイルキャッシュを削除</string>
+    <string name="press_for_tags">タグを長押し</string>
+    <string name="first_time_text">タップしてサーバー設定をセットアップします。</string>
+    <string name="new_checkbox">新しい</string>
+    <plurals name="archive_count">
+        <item quantity="one">%dアーカイブ</item>
+        <item quantity="other">%dアーカイブ</item>
+    </plurals>
+    <string name="failed_image">読み込みに失敗しました</string>
+    <string name="verbose_pref" translatable="false">verbose_key</string>
+    <string name="verbose_pref_name">詳細なメッセージ</string>
+    <string name="verbose_pref_summary">より詳細なエラーメッセージを有効にする</string>
+    <string name="sort_method">ソート方法</string>
+    <string name="alpha_sort">名前</string>
+    <string name="sort_date">追加日</string>
+    <string name="save_button">保存</string>
+    <string name="sort_menu">ソート</string>
+    <string name="sort_pref" translatable="false">sort_pref</string>
+    <string name="sort_asc">昇順</string>
+    <string name="sort_desc">降順</string>
+    <string name="sort_direction">方向</string>
+    <string name="desc_pref" translatable="false">desc_pref</string>
+    <string name="tag_menu">タグ</string>
+    <string name="goto_page">ページに移動</string>
+    <string name="refresh_menu_item">強制更新</string>
+    <string name="rtol_pref_key" translatable="false">right to left pref</string>
+    <string name="rtol_pref_name">右から左へのリーダー</string>
+    <string name="reader_pref_header">リーダー</string>
+    <string name="source_pref_header">ソース</string>
+    <string name="vol_key_pref_name">ボリュームキーナビゲーション</string>
+    <string name="vol_key_pref_key" translatable="false">vol_key_pref</string>
+    <string name="random_archive">ランダムアーカイブを表示</string>
+    <string name="search_header">検索</string>
+    <string name="local_search_key" translatable="false">local_search_key</string>
+    <string name="local_search_pref">ローカル検索</string>
+    <string name="local_search_sum">サーバーにリクエストを送信する代わりに、組み込みのアプリ検索を使用して検索します。</string>
+    <string name="search_delay_key" translatable="false">search_delay_key</string>
+    <string name="search_delay_pref">検索の遅延</string>
+    <string name="search_delay_summary">検索要求を行う前にキーが押されるまで待機する時間。 現在：％sms（デフォルトは750ms）</string>
+    <string name="refresh_archive_menu">アーカイブを更新</string>
+    <string name="swipe_refresh_key" translatable="false">swipe_refresh_key</string>
+    <string name="swipe_refresh_pref">スワイプして更新を有効にする</string>
+    <string name="scale_type_menu">スケールタイプ</string>
+    <string-array name="scale_types">
+        <item>ページに合わせる</item>
+        <item>フィットの高さ</item>
+        <item>フィットの幅</item>
+    </string-array>
+    <string name="dark_theme">ダーク</string>
+    <string name="black_theme">ブラック</string>
+    <string-array name="theme_names">
+        <item>@string/dark_theme</item>
+        <item>@string/black_theme</item>
+    </string-array>
+    <string name="fullscreen_timeout_key" translatable="false">fullscreen_timeout_key</string>
+    <string name="fullscreen_timeout_title">フルスクリーンタイムアウト</string>
+    <string name="fullscreen_timeout_summary">ボタンを非表示にするまでの時間。 -1は決してありません。 現在：％s秒</string>
+    <string name="search_header_key" translatable="false">search_header_key</string>
+    <string name="category_label">カテゴリー</string>
+    <string name="clear_category_button">カテゴリーを削除</string>
+    <string name="filter_label">フィルター</string>
+    <string name="temp_folder_pref" translatable="false">temp_folder_pref</string>
+    <string name="temp_folder_pref_summary">サーバーの一時フォルダーをクリアします</string>
+    <string name="temp_folder_pref_title">一時フォルダーをクリア</string>
+    <string name="server_pref_header">サーバー</string>
+    <string name="mark_read_item">マークリード</string>
+    <string name="server_header_key" translatable="false">server_header_key</string>
+    <string name="refresh_thumb_menu_item">サムネイルを更新</string>
+    <string name="list_top">トップ</string>
+    <string name="list_bottom">下</string>
+    <string name="debug_settings">デバッグ</string>
+    <string name="log_pref" translatable="false">log_pref</string>
+    <string name="log_pref_name">クラッシュロギングを有効にする</string>
+    <string name="log_save_pref" translatable="false">log_save_pref</string>
+    <string name="log_save_summary">クラッシュログをクリップボードにコピー</string>
+    <string name="log_save_title">クラッシュログのコピー</string>
+    <string name="theme_pref" translatable="false">theme_pref</string>
+    <string name="theme_pref_name">テーマ</string>
+    <string name="add_to_cat_button">カテゴリーを追加</string>
+    <string name="new_category_button">新しいカテゴリー</string>
+    <string name="delete_archive_item">アーカイブを削除</string>
+    <string name="select_archives">アーカイブを選択</string>
+    <string name="dualpage_key" translatable="false">dualpage_key</string>
+    <string name="dualpage_pref_title">デュアルページをマージ</string>
+    <string name="dualpage_pref_summary">デバイスが横向きの場合に縦向きの画像をマージする</string>
+    <string name="use_thumb">サムネイルとして使用</string>
+    <string name="cache_header">キャッシュ</string>
+    <string name="local_cache_pref_title">ローカルキャッシュをクリア</string>
+    <string name="local_cache_pref" translatable="false">local_cache_pref</string>
+    <plurals name="delete_archive_count">
+        <item quantity="one">％dアーカイブを削除しますか？</item>
+        <item quantity="other">％dアーカイブを削除しますか？</item>
+    </plurals>
+    <plurals name="page_count">
+        <item quantity="one">%dページ</item>
+        <item quantity="other">%dページ</item>
+    </plurals>
+    <string name="png_compress" translatable="false">PNG</string>
+    <string name="jpg_compress" translatable="false">JPEG</string>
+    <string name="card_view">カード</string>
+    <string name="cover_view">カバー</string>
+    <string name="png_compress_display">PNG（低速、高品質）</string>
+    <string name="jpg_compress_display">JPEG（高速、まともな品質）</string>
+    <string name="compression_type_pref" translatable="false">compression_type_pref</string>
+    <string name="compression_pref_title">マージされたページ圧縮タイプ</string>
+    <string name="swap_merged_page">ページを入れ替える</string>
+    <string name="split_merged_page">ページを分割</string>
+    <string name="dual_page_swap_title">マージ方向を反転</string>
+    <string name="dual_page_swap_summary">全体的なRTL設定からRTLを反転する</string>
+    <string name="dual_page_swap_key" translatable="false">dual_page_swap_key</string>
+    <string name="archive_list_type_key" translatable="false">archive_list_type_key</string>
+    <string name="archive_list_type_pref_title">リストビュー</string>
+    <string name="other_namespace">他の</string>
+    <string name="category_removed_message">％1$sから削除されました。</string>
+    <string name="category_remove_message">％1$sから削除します。</string>
+    <string name="category_add_message">％1$sに追加されました。</string>
+    <string name="update_thumbnail_message">サムネイルは再起動後に更新されます。</string>
+    <string name="selected_archives">％1$dが選択されました</string>
+    <string name="deleted_archive">"%1$s"を削除</string>
+    <string name="delete_archive_prompt">"%1$s"を削除しますか？</string>
+    <string name="yes">はい</string>
+    <string name="no">いいえ</string>
+    <string name="log_delete_message">ログが削除されました！</string>
+    <string name="copy_log_title">クラッシュログをコピー</string>
+    <string name="crash_log_subject">クラッシュログ</string>
+    <string name="error_message">エラー: %1$s</string>
+    <string name="failed_to_connect_message">サーバーへの接続に失敗しました！</string>
+    <string name="temp_clear_fail_message">一時フォルダをクリア出来ませんでした。</string>
+    <string name="category_remove_fail_message">カテゴリーからの削除に失敗しました。</string>
+    <string name="category_create_fail_message">カテゴリーの作成に失敗しました。</string>
+    <string name="thumb_set_fail_message">新しいサムネイルの設定に失敗しました。</string>
+    <string name="get_archives_fail_message">アーカイブリストの取得中にエラーが発生しました</string>
+    <string name="archive_extract_fail_message">アーカイブの抽出に失敗しました！</string>
+    <string name="archive_extract_message">抽出…</string>
+    <string name="category_add_fail_message">カテゴリーへの追加に失敗しました。</string>
+    <string name="no_net_connection">ネットワーク接続がありません！</string>
+    <string name="temp_clear_success_message">一時フォルダがクリアされました。</string>
+    <string name="no_page_display">ページ %1$d</string>
+    <string name="single_page_display">ページ %1$d/%2$d</string>
+    <string name="dual_page_display">ページ %1$d-%2$d/%3$d</string>
+    <string name="random_count_menu">カウントの変更</string>
+    <string name="random_header">ランダムアーカイブ</string>
+    <string name="random_count_pref" translatable="false">random_count_pref</string>
+    <string name="random_count_pref_title">ランダムアーカイブカウント</string>
+    <string name="random_count_pref_summary">ランダムボタンを押したときに選択する必要があるランダムアーカイブの量。 現在: %s</string>
+    <string name="random_count_dialog_title">ランダムアーカイブの数</string>
+    <string name="category_remove_title">カテゴリーから削除</string>
+    <string name="date_added_tag">追加された日付</string>
+    <string name="bookmark_removed_snack">ブックマークが削除されました</string>
+    <string name="undo">元に戻す</string>
+    <string name="cleared_bookmarks_snack">ブックマークをクリアしました</string>
+    <string-array name="compression_types">
+        <item>@string/jpg_compress</item>
+        <item>@string/png_compress</item>
+    </string-array>
+    <string-array name="list_type">
+        <item>@string/card_view</item>
+        <item>@string/cover_view</item>
+    </string-array>
+    <string-array name="compression_types_display">
+        <item>@string/jpg_compress_display</item>
+        <item>@string/png_compress_display</item>
+    </string-array>
+</resources>
