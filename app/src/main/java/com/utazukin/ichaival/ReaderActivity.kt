@@ -45,6 +45,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.coroutines.*
@@ -305,17 +306,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         closeButton.setOnClickListener {
             launch {
                 val bookmarks = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmarks() }
-                Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_INDEFINITE).run {
-                    val job = launch {
-                        ReaderTabHolder.removeAll()
-                        delay(2000)
-                        dismiss()
-                        ReaderTabHolder.resetServerProgress(bookmarks)
-                    }
-                    setAction(R.string.undo) {
-                        job.cancel()
-                        ReaderTabHolder.addReaderTabs(bookmarks)
-                    }
+                with(Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_LONG)) {
+                    ReaderTabHolder.removeAll()
+                    setAction(R.string.undo) { ReaderTabHolder.addReaderTabs(bookmarks) }
+                    addCallback(object: BaseTransientBottomBar.BaseCallback<Snackbar>() {
+                        override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                            super.onDismissed(transientBottomBar, event)
+                            if (event != DISMISS_EVENT_ACTION)
+                                ReaderTabHolder.resetServerProgress(bookmarks)
+                        }
+                    })
                     show()
                 }
             }
@@ -329,17 +329,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     finish()
                 }
                 ItemTouchHelper.RIGHT -> {
-                    Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_INDEFINITE).run {
-                        val job = launch {
-                            ReaderTabHolder.removeTab(tab.id)
-                            delay(2000)
-                            dismiss()
-                            ReaderTabHolder.resetServerProgress(tab.id)
-                        }
-                        setAction(R.string.undo) {
-                            job.cancel()
-                            ReaderTabHolder.insertTab(tab)
-                        }
+                    with(Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_LONG)) {
+                        ReaderTabHolder.removeTab(tab.id)
+                        setAction(R.string.undo) { ReaderTabHolder.insertTab(tab) }
+                        addCallback(object: BaseTransientBottomBar.BaseCallback<Snackbar>() {
+                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                                super.onDismissed(transientBottomBar, event)
+                                if (event != DISMISS_EVENT_ACTION)
+                                    ReaderTabHolder.resetServerProgress(tab.id)
+                            }
+                        })
                         show()
                     }
                 }
@@ -617,8 +616,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     private fun openSettings() {
-        val settingsFragment = ReaderSettingsDialogFragment.newInstance(currentScaleType)
-        settingsFragment.show(supportFragmentManager, "reader_settings")
+        if (!supportFragmentManager.isDestroyed) {
+            val settingsFragment = ReaderSettingsDialogFragment.newInstance(currentScaleType)
+            settingsFragment.show(supportFragmentManager, "reader_settings")
+        }
     }
 
     private fun closeSettings() {

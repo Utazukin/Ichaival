@@ -34,6 +34,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import kotlinx.coroutines.*
@@ -114,17 +115,16 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         closeButton.setOnClickListener{
             launch {
                 val bookmarks = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmarks() }
-                Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_INDEFINITE).run {
-                    val job = launch {
-                        ReaderTabHolder.removeAll()
-                        delay(2000)
-                        dismiss()
-                        ReaderTabHolder.resetServerProgress(bookmarks)
-                    }
-                    setAction(R.string.undo) {
-                        job.cancel()
-                        ReaderTabHolder.addReaderTabs(bookmarks)
-                    }
+                with(Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_LONG)) {
+                    ReaderTabHolder.removeAll()
+                    setAction(R.string.undo) { ReaderTabHolder.addReaderTabs(bookmarks) }
+                    addCallback(object: BaseTransientBottomBar.BaseCallback<Snackbar>() {
+                        override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                            super.onDismissed(transientBottomBar, event)
+                            if (event != DISMISS_EVENT_ACTION)
+                                ReaderTabHolder.addReaderTabs(bookmarks)
+                        }
+                    })
                     show()
                 }
             }
@@ -137,17 +137,16 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                     startDetailsActivity(tab.id)
                 }
                 ItemTouchHelper.RIGHT -> {
-                    Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_INDEFINITE).run {
-                        val job = launch {
-                            ReaderTabHolder.removeTab(tab.id)
-                            delay(2000)
-                            dismiss()
-                            ReaderTabHolder.resetServerProgress(tab.id)
-                        }
-                        setAction(R.string.undo) {
-                            job.cancel()
-                            ReaderTabHolder.insertTab(tab)
-                        }
+                    with(Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_LONG)) {
+                        ReaderTabHolder.removeTab(tab.id)
+                        setAction(R.string.undo) { ReaderTabHolder.insertTab(tab) }
+                        addCallback(object: BaseTransientBottomBar.BaseCallback<Snackbar>() {
+                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                                super.onDismissed(transientBottomBar, event)
+                                if (event != DISMISS_EVENT_ACTION)
+                                    ReaderTabHolder.resetServerProgress(tab.id)
+                            }
+                        })
                         show()
                     }
                 }
