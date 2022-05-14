@@ -154,9 +154,7 @@ class ReaderFragment : Fragment(), PageFragment {
             }
 
             if (imageFile == null) {
-                failedMessage.visibility = View.VISIBLE
-                pageNum.visibility = View.GONE
-                progressBar.visibility = View.GONE
+                showErrorMessage()
                 return@launch
             }
 
@@ -193,9 +191,7 @@ class ReaderFragment : Fragment(), PageFragment {
                             updateScaleType(it, currentScaleType)
                         }
                         override fun onImageLoadError(e: Exception?) {
-                            failedMessage.visibility = View.VISIBLE
-                            pageNum.visibility = View.GONE
-                            progressBar.visibility = View.GONE
+                            showErrorMessage()
                             it.visibility = View.GONE
                         }
                     })
@@ -225,7 +221,7 @@ class ReaderFragment : Fragment(), PageFragment {
                 target: Target<T>?,
                 isFirstResource: Boolean
             ): Boolean {
-                failedMessage.visibility = View.VISIBLE
+                showErrorMessage()
                 return false
             }
 
@@ -319,9 +315,15 @@ class ReaderFragment : Fragment(), PageFragment {
                     else
                         imagePath = image
                 } else
-                    failedMessage.visibility = View.VISIBLE
+                    showErrorMessage()
             }
         }
+    }
+
+    private fun showErrorMessage() {
+        failedMessage.visibility = View.VISIBLE
+        pageNum.visibility = View.GONE
+        progressBar.visibility = View.GONE
     }
 
     override fun onAttach(context: Context) {

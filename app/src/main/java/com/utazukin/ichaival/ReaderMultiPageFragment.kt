@@ -20,7 +20,9 @@ package com.utazukin.ichaival
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.PointF
 import android.os.Bundle
 import android.util.Size
 import android.view.*
@@ -137,6 +139,11 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         return view
     }
 
+    private fun showErrorMessage() {
+        failedMessageText.visibility = View.VISIBLE
+        pageNum.visibility = View.GONE
+        progressBar.visibility = View.GONE
+    }
 
     override fun setMenuVisibility(menuVisible: Boolean) {
         super.setMenuVisibility(menuVisible)
@@ -222,9 +229,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             }
 
             if (imageFile == null) {
-                failedMessageText.visibility = View.VISIBLE
-                pageNum.visibility = View.GONE
-                progressBar.visibility = View.GONE
+                showErrorMessage()
                 return@launch
             }
 
@@ -261,9 +266,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                             updateScaleType(it, currentScaleType)
                         }
                         override fun onImageLoadError(e: Exception?) {
-                            failedMessageText.visibility = View.VISIBLE
-                            pageNum.visibility = View.GONE
-                            progressBar.visibility = View.GONE
+                            showErrorMessage()
                             it.visibility = View.GONE
                         }
                     })
@@ -540,7 +543,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         otherImagePath = otherImage
                     }
                 } else
-                    failedMessageText.visibility = View.VISIBLE
+                    showErrorMessage()
             }
         }
     }
