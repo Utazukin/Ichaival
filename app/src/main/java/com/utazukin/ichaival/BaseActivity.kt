@@ -122,7 +122,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                         override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
                             super.onDismissed(transientBottomBar, event)
                             if (event != DISMISS_EVENT_ACTION)
-                                ReaderTabHolder.addReaderTabs(bookmarks)
+                                ReaderTabHolder.resetServerProgress(bookmarks)
                         }
                     })
                     show()
