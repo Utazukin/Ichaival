@@ -341,12 +341,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             withContext(Dispatchers.IO) { DatabaseReader.updateArchiveList(requireContext()) }
 
             val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
-            val descending = prefs.getBoolean(getString(R.string.desc_pref), false)
+            val desc = prefs.getBoolean(getString(R.string.desc_pref), false)
 
             if (isLocalSearch)
-                getViewModel<ArchiveViewModel>(false).init(method, descending, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
+                getViewModel<ArchiveViewModel>(false).init(method, desc, searchView.query, newCheckBox.isChecked, activity is ArchiveSearch)
             else
-                getViewModel<SearchViewModel>(false).init(method, descending, isSearch = activity is ArchiveSearch)
+                getViewModel<SearchViewModel>(false).init(method, desc, isSearch = activity is ArchiveSearch)
 
             when {
                 isLocalSearch -> getViewModel<ArchiveViewModel>().filter(searchView.query, newCheckBox.isChecked)
@@ -363,10 +363,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                     (categoryFragment?.selectedCategory as? StaticCategory)?.let { handleCategoryChange(it) }
                 }
-                searchView.query != null -> {
+                !searchView.query.isNullOrEmpty() -> {
                     searchView.query?. let {
                         val results = withContext(Dispatchers.IO) {
-                            WebHandler.searchServer(it, newCheckBox.isChecked, sortMethod, descending)
+                            WebHandler.searchServer(it, newCheckBox.isChecked, sortMethod, desc)
                         }
                         getViewModel<SearchViewModel>().filter(results)
                     }
@@ -375,9 +375,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
             listView.adapter = listAdapter
             if (savedState == null)
-                updateSortMethod(method, descending, prefs)
-            else
+                updateSortMethod(method, desc, prefs)
+            else {
                 sortMethod = method
+                descending = desc
+            }
 
             savedState = null
             creatingView = false
