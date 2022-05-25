@@ -82,8 +82,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
 
         viewModel = when {
-            isLocalSearch -> ViewModelProviders.of(this)[ArchiveViewModel::class.java]
             activity is ArchiveRandomActivity -> ViewModelProviders.of(this)[RandomViewModel::class.java]
+            isLocalSearch -> ViewModelProviders.of(this)[ArchiveViewModel::class.java]
             else -> ViewModelProviders.of(this)[SearchViewModel::class.java]
         }
 
@@ -644,13 +644,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     private fun initViewModel(localSearch: Boolean, force: Boolean = false, init: Boolean = true) {
         val model = when {
+            activity is ArchiveRandomActivity -> ViewModelProviders.of(this)[RandomViewModel::class.java]
             localSearch -> {
                 ViewModelProviders.of(this)[ArchiveViewModel::class.java].also {
                     if (init)
                         it.init(sortMethod, descending, searchView.query, newCheckBox.isChecked)
                 }
             }
-            activity is ArchiveRandomActivity -> ViewModelProviders.of(this)[RandomViewModel::class.java]
             else -> {
                 ViewModelProviders.of(this)[SearchViewModel::class.java].also {
                     if (init)
