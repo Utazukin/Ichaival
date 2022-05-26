@@ -29,8 +29,8 @@ android {
         applicationId "com.utazukin.ichaival"
         minSdkVersion 21
         targetSdkVersion 32
-        versionCode 29
-        versionName "1.3.0"
+        versionCode 30
+        versionName "1.3.1"
 
         javaCompileOptions {
             annotationProcessorOptions {
