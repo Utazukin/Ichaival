@@ -109,15 +109,13 @@ object ReaderTabHolder {
 
     suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)
 
-    fun removeTab(id: String) {
-        scope.launch {
-            if (DatabaseReader.removeBookmark(id)) {
-                updateRemoveListeners(id)
-            }
+    fun removeTab(id: String) = scope.launch {
+        if (DatabaseReader.removeBookmark(id)) {
+            updateRemoveListeners(id)
         }
     }
 
-    fun resetServerProgress(id: String) = scope.launch {
+    fun resetServerProgress(id: String) = scope.launch(Dispatchers.IO) {
         WebHandler.updateProgress(id, 0)
     }
 
@@ -128,7 +126,7 @@ object ReaderTabHolder {
 
     fun resetServerProgress(tabs: List<ReaderTab>) = scope.launch(Dispatchers.IO) {
         for (tab in tabs)
-            WebHandler.updateProgress(tab.id, 0)
+            launch { WebHandler.updateProgress(tab.id, 0) }
     }
 
     private fun updateRemoveListeners(id: String) {
