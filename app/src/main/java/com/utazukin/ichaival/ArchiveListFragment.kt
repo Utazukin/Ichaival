@@ -427,9 +427,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         selection = "\"$selection\""
 
                     val query = searchView.query?.let {
-                        val last = getLastWord(it.toString())
-                        val index = it.lastIndexOf(last)
-                        it.replaceRange(index until it.length, selection)
+                        val terms = parseTerms(it)
+                        val builder = StringBuilder()
+                        for (i in 0 until terms.lastIndex) {
+                            builder.append(if (terms[i].contains(" ")) "\"${terms[i]}\"" else terms[i])
+                            builder.append(" ")
+                        }
+                        builder.append(selection)
+                        builder.toString()
                     }
                     searchView.setQuery(query, true)
                     return true
@@ -441,8 +446,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private fun handleSearchSuggestion(query: String?) {
         query?.let {
             val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
-            val lastWord = getLastWord(it).trim('"', ' ').trimStart('-')
-            if (lastWord.isNotBlank()) {
+            val lastWord = parseTerms(it).lastOrNull()?.trimStart('-')
+            if (!lastWord.isNullOrBlank()) {
                 for ((i, suggestion) in ServerManager.tagSuggestions.withIndex()) {
                     if (suggestion.contains(lastWord))
                         cursor.addRow(arrayOf(i, suggestion.displayTag))

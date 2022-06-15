@@ -23,7 +23,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 private fun <T : Any, TT : Any> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
 
@@ -144,6 +146,7 @@ open class ArchiveViewModel : SearchViewModelBase() {
     override val archiveDataFactory = ArchiveListDataFactory(true)
     protected var sortMethod = SortMethod.Alpha
     protected var descending = false
+    private var job: Job? = null
 
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
         if (archiveList == null) {
@@ -157,8 +160,10 @@ open class ArchiveViewModel : SearchViewModelBase() {
     }
 
     fun filter(filter: CharSequence?, onlyNew: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
+        job?.cancel()
+        job = viewModelScope.launch(Dispatchers.IO) {
             val ids = internalFilter(filter ?: "", onlyNew)
+            yield()
             archiveDataFactory.updateSearchResults(ids)
         }
     }
@@ -171,59 +176,39 @@ open class ArchiveViewModel : SearchViewModelBase() {
     }
 
     private fun internalFilter(filter: CharSequence?, onlyNew: Boolean) : List<String>? {
-        val mValues = mutableListOf<String>()
         if (filter == null)
-            return mValues
+            return emptyList()
 
+        val mValues = mutableListOf<String>()
         fun addIfNew(archive: Archive) {
             if (!onlyNew || archive.isNew)
                 mValues.add(archive.id)
         }
 
-        val allArchives = getArchives()
+        val allArchives by lazy { getArchives() }
         if (filter.isEmpty())
             return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
         else {
-            val spaceRegex by lazy { Regex("\\s") }
+            val terms = parseTerms(filter)
+            val titleSearch = filter.removeSurrounding("\"")
             for (archive in allArchives) {
-                if (archive.title.contains(filter, ignoreCase = true) && archive.id !in mValues)
+                if (archive.title.contains(titleSearch, ignoreCase = true))
                     addIfNew(archive)
                 else {
-                    val terms = filter.split(spaceRegex)
-                    var hasAll = true
-                    var i = 0
-                    while (i < terms.size) {
-                        var term = terms[i]
-                        val colonIndex = term.indexOf(':')
-                        if (term.startsWith('"') || (colonIndex in 0..(term.length - 2) && term[colonIndex + 1] == '"')) {
-                            val builder = StringBuilder(term)
-                            if (!term.endsWith('"')) {
-                                var k = i + 1
-                                while (k < terms.size && !terms[k].endsWith('"')) {
-                                    builder.append(" ")
-                                    builder.append(terms[k])
-                                    ++k
-                                }
-
-                                if (k < terms.size && terms[k].endsWith('"')) {
-                                    builder.append(" ")
-                                    builder.append(terms[k])
-                                }
-                                i = k
+                    var hasTag = true
+                    for (t in terms) {
+                        if (t.startsWith("-"))  {
+                            if (archive.containsTag(t.substring(1))) {
+                                hasTag = false
+                                break
                             }
-                            term = builder.removeSurrounding("\"").toString()
-                        }
-
-                        val containsTag = archive.containsTag(term.removePrefix("-"))
-                        val isNegative = term.startsWith('-')
-                        if (containsTag == isNegative) {
-                            hasAll = false
+                        } else if (!archive.containsTag(t)) {
+                            hasTag = false
                             break
                         }
-                        ++i
                     }
 
-                    if (hasAll && archive.id !in mValues)
+                    if (hasTag)
                         addIfNew(archive)
                 }
             }

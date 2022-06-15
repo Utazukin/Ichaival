@@ -34,7 +34,7 @@ import com.bumptech.glide.request.target.Target
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.ImageInfo
 import java.io.File
-import java.util.regex.Pattern
+import java.util.*
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.egl.EGLContext
@@ -51,15 +51,46 @@ fun getDpAdjusted(pxSize: Int) : Int {
     return (pxSize * metrics.density).toInt()
 }
 
-fun getLastWord(query: String) : String {
-    val regex = "\"([^\"]*)\"|(\\S+)"
-    val matcher = Pattern.compile(regex).matcher(query)
-    var last = ""
-    while (matcher.find())
-        matcher.group(2)?.let { last = it }
+fun parseTerms(query: CharSequence) : List<String> {
+    val terms = mutableListOf<String>()
+    val term = StringBuilder()
+    val stack = Stack<Char>()
+    for (c in query) {
+        when {
+            c == '\\' && stack.peekOrNull() != c -> stack.push(c)
+            c == '\'' && stack.peekOrNull() == '"' -> term.append(c)
+            c == '"' && stack.peekOrNull() == '\'' -> term.append(c)
+            c == '\'' && stack.peekOrNull() == '\\' -> {
+                stack.pop()
+                term.append(c)
+            }
+            c == '"' && stack.peekOrNull() == '\\' -> {
+                stack.pop()
+                term.append(c)
+            }
+            c == '\'' && stack.peekOrNull() == c -> stack.pop()
+            c == '"' && stack.peekOrNull() == c -> stack.pop()
+            c == '\'' -> stack.push(c)
+            c == '"' -> stack.push(c)
+            c == ' ' && stack.empty() -> {
+                terms.add(term.toString())
+                term.clear()
+            }
+            c == '_' && stack.empty() -> term.append(' ')
+            else -> term.append(c)
+        }
+    }
 
-    return last
+    while (!stack.empty())
+        term.append(stack.pop())
+
+    if (term.isNotEmpty())
+        terms.add(term.toString())
+
+    return terms
 }
+
+private fun <T> Stack<T>.peekOrNull() = if (empty()) null else peek()
 
 fun SharedPreferences?.castStringPrefToInt(pref: String, defaultValue: Int = 0) : Int {
     val stringPref = this?.getString(pref, null)
