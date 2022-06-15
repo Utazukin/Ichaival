@@ -1,0 +1,217 @@
+<!--
+  ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
+  ~ Copyright (C) 2021 Utazukin
+  ~
+  ~  This program is free software: you can redistribute it and/or modify
+  ~  it under the terms of the GNU General Public License as published by
+  ~  the Free Software Foundation, either version 3 of the License, or
+  ~  (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+    <string name="app_name">Ichaival</string>
+    <string name="archive_thumb" translatable="false">thumb</string>
+    <string name="archive_label" translatable="false">name</string>
+
+    <string name="random">随机</string>
+    <string name="title_activity_settings">设置</string>
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">通用</string>
+
+
+
+    <string name="server_address_preference" translatable="false">server_address</string>
+    <string name="server_location_name">服务器地址</string>
+    <string name="clear_cache">清理缓存…</string>
+
+    <string name="load_previews">加载更多预览图</string>
+    <string name="bookmark">添加书签</string>
+    <string name="unbookmark">取消书签</string>
+    <string name="archive_details">详细</string>
+    <string name="archive_gallery">缩略图</string>
+    <string name="read_button">阅读</string>
+    <string name="tag_header">标签</string>
+    <string name="bookmark_label">书签</string>
+    <string name="detail_menu_item">详细</string>
+    <string name="api_key_pref">api_key</string>
+    <string name="api_key_pref_name">API密钥</string>
+    <string name="details_title">详细</string>
+    <string name="thumbs_title">预览图</string>
+    <string name="license_key">许可</string>
+    <string name="gpl_key">gpl</string>
+    <string name="git_key">github</string>
+    <string name="thumbnail_setting">清理预览图缓存</string>
+    <string name="thumbnail_pref">clear_thumbs</string>
+    <string name="thumbnail_summary">点击以删除预览图缓存</string>
+    <string name="press_for_tags">长按查看标签</string>
+    <string name="first_time_text">长按设置服务器。</string>
+    <string name="new_checkbox">新的</string>
+    <plurals name="archive_count">
+        <item quantity="one">%d 档案</item>
+        <item quantity="other">%d 个档案</item>
+    </plurals>
+    <string name="failed_image">加载失败</string>
+    <string name="verbose_pref">verbose_key</string>
+    <string name="verbose_pref_name">详细信息</string>
+    <string name="verbose_pref_summary">显示更多详细的错误消息</string>
+    <string name="sort_method">排序方式</string>
+    <string name="alpha_sort">名称</string>
+    <string name="sort_date">添加日期</string>
+    <string name="save_button">保存</string>
+    <string name="sort_menu">排序</string>
+    <string name="sort_pref">sort_pref</string>
+    <string name="sort_asc">上升</string>
+    <string name="sort_desc">下降</string>
+    <string name="sort_direction">顺序</string>
+    <string name="desc_pref">desc_pref</string>
+    <string name="tag_menu">标签</string>
+    <string name="goto_page">跳转到页面</string>
+    <string name="refresh_menu_item">强制刷新</string>
+    <string name="rtol_pref_key">right to left pref</string>
+    <string name="rtol_pref_name">从右到左阅读</string>
+    <string name="reader_pref_header">阅读</string>
+    <string name="source_pref_header">源码</string>
+    <string name="vol_key_pref_name">音量键翻页</string>
+    <string name="vol_key_pref_key">vol_key_pref</string>
+    <string name="random_archive">查看随机档案</string>
+    <string name="search_header">搜索</string>
+    <string name="local_search_key">local_search_key</string>
+    <string name="local_search_pref">本地搜索</string>
+    <string name="local_search_sum">使用内置应用程序搜索进行搜索，而不是向服务器发出请求。</string>
+    <string name="search_delay_key">search_delay_key</string>
+    <string name="search_delay_pref">搜索延迟</string>
+    <string name="search_delay_summary">在发出搜索请求之前，两次按键之间要等待的时间（以毫秒为单位）。 （预设750毫秒）</string>
+    <string name="refresh_archive_menu">刷新档案</string>
+    <string name="swipe_refresh_key">swipe_refresh_key</string>
+    <string name="swipe_refresh_pref">>启用滑动刷新</string>
+    <string name="scale_type_menu">页面缩放</string>
+    <string-array name="scale_types">
+        <item>适应页面</item>
+        <item>适应高度</item>
+        <item>适应宽度</item>
+    </string-array>
+    <string name="dark_theme">暗</string>
+    <string name="black_theme">黑</string>
+    <string-array name="theme_names">
+        <item>@string/dark_theme</item>
+        <item>@string/black_theme</item>
+    </string-array>
+    <string name="fullscreen_timeout_key">fullscreen_timeout_key</string>
+    <string name="fullscreen_timeout_title">屏幕超时</string>
+    <string name="fullscreen_timeout_summary">屏幕超时时间，以秒计算，-1为永远亮屏 当前: %s 秒</string>
+    <string name="search_header_key">search_header_key</string>
+    <string name="category_label">分类</string>
+    <string name="clear_category_button">清除分类</string>
+    <string name="filter_label">筛选</string>
+    <string name="temp_folder_pref">temp_folder_pref</string>
+    <string name="temp_folder_pref_summary">清理服务器临时文件夹</string>
+    <string name="temp_folder_pref_title">清理临时文件夹</string>
+    <string name="server_pref_header">服务器</string>
+    <string name="mark_read_item">标记已读</string>
+    <string name="server_header_key">server_header_key</string>
+    <string name="refresh_thumb_menu_item">刷新缩略图</string>
+    <string name="list_top">顶部</string>
+    <string name="list_bottom">底部</string>
+    <string name="debug_settings">调试</string>
+    <string name="log_pref">log_pref</string>
+    <string name="log_pref_name">启用崩溃日志</string>
+    <string name="log_save_pref">log_save_pref</string>
+    <string name="log_save_summary">复制崩溃日志到剪切板</string>
+    <string name="log_save_title">复制崩溃日志</string>
+    <string name="theme_pref">theme_pref</string>
+    <string name="theme_pref_name">主题</string>
+	<string name="add_to_cat_button">添加到分类</string>
+    <string name="new_category_button">新分类</string>
+    <string name="delete_archive_item">删除档案</string>
+    <string name="select_archives">选择档案</string>
+    <string name="dualpage_key">dualpage_key</string>
+    <string name="dualpage_pref_title">合并双页</string>
+    <string name="dualpage_pref_summary">当设备为横向时合并纵向图像</string>
+    <string name="use_thumb">用作缩略图</string>
+    <string name="cache_header">缓存</string>
+    <string name="local_cache_pref_title">清除本地缓存</string>
+    <string name="local_cache_pref" translatable="false">local_cache_pref</string>
+    <plurals name="delete_archive_count">
+        <item quantity="one">删除 %d 档案?</item>
+        <item quantity="other">删除 %d 档案?</item>
+    </plurals>
+    <plurals name="page_count">
+        <item quantity="one">%d 页</item>
+        <item quantity="other">%d 页</item>
+    </plurals>
+    <string name="png_compress" translatable="false">PNG</string>
+    <string name="jpg_compress" translatable="false">JPEG</string>
+    <string name="card_view">卡片</string>
+    <string name="cover_view">封面</string>
+    <string name="png_compress_display">PNG (慢，高质量)</string>
+    <string name="jpg_compress_display">JPEG (快速，一般的质量)</string>
+    <string name="compression_type_pref" translatable="false">compression_type_pref</string>
+    <string name="compression_pref_title">合并页面压缩方式</string>
+    <string name="swap_merged_page">换页</string>
+    <string name="split_merged_page">分页</string>
+    <string name="dual_page_swap_title">反转合并方向</string>
+    <string name="dual_page_swap_summary">从整体 RTL 设置反转 RTL</string>
+    <string name="dual_page_swap_key" translatable="false">dual_page_swap_key</string>
+    <string name="archive_list_type_key" translatable="false">archive_list_type_key</string>
+    <string name="archive_list_type_pref_title">列表显示</string>
+    <string name="other_namespace">其他</string>
+    <string name="category_removed_message">已从%1$s删除.</string>
+    <string name="category_remove_message">从%1$s 删除.</string>
+    <string name="category_add_message">添加到%1$s.</string>
+    <string name="update_thumbnail_message">重启后缩略图会更新.</string>
+    <string name="selected_archives">%1$d 选中</string>
+    <string name="deleted_archive">已删除 "%1$s"</string>
+    <string name="delete_archive_prompt">删除 "%1$s"?</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="log_delete_message">日志已删除!</string>
+    <string name="copy_log_title">复制崩溃日志</string>
+    <string name="crash_log_subject">崩溃日志</string>
+    <string name="error_message">错误: %1$s</string>
+    <string name="failed_to_connect_message">无法连接服务器!</string>
+    <string name="temp_clear_fail_message">无法清除临时文件夹.</string>
+    <string name="category_remove_fail_message">无法从分类中移除.</string>
+    <string name="category_create_fail_message">创建分类失败.</string>
+    <string name="thumb_set_fail_message">设置新缩略图失败.</string>
+    <string name="get_archives_fail_message">获取存档列表时出错</string>
+    <string name="archive_extract_fail_message">无法提取存档!</string>
+    <string name="archive_extract_message">提取中…</string>
+    <string name="category_add_fail_message">添加分类失败.</string>
+    <string name="no_net_connection">无网络连接!</string>
+    <string name="temp_clear_success_message">临时文件夹已清除.</string>
+    <string name="no_page_display">页 %1$d</string>
+    <string name="single_page_display">页 %1$d/%2$d</string>
+    <string name="dual_page_display">页 %1$d-%2$d/%3$d</string>
+    <string name="random_count_menu">更改计数</string>
+    <string name="random_header">随机档案</string>
+    <string name="random_count_pref" translatable="false">random_count_pref</string>
+    <string name="random_count_pref_title">随机档案计数</string>
+    <string name="random_count_pref_summary">按下随机按钮时应选择的随机档案数量。 当前为: %s</string>
+    <string name="random_count_dialog_title">随机档案数量</string>
+    <string name="category_remove_title">从分类中删除</string>
+    <string name="date_added_tag">添加日期</string>
+    <string name="bookmark_removed_snack">书签已移除</string>
+    <string name="undo">撤消</string>
+    <string name="cleared_bookmarks_snack">清除书签</string>
+    <string-array name="compression_types">
+        <item>@string/jpg_compress</item>
+        <item>@string/png_compress</item>
+    </string-array>
+    <string-array name="list_type">
+        <item>@string/card_view</item>
+        <item>@string/cover_view</item>
+    </string-array>
+    <string-array name="compression_types_display">
+        <item>@string/jpg_compress_display</item>
+        <item>@string/png_compress_display</item>
+    </string-array>
+</resources>
