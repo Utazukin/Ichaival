@@ -123,6 +123,9 @@ interface ArchiveDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(archives: List<Archive>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE, entity = Archive::class)
+    fun insertAllJson(archives: List<ArchiveJson>)
+
     @Delete
     fun removeArchive(archive: Archive)
 
@@ -147,11 +150,8 @@ interface ArchiveDao {
     @Query("Update archive set title = :title, tags = :tags, isNew = :isNew, dateAdded = :dateAdded, pageCount = :pageCount, currentPage = :currentPage where id = :id")
     fun updateFromJson(id: String, title: String, isNew: Boolean, dateAdded: Long, pageCount: Int, currentPage: Int, tags: Map<String, List<String>>)
 
-    @Transaction
-    fun updateFromJson(archives: Collection<ArchiveJson>) {
-        for (archive in archives)
-            updateFromJson(archive.id, archive.title, archive.isNew, archive.dateAdded, archive.pageCount, archive.currentPage, archive.tags)
-    }
+    @Update(entity = Archive::class)
+    fun updateFromJson(archives: Collection<ArchiveJson>)
 }
 
 class DatabaseTypeConverters {
@@ -189,7 +189,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
         val toAdd = keys.minus(currentIds.toSet())
         if (toAdd.isNotEmpty())
-            archiveDao().insertAll(toAdd.map { Archive(archives.getValue(it)) })
+            archiveDao().insertAllJson(toAdd.map { archives.getValue(it) })
 
         if (ServerManager.serverTracksProgress) {
             for ((id, archive) in archives) {
