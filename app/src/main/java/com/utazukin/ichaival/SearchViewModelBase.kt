@@ -175,7 +175,14 @@ open class ArchiveViewModel : SearchViewModelBase() {
         }
     }
 
-    private fun internalFilter(filter: CharSequence?, onlyNew: Boolean) : List<String>? {
+    private fun getArchives(ids: List<String>) : List<Archive> {
+        return when (sortMethod) {
+            SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending(ids) else archiveDao.getTitleAscending(ids)
+            SortMethod.Date -> if (descending) archiveDao.getDateDescending(ids) else archiveDao.getDateAscending(ids)
+        }
+    }
+
+    private suspend fun internalFilter(filter: CharSequence?, onlyNew: Boolean) : List<String>? {
         if (filter == null)
             return emptyList()
 
@@ -189,7 +196,7 @@ open class ArchiveViewModel : SearchViewModelBase() {
         if (filter.isEmpty())
             return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
         else {
-            val terms = parseTerms(filter)
+            val terms = parseTermsInfo(filter)
             val titleSearch = filter.removeSurrounding("\"")
             for (archive in allArchives) {
                 if (archive.title.contains(titleSearch, ignoreCase = true))
@@ -197,12 +204,12 @@ open class ArchiveViewModel : SearchViewModelBase() {
                 else {
                     var hasTag = true
                     for (t in terms) {
-                        if (t.startsWith("-"))  {
-                            if (archive.containsTag(t.substring(1))) {
+                        if (t.term.startsWith("-"))  {
+                            if (archive.containsTag(t.term.substring(1), t.exact)) {
                                 hasTag = false
                                 break
                             }
-                        } else if (!archive.containsTag(t)) {
+                        } else if (!archive.containsTag(t.term, t.exact)) {
                             hasTag = false
                             break
                         }

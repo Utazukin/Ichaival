@@ -51,10 +51,13 @@ fun getDpAdjusted(pxSize: Int) : Int {
     return (pxSize * metrics.density).toInt()
 }
 
-fun parseTerms(query: CharSequence) : List<String> {
-    val terms = mutableListOf<String>()
+data class TermInfo(val term: String, val exact: Boolean)
+
+fun parseTermsInfo(query: CharSequence) : List<TermInfo> {
+    val terms = mutableListOf<TermInfo>()
     val term = StringBuilder()
     val stack = Stack<Char>()
+    var exact = false
     for (c in query) {
         when {
             c == '\\' && stack.peekOrNull() != c -> stack.push(c)
@@ -68,13 +71,15 @@ fun parseTerms(query: CharSequence) : List<String> {
                 stack.pop()
                 term.append(c)
             }
-            c == '\'' && stack.peekOrNull() == c -> stack.pop()
-            c == '"' && stack.peekOrNull() == c -> stack.pop()
-            c == '\'' -> stack.push(c)
-            c == '"' -> stack.push(c)
+            (c == '\'' || c == '"') && stack.peekOrNull() == c -> {
+                stack.pop()
+                exact = stack.empty()
+            }
+            c == '\'' || c== '"' -> stack.push(c)
             c == ' ' && stack.empty() -> {
-                terms.add(term.toString())
+                terms.add(TermInfo(term.toString(), exact))
                 term.clear()
+                exact = false
             }
             c == '_' && stack.empty() -> term.append(' ')
             else -> term.append(c)
@@ -85,10 +90,12 @@ fun parseTerms(query: CharSequence) : List<String> {
         term.append(stack.pop())
 
     if (term.isNotEmpty())
-        terms.add(term.toString())
+        terms.add(TermInfo(term.toString(), exact))
 
     return terms
 }
+
+fun parseTerms(query: CharSequence) = parseTermsInfo(query).map { it.term }
 
 private fun <T> Stack<T>.peekOrNull() = if (empty()) null else peek()
 

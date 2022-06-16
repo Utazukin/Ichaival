@@ -39,10 +39,6 @@ data class Archive (
 
     constructor(id: String, title: String, dateAdded: Long, isNew: Boolean, tags: Map<String, List<String>>)
             : this(id, title, dateAdded, isNew, tags, -1, 0)
-
-    constructor(jsonArchive: ArchiveJson)
-            : this(jsonArchive.id, jsonArchive.title, jsonArchive.dateAdded, jsonArchive.isNew, jsonArchive.tags, jsonArchive.currentPage, jsonArchive.pageCount)
-
     val numPages: Int
         get() = if (ServerManager.checkVersionAtLeast(0, 7, 7) && pageCount > 0) pageCount else DatabaseReader.getPageCount(id)
 
@@ -76,14 +72,11 @@ data class Archive (
         return if (page < pages.size) WebHandler.getRawImageUrl(pages[page]) else null
     }
 
-    fun containsTag(tag: String) : Boolean {
+    fun containsTag(tag: String, exact: Boolean) : Boolean {
         if (':' in tag) {
             val split = tag.split(":")
             val namespace = split[0].trim()
             var normalized = split[1].trim().replace("_", " ")
-            val exact = normalized.startsWith('"') && normalized.endsWith('"')
-            if (exact)
-                normalized = normalized.removeSurrounding("\"")
             val nTags = tags[namespace]
             return nTags?.any { if (exact) it.equals(normalized, ignoreCase = true) else it.contains(normalized, ignoreCase = true) } == true
         }
