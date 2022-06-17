@@ -76,7 +76,7 @@ data class Archive (
         if (':' in tag) {
             val split = tag.split(":")
             val namespace = split[0].trim()
-            var normalized = split[1].trim().replace("_", " ")
+            val normalized = split[1].trim().replace("_", " ")
             val nTags = tags[namespace]
             return nTags?.any { if (exact) it.equals(normalized, ignoreCase = true) else it.contains(normalized, ignoreCase = true) } == true
         }

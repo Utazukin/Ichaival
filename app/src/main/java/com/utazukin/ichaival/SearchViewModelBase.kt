@@ -22,10 +22,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.*
 
 private fun <T : Any, TT : Any> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
 
@@ -168,17 +165,12 @@ open class ArchiveViewModel : SearchViewModelBase() {
         }
     }
 
-    private fun getArchives() : List<Archive> {
-        return when (sortMethod) {
-            SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending() else archiveDao.getTitleAscending()
-            SortMethod.Date -> if (descending) archiveDao.getDateDescending() else archiveDao.getDateAscending()
-        }
-    }
-
-    private fun getArchives(ids: List<String>) : List<Archive> {
-        return when (sortMethod) {
-            SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending(ids) else archiveDao.getTitleAscending(ids)
-            SortMethod.Date -> if (descending) archiveDao.getDateDescending(ids) else archiveDao.getDateAscending(ids)
+    private suspend fun getArchives() : List<Archive> {
+        return withContext(Dispatchers.IO) {
+            when (sortMethod) {
+                SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending() else archiveDao.getTitleAscending()
+                SortMethod.Date -> if (descending) archiveDao.getDateDescending() else archiveDao.getDateAscending()
+            }
         }
     }
 
@@ -192,7 +184,7 @@ open class ArchiveViewModel : SearchViewModelBase() {
                 mValues.add(archive.id)
         }
 
-        val allArchives by lazy { getArchives() }
+        val allArchives = getArchives()
         if (filter.isEmpty())
             return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
         else {

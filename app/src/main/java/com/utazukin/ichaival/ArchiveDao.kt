@@ -183,11 +183,11 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
     @Transaction
     suspend fun insertAndRemove(archives: Map<String, ArchiveJson>) {
-        val currentIds = archiveDao().getAllIds()
+        val currentIds = archiveDao().getAllIds().toSet()
         val keys = archives.keys
         val allIds = currentIds.union(keys)
 
-        val toAdd = keys.minus(currentIds.toSet())
+        val toAdd = keys.minus(currentIds)
         if (toAdd.isNotEmpty())
             archiveDao().insertAllJson(toAdd.map { archives.getValue(it) })
 
