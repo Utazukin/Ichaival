@@ -20,8 +20,6 @@ package com.utazukin.ichaival
 
 import androidx.paging.PagingSource
 import androidx.room.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 private const val MAX_PARAMETER_COUNT = 999
@@ -102,7 +100,10 @@ interface ArchiveDao {
     @Query("Select * from readertab order by `index`")
     fun getBookmarks() : List<ReaderTab>
 
-    @Query("Select exists (select 1 from readertab where id = :id limit 1)")
+    @Query("Select id from readertab")
+    fun getBookmarkedIds() : List<String>
+
+    @Query("Select exists (select id from readertab where id = :id limit 1)")
     suspend fun isBookmarked(id: String) : Boolean
 
     @Query("Select * from readertab where id = :id limit 1")
@@ -115,7 +116,7 @@ interface ArchiveDao {
     fun removeArchive(id: String)
 
     @Query("Delete from archive where id in (:ids)")
-    fun removeArchives(ids: List<String>)
+    fun removeArchives(ids: Collection<String>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(vararg archives: Archive)
@@ -123,8 +124,8 @@ interface ArchiveDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(archives: List<Archive>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE, entity = Archive::class)
-    fun insertAllJson(archives: List<ArchiveJson>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE, entity = Archive::class)
+    fun insertAllJson(archives: Collection<ArchiveJson>)
 
     @Delete
     fun removeArchive(archive: Archive)
@@ -132,8 +133,8 @@ interface ArchiveDao {
     @Delete
     fun removeBookmark(tab: ReaderTab)
 
-    @Delete
-    fun clearBookmarks(tabs: List<ReaderTab>)
+    @Query("Delete from readertab")
+    fun clearBookmarks()
 
     @Update
     fun updateArchive(archive: Archive)
@@ -156,23 +157,18 @@ interface ArchiveDao {
 
 class DatabaseTypeConverters {
     @TypeConverter
-    fun fromMap(value: Map<String, List<String>>) : String {
-        val jsonObject = JSONObject(value)
-        return jsonObject.toString()
-    }
+    fun fromMap(value: Map<String, List<String>>) = JSONObject(value).toString()
 
     @TypeConverter
     fun fromString(json: String) : Map<String, List<String>> {
         val jsonObject = JSONObject(json)
-        val map = buildMap(jsonObject.length()) {
+        return buildMap(jsonObject.length()) {
             for (key in jsonObject.keys()) {
                 val tagsArray = jsonObject.getJSONArray(key)
                 val tags = List(tagsArray.length()) { tagsArray.getString(it) }
                 put(key, tags)
             }
         }
-
-        return map
     }
 }
 
@@ -183,38 +179,35 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
     @Transaction
     suspend fun insertAndRemove(archives: Map<String, ArchiveJson>) {
-        val currentIds = archiveDao().getAllIds().toSet()
-        val keys = archives.keys
-        val allIds = currentIds.union(keys)
+        archiveDao().insertAllJson(archives.values)
 
-        val toAdd = keys.minus(currentIds)
-        if (toAdd.isNotEmpty())
-            archiveDao().insertAllJson(toAdd.map { archives.getValue(it) })
-
-        if (ServerManager.serverTracksProgress) {
-            for ((id, archive) in archives) {
-                val isBookmarked = archiveDao().isBookmarked(id)
-                if (archive.currentPage > 0 && !isBookmarked) {
-                    val tab = ReaderTabHolder.createTab(id, archive.title, archive.currentPage)
-                    addBookmark(tab)
-                } else if (isBookmarked)
-                    updateBookmark(id, archive.currentPage)
-            }
-        }
-
-        val toRemove = allIds.subtract(keys)
+        val allIds = archiveDao().getAllIds().toSet()
+        val toRemove = allIds subtract archives.keys
         if (toRemove.isNotEmpty()) {
             //Room has a max variable count of 999.
             if (toRemove.size <= MAX_PARAMETER_COUNT)
-                archiveDao().removeArchives(toRemove.toList())
+                archiveDao().removeArchives(toRemove)
             else {
                 for (splitList in toRemove.chunked(MAX_PARAMETER_COUNT))
                     archiveDao().removeArchives(splitList)
             }
         }
-    }
 
-    suspend fun updateExisting(archives: Map<String, ArchiveJson>) = withContext(Dispatchers.IO) { archiveDao().updateFromJson(archives.values) }
+        archiveDao().updateFromJson(archives.values)
+
+        if (ServerManager.serverTracksProgress) {
+            for ((id, archive) in archives) {
+                val bookmark = archiveDao().getBookmark(id)
+                if (archive.currentPage > 0 && bookmark == null) {
+                    val tab = ReaderTabHolder.createTab(id, archive.title, archive.currentPage)
+                    archiveDao().addBookmark(tab)
+                } else if (bookmark != null) {
+                    bookmark.page = archive.currentPage
+                    archiveDao().updateBookmark(bookmark)
+                }
+            }
+        }
+    }
 
     @Transaction
     suspend fun addBookmark(tab: ReaderTab) {
@@ -314,14 +307,13 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
     @Transaction
     fun clearBookmarks() : List<String> {
-        val tabs = archiveDao().getBookmarks()
-        val removedTabs = tabs.map { it.id }
+        val tabs = archiveDao().getBookmarkedIds()
         if (tabs.isNotEmpty()) {
-            archiveDao().removeAllBookmarks(removedTabs)
-            archiveDao().clearBookmarks(tabs)
+            archiveDao().removeAllBookmarks(tabs)
+            archiveDao().clearBookmarks()
         }
 
-        return removedTabs
+        return tabs
     }
 }
 

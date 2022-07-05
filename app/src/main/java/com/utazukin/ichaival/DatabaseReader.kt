@@ -24,7 +24,6 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -70,10 +69,6 @@ object DatabaseReader {
                 jsonFile.writeText(it.toString())
                 val serverArchives = readArchiveList(it)
                 database.insertAndRemove(serverArchives)
-                if (!forceUpdate)
-                    launch { database.updateExisting(serverArchives) }
-                else
-                    database.updateExisting(serverArchives)
             }
             WebHandler.updateRefreshing(false)
             isDirty = false

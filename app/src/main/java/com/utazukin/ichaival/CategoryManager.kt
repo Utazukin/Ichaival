@@ -90,21 +90,21 @@ object CategoryManager {
             else -> return null
         }
 
-        val list =  MutableList(jsonCategories.length()) { i ->
-            val category = jsonCategories.getJSONObject(i)
-            val search = category.getString("search")
-            val name = category.getString("name")
-            val id = category.getString("id")
-            val pinned = category.getInt("pinned") == 1
-            if (search.isNotBlank())
-                DynamicCategory(name, id, pinned, category.getString("search"))
-            else {
-                val archives = category.getJSONArray("archives")
-                StaticCategory(name, id, pinned, List(archives.length()) { k -> archives.getString(k) } )
+        return buildList(jsonCategories.length()) {
+            for (i in 0 until jsonCategories.length()) {
+                val category = jsonCategories.getJSONObject(i)
+                val search = category.getString("search")
+                val name = category.getString("name")
+                val id = category.getString("id")
+                val pinned = category.getInt("pinned") == 1
+                if (search.isNotBlank())
+                    add(DynamicCategory(name, id, pinned, category.getString("search")))
+                else {
+                    val archives = category.getJSONArray("archives")
+                    add(StaticCategory(name, id, pinned, List(archives.length()) { k -> archives.getString(k) }))
+                }
             }
+            sortBy { it.pinned }
         }
-        list.sortBy { it.pinned }
-
-        return list
     }
 }

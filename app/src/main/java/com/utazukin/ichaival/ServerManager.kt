@@ -32,7 +32,7 @@ object ServerManager {
         private set
     var pageSize = 50
         private set
-    var tagSuggestions: Array<TagSuggestion> = arrayOf()
+    var tagSuggestions: List<TagSuggestion> = emptyList()
         private set
     var serverTracksProgress = false
         private set
@@ -103,15 +103,15 @@ object ServerManager {
         if (tagSuggestions.isEmpty()) {
             WebHandler.generateSuggestionList()?.let {
                 val length = it.length()
-                val suggestions = buildList(length) {
+                tagSuggestions = buildList(length) {
                     for (i in 0 until length) {
                         val item = it.getJSONObject(i)
                         val namespace = item.getString("namespace")
                         if (namespace != "date_added" && namespace != "source")
                             add(TagSuggestion(item.getString("text"), namespace, item.getInt("weight")))
                     }
+                    sortByDescending { tag -> tag.weight }
                 }
-                tagSuggestions = suggestions.sortedByDescending { tag -> tag.weight }.toTypedArray()
             }
         }
     }

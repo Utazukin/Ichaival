@@ -75,15 +75,14 @@ data class Archive (
     fun containsTag(tag: String, exact: Boolean) : Boolean {
         if (':' in tag) {
             val split = tag.split(":")
-            val namespace = split[0].trim()
-            val normalized = split[1].trim().replace("_", " ")
+            val namespace = split[0]
+            val normalized = split[1]
             val nTags = tags[namespace]
             return nTags?.any { if (exact) it.equals(normalized, ignoreCase = true) else it.contains(normalized, ignoreCase = true) } == true
         }
         else {
-            val normalized = tag.trim().replace("_", " ")
-            for ((_, t) in tags) {
-                if (t.any { it.contains(normalized, ignoreCase = true)})
+            for (t in tags.values) {
+                if (t.any { it.contains(tag, ignoreCase = true)})
                     return true
             }
         }

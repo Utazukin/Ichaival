@@ -43,7 +43,7 @@ class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
     val displayTag = if (namespace.isNotBlank()) "$namespace:$tag" else tag
 
     fun contains(query: String): Boolean {
-        return if (!query.contains(":"))
+        return if (":" !in query)
             tag.contains(query, true)
         else {
             displayTag.contains(query, true)
