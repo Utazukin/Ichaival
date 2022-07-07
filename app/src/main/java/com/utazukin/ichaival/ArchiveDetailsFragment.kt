@@ -295,6 +295,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     archiveId?.let {
                         if (ReaderTabHolder.isTabbed(it)) {
                             ReaderTabHolder.removeTab(it)
+                            ReaderTabHolder.resetServerProgress(it)
                             text = getString(R.string.bookmark)
                         } else {
                             ReaderTabHolder.addTab(it, 0)
