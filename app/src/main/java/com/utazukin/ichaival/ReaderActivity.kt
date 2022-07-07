@@ -496,9 +496,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     it.invalidateCache()
                     launch {
+                        val current = currentPage
                         currentAdapter?.clearPages()
                         withContext(Dispatchers.IO) { it.extract(this@ReaderActivity) }
-                        currentAdapter?.loadImage(currentPage)
+                        currentAdapter?.loadImage(current)
+                        val position = currentAdapter?.getPositionFromPage(current) ?: 0
+                        imagePager.setCurrentItem(position, false)
                     }
                 }
             }
