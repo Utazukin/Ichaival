@@ -93,10 +93,13 @@
     <string name="swipe_refresh_key" translatable="false">swipe_refresh_key</string>
     <string name="swipe_refresh_pref">スワイプして更新を有効にする</string>
     <string name="scale_type_menu">スケールタイプ</string>
+    <string name="page_scale_type">ページに合わせる</string>
+    <string name="height_scale_type">フィットの高さ</string>
+    <string name="width_scale_type">フィットの幅</string>
     <string-array name="scale_types">
-        <item>ページに合わせる</item>
-        <item>フィットの高さ</item>
-        <item>フィットの幅</item>
+        <item>@string/page_scale_type</item>
+        <item>@string/height_scale_type</item>
+        <item>@string/width_scale_type</item>
     </string-array>
     <string name="dark_theme">ダーク</string>
     <string name="black_theme">ブラック</string>

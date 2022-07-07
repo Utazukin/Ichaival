@@ -119,7 +119,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
             title = ""
         }
-        currentScaleType = ScaleType.fromInt(savedInstanceState?.getInt(SCALE_TYPE, 0) ?: 0)
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+
+        currentScaleType = savedInstanceState?.getInt(SCALE_TYPE, -1).let {
+            when {
+                it is Int && it >= 0 -> ScaleType.fromInt(it)
+                else -> ScaleType.fromString(prefs.getString(getString(R.string.scale_type_pref), null), resources)
+            }
+        }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -151,7 +159,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             insets
         }
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         rtol = prefs.getBoolean(getString(R.string.rtol_pref_key), false)
         volControl = prefs.getBoolean(getString(R.string.vol_key_pref_key), false)
         autoHideDelay = truncate(prefs.castStringPrefToFloat(getString(R.string.fullscreen_timeout_key), AUTO_HIDE_DELAY_S) * 1000).toLong()

@@ -100,6 +100,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val compressPref: Preference? = findPreference(getString(R.string.compression_type_pref))
         bindPreferenceSummaryToValue(compressPref)
 
+        findPreference<Preference>(getString(R.string.scale_type_pref))?.let { bindPreferenceSummaryToValue(it) }
+
         findPreference<EditTextPreference>(getString(R.string.random_count_pref))?.let {
             if (ServerManager.checkVersionAtLeast(0, 8, 2)) {
                 it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER }

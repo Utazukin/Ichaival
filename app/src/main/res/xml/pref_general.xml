@@ -135,6 +135,13 @@
             android:title="@string/compression_pref_title"
             app:dependency="@string/dualpage_key"
             app:iconSpaceReserved="false" />
+        <ListPreference
+            android:defaultValue="@string/page_scale_type"
+            android:entries="@array/scale_types"
+            android:entryValues="@array/scale_types"
+            android:key="@string/scale_type_pref"
+            android:title="@string/scale_type_menu"
+            app:iconSpaceReserved="false" />
         <EditTextPreference
             app:defaultValue="@integer/default_fullscreen_timeout"
             android:selectAllOnFocus="true"

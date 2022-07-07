@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.content.DialogInterface
+import android.content.res.Resources
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -38,6 +39,14 @@ enum class ScaleType(val value: Int) {
     companion object {
         private val map by lazy { values().associateBy(ScaleType::value)}
         fun fromInt(type: Int) = map[type] ?: FitPage
+        fun fromString(type: String?, resources: Resources) : ScaleType {
+            return when (type) {
+                resources.getString(R.string.page_scale_type) -> FitPage
+                resources.getString(R.string.height_scale_type) -> FitHeight
+                resources.getString(R.string.width_scale_type) -> FitWidth
+                else -> FitPage
+            }
+        }
     }
 }
 
