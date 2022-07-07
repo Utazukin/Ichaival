@@ -22,7 +22,10 @@ package com.utazukin.ichaival
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -54,8 +57,6 @@ class GalleryPreviewFragment : Fragment() {
             archiveId = getString(ARCHIVE_ID)
             readerPage = getInt(FROM_READER_PAGE, -1)
         }
-
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -67,31 +68,35 @@ class GalleryPreviewFragment : Fragment() {
         progress = view.findViewById(R.id.thumb_load_progress)
         listView = view.findViewById(R.id.thumb_list)
 
+        with(requireActivity() as MenuHost) {
+            addMenuProvider(object: MenuProvider {
+                override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+                    inflater.inflate(R.menu.gallery_preview_menu, menu)
+                }
+
+                override fun onMenuItemSelected(item: MenuItem): Boolean {
+                    when (item.itemId) {
+                        R.id.refresh_item -> {
+                            archiveId?.let {
+                                DatabaseReader.invalidateImageCache(it)
+                                lifecycleScope.launch {
+                                    (activity as ArchiveDetails).extractArchive(it)
+                                    thumbAdapter.notifyDataSetChanged()
+                                }
+                            }
+                        }
+                    }
+                    return false
+                }
+            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        }
+
         lifecycleScope.launch {
             archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(archiveId!!) }
             setGalleryView(view)
         }
 
         return view
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.gallery_preview_menu, menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.refresh_item -> {
-                archiveId?.let {
-                    DatabaseReader.invalidateImageCache(it)
-                    lifecycleScope.launch {
-                        (activity as ArchiveDetails).extractArchive(it)
-                        thumbAdapter.notifyDataSetChanged()
-                    }
-                }
-            }
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     override fun onDetach() {

@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -37,6 +38,7 @@ data class Archive (
     @ColumnInfo var pageCount: Int
 ) {
 
+    @Ignore
     constructor(id: String, title: String, dateAdded: Long, isNew: Boolean, tags: Map<String, List<String>>)
             : this(id, title, dateAdded, isNew, tags, -1, 0)
     val numPages: Int

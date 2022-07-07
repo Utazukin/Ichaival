@@ -24,10 +24,12 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.util.AttributeSet
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.widget.Toast
 import androidx.core.app.ShareCompat
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
 import com.bumptech.glide.Glide
@@ -56,9 +58,25 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setPreferencesFromResource(R.xml.pref_general, rootKey)
     }
 
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        with(requireActivity() as MenuHost) {
+            addMenuProvider(object: MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+                override fun onMenuItemSelected(item: MenuItem): Boolean {
+                    val id = item.itemId
+                    if (id == android.R.id.home) {
+                        startActivity(Intent(activity, SettingsActivity::class.java))
+                        return true
+                    }
+                    return false
+                }
+            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        }
+        return super.onCreateView(inflater, container, savedInstanceState)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
 
         val pref: Preference? = findPreference(getString(R.string.server_address_preference))
         bindPrefSummaryNotify(pref)
@@ -210,15 +228,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val bundle = Bundle().apply { putString(WebViewActivity.URL_KEY, url) }
         intent.putExtras(bundle)
         startActivity(intent)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == android.R.id.home) {
-            startActivity(Intent(activity, SettingsActivity::class.java))
-            return true
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     companion object {

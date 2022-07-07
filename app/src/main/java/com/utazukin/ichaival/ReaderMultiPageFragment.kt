@@ -31,7 +31,10 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
@@ -95,7 +98,38 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             archiveId = getString(ARCHIVE_ID)
         }
 
-        setHasOptionsMenu(true)
+        with(requireActivity() as MenuHost) {
+            addMenuProvider(object: MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+                override fun onMenuItemSelected(item: MenuItem): Boolean {
+                    return when (item.itemId) {
+                        R.id.swap_merged_page -> {
+                            topLayout.removeView(mainImage)
+                            (mainImage as? SubsamplingScaleImageView)?.recycle()
+                            mainImage = null
+                            pageNum.visibility = View.VISIBLE
+                            progressBar.visibility = View.VISIBLE
+                            progressBar.isIndeterminate = true
+
+                            rtol = !rtol
+                            imagePath?.let { displayImage(it, otherImagePath) }
+                            true
+                        }
+                        R.id.split_merged_page -> {
+                            topLayout.removeView(mainImage)
+                            (mainImage as? SubsamplingScaleImageView)?.recycle()
+                            mainImage = null
+                            pageNum.visibility = View.VISIBLE
+                            progressBar.visibility = View.VISIBLE
+                            progressBar.isIndeterminate = true
+                            imagePath?.let { displaySingleImage(it, otherPage, true) }
+                            true
+                        }
+                        else -> false
+                    }
+                }
+            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        }
 
         rtol = if (savedInstanceState == null) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -155,34 +189,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         super.onStop()
         mergeJob?.cancel()
         mergeJob = null
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.swap_merged_page -> {
-                topLayout.removeView(mainImage)
-                (mainImage as? SubsamplingScaleImageView)?.recycle()
-                mainImage = null
-                pageNum.visibility = View.VISIBLE
-                progressBar.visibility = View.VISIBLE
-                progressBar.isIndeterminate = true
-
-                rtol = !rtol
-                imagePath?.let { displayImage(it, otherImagePath) }
-                true
-            }
-            R.id.split_merged_page -> {
-                topLayout.removeView(mainImage)
-                (mainImage as? SubsamplingScaleImageView)?.recycle()
-                mainImage = null
-                pageNum.visibility = View.VISIBLE
-                progressBar.visibility = View.VISIBLE
-                progressBar.isIndeterminate = true
-                imagePath?.let { displaySingleImage(it, otherPage, true) }
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 
     @SuppressLint("ClickableViewAccessibility")

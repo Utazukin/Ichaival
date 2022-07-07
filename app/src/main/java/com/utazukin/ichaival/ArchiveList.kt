@@ -42,7 +42,6 @@ const val COVER_TRANSITION = "cover"
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, FilterListener {
     private lateinit var setupText: TextView
     private lateinit var categoryView: NavigationView
-    private var menu: Menu? = null
 
     override fun onListFragmentInteraction(archive: Archive?, view: View) {
         if (archive != null)
@@ -75,11 +74,9 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         handleSetupText(serverSetting.isEmpty())
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        this.menu = menu
-
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         if (CategoryManager.categories != null)
-            menu?.findItem(R.id.filter_menu)?.isVisible = true
+            menu.findItem(R.id.filter_menu)?.isVisible = true
 
         return super.onCreateOptionsMenu(menu)
     }

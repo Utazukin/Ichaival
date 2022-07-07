@@ -398,19 +398,19 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             delayedHide(100)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.reader_menu, menu)
         optionsMenu = menu
 
         if (currentAdapter?.run { isSinglePage(getPositionFromPage(currentPage)) } == false) {
-            menu?.run {
+            with(menu) {
                 findItem(R.id.swap_merged_page)?.isVisible = true
                 findItem(R.id.split_merged_page)?.isVisible = true
             }
         }
 
         archive?.let {
-            val bookmarker = menu?.findItem(R.id.bookmark_archive)
+            val bookmarker = menu.findItem(R.id.bookmark_archive)
             launch { setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(it.id)) }
         }
         return super.onCreateOptionsMenu(menu)

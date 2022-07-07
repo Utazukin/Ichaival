@@ -74,18 +74,18 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         archiveId?.let { launch { extractArchive(it) } }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.archive_details_menu, menu)
         this.menu = menu
 
         archiveId?.let {
             launch {
                 val archive = DatabaseReader.getArchive(it)
-                menu?.findItem(R.id.mark_read_item)?.isVisible = archive?.isNew ?: false
+                menu.findItem(R.id.mark_read_item)?.isVisible = archive?.isNew ?: false
             }
         }
 
-        menu?.findItem(R.id.delete_archive_item)?.isVisible = ServerManager.canEdit
+        menu.findItem(R.id.delete_archive_item)?.isVisible = ServerManager.canEdit
 
         return super.onCreateOptionsMenu(menu)
     }

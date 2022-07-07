@@ -29,11 +29,9 @@ import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.children
-import androidx.core.view.isVisible
-import androidx.core.view.setMargins
+import androidx.core.view.*
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
@@ -72,7 +70,6 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
         arguments?.let {
             archiveId = it.getString(ARCHIVE_ID)
         }
@@ -86,6 +83,29 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         addToCatButton = view.findViewById(R.id.add_to_cat_button)
         thumbView = view.findViewById(R.id.cover)
         ViewCompat.setTransitionName(thumbView, COVER_TRANSITION)
+
+        with(requireActivity() as MenuHost) {
+            addMenuProvider(object: MenuProvider {
+                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+                override fun onMenuItemSelected(item: MenuItem): Boolean {
+                    when (item.itemId) {
+                        R.id.refresh_thumb_item -> {
+                            archiveId?.let {
+                                thumbLoadJob?.cancel()
+                                thumbView.setImageDrawable(null)
+                                lifecycleScope.launch {
+                                    val (thumbPath, modifiedTime) = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext()) }
+                                    thumbPath?.let { path ->
+                                        Glide.with(thumbView).load(path).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return false
+                }
+            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        }
 
         lifecycleScope.launch {
             val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
@@ -115,24 +135,6 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         ReaderTabHolder.unregisterRemoveListener(this)
         ReaderTabHolder.unregisterClearListener(this)
         ReaderTabHolder.unregisterAddListener(this)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.refresh_thumb_item -> {
-                archiveId?.let {
-                    thumbLoadJob?.cancel()
-                    thumbView.setImageDrawable(null)
-                    lifecycleScope.launch {
-                        val (thumbPath, modifiedTime) = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext()) }
-                        thumbPath?.let { path ->
-                            Glide.with(thumbView).load(path).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
-                        }
-                    }
-                }
-            }
-        }
-        return super.onOptionsItemSelected(item)
     }
 
     override fun onTabAdded(id: String) {
