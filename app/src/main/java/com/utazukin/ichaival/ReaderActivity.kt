@@ -486,11 +486,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
             R.id.refresh_button -> {
                 closeSettings()
-                archive?.run {
-                    invalidateCache()
+                archive?.let {
+                    it.invalidateCache()
                     launch {
                         currentAdapter?.clearPages()
-                        withContext(Dispatchers.IO) { extract(this@ReaderActivity) }
+                        withContext(Dispatchers.IO) { it.extract(this@ReaderActivity) }
                         currentAdapter?.loadImage(currentPage)
                     }
                 }
