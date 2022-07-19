@@ -56,6 +56,12 @@ class ThumbRecyclerViewAdapter(
         val item = v.getTag(R.id.small_thumb) as Int
         listener?.onThumbSelection(item)
     }
+
+    private val onLongPressListener = View.OnLongClickListener {
+        val item = it.getTag(R.id.small_thumb) as Int
+        listener?.onThumbLongPress(item) ?: false
+    }
+
     var maxThumbnails = 10
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
@@ -83,6 +89,7 @@ class ThumbRecyclerViewAdapter(
         with(holder.thumbView) {
             setTag(R.id.small_thumb, page)
             setOnClickListener(onClickListener)
+            setOnLongClickListener(onLongPressListener)
         }
 
         val job = scope.launch {
@@ -132,6 +139,7 @@ class ThumbRecyclerViewAdapter(
 
     interface ThumbInteractionListener {
         fun onThumbSelection(page: Int)
+        fun onThumbLongPress(page: Int) : Boolean
     }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {

@@ -545,6 +545,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         currentPage = page
     }
 
+    override fun onThumbLongPress(page: Int) = false
+
     override fun onTabInteraction(tab: ReaderTab) {
         if (tab.id != archive?.id) {
             setResult(Activity.RESULT_OK)

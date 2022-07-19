@@ -21,15 +21,20 @@ package com.utazukin.ichaival
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.view.*
-import android.widget.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.NumberPicker
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.floor
 
 private const val ARCHIVE_ID = "arcid"
@@ -124,6 +129,8 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         listener?.onThumbSelection(page)
         dismiss()
     }
+
+    override fun onThumbLongPress(page: Int) = (activity as? ThumbRecyclerViewAdapter.ThumbInteractionListener)?.onThumbLongPress(page) ?: false
 
     private fun jumpToPage(page: Int) = listView.layoutManager?.scrollToPosition(page)
 

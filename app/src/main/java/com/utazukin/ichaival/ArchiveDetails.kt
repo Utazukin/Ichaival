@@ -203,6 +203,23 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         startReaderActivityForResult(page)
     }
 
+    override fun onThumbLongPress(page: Int): Boolean {
+        archiveId?.let {
+            val dialog = AlertDialog.Builder(this)
+                .setTitle(R.string.use_thumb)
+                .setPositiveButton(R.string.yes) { d, _ ->
+                    launch {
+                        withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(it, this@ArchiveDetails, page) }
+                        Toast.makeText(this@ArchiveDetails, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
+                    }
+                    d.dismiss()
+                }
+                .setNegativeButton(R.string.no) { d, _ -> d.cancel() }
+            dialog.show()
+        }
+        return true
+    }
+
     fun startReaderActivityForResult(page: Int = -1) {
         val intent = Intent(this, ReaderActivity::class.java)
         val bundle = Bundle()
