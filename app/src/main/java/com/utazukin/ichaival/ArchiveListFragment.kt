@@ -491,8 +491,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     val query = searchView.query?.let {
                         val terms = parseTerms(it)
                         val builder = StringBuilder()
-                        for (i in 0 until terms.lastIndex) {
-                            builder.append(if (terms[i].contains(" ")) "\"${terms[i]}\"" else terms[i])
+                        for (term in terms.dropLast(1)) {
+                            builder.append(
+                                when {
+                                    term.endsWith('$') && term.contains(' ') -> "\"${term.removeSuffix("$")}\"$"
+                                    term.contains(' ') -> "\"${term}\""
+                                    else -> terms
+                                }
+                            )
                             builder.append(" ")
                         }
                         builder.append(selection)
