@@ -22,6 +22,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.paging.DataSource
 import androidx.paging.PositionalDataSource
 import kotlinx.coroutines.*
+import java.lang.Integer.max
 import kotlin.math.min
 
 class ServerSearchResult(val results: List<String>?,
@@ -222,7 +223,10 @@ class ArchiveListServerSource(results: List<String>?,
                 val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
                 val archives = getArchives(ids)
                 WebHandler.updateRefreshing(false)
-                callback.onResult(archives, params.requestedStartPosition, if (archives.size < ids.size) archives.size else totalSize)
+                var startIndex = params.requestedStartPosition
+                while (startIndex > 0 && startIndex >= totalSize)
+                    startIndex = max(0, startIndex - params.requestedLoadSize)
+                callback.onResult(archives, startIndex, if (archives.size < ids.size) archives.size else totalSize)
             }
         }
     }
