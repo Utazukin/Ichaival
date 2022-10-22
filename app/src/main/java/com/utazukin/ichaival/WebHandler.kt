@@ -511,10 +511,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     private suspend fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     private suspend fun ResponseBody.suspendBytes() = withContext(Dispatchers.IO) { bytes() }
 
     suspend fun setArchiveNewFlag(id: String) {

@@ -114,7 +114,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                                 val pages = Array(pageCount) { (it + 1).toString() }
                                 val current = when (val layoutManager = listView.layoutManager) {
                                     is LinearLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
-                                    is GridLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
                                     else -> -1
                                 }
 
@@ -122,8 +121,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                                     val position = min(id * ServerManager.pageSize, archiveCount)
                                     val layoutManager = listView.layoutManager
                                     if (layoutManager is LinearLayoutManager)
-                                        layoutManager.scrollToPositionWithOffset(position, 0)
-                                    else if (layoutManager is GridLayoutManager)
                                         layoutManager.scrollToPositionWithOffset(position, 0)
                                     dialog.dismiss()
                                 }
