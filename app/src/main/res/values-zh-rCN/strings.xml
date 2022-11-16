@@ -107,6 +107,7 @@
     <string-array name="theme_names">
         <item>@string/dark_theme</item>
         <item>@string/black_theme</item>
+        <item>@string/material_theme</item>
     </string-array>
     <string name="fullscreen_timeout_key">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">屏幕超时</string>

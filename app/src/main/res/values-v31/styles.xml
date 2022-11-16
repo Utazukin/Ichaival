@@ -1,0 +1,72 @@
+<!--
+  ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
+  ~ Copyright (C) 2022 Utazukin
+  ~
+  ~  This program is free software: you can redistribute it and/or modify
+  ~  it under the terms of the GNU General Public License as published by
+  ~  the Free Software Foundation, either version 3 of the License, or
+  ~  (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="MaterialYou" parent="Theme.Material3.DynamicColors.Dark">
+        <!-- Customize your theme here. -->
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:statusBarColor">?colorSurface</item>
+        <item name="tag_color">@android:color/system_accent2_700</item>
+        <item name="namespace_color">@android:color/system_accent2_200</item>
+        <item name="cardBackgroundColor">@android:color/system_neutral1_800</item>
+        <item name="progress_color">?colorPrimary</item>
+        <item name="select_color">@android:color/system_accent1_700</item>
+        <item name="category_remove_color">?colorOnBackground</item>
+        <item name="category_add_color">?colorOnPrimary</item>
+        <item name="category_add_back_color">?colorPrimary</item>
+        <item name="bottomSheetDialogTheme">@style/MaterialYou.ReaderSettingsDialog</item>
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:windowContentTransitions">true</item>
+        <item name="alertDialogTheme">@style/MaterialYou.AlertDialog</item>
+        <item name="fullscreen_theme">@style/MaterialYou.FullscreenTheme</item>
+        <item name="borderlessButtonStyle">@style/MaterialYou.BorderlessButton</item>
+        <item name="actionBarBackgroundColor">?colorSurface</item>
+    </style>
+
+    <style name="MaterialYou.BorderlessButton" parent="Widget.Material3.Button.TextButton.Icon">
+        <item name="android:textColor">?colorPrimary</item>
+    </style>
+
+    <style name="MaterialYou.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:colorBackground">?attr/colorSurface</item>
+        <item name="dialogCornerRadius">28dp</item>
+        <item name="cornerFamily">rounded</item>
+    </style>
+
+    <style name="MaterialYou.FullscreenTheme" parent="MaterialYou">
+        <item name="android:actionBarStyle">@style/MaterialYou.FullscreenActionBarStyle</item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="android:windowBackground">@null</item>
+        <item name="metaButtonBarStyle">?android:attr/buttonBarStyle</item>
+        <item name="metaButtonBarButtonStyle">?android:attr/buttonBarButtonStyle</item>
+    </style>
+
+    <style name="MaterialYou.ReaderSettingsDialog" parent="ThemeOverlay.Material3.BottomSheetDialog"/>
+
+    <style name="MaterialYou.FullscreenActionBarStyle" parent="Widget.Material3.ActionBar.Solid">
+        <item name="android:background">#000000</item>
+    </style>
+
+    <style name="SettingsTheme.MaterialYou" parent="MaterialYou">
+        <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
+    </style>
+
+</resources>

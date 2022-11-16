@@ -24,10 +24,20 @@
         <item name="tag_color">?colorPrimaryDark</item>
         <item name="namespace_color">@color/colorAccent</item>
         <item name="cardBackgroundColor">#ff424242</item>
+        <item name="progress_color">@color/colorPrimary</item>
+        <item name="select_color">@color/colorPrimary</item>
+        <item name="category_remove_color">@color/category_remove_color</item>
+        <item name="category_add_color">@color/category_add_color</item>
+        <item name="category_add_back_color">?colorButtonNormal</item>
         <item name="bottomSheetDialogTheme">@style/ReaderSettingsDialog</item>
         <item name="windowActionModeOverlay">true</item>
         <item name="android:windowContentTransitions">true</item>
+        <item name="fullscreen_theme">@style/FullscreenTheme</item>
+        <item name="borderlessButtonStyle">@style/AppTheme.BorderlessButton</item>
+        <item name="actionBarBackgroundColor">?colorPrimaryDark</item>
     </style>
+
+    <style name="AppTheme.BorderlessButton" parent="Widget.AppCompat.Button.Borderless.Colored" />
 
     <style name="AppTheme.Black" parent="AppTheme">
         <!-- Customize your theme here. -->

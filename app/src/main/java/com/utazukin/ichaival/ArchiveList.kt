@@ -42,6 +42,7 @@ const val COVER_TRANSITION = "cover"
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, FilterListener {
     private lateinit var setupText: TextView
     private lateinit var categoryView: NavigationView
+    private var currentTheme = ""
 
     override fun onListFragmentInteraction(archive: Archive?, view: View) {
         if (archive != null)
@@ -70,6 +71,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         setContentView(R.layout.activity_archive_list)
         setSupportActionBar(findViewById(R.id.toolbar))
 
+        currentTheme = getCustomTheme()
         setupText = findViewById(R.id.first_time_text)
         handleSetupText(serverSetting.isEmpty())
     }
@@ -103,6 +105,18 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         WebHandler.verboseMessages = prefs.getBoolean(getString(R.string.verbose_pref), false)
     }
 
+    override fun setTheme() {
+        super.setTheme()
+        currentTheme = getCustomTheme()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        if (outState.getBoolean(REFRESH_KEY))
+            super.onSaveInstanceState(outState)
+        else
+            outState.remove(REFRESH_KEY)
+    }
+
     override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String) {
         when (key) {
             getString(R.string.server_address_preference) -> {
@@ -117,8 +131,8 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             }
             getString(R.string.verbose_pref) -> WebHandler.verboseMessages = pref.getBoolean(key, false)
             getString(R.string.theme_pref) -> {
+                intent.putExtra(REFRESH_KEY, true)
                 setTheme()
-                recreate()
             }
             getString(R.string.archive_list_type_key) -> intent.putExtra(REFRESH_KEY, true)
         }

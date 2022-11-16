@@ -55,6 +55,7 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
         when (getCustomTheme()) {
             getString(R.string.dark_theme) -> setTheme(R.style.SettingsTheme)
             getString(R.string.black_theme) -> setTheme(R.style.SettingsTheme_Black)
+            getString(R.string.material_theme) -> setTheme(R.style.SettingsTheme_MaterialYou)
         }
     }
 

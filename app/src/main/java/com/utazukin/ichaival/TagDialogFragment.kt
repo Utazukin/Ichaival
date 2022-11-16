@@ -19,15 +19,15 @@
 package com.utazukin.ichaival
 
 
+import android.app.Dialog
 import android.graphics.Color
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
-import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
@@ -35,6 +35,7 @@ import androidx.preference.PreferenceManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,27 +54,43 @@ class TagDialogFragment : DialogFragment() {
         prefs.getBoolean(getString(R.string.local_search_key), false)
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.run {
-            val archiveId = getString(ARCHIVE_PARAM)
-            archiveId?.let {
-                lifecycleScope.launch {
-                    val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
-                    if (archive != null)
-                        setUpTags(archive)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        return when (prefs.getString(getString(R.string.theme_pref), "")) {
+            getString(R.string.material_theme) ->
+                MaterialAlertDialogBuilder(requireContext(), theme).apply {
+                    val view = layoutInflater.inflate(R.layout.tag_popup_layout, null, false)?.apply {
+                        tagLayout = findViewById(R.id.tag_layout)
+                        arguments?.run {
+                            getString(ARCHIVE_PARAM)?.let {
+                                lifecycleScope.launch {
+                                    val archive =
+                                        withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
+                                    if (archive != null)
+                                        setUpTags(archive)
+                                }
+                            }
+                        }
+                    }
+                    setView(view)
+                }.create()
+            else -> AlertDialog.Builder(requireContext(), theme).apply {
+                val view = layoutInflater.inflate(R.layout.tag_popup_layout, null, false)?.apply {
+                    tagLayout = findViewById(R.id.tag_layout)
+                    arguments?.run {
+                        getString(ARCHIVE_PARAM)?.let {
+                            lifecycleScope.launch {
+                                val archive =
+                                    withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
+                                if (archive != null)
+                                    setUpTags(archive)
+                            }
+                        }
+                    }
                 }
-            }
+                setView(view)
+            }.create()
         }
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.tag_popup_layout, container, false)
-        tagLayout = view.findViewById(R.id.tag_layout)
-        return view
     }
 
     private fun getSearchTag(tag: String, namespace: String) : String {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2020 Utazukin
+  ~ Copyright (C) 2022 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -26,37 +26,42 @@
         android:orientation="vertical">
 
     <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?android:colorBackground"
-            android:orientation="horizontal">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
         <TextView
-                android:id="@+id/tag_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.9"
-                android:paddingStart="8dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                android:text="@string/bookmark_label" />
+            android:id="@+id/tag_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.9"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:text="@string/bookmark_label" />
 
         <ImageView
-                android:id="@+id/clear_bookmark"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.1"
-                android:paddingTop="8dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="7dp"
-                android:scaleType="fitEnd"
-                app:srcCompat="@drawable/ic_clear_black_24dp" />
+            android:id="@+id/clear_bookmark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.1"
+            android:paddingTop="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="7dp"
+            android:scaleType="fitEnd"
+            app:srcCompat="@drawable/ic_clear_black_24dp" />
 
     </LinearLayout>
 
+    <View
+        android:id="@+id/divider5"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider" />
+
     <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/tab_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:listitem="@layout/reader_tab" />
+        android:id="@+id/tab_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:listitem="@layout/reader_tab" />
 </LinearLayout>

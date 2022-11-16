@@ -66,18 +66,16 @@
         tools:text="Title" />
 
     <Button
-            android:text="@string/bookmark"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:id="@+id/bookmark_button"
-            android:textAllCaps="true"
-            app:layout_constraintBottom_toBottomOf="@id/cover"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toEndOf="@id/cover"
-            android:layout_marginStart="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintWidth_max="200dp"
-            android:layout_marginEnd="8dp"/>
+        android:id="@+id/bookmark_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="@string/bookmark"
+        app:layout_constraintBottom_toBottomOf="@id/cover"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/cover"
+        app:layout_constraintWidth_max="200dp" />
 
     <Button
             android:text="@string/read_button"
@@ -160,7 +158,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
-                android:src="@drawable/ic_add_black_24dp"
+                android:background="?category_add_back_color"
+                android:src="@drawable/ic_add_black_30dp"
                 android:text="@string/add_to_cat_button" />
         </LinearLayout>
 

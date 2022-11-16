@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
+import com.google.android.material.color.DynamicColors
 
 class App : Application() {
     override fun onCreate() {
@@ -28,5 +29,6 @@ class App : Application() {
         CrashLogger.createCrashLogger(this)
         DatabaseReader.init(this)
         WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        DynamicColors.applyToActivitiesIfAvailable(this)
     }
 }

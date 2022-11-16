@@ -27,6 +27,13 @@
         <attr name="metaButtonBarButtonStyle" format="reference"/>
         <attr name="tag_color" format="reference"/>
         <attr name="namespace_color" format="reference"/>
+        <attr name="progress_color" format="reference"/>
+        <attr name="select_color" format="reference" />
+        <attr name="category_remove_color" format="reference" />
+        <attr name="category_add_color" format="reference" />
+        <attr name="category_add_back_color" format="reference" />
+        <attr name="fullscreen_theme" format="reference" />
+        <attr name="actionBarBackgroundColor" format="reference" />
     </declare-styleable>
 
 </resources>

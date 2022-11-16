@@ -41,11 +41,10 @@
             android:id="@+id/reader_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            android:background="?actionBarBackgroundColor"
             android:layout_marginTop="@dimen/status_bar_height"
-            android:background="?attr/colorPrimary"
             android:elevation="4dp"
-            android:minHeight="?attr/actionBarSize"
-            android:theme="?attr/actionBarTheme" />
+            android:minHeight="?attr/actionBarSize"/>
 
         <LinearLayout
             android:id="@+id/page_seek_layout"

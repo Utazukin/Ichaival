@@ -12,8 +12,7 @@
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:usesCleartextTraffic="true"
-            android:supportsRtl="true"
-            android:theme="@style/AppTheme">
+            android:supportsRtl="true">
         <activity android:name="com.utazukin.ichaival.ArchiveList" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -30,7 +29,7 @@
         <activity
                 android:name="com.utazukin.ichaival.ReaderActivity"
                 android:configChanges="orientation|screenLayout|screenSize"
-                android:theme="@style/FullscreenTheme">
+                android:theme="?fullscreen_theme">
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value="com.utazukin.ichaival.ArchiveList"/>

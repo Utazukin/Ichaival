@@ -29,10 +29,10 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.divider.MaterialDividerItemDecoration
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
@@ -80,10 +80,10 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     protected open fun onServerInitialized() {}
 
     protected open fun setTheme() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        when (prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme))) {
+        when (getCustomTheme()) {
             getString(R.string.dark_theme) -> setTheme(R.style.AppTheme)
             getString(R.string.black_theme) -> setTheme(R.style.AppTheme_Black)
+            getString(R.string.material_theme) -> setTheme(R.style.MaterialYou)
         }
     }
 
@@ -107,7 +107,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                 }
             }
 
-            val dividerDecoration = DividerItemDecoration(this@BaseActivity, LinearLayoutManager.VERTICAL)
+            val dividerDecoration = MaterialDividerItemDecoration(this@BaseActivity, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)
         }
 

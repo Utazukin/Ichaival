@@ -18,6 +18,7 @@
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginStart="8dp"
@@ -26,51 +27,63 @@
 
     <Button
         android:id="@+id/detail_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        style="?borderlessButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/ic_info_black_24dp"
-        android:text="@string/detail_menu_item" />
+        android:text="@string/detail_menu_item"
+        app:icon="@drawable/ic_info_black_24dp"
+        app:iconSize="24dp" />
 
     <Button
         android:id="@+id/goto_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        style="?borderlessButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/ic_collections_white_24dp"
-        android:text="@string/goto_page" />
+        android:text="@string/goto_page"
+        app:icon="@drawable/ic_collections_white_24dp"
+        app:iconSize="24dp" />
 
     <Button
         android:id="@+id/thumb_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        style="?borderlessButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/ic_baseline_system_update_alt_24"
-        android:text="@string/use_thumb" />
+        android:text="@string/use_thumb"
+        app:icon="@drawable/ic_baseline_system_update_alt_24"
+        app:iconSize="24dp" />
 
     <Button
         android:id="@+id/bookmark_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        style="?borderlessButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/ic_menu"
-        android:text="@string/bookmark_label" />
+        android:text="@string/bookmark_label"
+        app:icon="@drawable/ic_menu"
+        app:iconSize="24dp" />
 
     <Button
         android:id="@+id/random_archive_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        style="?borderlessButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/ic_swap_calls_white_24dp"
-        android:text="@string/random_archive" />
+        android:text="@string/random_archive"
+        app:icon="@drawable/ic_swap_calls_white_24dp"
+        app:iconSize="24dp" />
 
     <Button
         android:id="@+id/refresh_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        style="?borderlessButtonStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:drawableStart="@drawable/ic_refresh_white_24dp"
-        android:text="@string/refresh_menu_item" />
+        android:text="@string/refresh_menu_item"
+        app:icon="@drawable/ic_refresh_white_24dp"
+        app:iconSize="24dp" />
 
     <LinearLayout
         android:layout_width="match_parent"

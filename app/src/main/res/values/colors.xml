@@ -26,4 +26,7 @@
     <color name="dark_gray">#303030</color>
     <color name="black">#000000</color>
     <color name="archive_cover_label">#9A000000</color>
+    <color name="category_remove_color">#A2A2A2</color>
+    <color name="category_add_color">#FFFFFF</color>
+    <color name="category_add_back_color">#FF000000</color>
 </resources>

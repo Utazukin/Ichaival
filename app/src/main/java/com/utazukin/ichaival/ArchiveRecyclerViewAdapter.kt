@@ -99,9 +99,9 @@ class ArchiveRecyclerViewAdapter(
 
     private fun selectArchive(holder: ViewHolder, archive: Archive, position: Int) {
         if (!selectedArchives.contains(archive)) {
-            holder.mContentView?.let { it.setCardBackgroundColor(ContextCompat.getColor(it.context, R.color.colorPrimaryDark)) }
+            holder.mContentView?.let { it.setCardBackgroundColor(MaterialColors.getColor(it, R.attr.select_color)) }
             if (listViewType == ListViewType.Cover)
-                holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.colorPrimaryDark))
+                holder.archiveName.setBackgroundColor(MaterialColors.getColor(holder.archiveName, R.attr.select_color))
             selectedArchives[archive] = position
         } else {
             holder.mContentView?.let { it.setCardBackgroundColor(MaterialColors.getColor(it, R.attr.cardBackgroundColor)) }
@@ -140,12 +140,12 @@ class ArchiveRecyclerViewAdapter(
 
             if (listViewType == ListViewType.Card && holder.mContentView != null) {
                 if (selectedArchives.contains(it))
-                    holder.mContentView.setCardBackgroundColor(ContextCompat.getColor(holder.mContentView.context, R.color.colorPrimaryDark))
+                    holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.select_color))
                 else
                     holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.cardBackgroundColor))
             } else if (listViewType == ListViewType.Cover) {
                 if (selectedArchives.contains(it))
-                    holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.colorPrimaryDark))
+                    holder.archiveName.setBackgroundColor(MaterialColors.getColor(holder.archiveName, R.attr.select_color))
                 else
                     holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.archive_cover_label))
             }
