@@ -32,6 +32,7 @@ import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
+import androidx.preference.EditTextPreference.OnBindEditTextListener
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.cache.DiskCache
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +76,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         return super.onCreateView(inflater, container, savedInstanceState)
     }
 
+    private fun onBindEditText(inputType: Int): OnBindEditTextListener {
+        return OnBindEditTextListener {
+            it.inputType = inputType
+            it.setSelection(it.text.length)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -104,7 +112,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         findPreference<EditTextPreference>(getString(R.string.random_count_pref))?.let {
             if (ServerManager.checkVersionAtLeast(0, 8, 2)) {
-                it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER }
+                it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER))
                 bindPreferenceSummaryFormat(it)
             } else {
                 it.isVisible = false
@@ -113,12 +121,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         findPreference<EditTextPreference>(getString(R.string.search_delay_key))?.let {
-            it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED }
+            it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED))
             bindPreferenceSummaryFormat(it)
         }
 
         findPreference<EditTextPreference>(getString(R.string.fullscreen_timeout_key))?.let {
-            it.setOnBindEditTextListener { text -> text.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED }
+            it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED))
             bindPreferenceSummaryFormat(it)
         }
 
