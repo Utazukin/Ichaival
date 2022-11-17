@@ -34,7 +34,7 @@
         <item name="android:windowContentTransitions">true</item>
         <item name="fullscreen_theme">@style/FullscreenTheme</item>
         <item name="borderlessButtonStyle">@style/AppTheme.BorderlessButton</item>
-        <item name="actionBarBackgroundColor">?colorPrimaryDark</item>
+        <item name="actionBarBackgroundColor">?colorPrimary</item>
     </style>
 
     <style name="AppTheme.BorderlessButton" parent="Widget.AppCompat.Button.Borderless.Colored" />
