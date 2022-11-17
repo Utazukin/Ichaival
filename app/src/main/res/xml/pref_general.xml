@@ -189,20 +189,20 @@
         app:title="@string/source_pref_header">
 
         <Preference
+            app:iconSpaceReserved="false"
             app:key="@string/license_key"
-            app:iconSpaceReserved="false"
-            app:summary="Licences used by this app"
-            app:title="Open Source Licenses" />
+            app:summary="@string/license_pref_summary"
+            app:title="@string/license_pref_title" />
         <Preference
+            app:iconSpaceReserved="false"
             app:key="@string/gpl_key"
-            app:iconSpaceReserved="false"
-            app:summary="Tap to view"
-            app:title="Licensed under GPLv3" />
+            app:summary="@string/gpl_pref_summary"
+            app:title="@string/gpl_pref_title" />
         <Preference
-            app:key="@string/git_key"
             app:iconSpaceReserved="false"
-            app:summary="View source on GitHub"
-            app:title="View on GitHub" />
+            app:key="@string/git_key"
+            app:summary="@string/git_pref_summary"
+            app:title="@string/git_pref_title" />
     </PreferenceCategory>
     <PreferenceCategory
         android:title="@string/debug_settings"

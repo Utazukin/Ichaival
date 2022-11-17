@@ -51,7 +51,11 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
     private var pickerState = NumberPicker.OnScrollListener.SCROLL_STATE_IDLE
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val theme = if (context?.getCustomTheme() == getString(R.string.dark_theme)) R.style.AppTheme else R.style.AppTheme_Black
+        val theme = when (context?.getCustomTheme()) {
+            getString(R.string.material_theme) -> R.style.MaterialYou
+            getString(R.string.dark_theme) -> R.style.AppTheme
+            else -> R.style.AppTheme_Black
+        }
         setStyle(STYLE_NORMAL, theme)
         super.onCreate(savedInstanceState)
         arguments?.run {

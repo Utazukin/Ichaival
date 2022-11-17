@@ -27,7 +27,6 @@ import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.view.*
 import android.widget.*
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.fragment.app.Fragment
@@ -44,6 +43,7 @@ import com.bumptech.glide.signature.ObjectKey
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -263,7 +263,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             return catView
 
         catView.setOnClickListener {
-            val builder = AlertDialog.Builder(requireContext()).apply {
+            val builder = MaterialAlertDialogBuilder(requireContext()).apply {
                 setTitle(getString(R.string.category_remove_title))
                 setMessage(getString(R.string.category_remove_message, category.name))
                 setPositiveButton(R.string.yes) { dialog, _ ->

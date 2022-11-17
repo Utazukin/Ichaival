@@ -24,14 +24,12 @@ import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
 import android.text.InputType
-import android.view.Menu
-import android.view.MenuItem
-import android.view.MotionEvent
-import android.view.View
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.util.Pair
 import androidx.preference.PreferenceManager
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
@@ -56,7 +54,10 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
         intent.putExtras(bundle)
         addIntentFlags(intent, id)
         val coverView: View = view.findViewById(R.id.archive_thumb)
-        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverView, COVER_TRANSITION).toBundle())
+        val statusBar: View = findViewById(android.R.id.statusBarBackground)
+        val coverPair = Pair(coverView, COVER_TRANSITION)
+        val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair, statusPair).toBundle())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

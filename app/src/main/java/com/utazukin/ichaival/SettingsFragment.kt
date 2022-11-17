@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.util.AttributeSet
@@ -92,11 +93,19 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val apiPref: Preference? = findPreference(getString(R.string.api_key_pref))
         bindPreferenceSummaryToValue(apiPref)
 
-        val themePref: Preference? = findPreference(getString(R.string.theme_pref))
+        val themePref: ListPreference? = findPreference(getString(R.string.theme_pref))
         bindPreferenceSummaryToValue(themePref)
-        themePref?.setOnPreferenceChangeListener { _, _ ->
-            requireActivity().recreate()
-            true
+        themePref?.run {
+            setOnPreferenceChangeListener { _, _ ->
+                requireActivity().recreate()
+                true
+            }
+
+            //Remove the Material You option for versions before 12.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                entries = entries.copyOf(entries.size - 1)
+                entryValues = entryValues.copyOf(entryValues.size - 1)
+            }
         }
 
         val listTypePref: Preference? = findPreference(getString(R.string.archive_list_type_key))

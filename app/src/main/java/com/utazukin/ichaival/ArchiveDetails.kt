@@ -145,11 +145,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     suspend fun extractArchive(id: String) {
         val a = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
-        a?.run {
-            menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
-            if (numPages <= 0)
-                withContext(Dispatchers.IO) { extract(this@ArchiveDetails) }
-            pageCount = numPages
+        a?.let {
+            menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
+            if (it.numPages <= 0)
+                withContext(Dispatchers.IO) { it.extract(this@ArchiveDetails) }
+            pageCount = it.numPages
             if (pager.currentItem == 1)
                 supportActionBar?.subtitle = resources.getQuantityString(R.plurals.page_count, pageCount)
         }
@@ -172,11 +172,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                         }
                         1 -> supportActionBar?.run {
                             title = getString(R.string.thumbs_title)
-                            subtitle = if (pageCount >= 0) resources.getQuantityString(
-                                R.plurals.page_count,
-                                pageCount,
-                                pageCount
-                            ) else null
+                            subtitle = if (pageCount >= 0) resources.getQuantityString(R.plurals.page_count, pageCount, pageCount) else null
                         }
                     }
                 }

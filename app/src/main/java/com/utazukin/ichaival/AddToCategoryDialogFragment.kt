@@ -18,15 +18,17 @@
 
 package com.utazukin.ichaival
 
+import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,6 +46,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
     private lateinit var catGroup: RadioGroup
     private lateinit var catText: EditText
     private lateinit var newCatButton: Button
+    private lateinit var scrollView: ScrollView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,19 +74,29 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
         CategoryManager.removeUpdateListener(this)
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        // Inflate the layout for this fragment
-        val view = inflater.inflate(R.layout.fragment_add_to_category_dialog, container, false)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return when (context?.getCustomTheme()) {
+            getString(R.string.material_theme) -> MaterialAlertDialogBuilder(requireContext(), theme)
+            else -> AlertDialog.Builder(requireContext(), theme)
+        }.apply { setView(setupDialog()) }.create()
+    }
+
+    private fun setupDialog() : View {
+        val view = layoutInflater.inflate(R.layout.fragment_add_to_category_dialog, null, false)
 
         catGroup = view.findViewById(R.id.cat_rad_group)
         catText = view.findViewById(R.id.new_cat_txt)
         newCatButton = view.findViewById(R.id.new_cat_radio)
+        scrollView = view.findViewById(R.id.category_scroll)
         val addButton: Button = view.findViewById(R.id.add_to_cat_dialog_button)
 
         catGroup.check(R.id.new_cat_radio)
         catGroup.setOnCheckedChangeListener { _, i ->
             when (i) {
-                R.id.new_cat_radio -> catText.visibility = View.VISIBLE
+                R.id.new_cat_radio -> {
+                    catText.visibility = View.VISIBLE
+                    with(scrollView) { post { fullScroll(View.FOCUS_DOWN) } }
+                }
                 else -> catText.visibility = View.GONE
             }
         }

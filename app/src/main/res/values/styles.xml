@@ -61,7 +61,7 @@
     <style name="ReaderSettingsDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog"/>
 
     <style name="ReaderSettingsDialog.Black" parent="ReaderSettingsDialog">
-        <item name="colorOnSurface">@color/black</item>
+        <item name="android:backgroundTint">@color/black</item>
     </style>
 
     <style name="FullscreenActionBarStyle" parent="Widget.MaterialComponents.ActionBar.Primary">

@@ -24,6 +24,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
+import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -55,41 +56,24 @@ class TagDialogFragment : DialogFragment() {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        return when (prefs.getString(getString(R.string.theme_pref), "")) {
-            getString(R.string.material_theme) ->
-                MaterialAlertDialogBuilder(requireContext(), theme).apply {
-                    val view = layoutInflater.inflate(R.layout.tag_popup_layout, null, false)?.apply {
-                        tagLayout = findViewById(R.id.tag_layout)
-                        arguments?.run {
-                            getString(ARCHIVE_PARAM)?.let {
-                                lifecycleScope.launch {
-                                    val archive =
-                                        withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
-                                    if (archive != null)
-                                        setUpTags(archive)
-                                }
-                            }
-                        }
-                    }
-                    setView(view)
-                }.create()
-            else -> AlertDialog.Builder(requireContext(), theme).apply {
-                val view = layoutInflater.inflate(R.layout.tag_popup_layout, null, false)?.apply {
-                    tagLayout = findViewById(R.id.tag_layout)
-                    arguments?.run {
-                        getString(ARCHIVE_PARAM)?.let {
-                            lifecycleScope.launch {
-                                val archive =
-                                    withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
-                                if (archive != null)
-                                    setUpTags(archive)
-                            }
-                        }
+        return when (context?.getCustomTheme()) {
+            getString(R.string.material_theme) -> MaterialAlertDialogBuilder(requireContext(), theme)
+            else -> AlertDialog.Builder(requireContext(), theme)
+        }.apply { setView(setupDialog()) }.create()
+    }
+
+    private fun setupDialog() : View? {
+        return layoutInflater.inflate(R.layout.tag_popup_layout, null, false)?.apply {
+            tagLayout = findViewById(R.id.tag_layout)
+            arguments?.run {
+                getString(ARCHIVE_PARAM)?.let {
+                    lifecycleScope.launch {
+                        val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
+                        if (archive != null)
+                            setUpTags(archive)
                     }
                 }
-                setView(view)
-            }.create()
+            }
         }
     }
 

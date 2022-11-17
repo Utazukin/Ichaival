@@ -25,9 +25,11 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
+import android.view.Window
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.util.Pair
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,7 +50,10 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         intent.putExtras(bundle)
         addIntentFlags(intent, id)
         val coverView: View = view.findViewById(R.id.archive_thumb)
-        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverView, COVER_TRANSITION).toBundle())
+        val statusBar: View = findViewById(android.R.id.statusBarBackground)
+        val coverPair = Pair(coverView, COVER_TRANSITION)
+        val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair, statusPair).toBundle())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
