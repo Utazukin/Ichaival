@@ -23,14 +23,12 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Rect
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import android.view.MotionEvent
-import android.view.View
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.TextView
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.util.Pair
 import androidx.preference.PreferenceManager
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
@@ -50,13 +48,15 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     }
 
     private fun startDetailsActivity(id: String, view: View) {
-        val intent = Intent(this, ArchiveDetails::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", id)
-        intent.putExtras(bundle)
-        addIntentFlags(intent, id)
+        val intent = Intent(this, ArchiveDetails::class.java).also {
+            it.putExtras(Bundle().apply { putString("id", id) })
+            addIntentFlags(it, id)
+        }
         val coverView: View = view.findViewById(R.id.archive_thumb)
-        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverView, COVER_TRANSITION).toBundle())
+        val statusBar: View = findViewById(android.R.id.statusBarBackground)
+        val coverPair = Pair(coverView, COVER_TRANSITION)
+        val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair, statusPair).toBundle())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,14 +85,13 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
         if (ev?.action == MotionEvent.ACTION_DOWN) {
-            val view = currentFocus
-            if (view is EditText) {
+            (currentFocus as? EditText)?.let {
                 val outRect = Rect()
-                view.getLocalVisibleRect(outRect)
+                it.getLocalVisibleRect(outRect)
                 if (!outRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
-                    view.clearFocus()
+                    it.clearFocus()
                     with(getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager) {
-                        hideSoftInputFromWindow(view.windowToken, 0)
+                        hideSoftInputFromWindow(it.windowToken, 0)
                     }
                 }
             }
@@ -165,8 +164,8 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
         val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.run {
-            tagFragment.setTagPressListener {
-                tag -> searchView.setQuery(tag, true)
+            tagFragment.setTagPressListener { tag ->
+                searchView.setQuery(tag, true)
                 drawerLayout.closeDrawers()
             }
             tagFragment.setTagLongPressListener { tag ->

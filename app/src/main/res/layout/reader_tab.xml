@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2021 Utazukin
+  ~ Copyright (C) 2022 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -22,14 +22,14 @@
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
               android:layout_marginTop="10dp"
+              android:paddingStart="5dp"
+              android:paddingEnd="8dp"
               android:layout_marginBottom="10dp">
 
     <ImageView
         android:id="@+id/reader_thumb"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:paddingStart="5dp"
-        android:paddingEnd="5dp"
         android:scaleType="fitCenter"
         tools:srcCompat="@tools:sample/backgrounds/scenic" />
 
@@ -41,7 +41,8 @@
             android:layout_weight="8"
             android:layout_width="0dp"
             android:gravity="center_vertical"
-            android:paddingStart="8dp"
+            android:paddingStart="13dp"
+            android:paddingEnd="8dp"
             android:ellipsize="end"
             android:maxLines="4"/>
 
@@ -53,6 +54,5 @@
             android:layout_weight="1"
             android:layout_width="wrap_content"
             android:layout_gravity="center_vertical"
-            android:gravity="center_vertical|end"
-            android:paddingEnd="8dp"/>
+            android:gravity="center_vertical|end" />
 </LinearLayout>

@@ -28,6 +28,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
         android:orientation="horizontal">
 
         <TextView
@@ -35,7 +37,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0.9"
-            android:paddingStart="8dp"
             android:paddingTop="10dp"
             android:paddingBottom="10dp"
             android:text="@string/bookmark_label" />
@@ -46,7 +47,6 @@
             android:layout_height="wrap_content"
             android:layout_weight="0.1"
             android:paddingTop="8dp"
-            android:paddingEnd="8dp"
             android:paddingBottom="7dp"
             android:scaleType="fitEnd"
             app:srcCompat="@drawable/ic_clear_black_24dp" />
