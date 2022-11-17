@@ -145,11 +145,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     suspend fun extractArchive(id: String) {
         val a = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
-        a?.let {
-            menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
-            if (it.numPages <= 0)
-                withContext(Dispatchers.IO) { it.extract(this@ArchiveDetails) }
-            pageCount = it.numPages
+        a?.run {
+            menu?.findItem(R.id.mark_read_item)?.isVisible = isNew
+            if (numPages <= 0)
+                withContext(Dispatchers.IO) { extract(this@ArchiveDetails) }
+            pageCount = numPages
             if (pager.currentItem == 1)
                 supportActionBar?.subtitle = resources.getQuantityString(R.plurals.page_count, pageCount)
         }
@@ -158,27 +158,30 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     private fun setUpDetailView() {
         pager = findViewById(R.id.details_pager)
 
-        pager.adapter = DetailsPagerAdapter()
-        pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageScrollStateChanged(state: Int) {}
-
-            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
-
-            override fun onPageSelected(position: Int) {
-                when (position) {
-                    0 -> supportActionBar?.run {
-                        title = getString(R.string.details_title)
-                        subtitle = null
-                        toolbar.layoutTransition = LayoutTransition()
-                    }
-                    1 -> supportActionBar?.run {
-                        title = getString(R.string.thumbs_title)
-                        subtitle = if (pageCount >= 0) resources.getQuantityString(R.plurals.page_count, pageCount, pageCount) else null
+        archiveId?.let {
+            pager.adapter = DetailsPagerAdapter(it)
+            pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageScrollStateChanged(state: Int) {}
+                override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
+                override fun onPageSelected(position: Int) {
+                    when (position) {
+                        0 -> supportActionBar?.run {
+                            title = getString(R.string.details_title)
+                            subtitle = null
+                            toolbar.layoutTransition = LayoutTransition()
+                        }
+                        1 -> supportActionBar?.run {
+                            title = getString(R.string.thumbs_title)
+                            subtitle = if (pageCount >= 0) resources.getQuantityString(
+                                R.plurals.page_count,
+                                pageCount,
+                                pageCount
+                            ) else null
+                        }
                     }
                 }
-            }
-
-        })
+            })
+        }
 
         val tabLayout: TabLayout = findViewById(R.id.details_tabs)
         val mediator = TabLayoutMediator(tabLayout, pager) { tab, position ->
@@ -222,13 +225,12 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     fun startReaderActivityForResult(page: Int = -1) {
         val intent = Intent(this, ReaderActivity::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", archiveId)
+        val bundle = Bundle().apply {
+            putString("id", archiveId)
+            if (page >= 0)
+                putInt("page", page)
+        }
 
-        if (page >= 0)
-            bundle.putInt("page", page)
-
-        intent.putExtras(bundle)
         intent.putExtras(bundle)
         resultLauncher.launch(intent)
     }
@@ -251,11 +253,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
 
-    inner class DetailsPagerAdapter : FragmentStateAdapter(this) {
+    inner class DetailsPagerAdapter(private val archiveId: String) : FragmentStateAdapter(this) {
         override fun createFragment(position: Int): Fragment {
             return when(position) {
-                0 -> ArchiveDetailsFragment.createInstance(archiveId!!)
-                1 -> GalleryPreviewFragment.createInstance(archiveId!!, readerPage)
+                0 -> ArchiveDetailsFragment.createInstance(archiveId)
+                1 -> GalleryPreviewFragment.createInstance(archiveId, readerPage)
                 else -> throw IllegalArgumentException("position")
             }
         }
