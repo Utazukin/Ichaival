@@ -207,6 +207,12 @@
     <string name="bookmark_removed_snack">Bookmark removed</string>
     <string name="undo">Undo</string>
     <string name="cleared_bookmarks_snack">Cleared bookmarks</string>
+    <string name="license_pref_summary">Licences used by this app</string>
+    <string name="license_pref_title">Open Source Licenses</string>
+    <string name="gpl_pref_summary">Tap to view</string>
+    <string name="gpl_pref_title">Licensed under GPLv3</string>
+    <string name="git_pref_summary">View source on GitHub</string>
+    <string name="git_pref_title">View on GitHub</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>
