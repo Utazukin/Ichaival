@@ -32,6 +32,7 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.divider.MaterialDividerItemDecoration
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.BaseTransientBottomBar
@@ -89,6 +90,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
     protected open fun onCreateDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)
+        drawerLayout.setStatusBarBackgroundColor(MaterialColors.getColor(drawerLayout, R.attr.colorSurface))
         navView = drawerLayout.findViewById(R.id.nav_view)
         tabView = findViewById(R.id.tab_view)
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]

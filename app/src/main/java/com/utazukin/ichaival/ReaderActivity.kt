@@ -296,6 +296,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onCreateDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)
+        drawerLayout.setStatusBarBackgroundColor(MaterialColors.getColor(drawerLayout, R.attr.colorSurface))
         navView = drawerLayout.findViewById(R.id.nav_view)
         val tabView: RecyclerView = findViewById(R.id.tab_view)
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]

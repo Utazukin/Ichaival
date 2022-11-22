@@ -30,6 +30,7 @@ import android.widget.TextView
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
 import androidx.preference.PreferenceManager
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import kotlinx.coroutines.Dispatchers
@@ -139,6 +140,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun onCreateDrawer() {
         super.onCreateDrawer()
+        drawerLayout.setStatusBarBackgroundColor(MaterialColors.getColor(drawerLayout, R.attr.colorSurface))
         categoryView = drawerLayout.findViewById(R.id.category_filter_view)
         navView.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
