@@ -26,14 +26,13 @@
                 android:id="@+id/reader_layout">
 
     <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/page_num"
-            tools:text="25"
-            android:textSize="36sp"
-            android:layout_centerInParent="true"
-            android:textColor="@android:color/darker_gray"
-            android:textAlignment="center"/>
+        android:id="@+id/page_num"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:textAlignment="center"
+        android:textSize="36sp"
+        tools:text="25" />
 
     <ProgressBar
         android:id="@+id/progressBar"
