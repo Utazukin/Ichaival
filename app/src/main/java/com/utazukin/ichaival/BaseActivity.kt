@@ -117,17 +117,19 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         closeButton.setOnClickListener{
             launch {
                 val bookmarks = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmarks() }
-                with(Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_LONG)) {
-                    ReaderTabHolder.removeAll()
-                    setAction(R.string.undo) { ReaderTabHolder.addReaderTabs(bookmarks) }
-                    addCallback(object: BaseTransientBottomBar.BaseCallback<Snackbar>() {
-                        override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                            super.onDismissed(transientBottomBar, event)
-                            if (event != DISMISS_EVENT_ACTION)
-                                ReaderTabHolder.resetServerProgress(bookmarks)
-                        }
-                    })
-                    show()
+                if (bookmarks.isNotEmpty()) {
+                    with(Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_LONG)) {
+                        ReaderTabHolder.removeAll()
+                        setAction(R.string.undo) { ReaderTabHolder.addReaderTabs(bookmarks) }
+                        addCallback(object : BaseTransientBottomBar.BaseCallback<Snackbar>() {
+                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                                super.onDismissed(transientBottomBar, event)
+                                if (event != DISMISS_EVENT_ACTION)
+                                    ReaderTabHolder.resetServerProgress(bookmarks)
+                            }
+                        })
+                        show()
+                    }
                 }
             }
         }
