@@ -98,7 +98,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                             forceArchiveListUpdate()
                             true
                         }
-                        R.id.select_archives -> with(listView.adapter as ArchiveRecyclerViewAdapter) { enableMultiSelect(requireActivity() as AppCompatActivity) }
+                        R.id.select_archives -> (listView.adapter as? ArchiveRecyclerViewAdapter)?.run { enableMultiSelect(requireActivity() as AppCompatActivity) } ?: false
                         R.id.scroll_top -> {
                             listView.layoutManager?.scrollToPosition(0)
                             true
