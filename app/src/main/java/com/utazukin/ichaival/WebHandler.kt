@@ -291,20 +291,21 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val encodedSearch = if (filter == null) null else withContext(Dispatchers.IO) { URLEncoder.encode(filter.toString(), "utf-8") }
         val url = "$serverLocation$randomPath?count=$count${if (encodedSearch == null) "" else "&filter=$encodedSearch"}${if (categoryId == null) "" else "&category=$categoryId"}"
+        val idKey = if (ServerManager.checkVersionAtLeast(0, 8, 8)) "arcid" else "id"
 
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        val result = response?.use {
+        val result = tryOrNull { response?.use {
             if (!it.isSuccessful)
                 ServerSearchResult(null)
             else {
                 it.body?.run { JSONObject(suspendString()) }?.let { json ->
                     val dataArray = json.getJSONArray("data")
-                    val results = List(dataArray.length()) { i -> dataArray.getJSONObject(i).getString("id") }
+                    val results = List(dataArray.length()) { i -> dataArray.getJSONObject(i).getString(idKey) }
                     ServerSearchResult(results, results.size)
                 }
             }
-        } ?: ServerSearchResult(null)
+        } } ?: ServerSearchResult(null)
 
         updateRefreshing(false)
         return result
