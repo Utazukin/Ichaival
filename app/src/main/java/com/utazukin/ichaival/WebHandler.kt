@@ -474,8 +474,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-
-    suspend fun extractArchive(context: Context, id: String) : JSONObject? {
+    suspend fun extractArchive(context: Context, id: String, forceFull: Boolean = false) : JSONObject? {
         if (!canConnect(context))
             return null
 
@@ -483,7 +482,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val errorMessage = context.getString(R.string.archive_extract_fail_message)
         val connection = if (ServerManager.checkVersionAtLeast(0, 8, 2)) {
-            val url = "$serverLocation${extractPath.format(id)}"
+            var url = "$serverLocation${extractPath.format(id)}"
+            if (forceFull)
+                url += "?force=true"
             createServerConnection(url, "POST", FormBody.Builder().build())
         } else {
             val url = "$serverLocation${filesPath.format(id)}"
@@ -505,8 +506,13 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                     if (json.has("error")) {
                         notifyError(json.getString("error"))
                         null
-                    } else
+                    } else {
+                        if (forceFull) {
+                            if (json.has("job"))
+                                waitForJob(json.getInt("job"))
+                        }
                         json
+                    }
                 }
             }
         }

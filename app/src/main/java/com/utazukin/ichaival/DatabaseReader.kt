@@ -97,12 +97,12 @@ object DatabaseReader {
             listener.onDelete()
     }
 
-    suspend fun getPageList(context: Context, id: String) : List<String> {
+    suspend fun getPageList(context: Context, id: String, forceFull: Boolean = false) : List<String> {
         val mutex = extractingMutex.withLock { extractingArchives.getOrPut(id) { Mutex() } }
 
         return mutex.withLock {
             archivePageMap.getOrPut(id) {
-                WebHandler.getPageList(WebHandler.extractArchive(context, id)).also {
+                WebHandler.getPageList(WebHandler.extractArchive(context, id, forceFull)).also {
                     database.archiveDao().updatePageCount(id, it.size)
                     notifyExtractListeners(id, it.size)
                 }

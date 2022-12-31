@@ -59,6 +59,7 @@ private const val ID_STRING = "id"
 private const val PAGE_ID = "page"
 private const val CURRENT_PAGE_ID = "currentPage"
 private const val PROGRESS_UPDATE_DELAY = 500L //ms
+private const val FORCE_REFRESH = "force"
 
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, DatabaseExtractListener, ThumbRecyclerViewAdapter.ThumbInteractionListener {
     private var mVisible: Boolean = false
@@ -258,6 +259,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 currentAdapter?.loadImage(adjustedPage)
                 imagePager.setCurrentItem(currentAdapter?.getPositionFromPage(adjustedPage) ?: adjustedPage, false)
 
+                if (intent.getBooleanExtra(FORCE_REFRESH, false)) {
+                    intent.removeExtra(FORCE_REFRESH)
+                    it.extract(this@ReaderActivity, true)
+                }
+
                 for (listener in pageFragments)
                     listener.onArchiveLoad(it)
             }
@@ -289,7 +295,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         super.onSaveInstanceState(outState)
         with(outState) {
             putInt(CURRENT_PAGE_ID, currentPage)
-            putString(PAGE_ID, archive?.id)
+            putString(ID_STRING, archive?.id)
             putInt(SCALE_TYPE, currentScaleType.value)
         }
     }
@@ -499,12 +505,17 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     it.invalidateCache()
                     launch {
-                        val current = currentPage
-                        currentAdapter?.clearPages()
-                        withContext(Dispatchers.IO) { it.extract(this@ReaderActivity) }
-                        currentAdapter?.loadImage(current)
-                        val position = currentAdapter?.getPositionFromPage(current) ?: 0
-                        imagePager.setCurrentItem(position, false)
+                        withContext(Dispatchers.IO) {
+                            with(Glide.get(this@ReaderActivity)) {
+                                withContext(Dispatchers.Main) { clearMemory() }
+                                clearDiskCache()
+                            }
+                            DualPageHelper.clearMergedPages(cacheDir)
+                        }
+                        intent.putExtra(FORCE_REFRESH, true)
+                        intent.putExtra(PAGE_ID, currentPage)
+                        finish()
+                        startActivity(intent)
                     }
                 }
             }

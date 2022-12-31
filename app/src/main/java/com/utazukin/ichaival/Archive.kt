@@ -44,8 +44,8 @@ data class Archive (
     val numPages: Int
         get() = if (ServerManager.checkVersionAtLeast(0, 7, 7) && pageCount > 0) pageCount else DatabaseReader.getPageCount(id)
 
-    suspend fun extract(context: Context) {
-        val pages = DatabaseReader.getPageList(context, id)
+    suspend fun extract(context: Context, forceFull: Boolean = false) {
+        val pages = DatabaseReader.getPageList(context, id, forceFull)
         if (pageCount <= 0)
             pageCount = pages.size
     }
