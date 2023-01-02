@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -196,14 +196,15 @@ abstract class ArchiveDatabase : RoomDatabase() {
         archiveDao().updateFromJson(archives.values)
 
         if (ServerManager.serverTracksProgress) {
+            val bookmarks = archiveDao().getBookmarkedIds()
+            for (id in bookmarks) {
+                archives[id]?.let { archiveDao().updateBookmark(id, it.currentPage) }
+            }
+            var bookmarkCount = bookmarks.size
             for ((id, archive) in archives) {
-                val bookmark = archiveDao().getBookmark(id)
-                if (archive.currentPage > 0 && bookmark == null) {
-                    val tab = ReaderTabHolder.createTab(id, archive.title, archive.currentPage)
+                if (archive.currentPage > 0 && !bookmarks.contains(id)) {
+                    val tab = ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage)
                     archiveDao().addBookmark(tab)
-                } else if (bookmark != null) {
-                    bookmark.page = archive.currentPage
-                    archiveDao().updateBookmark(bookmark)
                 }
             }
         }
