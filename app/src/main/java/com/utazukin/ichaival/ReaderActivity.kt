@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,17 +23,11 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
-import android.view.KeyEvent
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.widget.*
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
@@ -75,6 +69,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var volControl = false
     private var optionsMenu: Menu? = null
     private lateinit var imagePager: ViewPager2
+    private lateinit var webtoonRecycler: WebtoonRecyclerView
+    private lateinit var webtoonLayout: FrameLayout
+    private lateinit var readerLayout: FrameLayout
     private lateinit var pageSeekBar: SeekBar
     private lateinit var pageSeekLayout: LinearLayout
     private lateinit var progressEndText: TextView
@@ -84,14 +81,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var autoHideEnabled = true
     private var updateProgressJob: Job? = null
     private var dualPageEnabled = false
+    private var isWebtoon = true
 
     private val dualPageAdapter by lazy { ReaderMultiFragmentAdapter() }
     private val pageAdapter by lazy { ReaderFragmentAdapter() }
+    private val webtoonAdapter by lazy { WebtoonAdapter() }
 
     private val currentAdapter
-        get() = imagePager.adapter as? ReaderAdapter<*>
+        get() = (if (isWebtoon) webtoonRecycler.adapter else imagePager.adapter) as? IReaderAdapter
     private val useDoublePage
-        get() = dualPageEnabled && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        get() = dualPageEnabled && !isWebtoon && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     private val subtitle: String
         get() {
@@ -123,7 +122,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
-        currentScaleType = savedInstanceState?.getInt(SCALE_TYPE, -1).let {
+        currentScaleType = if (isWebtoon) ScaleType.FitWidth else savedInstanceState?.getInt(SCALE_TYPE, -1).let {
             when {
                 it is Int && it >= 0 -> ScaleType.fromInt(it)
                 else -> ScaleType.fromString(prefs.getString(getString(R.string.scale_type_pref), null), resources)
@@ -172,38 +171,40 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout, R.attr.cardBackgroundColor))
         progressStartText = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
-        imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
-        imagePager.offscreenPageLimit = 1
-        imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(page: Int) {
-                currentPage = currentAdapter?.run { getPageFromPosition(getAdjustedPage(page)) } ?: 0
-                archive?.run {
-                    val current = this@ReaderActivity.currentPage
-                    launch(Dispatchers.IO) {
-                        if (ReaderTabHolder.updatePageIfTabbed(id, current)) {
-                            updateProgressJob?.cancel()
-                            clearNewFlag()
-                            updateProgressJob = launch {
-                                delay(PROGRESS_UPDATE_DELAY)
-                                WebHandler.updateProgress(id, current)
+        if (!isWebtoon) {
+            imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
+            imagePager.offscreenPageLimit = 1
+            imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(page: Int) {
+                    currentPage = currentAdapter?.run { getPageFromPosition(getAdjustedPage(page)) } ?: 0
+                    archive?.run {
+                        val current = this@ReaderActivity.currentPage
+                        launch(Dispatchers.IO) {
+                            if (ReaderTabHolder.updatePageIfTabbed(id, current)) {
+                                updateProgressJob?.cancel()
+                                clearNewFlag()
+                                updateProgressJob = launch {
+                                    delay(PROGRESS_UPDATE_DELAY)
+                                    WebHandler.updateProgress(id, current)
+                                }
                             }
                         }
+                        val markCompletePage = floor(numPages * 0.9f).toInt()
+                        if (numPages > 0 && current + 1 == markCompletePage && isNew)
+                            launch { clearNewFlag() }
                     }
-                    val markCompletePage = floor(numPages * 0.9f).toInt()
-                    if (numPages > 0 && current + 1 == markCompletePage && isNew)
-                        launch { clearNewFlag() }
+
+                    pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
+                    progressStartText.text = if (currentAdapter?.isSinglePage(page) != false) (currentPage + 1).toString() else (currentPage + 2).toString()
+                    launch { currentAdapter?.loadImage(currentPage) }
+                    supportActionBar?.subtitle = subtitle
+                    if (currentAdapter?.containsPage(jumpPage, page) != true)
+                        jumpPage = -1
                 }
 
-                pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
-                progressStartText.text = if (currentAdapter?.isSinglePage(page) != false) (currentPage + 1).toString() else (currentPage + 2).toString()
-                launch { currentAdapter?.loadImage(currentPage) }
-                supportActionBar?.subtitle = subtitle
-                if (currentAdapter?.containsPage(jumpPage, page) != true)
-                    jumpPage = -1
-            }
-
-        } )
-        imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+            } )
+            imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+        }
 
         val bundle = intent.extras
         val arcid = bundle?.getString(ID_STRING) ?: savedInstanceState?.getString(ID_STRING) ?: return
@@ -223,11 +224,25 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             override fun onStartTrackingTouch(p0: SeekBar?) { switchLayoutJob?.cancel() }
             override fun onStopTrackingTouch(p0: SeekBar?) {
                 if (seekPage > -1)
-                    imagePager.setCurrentItem(seekPage, false)
+                    jumpToPage(seekPage)
                 seekPage = -1
                 delayedHide(autoHideDelay)
             }
         })
+
+        if (isWebtoon) {
+            webtoonRecycler = findViewById(R.id.webtoon_recycler)
+            webtoonLayout = findViewById(R.id.webtoon_layout)
+            readerLayout = findViewById(R.id.reader_frame_layout)
+            readerLayout.visibility = View.GONE
+            with(webtoonRecycler) {
+                layoutManager = LinearLayoutManager(this@ReaderActivity)
+                adapter = webtoonAdapter
+                isFocusable = false
+                itemAnimator = null
+            }
+            webtoonLayout.visibility = View.VISIBLE
+        }
 
         progressEndText = findViewById(R.id.txt_progress_end)
         launch {
@@ -257,7 +272,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
                 val adjustedPage = getAdjustedPage(page)
                 currentAdapter?.loadImage(adjustedPage)
-                imagePager.setCurrentItem(currentAdapter?.getPositionFromPage(adjustedPage) ?: adjustedPage, false)
+                jumpToPage(currentAdapter?.getPositionFromPage(adjustedPage) ?: adjustedPage)
 
                 if (intent.getBooleanExtra(FORCE_REFRESH, false)) {
                     intent.removeExtra(FORCE_REFRESH)
@@ -273,6 +288,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     fun registerPage(listener: PageFragment) = pageFragments.add(listener)
 
     fun unregisterPage(listener: PageFragment) = pageFragments.remove(listener)
+
+    private fun jumpToPage(page: Int) {
+        if (isWebtoon)
+            webtoonRecycler.scrollToPosition(page)
+        else
+            imagePager.setCurrentItem(page, false)
+    }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         val currentPage = currentAdapter?.getPageFromPosition(imagePager.currentItem) ?: 0
@@ -381,14 +403,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         if (!volControl)
             return super.onKeyDown(keyCode, event)
 
-        val pageAdjustment = if (rtol) -1 else 1
+        val pageAdjustment = if (rtol && !isWebtoon) -1 else 1
         return when(keyCode) {
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                imagePager.setCurrentItem(imagePager.currentItem + pageAdjustment, false)
+                jumpToPage(imagePager.currentItem + pageAdjustment)
                 true
             }
             KeyEvent.KEYCODE_VOLUME_UP -> {
-                imagePager.setCurrentItem(imagePager.currentItem - pageAdjustment, false)
+                jumpToPage(imagePager.currentItem - pageAdjustment)
                 true
             }
             else -> super.onKeyDown(keyCode, event)
@@ -632,11 +654,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             TouchZone.Center -> toggle()
             TouchZone.Left -> {
                 val next = if (rtol) imagePager.currentItem + 1 else imagePager.currentItem - 1
-                imagePager.setCurrentItem(next, false)
+                jumpToPage(next)
             }
             TouchZone.Right -> {
                 val next = if (rtol) imagePager.currentItem - 1 else imagePager.currentItem + 1
-                imagePager.setCurrentItem(next, false)
+                jumpToPage(next)
             }
         }
     }
@@ -699,7 +721,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onExtract(id: String, pageCount: Int) {
-        if (id != archive?.id || archive?.numPages == currentAdapter?.itemCount)
+        if (id != archive?.id || archive?.numPages == currentAdapter?.getItemCount())
             return
 
         launch {
@@ -842,24 +864,122 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    private abstract inner class ReaderAdapter<T> : FragmentStateAdapter(this) {
-        protected val loadedPages = mutableListOf<T>()
-        abstract val defaultPageSize: UInt
+    private interface IReaderAdapter {
+        val defaultPageSize: UInt
+        fun isSinglePage(position: Int): Boolean
+        fun clearPages()
+        fun updateLoadedPages(pageCount: Int)
+        fun adjustLoadedPages(page: Int): Int
+        fun getPositionFromPage(page: Int): Int
+        fun getPageFromPosition(position: Int): Int
+        fun containsPage(page: Int, position: Int): Boolean
+        fun loadImage(page: Int, preload: Boolean = true)
+        fun getItemCount(): Int
+    }
 
-        open fun isSinglePage(position: Int) = true
-        open fun clearPages() {
+    private inner class WebtoonAdapter : RecyclerView.Adapter<WebtoonReaderViewHolder>(), IReaderAdapter {
+        private val loadedPages = mutableListOf<Boolean>()
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WebtoonReaderViewHolder {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.fragment_reader, parent, false)
+            return WebtoonReaderViewHolder(parent.context, view, this@ReaderActivity)
+        }
+
+        override fun onBindViewHolder(holder: WebtoonReaderViewHolder, position: Int) {
+            holder.onAttach(position)
+        }
+
+        override fun onViewRecycled(holder: WebtoonReaderViewHolder) {
+            holder.onDetach()
+            super.onViewRecycled(holder)
+        }
+
+        override val defaultPageSize = 1u
+        override fun isSinglePage(position: Int) = true
+
+        override fun clearPages() {
             val size = loadedPages.size
             loadedPages.clear()
             notifyItemRangeRemoved(0, size)
         }
-        abstract fun updateLoadedPages(pageCount: Int)
-        abstract fun adjustLoadedPages(page: Int): Int
-        abstract fun getPositionFromPage(page: Int): Int
-        abstract fun getPageFromPosition(position: Int): Int
-        abstract fun containsPage(page: Int, position: Int): Boolean
+
+        override fun loadImage(page: Int, preload: Boolean) {
+            if (archive?.hasPage(page) == false) {
+                if (archive?.numPages == 0) {
+                    imagePager.visibility = View.INVISIBLE
+                    webtoonRecycler.visibility = View.GONE
+                }
+                return
+            }
+            imagePager.visibility = View.VISIBLE
+
+            val addedPages = adjustLoadedPages(page)
+            if (addedPages > 0)
+                notifyItemRangeInserted(loadedPages.size - addedPages, addedPages)
+
+            if (preload) {
+                for (i in (defaultPageSize.toInt() * -1..defaultPageSize.toInt())) {
+                    val newPage = page + i
+                    if (newPage >= 0 && (newPage >= loadedPages.size || !isPageLoaded(page + i)))
+                        loadImage(page + i, false)
+                }
+            }
+        }
+
+        private fun isPageLoaded(page: Int) = loadedPages[page]
+        override fun getItemCount(): Int = loadedPages.size
+        override fun getPositionFromPage(page: Int) = page
+        override fun getPageFromPosition(position: Int) = position
+        override fun containsPage(page: Int, position: Int) = page == position
+
+        @SuppressLint("NotifyDataSetChanged")
+        override fun updateLoadedPages(pageCount: Int) {
+            loadedPages.clear()
+            for (i in 0 until pageCount)
+                loadedPages.add(true)
+            notifyDataSetChanged()
+        }
+
+        override fun adjustLoadedPages(page: Int) : Int {
+            var addedPages = 0
+            when {
+                archive?.run { numPages > 0 && loadedPages.size != numPages } == true -> {
+                    val currentSize = loadedPages.size
+                    for (i in currentSize until archive!!.numPages)
+                        loadedPages.add(true)
+                    loadedPages.fill(true)
+                    return loadedPages.size - currentSize
+                }
+                page >= loadedPages.size -> {
+                    val currentSize = loadedPages.size
+                    for (i in currentSize..page)
+                        loadedPages.add(false)
+                    addedPages = loadedPages.size - currentSize
+                }
+                loadedPages[page] -> return 0
+            }
+            loadedPages[page] = true
+            return addedPages
+        }
+    }
+
+    private abstract inner class ReaderAdapter<T> : FragmentStateAdapter(this), IReaderAdapter {
+        protected val loadedPages = mutableListOf<T>()
+        abstract override val defaultPageSize: UInt
+
+        override fun isSinglePage(position: Int) = true
+        override fun clearPages() {
+            val size = loadedPages.size
+            loadedPages.clear()
+            notifyItemRangeRemoved(0, size)
+        }
+        abstract override fun updateLoadedPages(pageCount: Int)
+        abstract override fun adjustLoadedPages(page: Int): Int
+        abstract override fun getPositionFromPage(page: Int): Int
+        abstract override fun getPageFromPosition(position: Int): Int
+        abstract override fun containsPage(page: Int, position: Int): Boolean
         protected abstract fun isPageLoaded(page: Int): Boolean
 
-        fun loadImage(page: Int, preload: Boolean = true) {
+        override fun loadImage(page: Int, preload: Boolean) {
             if (archive?.hasPage(page) == false) {
                 if (archive?.numPages == 0) {
                     imagePager.visibility = View.INVISIBLE
