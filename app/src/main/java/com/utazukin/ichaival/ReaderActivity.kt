@@ -312,7 +312,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onConfigurationChanged(newConfig: Configuration) {
         val currentPage = currentAdapter?.getPageFromPosition(imagePager.currentItem) ?: 0
         super.onConfigurationChanged(newConfig)
-        if (dualPageEnabled) {
+        if (isWebtoon)
+            webtoonRecycler.adapter?.run { notifyItemRangeChanged(0, itemCount) }
+        else if (dualPageEnabled) {
             val adapter = when (newConfig.orientation) {
                 Configuration.ORIENTATION_LANDSCAPE -> dualPageAdapter
                 else -> pageAdapter
