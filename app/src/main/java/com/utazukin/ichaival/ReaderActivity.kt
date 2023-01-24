@@ -219,6 +219,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 itemAnimator = null
                 tapListener = ::onFragmentTap
                 pageChangeListener = ::onPageChanged
+                longPressListener = { onFragmentLongPress() }
             }
 
             webtoonLayout = findViewById(R.id.webtoon_layout)

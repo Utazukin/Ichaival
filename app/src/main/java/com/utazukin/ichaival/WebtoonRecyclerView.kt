@@ -57,6 +57,7 @@ class WebtoonRecyclerView
     private val detector = Detector(context, listener)
 
     var tapListener: ((TouchZone) -> Unit)? = null
+    var longPressListener: (() -> Unit)? = null
     var pageChangeListener: ((Int) -> Unit)? = null
 
     override fun onMeasure(widthSpec: Int, heightSpec: Int) {
@@ -244,6 +245,10 @@ class WebtoonRecyclerView
         override fun onDoubleTap(ev: MotionEvent): Boolean {
             detector.isDoubleTapping = true
             return false
+        }
+
+        override fun onLongPress(e: MotionEvent) {
+            longPressListener?.invoke()
         }
 
         fun onDoubleTapConfirmed(ev: MotionEvent) {
