@@ -71,7 +71,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private lateinit var imagePager: ViewPager2
     private lateinit var webtoonRecycler: WebtoonRecyclerView
     private lateinit var webtoonLayout: FrameLayout
-    private lateinit var readerLayout: FrameLayout
     private lateinit var pageSeekBar: SeekBar
     private lateinit var pageSeekLayout: LinearLayout
     private lateinit var progressEndText: TextView
@@ -122,12 +121,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
-        currentScaleType = if (isWebtoon) ScaleType.FitWidth else savedInstanceState?.getInt(SCALE_TYPE, -1).let {
+        currentScaleType = savedInstanceState?.getInt(SCALE_TYPE, -1).let {
             when {
                 it is Int && it >= 0 -> ScaleType.fromInt(it)
                 else -> ScaleType.fromString(prefs.getString(getString(R.string.scale_type_pref), null), resources)
             }
         }
+        isWebtoon = currentScaleType == ScaleType.Webtoon
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -175,33 +175,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
             imagePager.offscreenPageLimit = 1
             imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(page: Int) {
-                    currentPage = currentAdapter?.run { getPageFromPosition(getAdjustedPage(page)) } ?: 0
-                    archive?.run {
-                        val current = this@ReaderActivity.currentPage
-                        launch(Dispatchers.IO) {
-                            if (ReaderTabHolder.updatePageIfTabbed(id, current)) {
-                                updateProgressJob?.cancel()
-                                clearNewFlag()
-                                updateProgressJob = launch {
-                                    delay(PROGRESS_UPDATE_DELAY)
-                                    WebHandler.updateProgress(id, current)
-                                }
-                            }
-                        }
-                        val markCompletePage = floor(numPages * 0.9f).toInt()
-                        if (numPages > 0 && current + 1 == markCompletePage && isNew)
-                            launch { clearNewFlag() }
-                    }
-
-                    pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
-                    progressStartText.text = if (currentAdapter?.isSinglePage(page) != false) (currentPage + 1).toString() else (currentPage + 2).toString()
-                    launch { currentAdapter?.loadImage(currentPage) }
-                    supportActionBar?.subtitle = subtitle
-                    if (currentAdapter?.containsPage(jumpPage, page) != true)
-                        jumpPage = -1
-                }
-
+                override fun onPageSelected(page: Int) = onPageChanged(page)
             } )
             imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
         }
@@ -232,16 +206,27 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         if (isWebtoon) {
             webtoonRecycler = findViewById(R.id.webtoon_recycler)
-            webtoonLayout = findViewById(R.id.webtoon_layout)
-            readerLayout = findViewById(R.id.reader_frame_layout)
-            readerLayout.visibility = View.GONE
+            val readerLayout: FrameLayout = findViewById(R.id.reader_frame_layout)
+            with (readerLayout) {
+                visibility = View.GONE
+                removeView(appBar)
+                removeView(pageSeekLayout)
+            }
             with(webtoonRecycler) {
                 layoutManager = LinearLayoutManager(this@ReaderActivity)
                 adapter = webtoonAdapter
                 isFocusable = false
                 itemAnimator = null
+                tapListener = ::onFragmentTap
+                pageChangeListener = ::onPageChanged
             }
-            webtoonLayout.visibility = View.VISIBLE
+
+            webtoonLayout = findViewById(R.id.webtoon_layout)
+            with(webtoonLayout) {
+                visibility = View.VISIBLE
+                addView(appBar)
+                addView(pageSeekLayout)
+            }
         }
 
         progressEndText = findViewById(R.id.txt_progress_end)
@@ -291,9 +276,36 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun jumpToPage(page: Int) {
         if (isWebtoon)
-            webtoonRecycler.scrollToPosition(page)
+            webtoonRecycler.scrollToPosition(page, 0)
         else
             imagePager.setCurrentItem(page, false)
+    }
+
+    private fun onPageChanged(page: Int) {
+        currentPage = currentAdapter?.run { getPageFromPosition(getAdjustedPage(page)) } ?: 0
+        archive?.run {
+            val current = this@ReaderActivity.currentPage
+            launch(Dispatchers.IO) {
+                if (ReaderTabHolder.updatePageIfTabbed(id, current)) {
+                    updateProgressJob?.cancel()
+                    clearNewFlag()
+                    updateProgressJob = launch {
+                        delay(PROGRESS_UPDATE_DELAY)
+                        WebHandler.updateProgress(id, current)
+                    }
+                }
+            }
+            val markCompletePage = floor(numPages * 0.9f).toInt()
+            if (numPages > 0 && current + 1 == markCompletePage && isNew)
+                launch { clearNewFlag() }
+        }
+
+        pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
+        progressStartText.text = if (currentAdapter?.isSinglePage(page) != false) (currentPage + 1).toString() else (currentPage + 2).toString()
+        launch { currentAdapter?.loadImage(currentPage) }
+        supportActionBar?.subtitle = subtitle
+        if (currentAdapter?.containsPage(jumpPage, page) != true)
+            jumpPage = -1
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -473,9 +485,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun updateScaleType(type: ScaleType) {
         if (type != currentScaleType) {
-            currentScaleType = type
-            for (listener in pageFragments)
-                listener.onScaleTypeChange(type)
+            if (type == ScaleType.Webtoon || currentScaleType == ScaleType.Webtoon) {
+                currentScaleType = type
+                recreate()
+            } else {
+                currentScaleType = type
+                for (listener in pageFragments)
+                    listener.onScaleTypeChange(type)
+            }
         }
     }
 
@@ -577,7 +594,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         closeSettings()
         val adjustedPage = getAdjustedPage(page)
         currentAdapter?.loadImage(adjustedPage)
-        imagePager.setCurrentItem(currentAdapter?.getPositionFromPage(adjustedPage) ?: adjustedPage, false)
+        jumpToPage(currentAdapter?.getPositionFromPage(adjustedPage) ?: adjustedPage)
         currentPage = page
     }
 
@@ -650,14 +667,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onFragmentTap(zone: TouchZone) {
+        val currentPosition = if (isWebtoon) webtoonRecycler.firstCompletelyVisibleItemPosition else imagePager.currentItem
         when (zone) {
             TouchZone.Center -> toggle()
             TouchZone.Left -> {
-                val next = if (rtol) imagePager.currentItem + 1 else imagePager.currentItem - 1
+                val next = if (rtol && !isWebtoon) currentPosition + 1 else currentPosition - 1
                 jumpToPage(next)
             }
             TouchZone.Right -> {
-                val next = if (rtol) imagePager.currentItem - 1 else imagePager.currentItem + 1
+                val next = if (rtol && !isWebtoon) currentPosition - 1 else currentPosition + 1
                 jumpToPage(next)
             }
         }

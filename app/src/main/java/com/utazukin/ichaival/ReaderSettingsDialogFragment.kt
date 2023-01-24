@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 enum class ScaleType(val value: Int) {
     FitPage(0),
     FitHeight(1),
-    FitWidth(2);
+    FitWidth(2),
+    Webtoon(3);
 
     companion object {
         private val map by lazy { values().associateBy(ScaleType::value)}
@@ -44,6 +45,7 @@ enum class ScaleType(val value: Int) {
                 resources.getString(R.string.page_scale_type) -> FitPage
                 resources.getString(R.string.height_scale_type) -> FitHeight
                 resources.getString(R.string.width_scale_type) -> FitWidth
+                resources.getString(R.string.webtoon_scale_type) -> Webtoon
                 else -> FitPage
             }
         }

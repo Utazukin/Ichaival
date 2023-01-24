@@ -32,7 +32,7 @@ class WebtoonFrameLayout
     private val recycler: WebtoonRecyclerView?
         get() = getChildAt(0) as? WebtoonRecyclerView
 
-    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         scaleDetector.onTouchEvent(ev)
         flingDetector.onTouchEvent(ev)
         return super.dispatchTouchEvent(ev)

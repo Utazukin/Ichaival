@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -497,7 +497,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
                         imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
                     }
-                    ScaleType.FitWidth -> {
+                    ScaleType.FitWidth, ScaleType.Webtoon -> {
                         val hPadding = imageView.paddingLeft - imageView.paddingRight
                         val viewWidth = if (useOppositeOrientation) imageView.height else imageView.width
                         val minScale = (viewWidth - hPadding) / imageView.sWidth.toFloat()

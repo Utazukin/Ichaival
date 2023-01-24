@@ -51,7 +51,7 @@ class WebtoonReaderViewHolder(private val context: Context,
     private var mainImage: View? = null
     private val pageNum: TextView = view.findViewById(R.id.page_num)
     private val progressBar: ProgressBar = view.findViewById(R.id.progressBar)
-    private val topLayout: RelativeLayout = view.findViewById(R.id.reader_layout)
+    private val topLayout: TouchToggleLayout = view.findViewById(R.id.reader_layout)
     private val failedMessage: TextView
     private val jobs = mutableListOf<Job>()
     private val currentScaleType
@@ -63,47 +63,16 @@ class WebtoonReaderViewHolder(private val context: Context,
 
         failedMessage = view.findViewById(R.id.failed_message)
         failedMessage.setOnClickListener { activity.onImageLoadError() }
-        val gestureDetector =
-            GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-                    if (e != null)
-                        activity.onFragmentTap(getTouchZone(e.x, view))
-                    return true
-                }
-            })
-        failedMessage.setOnTouchListener { _, motionEvent ->
-            gestureDetector.onTouchEvent(motionEvent)
-            true
-        }
-
         //Tapping the view will display the toolbar until the image is displayed.
         view.setOnClickListener { activity.onFragmentTap(TouchZone.Center) }
         view.setOnLongClickListener { activity.onFragmentLongPress() }
 
         topLayout.layoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
-    }
-
-    fun onConfigurationChanged() {
-        updateScaleType(mainImage, currentScaleType, true)
+        topLayout.enableTouch = false
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupImageTapEvents(view: View) {
-        if (view is SubsamplingScaleImageView) {
-            val gestureDetector =
-                GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                    override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-                        if (view.isReady && e != null)
-                            activity.onFragmentTap(getTouchZone(e.x, view))
-                        return true
-                    }
-                })
-
-            view.setOnTouchListener { _, e -> gestureDetector.onTouchEvent(e) }
-        }
-        else if (view is PhotoView)
-            view.setOnViewTapListener { _, x, _ -> activity.onFragmentTap(getTouchZone(x, view)) }
-
         view.setOnLongClickListener { activity.onFragmentLongPress() }
     }
 
@@ -242,7 +211,7 @@ class WebtoonReaderViewHolder(private val context: Context,
                         imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
                         imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
                     }
-                    ScaleType.FitWidth -> {
+                    ScaleType.FitWidth, ScaleType.Webtoon -> {
                         val hPadding = imageView.paddingLeft - imageView.paddingRight
                         val viewWidth = if (useOppositeOrientation) imageView.height else imageView.width
                         val minScale = (viewWidth - hPadding) / imageView.sWidth.toFloat()
@@ -256,18 +225,6 @@ class WebtoonReaderViewHolder(private val context: Context,
                 //TODO
             }
         }
-    }
-
-    private fun getTouchZone(x: Float, view: View) : TouchZone {
-        val location = x / view.width
-
-        if (location <= 0.4)
-            return TouchZone.Left
-
-        if (location >= 0.6)
-            return TouchZone.Right
-
-        return TouchZone.Center
     }
 
     fun onDetach() {

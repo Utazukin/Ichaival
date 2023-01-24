@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -41,11 +41,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class LongClickPreference : Preference {
+class LongClickPreference
+    @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null) : Preference(context, attributeSet) {
     var longClickListener: View.OnLongClickListener? = null
-
-    constructor(context: Context) : super(context)
-    constructor(context: Context, attributeSet: AttributeSet) : super(context, attributeSet)
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)

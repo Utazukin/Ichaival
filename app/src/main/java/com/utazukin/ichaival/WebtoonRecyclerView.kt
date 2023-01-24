@@ -24,6 +24,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import android.view.animation.DecelerateInterpolator
 import androidx.core.animation.doOnEnd
@@ -48,11 +49,15 @@ class WebtoonRecyclerView
     private var heightSet = false
     private var firstVisibleItemPosition = 0
     private var lastVisibleItemPosition = 0
+    var firstCompletelyVisibleItemPosition = 0
+        private set
     private var currentScale = DEFAULT_RATE
 
-    private val detector = Detector()
+    private val listener = GestureListener()
+    private val detector = Detector(context, listener)
 
-    var tapListener: ((MotionEvent) -> Unit)? = null
+    var tapListener: ((TouchZone) -> Unit)? = null
+    var pageChangeListener: ((Int) -> Unit)? = null
 
     override fun onMeasure(widthSpec: Int, heightSpec: Int) {
         halfWidth = MeasureSpec.getSize(widthSpec) / 2
@@ -69,12 +74,20 @@ class WebtoonRecyclerView
         return super.onTouchEvent(e)
     }
 
+    fun scrollToPosition(position: Int, offset: Int) {
+        (layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(position, offset)
+    }
+
     override fun onScrolled(dx: Int, dy: Int) {
         super.onScrolled(dx, dy)
         val layoutManager = layoutManager
         lastVisibleItemPosition =
             (layoutManager as LinearLayoutManager).findLastVisibleItemPosition()
         firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+        val previousFirst = firstCompletelyVisibleItemPosition
+        firstCompletelyVisibleItemPosition = layoutManager.findFirstCompletelyVisibleItemPosition()
+        if (previousFirst != firstCompletelyVisibleItemPosition && firstCompletelyVisibleItemPosition >= 0)
+            pageChangeListener?.invoke(firstCompletelyVisibleItemPosition)
     }
 
     override fun onScrollStateChanged(state: Int) {
@@ -210,18 +223,21 @@ class WebtoonRecyclerView
         }
     }
 
-    inner class Detector : GestureDetector.SimpleOnGestureListener() {
+    inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        private fun getTouchZone(x: Float, view: View) : TouchZone {
+            val location = x / view.width
 
-        private var scrollPointerId = 0
-        private var downX = 0
-        private var downY = 0
-        private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
-        private var isZoomDragging = false
-        var isDoubleTapping = false
-        var isQuickScaling = false
+            if (location <= 0.4)
+                return TouchZone.Left
+
+            if (location >= 0.6)
+                return TouchZone.Right
+
+            return TouchZone.Center
+        }
 
         override fun onSingleTapConfirmed(ev: MotionEvent): Boolean {
-            tapListener?.invoke(ev)
+            tapListener?.invoke(getTouchZone(ev.x, this@WebtoonRecyclerView))
             return false
         }
 
@@ -230,7 +246,7 @@ class WebtoonRecyclerView
             return false
         }
 
-        private fun onDoubleTapConfirmed(ev: MotionEvent) {
+        fun onDoubleTapConfirmed(ev: MotionEvent) {
             if (!isZooming) {
                 if (scaleX != DEFAULT_RATE) {
                     zoom(currentScale, DEFAULT_RATE, x, 0f, y, 0f)
@@ -242,8 +258,18 @@ class WebtoonRecyclerView
                 }
             }
         }
+    }
 
-        fun onTouchEvent(ev: MotionEvent) {
+    inner class Detector(context: Context, listener: GestureListener) : GestureDetector(context, listener) {
+        private var scrollPointerId = 0
+        private var downX = 0
+        private var downY = 0
+        private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+        private var isZoomDragging = false
+        var isDoubleTapping = false
+        var isQuickScaling = false
+
+        override fun onTouchEvent(ev: MotionEvent): Boolean {
             val action = ev.actionMasked
             val actionIndex = ev.actionIndex
 
@@ -260,12 +286,12 @@ class WebtoonRecyclerView
                 }
                 MotionEvent.ACTION_MOVE -> {
                     if (isDoubleTapping && isQuickScaling) {
-                        return
+                        return true
                     }
 
                     val index = ev.findPointerIndex(scrollPointerId)
                     if (index < 0) {
-                        return
+                        return false
                     }
 
                     val x = (ev.getX(index) + 0.5f).toInt()
@@ -304,7 +330,7 @@ class WebtoonRecyclerView
                 }
                 MotionEvent.ACTION_UP -> {
                     if (isDoubleTapping && !isQuickScaling) {
-                        onDoubleTapConfirmed(ev)
+                        listener.onDoubleTapConfirmed(ev)
                     }
                     isZoomDragging = false
                     isDoubleTapping = false
@@ -316,6 +342,8 @@ class WebtoonRecyclerView
                     isQuickScaling = false
                 }
             }
+
+            return super.onTouchEvent(ev)
         }
     }
 }

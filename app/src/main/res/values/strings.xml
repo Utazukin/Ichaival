@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2022 Utazukin
+  ~ Copyright (C) 2023 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -97,14 +97,16 @@
     <string name="page_scale_type">Fit Page</string>
     <string name="height_scale_type">Fit Height</string>
     <string name="width_scale_type">Fit Width</string>
+    <string name="webtoon_scale_type">Webtoon</string>
     <string-array name="scale_types">
         <item>@string/page_scale_type</item>
         <item>@string/height_scale_type</item>
         <item>@string/width_scale_type</item>
+        <item>@string/webtoon_scale_type</item>
     </string-array>
     <string name="dark_theme">Dark</string>
     <string name="black_theme">Black</string>
-    <string name="material_theme">Material You</string>
+    <string name="material_theme" translatable="false">Material You</string>
     <string-array name="theme_names">
         <item>@string/dark_theme</item>
         <item>@string/black_theme</item>
