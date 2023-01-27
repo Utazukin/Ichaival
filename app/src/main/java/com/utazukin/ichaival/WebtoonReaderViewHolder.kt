@@ -115,7 +115,9 @@ class WebtoonReaderViewHolder(private val context: Context,
                     initializeView(it)
 
                     it.setMaxTileSize(getMaxTextureSize())
-                    it.setMinimumTileDpi(160)
+                    it.setMinimumTileDpi(180)
+                    it.maxScale = 5f
+                    it.setDebug(true)
 
                     if (format != null) {
                         it.setBitmapDecoderClass(ImageDecoder::class.java)
