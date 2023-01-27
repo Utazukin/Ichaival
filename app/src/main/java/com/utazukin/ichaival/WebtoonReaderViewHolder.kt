@@ -101,6 +101,24 @@ class WebtoonReaderViewHolder(private val context: Context,
             }
 
             val format = getImageFormat(imageFile)
+            mainImage?.let {
+                when (it) {
+                    is PhotoView -> {
+                        Glide.with(activity)
+                            .load(imageFile)
+                            .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
+                            .addListener(getListener())
+                            .into(it)
+                        return@launch
+                    }
+                    is SubsamplingScaleImageView -> {
+                        it.setImage(ImageSource.uri(imageFile.absolutePath))
+                        return@launch
+                    }
+                    else -> {}
+                }
+            }
+
             mainImage = if (format == ImageFormat.GIF) {
                 PhotoView(activity).also {
                     initializeView(it)
@@ -231,6 +249,7 @@ class WebtoonReaderViewHolder(private val context: Context,
     fun onDetach() {
         jobs.forEach { it.cancel() }
         (activity as? ReaderActivity)?.unregisterPage(this)
+        (mainImage as? PhotoView)?.setImageBitmap(null)
         (mainImage as? SubsamplingScaleImageView)?.recycle()
     }
 
