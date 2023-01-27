@@ -158,9 +158,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         failedMessageText = view.findViewById(R.id.failed_message)
         failedMessageText.setOnClickListener { listener?.onImageLoadError() }
         val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-                    if (e != null)
-                        listener?.onFragmentTap(getTouchZone(e.x, view))
+                override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                    listener?.onFragmentTap(getTouchZone(e.x, view))
                     return true
                 }
             })
@@ -197,8 +196,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             is SubsamplingScaleImageView -> {
                 val gestureDetector =
                     GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                        override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-                            if (view.isReady && e != null)
+                        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                            if (view.isReady)
                                 listener?.onFragmentTap(getTouchZone(e.x, view))
                             return true
                         }
