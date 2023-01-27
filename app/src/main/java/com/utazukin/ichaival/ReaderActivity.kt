@@ -240,7 +240,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
 
                 //Use the page from the thumbnail over the bookmark
-                val page = savedPage ?: max(it.currentPage, 0)
+                val page = max(savedPage ?: it.currentPage, 0)
                 it.currentPage = page
                 currentPage = page
                 jumpPage = currentPage
@@ -722,6 +722,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     override fun onImageLoadError() { toggle() }
 
     fun onMergeFailed(page: Int, failPage: Int, split: Boolean) {
+        if (isWebtoon)
+            return
+
         if (dualPageAdapter.onMergeFailed(page, failPage, split)) {
             supportActionBar?.subtitle = subtitle
             pageSeekBar.progress = currentPage
