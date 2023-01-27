@@ -670,7 +670,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onFragmentTap(zone: TouchZone) {
-        val currentPosition = if (isWebtoon) webtoonRecycler.firstCompletelyVisibleItemPosition else imagePager.currentItem
+        val currentPosition = if (isWebtoon) webtoonRecycler.firstVisibleItemPosition else imagePager.currentItem
         when (zone) {
             TouchZone.Center -> toggle()
             TouchZone.Left -> {

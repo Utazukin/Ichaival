@@ -48,10 +48,9 @@ class WebtoonRecyclerView
     private var halfHeight = 0
     private var originalHeight = 0
     private var heightSet = false
-    private var firstVisibleItemPosition = 0
-    private var lastVisibleItemPosition = 0
-    var firstCompletelyVisibleItemPosition = 0
+    var firstVisibleItemPosition = 0
         private set
+    private var lastVisibleItemPosition = 0
     private var currentScale = DEFAULT_RATE
 
     private val listener = GestureListener()
@@ -85,11 +84,10 @@ class WebtoonRecyclerView
         val layoutManager = layoutManager
         lastVisibleItemPosition =
             (layoutManager as LinearLayoutManager).findLastVisibleItemPosition()
+        val previousFirst = firstVisibleItemPosition
         firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
-        val previousFirst = firstCompletelyVisibleItemPosition
-        firstCompletelyVisibleItemPosition = layoutManager.findFirstCompletelyVisibleItemPosition()
-        if (previousFirst != firstCompletelyVisibleItemPosition && firstCompletelyVisibleItemPosition >= 0)
-            pageChangeListener?.invoke(firstCompletelyVisibleItemPosition)
+        if (previousFirst != firstVisibleItemPosition && firstVisibleItemPosition >= 0)
+            pageChangeListener?.invoke(firstVisibleItemPosition)
     }
 
     override fun onScrollStateChanged(state: Int) {
