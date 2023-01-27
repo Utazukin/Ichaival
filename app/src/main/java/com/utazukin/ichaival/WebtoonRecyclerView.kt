@@ -37,6 +37,7 @@ private const val MIN_RATE = 0.5f
 private const val DEFAULT_RATE = 1f
 private const val MAX_SCALE_RATE = 3f
 
+//Originally from Tachiyomi
 class WebtoonRecyclerView
 @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null, defStyle: Int = 0)
     : RecyclerView(context, attributeSet, defStyle) {
@@ -75,8 +76,8 @@ class WebtoonRecyclerView
         return super.onTouchEvent(e)
     }
 
-    fun scrollToPosition(position: Int, offset: Int) {
-        (layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(position, offset)
+    override fun scrollToPosition(position: Int) {
+        (layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(position, 0)
     }
 
     override fun onScrolled(dx: Int, dy: Int) {
@@ -93,11 +94,10 @@ class WebtoonRecyclerView
 
     override fun onScrollStateChanged(state: Int) {
         super.onScrollStateChanged(state)
-        val layoutManager = layoutManager
-        val visibleItemCount = layoutManager?.childCount ?: 0
-        val totalItemCount = layoutManager?.itemCount ?: 0
-        atLastPosition = visibleItemCount > 0 && lastVisibleItemPosition == totalItemCount - 1
-        atFirstPosition = firstVisibleItemPosition == 0
+        layoutManager?.run {
+            atLastPosition = childCount > 0 && lastVisibleItemPosition == itemCount - 1
+            atFirstPosition = firstVisibleItemPosition == 0
+        }
     }
 
     private fun getPositionX(positionX: Float): Float {
@@ -116,14 +116,7 @@ class WebtoonRecyclerView
         return positionY.coerceIn(-maxPositionY, maxPositionY)
     }
 
-    private fun zoom(
-        fromRate: Float,
-        toRate: Float,
-        fromX: Float,
-        toX: Float,
-        fromY: Float,
-        toY: Float,
-    ) {
+    private fun zoom(fromRate: Float, toRate: Float, fromX: Float, toX: Float, fromY: Float, toY: Float) {
         isZooming = true
         val animatorSet = AnimatorSet()
         val translationXAnimator = ValueAnimator.ofFloat(fromX, toX)

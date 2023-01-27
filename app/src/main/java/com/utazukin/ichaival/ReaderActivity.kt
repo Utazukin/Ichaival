@@ -277,7 +277,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun jumpToPage(page: Int) {
         if (isWebtoon)
-            webtoonRecycler.scrollToPosition(page, 0)
+            webtoonRecycler.scrollToPosition(page)
         else
             imagePager.setCurrentItem(page, false)
     }

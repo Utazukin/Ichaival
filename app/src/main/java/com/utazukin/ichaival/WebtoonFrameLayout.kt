@@ -25,6 +25,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.widget.FrameLayout
 
+//Originally from Tachiyomi
 class WebtoonFrameLayout
     @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null) : FrameLayout(context, attributeSet) {
     private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
