@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ class TagDialogFragment : DialogFragment() {
 
     private fun getSearchTag(tag: String, namespace: String) : String {
         return when {
-            namespace == "other" -> "\"$tag\""
+            namespace == getString(R.string.other_namespace) -> "\"$tag\""
             isLocalSearch -> "$namespace:\"$tag\""
             else -> "\"$namespace:$tag\"$"
         }
