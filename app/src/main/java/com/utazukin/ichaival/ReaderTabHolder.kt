@@ -73,19 +73,21 @@ object ReaderTabHolder {
         updateAddListeners(tab.id)
     }
 
-    fun addTabs(archives: List<Archive>) = scope.launch {
-        val ids = buildList(archives.size) {
-            for (archive in archives) {
-                if (!isTabbed(archive.id)) {
-                    val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
-                    archive.currentPage = 0
-                    DatabaseReader.addBookmark(tab)
-                    add(archive.id)
+    fun addTabs(archives: List<Archive>) {
+        scope.launch {
+            val ids = buildList(archives.size) {
+                for (archive in archives) {
+                    if (!isTabbed(archive.id)) {
+                        val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
+                        archive.currentPage = 0
+                        DatabaseReader.addBookmark(tab)
+                        add(archive.id)
+                    }
                 }
             }
-        }
 
-        updateAddListeners(ids)
+            updateAddListeners(ids)
+        }
     }
 
     fun addReaderTabs(tabs: List<ReaderTab>) {
@@ -112,14 +114,18 @@ object ReaderTabHolder {
 
     suspend fun getTab(id: String) = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmark(id) }
 
-    fun removeTab(id: String) = scope.launch {
-        if (DatabaseReader.removeBookmark(id)) {
-            updateRemoveListeners(id)
+    fun removeTab(id: String) {
+        scope.launch {
+            if (DatabaseReader.removeBookmark(id)) {
+                updateRemoveListeners(id)
+            }
         }
     }
 
-    fun resetServerProgress(id: String) = scope.launch(Dispatchers.IO) {
-        WebHandler.updateProgress(id, 0)
+    fun resetServerProgress(id: String) {
+        scope.launch(Dispatchers.IO) {
+            WebHandler.updateProgress(id, 0)
+        }
     }
 
     fun removeAll() {
@@ -127,9 +133,11 @@ object ReaderTabHolder {
         updateClearListeners()
     }
 
-    fun resetServerProgress(tabs: List<ReaderTab>) = scope.launch(Dispatchers.IO) {
-        for (tab in tabs)
-            launch { WebHandler.updateProgress(tab.id, 0) }
+    fun resetServerProgress(tabs: List<ReaderTab>) {
+        scope.launch(Dispatchers.IO) {
+            for (tab in tabs)
+                launch { WebHandler.updateProgress(tab.id, 0) }
+        }
     }
 
     private fun updateRemoveListeners(id: String) {
