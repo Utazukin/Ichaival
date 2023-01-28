@@ -314,7 +314,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             lifecycleScope.launch {
                 val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
                 if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
-                    ReaderTabHolder.addTab(archive, 0)
+                    ReaderTabHolder.addTab(archive, 0, requireContext())
             }
             true
         }

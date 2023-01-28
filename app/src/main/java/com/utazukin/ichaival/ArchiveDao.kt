@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import androidx.paging.PagingSource
 import androidx.room.*
 import org.json.JSONObject
@@ -172,13 +173,13 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class, ReaderTab::class], version = 2, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class], version = 3, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
     @Transaction
-    suspend fun insertAndRemove(archives: Map<String, ArchiveJson>) {
+    suspend fun insertAndRemove(archives: Map<String, ArchiveJson>, context: Context) {
         archiveDao().insertAllJson(archives.values)
 
         val allIds = archiveDao().getAllIds().toSet()
@@ -201,9 +202,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
                 archives[id]?.let { archiveDao().updateBookmark(id, it.currentPage) }
             }
             var bookmarkCount = bookmarks.size
+            val scaleType = getScaleTypePref(context)
             for ((id, archive) in archives) {
                 if (archive.currentPage > 0 && !bookmarks.contains(id)) {
-                    val tab = ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage)
+                    val tab = ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage, scaleType)
                     archiveDao().addBookmark(tab)
                 }
             }
@@ -223,6 +225,15 @@ abstract class ArchiveDatabase : RoomDatabase() {
             it.page = page
             archiveDao().updateBookmark(it)
             archiveDao().updateBookmark(it.id, page)
+            true
+        } ?: false
+    }
+
+    suspend fun updateBookmarkScaleType(id: String, scaleType: ScaleType) : Boolean {
+        val tab = archiveDao().getBookmark(id)
+        return tab?.let {
+            it.scaleType = scaleType
+            archiveDao().updateBookmark(tab)
             true
         } ?: false
     }

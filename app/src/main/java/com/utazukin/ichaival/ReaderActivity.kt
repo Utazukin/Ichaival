@@ -76,7 +76,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var autoHideEnabled = true
     private var updateProgressJob: Job? = null
     private var dualPageEnabled = false
-    private var isWebtoon = true
+    private var isWebtoon = false
 
     private val dualPageAdapter by lazy { ReaderMultiFragmentAdapter() }
     private val pageAdapter by lazy { ReaderFragmentAdapter() }
@@ -116,14 +116,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-
-        currentScaleType = savedInstanceState?.getInt(SCALE_TYPE, -1).let {
-            when {
-                it is Int && it >= 0 -> ScaleType.fromInt(it)
-                else -> ScaleType.fromString(prefs.getString(getString(R.string.scale_type_pref), null), resources)
-            }
-        }
-        isWebtoon = currentScaleType == ScaleType.Webtoon
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -167,14 +159,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout, R.attr.cardBackgroundColor))
         progressStartText = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
-        if (!isWebtoon) {
-            imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
-            imagePager.offscreenPageLimit = 1
-            imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(page: Int) = onPageChanged(page)
-            } )
-            imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
-        }
 
         val bundle = intent.extras
         val arcid = bundle?.getString(ID_STRING) ?: savedInstanceState?.getString(ID_STRING) ?: return
@@ -200,30 +184,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
         })
 
-        if (isWebtoon) {
-            webtoonRecycler = findViewById(R.id.webtoon_recycler)
-            val readerLayout: FrameLayout = findViewById(R.id.reader_frame_layout)
-            with (readerLayout) {
-                visibility = View.GONE
-                removeView(appBar)
-                removeView(pageSeekLayout)
-            }
-            with(webtoonRecycler) {
-                layoutManager = LinearLayoutManager(this@ReaderActivity)
-                adapter = webtoonAdapter
-                isFocusable = false
-                itemAnimator = null
-                tapListener = ::onFragmentTap
-                pageChangeListener = ::onPageChanged
-                longPressListener = { onFragmentLongPress() }
-            }
-
-            webtoonLayout = findViewById(R.id.webtoon_layout)
-            with(webtoonLayout) {
-                visibility = View.VISIBLE
-                addView(appBar)
-                addView(pageSeekLayout)
-            }
+        val savedType = savedInstanceState?.getInt(SCALE_TYPE, -1)
+        if (savedType != null && savedType != -1) {
+            currentScaleType = ScaleType.fromInt(savedType)
+            isWebtoon = currentScaleType == ScaleType.Webtoon
+            initializePager(appBar)
         }
 
         progressEndText = findViewById(R.id.txt_progress_end)
@@ -231,6 +196,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(arcid) }
             archive?.let {
                 supportActionBar?.title = it.title
+
+                if (savedType == null || savedType == -1) {
+                    currentScaleType = when {
+                        withContext(Dispatchers.IO) { ReaderTabHolder.isTabbed(it.id) } -> ReaderTabHolder.getTab(it.id)!!.scaleType
+                        else -> ScaleType.fromString(prefs.getString(getString(R.string.scale_type_pref), null), resources)
+                    }
+                    isWebtoon = currentScaleType == ScaleType.Webtoon
+                    initializePager(appBar)
+                }
 
                 if (savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
                     launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
@@ -270,6 +244,41 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     fun registerPage(listener: PageFragment) = pageFragments.add(listener)
 
     fun unregisterPage(listener: PageFragment) = pageFragments.remove(listener)
+
+    private fun initializePager(appBar: Toolbar) {
+        if (!isWebtoon) {
+            imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
+            imagePager.offscreenPageLimit = 1
+            imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(page: Int) = onPageChanged(page)
+            } )
+            imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+        } else {
+            webtoonRecycler = findViewById(R.id.webtoon_recycler)
+            val readerLayout: FrameLayout = findViewById(R.id.reader_frame_layout)
+            with (readerLayout) {
+                visibility = View.GONE
+                removeView(appBar)
+                removeView(pageSeekLayout)
+            }
+            with(webtoonRecycler) {
+                layoutManager = LinearLayoutManager(this@ReaderActivity)
+                adapter = webtoonAdapter
+                isFocusable = false
+                itemAnimator = null
+                tapListener = ::onFragmentTap
+                pageChangeListener = ::onPageChanged
+                longPressListener = { onFragmentLongPress() }
+            }
+
+            webtoonLayout = findViewById(R.id.webtoon_layout)
+            with(webtoonLayout) {
+                visibility = View.VISIBLE
+                addView(appBar)
+                addView(pageSeekLayout)
+            }
+        }
+    }
 
     private fun jumpToPage(page: Int) {
         if (isWebtoon)
@@ -434,6 +443,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun updateScaleType(type: ScaleType) {
         if (type != currentScaleType) {
+            archive?.run { launch { ReaderTabHolder.updateScaleTypeIfTabbed(id, type) } }
             if (type == ScaleType.Webtoon || currentScaleType == ScaleType.Webtoon) {
                 currentScaleType = type
                 recreate()
@@ -520,7 +530,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     launch {
                         if (!ReaderTabHolder.isTabbed(it.id)) {
-                            ReaderTabHolder.addTab(it, currentPage)
+                            ReaderTabHolder.addTab(it, currentPage, this@ReaderActivity)
                             setTabbedIcon(item, true)
                         } else {
                             ReaderTabHolder.removeTab(it.id)

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -112,6 +112,12 @@ fun SharedPreferences?.castStringPrefToLong(pref: String, defaultValue: Long = 0
 fun SharedPreferences?.castStringPrefToFloat(pref: String, defaultValue: Float = 0f) : Float {
     val stringPref = this?.getString(pref, null)
     return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toFloat()
+}
+
+fun getScaleTypePref(context: Context) : ScaleType {
+    val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+    val scaleTypeString = prefs.getString(context.resources.getString(R.string.scale_type_pref), null)
+    return ScaleType.fromString(scaleTypeString, context.resources)
 }
 
 fun Context.getCustomTheme() : String {

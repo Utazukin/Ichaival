@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -218,7 +218,7 @@ class ArchiveRecyclerViewAdapter(
             }
             R.id.bookmark_select_item -> {
                 val archives = selectedArchives.keys.toList()
-                scope.launch { ReaderTabHolder.addTabs(archives) }
+                scope.launch { ReaderTabHolder.addTabs(archives, context) }
                 mode?.finish()
             }
             R.id.category_select_item -> {

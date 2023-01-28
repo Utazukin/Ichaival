@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.viewModelScope
@@ -28,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
     private var initialized = false
@@ -42,6 +44,8 @@ object ReaderTabHolder {
 
     suspend fun updatePageIfTabbed(id: String, page: Int) : Boolean = DatabaseReader.updateBookmark(id, page)
 
+    suspend fun updateScaleTypeIfTabbed(id: String, scaleType: ScaleType) = DatabaseReader.updateBookmark(id, scaleType)
+
     fun registerRemoveListener(listener: TabRemovedListener) = removeListeners.add(listener)
 
     fun unregisterRemoveListener(listener: TabRemovedListener) = removeListeners.remove(listener)
@@ -54,9 +58,9 @@ object ReaderTabHolder {
 
     fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
 
-    suspend fun addTab(archive: Archive, page: Int) {
+    suspend fun addTab(archive: Archive, page: Int, context: Context) {
         if (!isTabbed(archive.id)) {
-            val tab = ReaderTab(archive.id, archive.title, tabCount, page)
+            val tab = ReaderTab(archive.id, archive.title, tabCount, page, getScaleTypePref(context))
             archive.currentPage = page
             if (page > 0)
                 WebHandler.updateProgress(archive.id, page)
@@ -70,11 +74,12 @@ object ReaderTabHolder {
         updateAddListeners(tab.id)
     }
 
-    suspend fun addTabs(archives: List<Archive>) {
+    suspend fun addTabs(archives: List<Archive>, context: Context) {
         val ids = buildList(archives.size) {
+            val scaleType = getScaleTypePref(context)
             for (archive in archives) {
                 if (!isTabbed(archive.id)) {
-                    val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
+                    val tab = ReaderTab(archive.id, archive.title, tabCount, 0, scaleType)
                     archive.currentPage = 0
                     DatabaseReader.addBookmark(tab)
                     add(archive.id)
@@ -93,10 +98,8 @@ object ReaderTabHolder {
         updateAddListeners(tabs.map { it.id })
     }
 
-    fun createTab(id: String, title: String, page: Int) = ReaderTab(id, title, tabCount, page)
-
-    suspend fun addTab(id: String, page: Int) {
-        DatabaseReader.getArchive(id)?.let { addTab(it, page) }
+    suspend fun addTab(id: String, page: Int, context: Context) {
+        DatabaseReader.getArchive(id)?.let { addTab(it, page, context) }
     }
 
     fun initialize(context: FragmentActivity) {
@@ -108,6 +111,8 @@ object ReaderTabHolder {
     }
 
     suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)
+
+    suspend fun getTab(id: String) = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmark(id) }
 
     fun removeTab(id: String) = scope.launch {
         if (DatabaseReader.removeBookmark(id)) {
@@ -155,6 +160,7 @@ data class ReaderTab(
     @PrimaryKey val id: String,
     @ColumnInfo val title: String,
     @ColumnInfo var index: Int,
-    @ColumnInfo(name = "currentPage") var page: Int)
+    @ColumnInfo(name = "currentPage") var page: Int,
+    @ColumnInfo var scaleType: ScaleType)
 
 

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,9 +52,16 @@ object DatabaseReader {
 
     fun init(context: Context) {
         if (!this::database.isInitialized) {
+            val MIGRATION_2_3 = object: Migration(2, 3) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    val scaleTypeString = getScaleTypePref(context).name
+                    database.execSQL("alter table readertab add column scaleType TEXT not null default $scaleTypeString")
+                }
+            }
             database =
                 Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db")
                     .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_2_3)
                     .build()
         }
     }
@@ -68,7 +75,7 @@ object DatabaseReader {
             archiveJson?.let {
                 jsonFile.writeText(it.toString())
                 val serverArchives = readArchiveList(it)
-                database.insertAndRemove(serverArchives)
+                database.insertAndRemove(serverArchives, context)
             }
             WebHandler.updateRefreshing(false)
             isDirty = false
@@ -144,6 +151,8 @@ object DatabaseReader {
     }
 
     suspend fun updateBookmark(id: String, page: Int) : Boolean = database.updateBookmark(id, page)
+
+    suspend fun updateBookmark(id: String, scaleType: ScaleType) = withContext(Dispatchers.IO) { database.updateBookmarkScaleType(id, scaleType) }
 
     suspend fun addBookmark(tab: ReaderTab) = withContext(Dispatchers.IO) { database.addBookmark(tab) }
 

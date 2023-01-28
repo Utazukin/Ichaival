@@ -298,7 +298,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                             ReaderTabHolder.resetServerProgress(it)
                             text = getString(R.string.bookmark)
                         } else {
-                            ReaderTabHolder.addTab(it, 0)
+                            ReaderTabHolder.addTab(it, 0, requireContext())
                             text = getString(R.string.unbookmark)
                         }
                     }
