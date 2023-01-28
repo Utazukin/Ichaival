@@ -343,14 +343,14 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun downloadThumb(id: String, page: Int): String? {
+    suspend fun downloadThumb(id: String, page: Int): String? = withContext(Dispatchers.IO) {
         if (!canConnect() || !ServerManager.checkVersionAtLeast(0, 8, 4))
-            return null
+            return@withContext null
 
         val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).await()
-        return response.use {
+        response.use {
             when {
                 it.code == HttpURLConnection.HTTP_OK -> url
                 //The minion api is protected before v0.8.5, so return null if the thumbnail hasn't been generated yet

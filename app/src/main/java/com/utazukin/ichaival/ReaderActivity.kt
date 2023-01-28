@@ -233,7 +233,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
                 if (intent.getBooleanExtra(FORCE_REFRESH, false)) {
                     intent.removeExtra(FORCE_REFRESH)
-                    withContext(Dispatchers.IO) { it.extract(this@ReaderActivity, true) }
+                    it.extract(this@ReaderActivity, true)
                 }
 
                 for (listener in pageFragments)

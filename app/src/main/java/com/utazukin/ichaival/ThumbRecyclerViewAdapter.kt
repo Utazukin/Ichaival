@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,10 +36,8 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
@@ -93,7 +91,7 @@ class ThumbRecyclerViewAdapter(
         }
 
         val job = scope.launch {
-            val image = withContext(Dispatchers.Default) { archive.getThumb(context, page) }
+            val image = archive.getThumb(context, page)
 
             glide.load(image)
                 .format(DecodeFormat.PREFER_RGB_565)

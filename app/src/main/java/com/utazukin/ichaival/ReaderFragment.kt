@@ -307,7 +307,7 @@ class ReaderFragment : Fragment(), PageFragment {
         arguments?.run {
             val page = getInt(PAGE_NUM)
             lifecycleScope.launch {
-                val image = withContext(Dispatchers.IO) { archive.getPageImage(requireContext(), page) }
+                val image = archive.getPageImage(requireContext(), page)
                 if (image != null) {
                     if (createViewCalled)
                         displayImage(image)

@@ -103,10 +103,10 @@ object DatabaseReader {
             listener.onDelete()
     }
 
-    suspend fun getPageList(context: Context, id: String, forceFull: Boolean = false) : List<String> {
+    suspend fun getPageList(context: Context, id: String, forceFull: Boolean = false) : List<String> = withContext(Dispatchers.IO) {
         val mutex = extractingMutex.withLock { extractingArchives.getOrPut(id) { Mutex() } }
 
-        return mutex.withLock {
+        mutex.withLock {
             archivePageMap.getOrPut(id) {
                 WebHandler.getPageList(WebHandler.extractArchive(context, id, forceFull)).also {
                     database.archiveDao().updatePageCount(id, it.size)

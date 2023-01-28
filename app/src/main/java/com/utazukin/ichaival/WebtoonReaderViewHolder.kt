@@ -243,7 +243,7 @@ class WebtoonReaderViewHolder(private val context: Context,
 
     override fun onArchiveLoad(archive: Archive) {
         val job = activity.lifecycleScope.launch {
-            val image = withContext(Dispatchers.IO) { archive.getPageImage(context, page) }
+            val image = archive.getPageImage(context, page)
             if (image != null) {
                 displayImage(image)
             } else

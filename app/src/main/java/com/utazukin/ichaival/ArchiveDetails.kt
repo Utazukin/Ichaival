@@ -147,7 +147,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         DatabaseReader.getArchive(id)?.let {
             menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
             if (it.numPages <= 0)
-                withContext(Dispatchers.IO) { it.extract(this@ArchiveDetails) }
+                it.extract(this@ArchiveDetails)
             pageCount = it.numPages
             if (pager.currentItem == 1)
                 supportActionBar?.subtitle = resources.getQuantityString(R.plurals.page_count, pageCount)
