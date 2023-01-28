@@ -45,26 +45,28 @@ object ServerManager {
     private var initialized = false
     private var hasPassword = false
 
-    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) = withContext(Dispatchers.IO) {
+    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
         if (initialized && !force)
-            return@withContext
+            return
 
         val infoFile = File(context.filesDir, serverInfoFilename)
-        val serverInfo = if (!useCachedInfo || force) {
-            val info = WebHandler.getServerInfo(context)
-            if (info == null) {
-                if (infoFile.exists())
-                    JSONObject(infoFile.readText())
-                else
-                    null
-            } else {
-                infoFile.writeText(info.toString())
-                info
-            }
-        } else if (infoFile.exists())
-            JSONObject(infoFile.readText())
-        else
-            null
+        val serverInfo = withContext(Dispatchers.IO) {
+            if (!useCachedInfo || force) {
+                val info = WebHandler.getServerInfo(context)
+                if (info == null) {
+                    if (infoFile.exists())
+                        JSONObject(infoFile.readText())
+                    else
+                        null
+                } else {
+                    infoFile.writeText(info.toString())
+                    info
+                }
+            } else if (infoFile.exists())
+                JSONObject(infoFile.readText())
+            else
+                null
+        }
 
         if (serverInfo != null) {
             val lanraragiVersionString = serverInfo.getString("version")
