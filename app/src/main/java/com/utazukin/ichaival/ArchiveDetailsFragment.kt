@@ -269,7 +269,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                 setPositiveButton(R.string.yes) { dialog, _ ->
                     dialog.dismiss()
                     lifecycleScope.launch {
-                        val success = withContext(Dispatchers.IO) { WebHandler.removeFromCategory(requireContext(), category.id, archiveId) }
+                        val success = WebHandler.removeFromCategory(requireContext(), category.id, archiveId)
                         if (success) {
                             catFlexLayout.removeView(catView)
                             Snackbar.make(requireView(), getString(R.string.category_removed_message, category.name), Snackbar.LENGTH_SHORT).show()

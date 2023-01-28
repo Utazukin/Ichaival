@@ -118,7 +118,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                                 setPositiveButton(R.string.yes) { dialog, _ ->
                                     dialog.dismiss()
                                     lifecycleScope.launch {
-                                        val success = withContext(Dispatchers.IO) { WebHandler.deleteArchive(it) }
+                                        val success = WebHandler.deleteArchive(it)
                                         if (success) {
                                             Toast.makeText(applicationContext, getString(R.string.deleted_archive, arc.title), Toast.LENGTH_SHORT).show()
                                             DatabaseReader.deleteArchive(it)

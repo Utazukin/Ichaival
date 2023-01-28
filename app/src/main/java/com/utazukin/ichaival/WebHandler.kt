@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun deleteArchive(archiveId: String) = deleteArchive(archiveId, true)
+    suspend fun deleteArchive(archiveId: String) = withContext(Dispatchers.IO) { deleteArchive(archiveId, true) }
 
     private suspend fun deleteArchive(archiveId: String, checkConnection: Boolean) : Boolean {
         if (checkConnection && !canConnect())
@@ -193,19 +193,19 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         } ?: false
     }
 
-    suspend fun removeFromCategory(context: Context, categoryId: String, archiveId: String) : Boolean {
+    suspend fun removeFromCategory(context: Context, categoryId: String, archiveId: String) : Boolean = withContext(Dispatchers.IO) {
         if (!canConnect(context, false))
-            return false
+            return@withContext false
 
         val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
         val connection = createServerConnection(url, "DELETE")
         val response = httpClient.newCall(connection).await(context.getString(R.string.category_remove_fail_message))
-        return response.use { it.isSuccessful }
+        response.use { it.isSuccessful }
     }
 
-    suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false) : JSONObject? {
+    suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false) : JSONObject? = withContext(Dispatchers.IO) {
         if (!canConnect())
-            return null
+            return@withContext null
 
         val url = "$serverLocation$categoryPath"
         val builder = FormBody.Builder().addEncoded("name", name)
@@ -217,28 +217,27 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         response.use {
             if (!it.isSuccessful) {
                 notifyError(it.body?.run { JSONObject(suspendString()) }?.optString("error") ?: context.getString(R.string.category_create_fail_message))
-                return null
-            }
-
-            return it.body?.run { JSONObject(suspendString()) }
+                null
+            } else
+                it.body?.run { JSONObject(suspendString()) }
         }
     }
 
-    suspend fun addToCategory(context: Context, categoryId: String, archiveId: String) : Boolean {
+    suspend fun addToCategory(context: Context, categoryId: String, archiveId: String) : Boolean = withContext(Dispatchers.IO) {
         if (!canConnect(context))
-            return false
+            return@withContext false
 
         val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
         val response = httpClient.newCall(connection).await(context.getString(R.string.category_add_fail_message))
-        return response.use { it.isSuccessful }
+        response.use { it.isSuccessful }
     }
 
-    suspend fun addToCategory(context: Context, categoryId: String, archiveIds: List<String>) : Boolean {
+    suspend fun addToCategory(context: Context, categoryId: String, archiveIds: List<String>) : Boolean = withContext(Dispatchers.IO) {
         if (!canConnect(context))
-            return false
+            return@withContext false
 
-        return coroutineScope {
+        coroutineScope {
             val responses = List(archiveIds.size) { i ->
                 val url = "$serverLocation${modifyCatPath.format(categoryId, archiveIds[i])}"
                 val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
@@ -378,21 +377,21 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return jobComplete
     }
 
-    suspend fun downloadThumb(context: Context, id: String, thumbDir: File, page: Int? = null) : File? {
+    suspend fun downloadThumb(context: Context, id: String, thumbDir: File, page: Int? = null) : File? = withContext(Dispatchers.IO) {
         if (!canConnect(context, page == null))
-            return null
+            return@withContext null
 
         val url = "$serverLocation${thumbPath.format(id)}"
         if (page != null) {
             val updateUrl = url + "?page=${page + 1}"
             val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
             val errorMessage = context.getString(R.string.thumb_set_fail_message)
-            tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }?.close() ?: return null
+            tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }?.close() ?: return@withContext null
         }
 
         val connection = createServerConnection(url)
-        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() } ?: return null
-        return response.use {
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() } ?: return@withContext null
+        response.use {
             if (!it.isSuccessful)
                 null
             else {
@@ -531,18 +530,18 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         httpClient.newCall(connection).await(autoClose = true)
     }
 
-    suspend fun downloadArchiveList(context: Context) : JSONArray? {
+    suspend fun downloadArchiveList(context: Context) : JSONArray? = withContext(Dispatchers.IO) {
         if (!canConnect(context))
-            return null
+            return@withContext null
 
         val errorMessage = context.getString(R.string.failed_to_connect_message)
         val url = "$serverLocation$archiveListPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
-        return response?.use {
+        response?.use {
             if (!it.isSuccessful) {
                 handleErrorMessage(it.code, errorMessage)
-                return null
+                return@withContext null
             }
 
             val jsonString = it.body?.suspendString()
@@ -551,7 +550,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 if (json == null)
                     notifyError(JSONObject(jsonString).getString("error")) //Invalid api key
 
-                return json
+                return@withContext json
             }
 
             notifyError(context.getString(R.string.get_archives_fail_message))

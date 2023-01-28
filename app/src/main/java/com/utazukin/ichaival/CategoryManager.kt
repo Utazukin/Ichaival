@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ object CategoryManager {
     }
 
     suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false) : ArchiveCategory? {
-        val json = withContext(Dispatchers.IO) { WebHandler.createCategory(context, name, search, pinned) }
+        val json = WebHandler.createCategory(context, name, search, pinned)
         return json?.run {
             if (search.isNullOrBlank())
                 StaticCategory(name, getString("category_id"), pinned, emptyList())

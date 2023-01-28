@@ -71,7 +71,7 @@ object DatabaseReader {
         if (forceUpdate || checkDirty(cacheDir)) {
             WebHandler.updateRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
-            val archiveJson = withContext(Dispatchers.IO) { WebHandler.downloadArchiveList(context) }
+            val archiveJson = WebHandler.downloadArchiveList(context)
             archiveJson?.let {
                 jsonFile.writeText(it.toString())
                 val serverArchives = readArchiveList(it)
@@ -211,7 +211,7 @@ object DatabaseReader {
 
         var image: File? = File(thumbDir, "$id.jpg")
         if (image?.exists() == false)
-            image = withContext(Dispatchers.IO) { WebHandler.downloadThumb(context, id, thumbDir, page) }
+            image = WebHandler.downloadThumb(context, id, thumbDir, page)
 
         return image?.run { Pair(path, lastModified()) } ?: Pair(null, -1)
     }
