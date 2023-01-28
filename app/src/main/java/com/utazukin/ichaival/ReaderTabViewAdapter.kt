@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
@@ -53,9 +55,7 @@ class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdap
             holder.titleView.text = item.title
             holder.pageView.text = (item.page + 1).toString()
             jobs[holder] = activityScope.launch {
-                val (thumbPath, modifiedTime) = withContext(Dispatchers.Default) {
-                    DatabaseReader.getArchiveImage(item.id, activity)
-                }
+                val (thumbPath, modifiedTime) = DatabaseReader.getArchiveImage(item.id, activity)
                 thumbPath?.let {
                     glideManager
                         .load(it)

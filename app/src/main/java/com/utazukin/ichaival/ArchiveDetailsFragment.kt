@@ -45,10 +45,8 @@ import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.DateFormat
 
 private const val ARCHIVE_ID = "arcid"
@@ -94,7 +92,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                                 thumbLoadJob?.cancel()
                                 thumbView.setImageDrawable(null)
                                 lifecycleScope.launch {
-                                    val (thumbPath, modifiedTime) = withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(archiveId, requireContext()) }
+                                    val (thumbPath, modifiedTime) = DatabaseReader.refreshThumbnail(archiveId, requireContext())
                                     thumbPath?.let { path ->
                                         Glide.with(thumbView).load(path).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
                                     }
@@ -108,7 +106,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
 
         lifecycleScope.launch {
-            val archive = withContext(Dispatchers.Default) { DatabaseReader.getArchive(archiveId!!) }
+            val archive = DatabaseReader.getArchive(archiveId!!)
             setUpDetailView(view, archive)
 
         }
@@ -320,7 +318,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         titleView.text = archive.title
 
         thumbLoadJob = lifecycleScope.launch {
-            val (thumbPath, modifiedTime) = withContext(Dispatchers.Default) { DatabaseReader.getArchiveImage(archive, requireContext()) }
+            val (thumbPath, modifiedTime) = DatabaseReader.getArchiveImage(archive, requireContext())
             thumbPath?.let {
                 Glide.with(thumbView).load(it).format(DecodeFormat.PREFER_RGB_565).
                     addListener(object: RequestListener<Drawable> {

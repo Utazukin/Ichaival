@@ -196,7 +196,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
         progressEndText = findViewById(R.id.txt_progress_end)
         launch {
-            archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(arcid) }
+            archive = DatabaseReader.getArchive(arcid)
             archive?.let {
                 supportActionBar?.title = it.title
 
@@ -497,7 +497,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
             R.id.thumb_button -> archive?.let {
                 launch {
-                    withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(it.id, this@ReaderActivity, currentPage) }
+                    DatabaseReader.refreshThumbnail(it.id, this@ReaderActivity, currentPage)
                     Toast.makeText(this@ReaderActivity, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
                 }
             }

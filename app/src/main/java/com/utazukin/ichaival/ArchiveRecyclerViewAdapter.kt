@@ -44,7 +44,6 @@ import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 enum class ListViewType {
     Card,
@@ -126,9 +125,7 @@ class ArchiveRecyclerViewAdapter(
         getItem(position)?.let {
             holder.archiveName.text = it.title
             val job = scope.launch(Dispatchers.Main) {
-                val (imagePath, modifiedTime) = withContext(Dispatchers.Default) {
-                    DatabaseReader.getArchiveImage(it, holder.mView.context)
-                }
+                val (imagePath, modifiedTime) = DatabaseReader.getArchiveImage(it, holder.mView.context)
                 imagePath?.let { path ->
                     var builder = glideManager.load(path).format(DecodeFormat.PREFER_RGB_565).transition(DrawableTransitionOptions.withCrossFade()).signature(ObjectKey(modifiedTime))
                     if (listViewType == ListViewType.Cover)

@@ -37,9 +37,7 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private const val ARCHIVE_PARAM = "archive"
 
@@ -68,7 +66,7 @@ class TagDialogFragment : DialogFragment() {
             arguments?.run {
                 getString(ARCHIVE_PARAM)?.let {
                     lifecycleScope.launch {
-                        val archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }
+                        val archive = DatabaseReader.getArchive(it)
                         if (archive != null)
                             setUpTags(archive)
                     }

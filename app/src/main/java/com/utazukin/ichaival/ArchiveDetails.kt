@@ -111,7 +111,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             R.id.delete_archive_item -> {
                 archiveId?.let {
                     launch {
-                        withContext(Dispatchers.IO) { DatabaseReader.getArchive(it) }?.let { arc ->
+                        DatabaseReader.getArchive(it)?.let { arc ->
                             val builder = AlertDialog.Builder(this@ArchiveDetails).apply {
                                 setTitle(R.string.delete_archive_item)
                                 setMessage(getString(R.string.delete_archive_prompt, arc.title))
@@ -144,8 +144,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     }
 
     suspend fun extractArchive(id: String) {
-        val a = withContext(Dispatchers.IO) { DatabaseReader.getArchive(id) }
-        a?.let {
+        DatabaseReader.getArchive(id)?.let {
             menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
             if (it.numPages <= 0)
                 withContext(Dispatchers.IO) { it.extract(this@ArchiveDetails) }
@@ -208,7 +207,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                 .setTitle(R.string.use_thumb)
                 .setPositiveButton(R.string.yes) { d, _ ->
                     launch {
-                        withContext(Dispatchers.IO) { DatabaseReader.refreshThumbnail(it, this@ArchiveDetails, page) }
+                        DatabaseReader.refreshThumbnail(it, this@ArchiveDetails, page)
                         Toast.makeText(this@ArchiveDetails, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
                     }
                     d.dismiss()

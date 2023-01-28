@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,9 +32,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.math.floor
 
 private const val ARCHIVE_ID = "arcid"
@@ -71,7 +69,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         pagePicker = view.findViewById(R.id.page_picker_preview)
 
         lifecycleScope.launch {
-            archive = withContext(Dispatchers.IO) { DatabaseReader.getArchive(archiveId!!) }
+            archive = DatabaseReader.getArchive(archiveId!!)
             pagePicker.run {
                 minValue = 1
                 maxValue = archive?.numPages ?: 1
