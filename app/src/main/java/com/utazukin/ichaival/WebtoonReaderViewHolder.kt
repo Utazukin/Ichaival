@@ -54,8 +54,6 @@ class WebtoonReaderViewHolder(private val context: Context,
     private val topLayout: TouchToggleLayout = view.findViewById(R.id.reader_layout)
     private val failedMessage: TextView
     private val jobs = mutableListOf<Job>()
-    private val currentScaleType
-        get() = activity.currentScaleType
 
     init {
         progressBar.isIndeterminate = true
@@ -149,7 +147,7 @@ class WebtoonReaderViewHolder(private val context: Context,
                                 setOnClickListener(null)
                                 setOnLongClickListener(null)
                             }
-                            updateScaleType(it, currentScaleType)
+                            updateScaleType(it)
                         }
                         override fun onImageLoadError(e: Exception?) {
                             showErrorMessage()
@@ -212,33 +210,17 @@ class WebtoonReaderViewHolder(private val context: Context,
         imagePath?.let { displayImage(it) }
     }
 
-    private fun updateScaleType(newScale: ScaleType) = updateScaleType(mainImage, newScale)
+    private fun updateScaleType() = updateScaleType(mainImage)
 
-    private fun updateScaleType(imageView: View?, scaleType: ScaleType?, useOppositeOrientation: Boolean = false) {
+    private fun updateScaleType(imageView: View?) = imageView?.post {
         when (imageView) {
             is SubsamplingScaleImageView -> {
-                when (scaleType) {
-                    ScaleType.FitPage, null -> {
-                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
-                        imageView.resetScaleAndCenter()
-                    }
-                    ScaleType.FitHeight -> {
-                        val vPadding = imageView.paddingBottom - imageView.paddingTop
-                        val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height
-                        val minScale = (viewHeight - vPadding) / imageView.sHeight.toFloat()
-                        imageView.minScale = minScale
-                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
-                        imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
-                    }
-                    ScaleType.FitWidth, ScaleType.Webtoon -> {
-                        val hPadding = imageView.paddingLeft - imageView.paddingRight
-                        val viewWidth = if (useOppositeOrientation) imageView.height else imageView.width
-                        val minScale = (viewWidth - hPadding) / imageView.sWidth.toFloat()
-                        imageView.minScale = minScale
-                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
-                        imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
-                    }
-                }
+                val hPadding = imageView.paddingLeft - imageView.paddingRight
+                val viewWidth = imageView.width
+                val minScale = (viewWidth - hPadding) / imageView.sWidth.toFloat()
+                imageView.minScale = minScale
+                imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+                imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
             }
             is PhotoView -> {
                 //TODO
@@ -248,12 +230,16 @@ class WebtoonReaderViewHolder(private val context: Context,
 
     fun onDetach() {
         jobs.forEach { it.cancel() }
+        jobs.clear()
         (activity as? ReaderActivity)?.unregisterPage(this)
         (mainImage as? PhotoView)?.setImageBitmap(null)
         (mainImage as? SubsamplingScaleImageView)?.recycle()
+        imagePath = null
     }
 
-    override fun onScaleTypeChange(scaleType: ScaleType) = updateScaleType(scaleType)
+    override fun onScaleTypeChange(scaleType: ScaleType) {
+        updateScaleType()
+    }
 
     override fun onArchiveLoad(archive: Archive) {
         val job = activity.lifecycleScope.launch {
