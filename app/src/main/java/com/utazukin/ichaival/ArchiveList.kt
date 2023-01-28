@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -111,7 +111,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        if (outState.getBoolean(REFRESH_KEY))
+        if (!outState.getBoolean(REFRESH_KEY))
             super.onSaveInstanceState(outState)
         else
             outState.remove(REFRESH_KEY)
