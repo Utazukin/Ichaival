@@ -542,7 +542,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
             R.id.open_settings -> openSettings()
             android.R.id.home -> {
-                onBackPressed()
+                onBackPressedDispatcher.onBackPressed()
                 return true
             }
         }
