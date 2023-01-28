@@ -31,16 +31,12 @@ import androidx.core.view.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.google.android.material.color.MaterialColors
-import com.google.android.material.snackbar.BaseTransientBottomBar
-import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -337,67 +333,17 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    override fun onCreateDrawer() {
-        drawerLayout = findViewById(R.id.drawer_layout)
-        drawerLayout.setStatusBarBackgroundColor(MaterialColors.getColor(drawerLayout, R.attr.colorSurface))
-        navView = drawerLayout.findViewById(R.id.nav_view)
-        val tabView: RecyclerView = findViewById(R.id.tab_view)
+    override fun handleTabSwipeLeft(tab: ReaderTab, position: Int) {
+        setResult(Activity.RESULT_OK)
+        super.handleTabSwipeLeft(tab, position)
+        finish()
+    }
+
+    override fun setupReaderTabAdapter(adapter: ReaderTabViewAdapter) {
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
-        with(tabView) {
-            layoutManager = LinearLayoutManager(context)
-            adapter = ReaderTabViewAdapter(this@ReaderActivity).also {
-                launch(Dispatchers.Default) { viewModel.bookmarks.collectLatest { data -> it.submitData(data) } }
-            }
-
-            val dividerDecoration = DividerItemDecoration(context, LinearLayoutManager.VERTICAL)
-            addItemDecoration(dividerDecoration)
+        launch(Dispatchers.Default) {
+            viewModel.bookmarks.collectLatest { data -> adapter.submitData(data) }
         }
-
-        val closeButton: ImageView = findViewById(R.id.clear_bookmark)
-        closeButton.setOnClickListener {
-            launch {
-                val bookmarks = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmarks() }
-                if (bookmarks.isNotEmpty()) {
-                    with(Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_LONG)) {
-                        ReaderTabHolder.removeAll()
-                        setAction(R.string.undo) { ReaderTabHolder.addReaderTabs(bookmarks) }
-                        addCallback(object : BaseTransientBottomBar.BaseCallback<Snackbar>() {
-                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                                super.onDismissed(transientBottomBar, event)
-                                if (event != DISMISS_EVENT_ACTION)
-                                    ReaderTabHolder.resetServerProgress(bookmarks)
-                            }
-                        })
-                        show()
-                    }
-                }
-            }
-        }
-
-        val touchHelper = BookmarkTouchHelper(this) { tab, _, direction ->
-            when (direction) {
-                ItemTouchHelper.LEFT -> {
-                    setResult(Activity.RESULT_OK)
-                    startDetailsActivity(tab.id)
-                    finish()
-                }
-                ItemTouchHelper.RIGHT -> {
-                    with(Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_LONG)) {
-                        ReaderTabHolder.removeTab(tab.id)
-                        setAction(R.string.undo) { ReaderTabHolder.insertTab(tab) }
-                        addCallback(object: BaseTransientBottomBar.BaseCallback<Snackbar>() {
-                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                                super.onDismissed(transientBottomBar, event)
-                                if (event != DISMISS_EVENT_ACTION)
-                                    ReaderTabHolder.resetServerProgress(tab.id)
-                            }
-                        })
-                        show()
-                    }
-                }
-            }
-        }
-        ItemTouchHelper(touchHelper).attachToRecyclerView(tabView)
     }
 
     override fun onStart() {

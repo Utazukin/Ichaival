@@ -77,6 +77,13 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         handleSetupText(serverSetting.isEmpty())
     }
 
+    override fun handleBackPressed() {
+        if (drawerLayout.isDrawerOpen(categoryView))
+            drawerLayout.closeDrawer(categoryView)
+        else
+            super.handleBackPressed()
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         if (CategoryManager.categories != null)
             menu.findItem(R.id.filter_menu)?.isVisible = true
@@ -152,13 +159,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                 else -> false
             }
         }
-    }
-
-    override fun onBackPressed() {
-        if (drawerLayout.isDrawerOpen(categoryView))
-            drawerLayout.closeDrawer(categoryView)
-        else
-            super.onBackPressed()
     }
 
     override fun onLongPressTab(tab: ReaderTab): Boolean {

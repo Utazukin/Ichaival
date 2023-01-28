@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,12 +21,15 @@ package com.utazukin.ichaival
 import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.drawerlayout.widget.DrawerLayout.DrawerListener
 import androidx.lifecycle.ViewModelProviders
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -48,6 +51,9 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
     private lateinit var tabView: RecyclerView
+    private val backPressedCallback = object: OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = handleBackPressed()
+    }
 
     override fun setContentView(layoutResID: Int) {
         super.setContentView(layoutResID)
@@ -67,6 +73,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         setTheme()
 
         super.onCreate(savedInstanceState)
+
+        onBackPressedDispatcher.addCallback(this, backPressedCallback)
 
         if (WebHandler.serverLocation.isNotEmpty()) {
             val refresh = intent.getBooleanExtra(REFRESH_KEY, false)
@@ -91,25 +99,25 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     protected open fun onCreateDrawer() {
         drawerLayout = findViewById(R.id.drawer_layout)
         drawerLayout.setStatusBarBackgroundColor(MaterialColors.getColor(drawerLayout, R.attr.colorSurface))
+
+        drawerLayout.addDrawerListener(object: DrawerListener{
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
+            override fun onDrawerOpened(drawerView: View) {
+                backPressedCallback.isEnabled = true
+            }
+            override fun onDrawerClosed(drawerView: View) {
+                backPressedCallback.isEnabled = false
+            }
+            override fun onDrawerStateChanged(newState: Int) {}
+        })
+
         navView = drawerLayout.findViewById(R.id.nav_view)
         tabView = findViewById(R.id.tab_view)
-        val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
         with(tabView) {
-            layoutManager = LinearLayoutManager(this@BaseActivity)
-            adapter = ReaderTabViewAdapter(this@BaseActivity).also {
-                it.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
-                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                        super.onItemRangeInserted(positionStart, itemCount)
-                        if (itemCount == 1 && positionStart == it.itemCount - 1)
-                            scrollToPosition(positionStart)
-                    }
-                })
-                launch(Dispatchers.Default) {
-                    viewModel.bookmarks.collectLatest { data -> it.submitData(data) }
-                }
-            }
+            layoutManager = LinearLayoutManager(context)
+            adapter = ReaderTabViewAdapter(this@BaseActivity).also { setupReaderTabAdapter(it) }
 
-            val dividerDecoration = MaterialDividerItemDecoration(this@BaseActivity, LinearLayoutManager.VERTICAL)
+            val dividerDecoration = MaterialDividerItemDecoration(context, LinearLayoutManager.VERTICAL)
             addItemDecoration(dividerDecoration)
         }
 
@@ -136,10 +144,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
 
         val touchHelper = BookmarkTouchHelper(this) { tab, position, direction ->
             when (direction) {
-                ItemTouchHelper.LEFT -> {
-                    tabView.adapter?.notifyItemChanged(position)
-                    startDetailsActivity(tab.id)
-                }
+                ItemTouchHelper.LEFT -> handleTabSwipeLeft(tab, position)
                 ItemTouchHelper.RIGHT -> {
                     with(Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_LONG)) {
                         ReaderTabHolder.removeTab(tab.id)
@@ -159,11 +164,29 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         ItemTouchHelper(touchHelper).attachToRecyclerView(tabView)
     }
 
-    override fun onBackPressed() {
+    protected open fun handleTabSwipeLeft(tab: ReaderTab, position: Int) {
+        tabView.adapter?.notifyItemChanged(position)
+        startDetailsActivity(tab.id)
+    }
+
+    protected open fun setupReaderTabAdapter(adapter: ReaderTabViewAdapter) {
+        adapter.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                super.onItemRangeInserted(positionStart, itemCount)
+                if (itemCount == 1 && positionStart == adapter.itemCount - 1)
+                    tabView.scrollToPosition(positionStart)
+            }
+        })
+
+        val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
+        launch(Dispatchers.Default) {
+            viewModel.bookmarks.collectLatest { data -> adapter.submitData(data) }
+        }
+    }
+
+    protected open fun handleBackPressed() {
         if (drawerLayout.isDrawerOpen(navView))
             drawerLayout.closeDrawer(navView)
-        else
-            super.onBackPressed()
     }
 
     override fun onStart() {
