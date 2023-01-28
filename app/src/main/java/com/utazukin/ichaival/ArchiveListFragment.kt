@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -425,7 +425,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 !searchView.query.isNullOrEmpty() -> {
                     searchView.query?. let {
                         val results = withContext(Dispatchers.IO) {
-                            WebHandler.searchServer(it, newCheckBox.isChecked, sortMethod, desc)
+                            WebHandler.searchServer(it, newCheckBox.isChecked, method, desc)
                         }
                         getViewModel<SearchViewModel>().filter(results)
                     }
