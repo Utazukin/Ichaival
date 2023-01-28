@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.content.Context
 import androidx.paging.PagingSource
 import androidx.room.*
 import org.json.JSONObject
@@ -179,7 +178,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
     @Transaction
-    suspend fun insertAndRemove(archives: Map<String, ArchiveJson>, context: Context) {
+    suspend fun insertAndRemove(archives: Map<String, ArchiveJson>) {
         archiveDao().insertAllJson(archives.values)
 
         val allIds = archiveDao().getAllIds().toSet()
@@ -202,10 +201,9 @@ abstract class ArchiveDatabase : RoomDatabase() {
                 archives[id]?.let { archiveDao().updateBookmark(id, it.currentPage) }
             }
             var bookmarkCount = bookmarks.size
-            val scaleType = getScaleTypePref(context)
             for ((id, archive) in archives) {
                 if (archive.currentPage > 0 && !bookmarks.contains(id)) {
-                    val tab = ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage, scaleType)
+                    val tab = ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage)
                     archiveDao().addBookmark(tab)
                 }
             }

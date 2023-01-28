@@ -218,7 +218,7 @@ class ArchiveRecyclerViewAdapter(
             }
             R.id.bookmark_select_item -> {
                 val archives = selectedArchives.keys.toList()
-                scope.launch { ReaderTabHolder.addTabs(archives, context) }
+                scope.launch { ReaderTabHolder.addTabs(archives) }
                 mode?.finish()
             }
             R.id.category_select_item -> {

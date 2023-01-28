@@ -20,8 +20,11 @@ package com.utazukin.ichaival
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Bundle
 import android.view.*
 import android.widget.*
@@ -198,10 +201,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 supportActionBar?.title = it.title
 
                 if (savedType == null || savedType == -1) {
-                    currentScaleType = when {
-                        withContext(Dispatchers.IO) { ReaderTabHolder.isTabbed(it.id) } -> ReaderTabHolder.getTab(it.id)!!.scaleType
-                        else -> ScaleType.fromString(prefs.getString(getString(R.string.scale_type_pref), null), resources)
-                    }
+                    val bookmark = ReaderTabHolder.getTab(it.id)
+                    currentScaleType = bookmark?.scaleType ?: getScaleTypePref(prefs, resources)
                     isWebtoon = currentScaleType == ScaleType.Webtoon
                     initializePager(appBar)
                 }
@@ -278,6 +279,16 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 addView(pageSeekLayout)
             }
         }
+    }
+
+    private fun getScaleTypePref(context: Context) : ScaleType {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        return getScaleTypePref(prefs, context.resources)
+    }
+
+    private fun getScaleTypePref(prefs: SharedPreferences, resources: Resources) : ScaleType {
+        val scaleTypeString = prefs.getString(resources.getString(R.string.scale_type_pref), null)
+        return ScaleType.fromString(scaleTypeString, resources)
     }
 
     private fun jumpToPage(page: Int) {
@@ -530,7 +541,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     launch {
                         if (!ReaderTabHolder.isTabbed(it.id)) {
-                            ReaderTabHolder.addTab(it, currentPage, this@ReaderActivity)
+                            val defaultScaleType = getScaleTypePref(this@ReaderActivity)
+                            val scaleType = if (currentScaleType != defaultScaleType) currentScaleType else null
+                            ReaderTabHolder.addTab(it, currentPage, scaleType)
                             setTabbedIcon(item, true)
                         } else {
                             ReaderTabHolder.removeTab(it.id)

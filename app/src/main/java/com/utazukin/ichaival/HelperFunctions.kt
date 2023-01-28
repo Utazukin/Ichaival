@@ -114,12 +114,6 @@ fun SharedPreferences?.castStringPrefToFloat(pref: String, defaultValue: Float =
     return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toFloat()
 }
 
-fun getScaleTypePref(context: Context) : ScaleType {
-    val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-    val scaleTypeString = prefs.getString(context.resources.getString(R.string.scale_type_pref), null)
-    return ScaleType.fromString(scaleTypeString, context.resources)
-}
-
 fun Context.getCustomTheme() : String {
     val prefs = PreferenceManager.getDefaultSharedPreferences(this)
     return prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme)).toString()

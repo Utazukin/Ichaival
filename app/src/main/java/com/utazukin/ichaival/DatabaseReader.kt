@@ -47,17 +47,17 @@ object DatabaseReader {
         }
     }
 
+    private val MIGRATION_2_3 = object: Migration(2, 3) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("alter table readertab add column scaleType TEXT")
+        }
+    }
+
     lateinit var database: ArchiveDatabase
         private set
 
     fun init(context: Context) {
         if (!this::database.isInitialized) {
-            val MIGRATION_2_3 = object: Migration(2, 3) {
-                override fun migrate(database: SupportSQLiteDatabase) {
-                    val scaleTypeString = getScaleTypePref(context).name
-                    database.execSQL("alter table readertab add column scaleType TEXT not null default $scaleTypeString")
-                }
-            }
             database =
                 Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db")
                     .addMigrations(MIGRATION_1_2)
@@ -75,7 +75,7 @@ object DatabaseReader {
             archiveJson?.let {
                 jsonFile.writeText(it.toString())
                 val serverArchives = readArchiveList(it)
-                database.insertAndRemove(serverArchives, context)
+                database.insertAndRemove(serverArchives)
             }
             WebHandler.updateRefreshing(false)
             isDirty = false

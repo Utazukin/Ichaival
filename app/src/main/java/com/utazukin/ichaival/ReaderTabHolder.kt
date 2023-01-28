@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.viewModelScope
@@ -58,9 +57,9 @@ object ReaderTabHolder {
 
     fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
 
-    suspend fun addTab(archive: Archive, page: Int, context: Context) {
+    suspend fun addTab(archive: Archive, page: Int, scaleType: ScaleType? = null) {
         if (!isTabbed(archive.id)) {
-            val tab = ReaderTab(archive.id, archive.title, tabCount, page, getScaleTypePref(context))
+            val tab = ReaderTab(archive.id, archive.title, tabCount, page, scaleType)
             archive.currentPage = page
             if (page > 0)
                 WebHandler.updateProgress(archive.id, page)
@@ -74,12 +73,11 @@ object ReaderTabHolder {
         updateAddListeners(tab.id)
     }
 
-    suspend fun addTabs(archives: List<Archive>, context: Context) {
+    fun addTabs(archives: List<Archive>) = scope.launch {
         val ids = buildList(archives.size) {
-            val scaleType = getScaleTypePref(context)
             for (archive in archives) {
                 if (!isTabbed(archive.id)) {
-                    val tab = ReaderTab(archive.id, archive.title, tabCount, 0, scaleType)
+                    val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
                     archive.currentPage = 0
                     DatabaseReader.addBookmark(tab)
                     add(archive.id)
@@ -98,8 +96,8 @@ object ReaderTabHolder {
         updateAddListeners(tabs.map { it.id })
     }
 
-    suspend fun addTab(id: String, page: Int, context: Context) {
-        DatabaseReader.getArchive(id)?.let { addTab(it, page, context) }
+    suspend fun addTab(id: String, page: Int) {
+        DatabaseReader.getArchive(id)?.let { addTab(it, page) }
     }
 
     fun initialize(context: FragmentActivity) {
@@ -161,6 +159,6 @@ data class ReaderTab(
     @ColumnInfo val title: String,
     @ColumnInfo var index: Int,
     @ColumnInfo(name = "currentPage") var page: Int,
-    @ColumnInfo var scaleType: ScaleType)
+    @ColumnInfo var scaleType: ScaleType? = null)
 
 
