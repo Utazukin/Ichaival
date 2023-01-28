@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,14 +40,14 @@ abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
         DatabaseReader.registerDeleteListener(this)
     }
 
-    suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? {
+    suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? = withContext(Dispatchers.IO) {
         var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id }.toSet())
 
         val randId = data.randomOrNull()
-        return if (randId != null) archiveDao.getArchive(randId) else null
+        if (randId != null) archiveDao.getArchive(randId) else null
     }
 
     abstract fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false)

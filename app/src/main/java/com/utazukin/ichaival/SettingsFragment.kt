@@ -167,13 +167,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<Preference>(getString(R.string.temp_folder_pref))?.run {
             if (ServerManager.canEdit) {
                 setOnPreferenceClickListener {
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        WebHandler.clearTempFolder(requireContext())
+                    lifecycleScope.launch {
+                        launch { WebHandler.clearTempFolder(requireContext()) }
                         if (!ServerManager.checkVersionAtLeast(0, 8, 2))
                             DatabaseReader.invalidateImageCache()
                         with(Glide.get(requireContext())) {
-                            withContext(Dispatchers.Main) { clearMemory() }
-                            clearDiskCache()
+                            clearMemory()
+                            withContext(Dispatchers.IO) { clearDiskCache()}
                         }
                         DualPageHelper.clearMergedPages(requireContext().cacheDir)
                     }

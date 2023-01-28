@@ -29,9 +29,7 @@ import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private const val ARCHIVE_PARAM = "archive"
 
@@ -106,11 +104,11 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                 if (catText.text.isNotBlank()) {
                     lifecycleScope.launch {
                         val name = catText.text.toString()
-                        val category = withContext(Dispatchers.IO) { CategoryManager.createCategory(requireContext(), name) }
+                        val category = CategoryManager.createCategory(requireContext(), name)
                         category?.let {
                             val success = WebHandler.addToCategory(requireContext(), it.id, archiveIds)
                             if (success) {
-                                withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
+                                ServerManager.parseCategories(requireContext())
                                 listener?.onAddedToCategory(it, archiveIds)
                             }
                         }
@@ -123,7 +121,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                     category?.let {
                         val success = WebHandler.addToCategory(requireContext(), it.id, archiveIds)
                         if (success) {
-                            withContext(Dispatchers.IO) { ServerManager.parseCategories(requireContext()) }
+                            ServerManager.parseCategories(requireContext())
                             listener?.onAddedToCategory(it, archiveIds)
                         }
                     }

@@ -41,7 +41,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -207,9 +209,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 swipeRefreshLayout.isRefreshing = false
                 if (checked || searchView.query.isNotBlank()) {
                     searchJob = lifecycleScope.launch {
-                        val results = withContext(Dispatchers.Default) {
-                            WebHandler.searchServer(searchView.query, checked, sortMethod, descending)
-                        }
+                        val results = WebHandler.searchServer(searchView.query, checked, sortMethod, descending)
                         getViewModel<SearchViewModel>().filter(results)
                     }
                 } else
@@ -228,9 +228,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     swipeRefreshLayout.isRefreshing = false
                     searchJob = lifecycleScope.launch {
                         if (query != null) {
-                            val results = withContext(Dispatchers.Default) {
-                                WebHandler.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
-                            }
+                            val results = WebHandler.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
                             getViewModel<SearchViewModel>().filter(results)
                         }
                     }
@@ -274,9 +272,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
                         if (query != null) {
                             listAdapter.disableMultiSelect()
-                            val results = withContext(Dispatchers.Default) {
-                                WebHandler.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
-                            }
+                            val results = WebHandler.searchServer(query, newCheckBox.isChecked, sortMethod, descending)
                             getViewModel<SearchViewModel>().filter(results)
                         }
                     }
@@ -302,7 +298,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 startActivity(intent)
             } else {
                 lifecycleScope.launch {
-                    val archive = withContext(Dispatchers.IO) { viewModel?.getRandom(false) }
+                    val archive = viewModel?.getRandom(false)
                     if (archive != null)
                         startDetailsActivity(archive.id, requireContext())
                 }
@@ -312,7 +308,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton.setOnLongClickListener {
             listAdapter.disableMultiSelect()
             lifecycleScope.launch {
-                val archive = withContext(Dispatchers.IO) { viewModel?.getRandom() }
+                val archive = viewModel?.getRandom()
                 if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
                     ReaderTabHolder.addTab(archive, 0)
             }
@@ -424,9 +420,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 }
                 !searchView.query.isNullOrEmpty() -> {
                     searchView.query?. let {
-                        val results = withContext(Dispatchers.IO) {
-                            WebHandler.searchServer(it, newCheckBox.isChecked, method, desc)
-                        }
+                        val results = WebHandler.searchServer(it, newCheckBox.isChecked, method, desc)
                         getViewModel<SearchViewModel>().filter(results)
                     }
                 }
@@ -638,9 +632,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             else if (!searchView.query.isNullOrEmpty() || newCheckBox.isChecked) {
                 searchJob?.cancel()
                 swipeRefreshLayout.isRefreshing = false
-                val searchResult = withContext(Dispatchers.IO) {
-                    WebHandler.searchServer(searchView.query, newCheckBox.isChecked, sortMethod, descending)
-                }
+                val searchResult = WebHandler.searchServer(searchView.query, newCheckBox.isChecked, sortMethod, descending)
                 getViewModel<SearchViewModel>().filter(searchResult)
             }
             else

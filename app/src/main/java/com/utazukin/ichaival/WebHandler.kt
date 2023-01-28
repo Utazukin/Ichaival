@@ -88,7 +88,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     val encodedKey
         get() = "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.NO_WRAP)}"
 
-    suspend fun getServerInfo(context: Context) : JSONObject? {
+    suspend fun getServerInfo(context: Context): JSONObject? {
         if (!canConnect(context))
             return null
 
@@ -114,15 +114,17 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
     fun registerRefreshListener(listener: DatabaseRefreshListener) = refreshListeners.add(listener)
-    fun unregisterRefreshListener(listener: DatabaseRefreshListener) = refreshListeners.remove(listener)
+    fun unregisterRefreshListener(listener: DatabaseRefreshListener) =
+        refreshListeners.remove(listener)
+
     fun updateRefreshing(refreshing: Boolean) {
         for (listener in refreshListeners)
             listener.isRefreshing(refreshing)
     }
 
-    suspend fun clearTempFolder(context: Context) {
+    suspend fun clearTempFolder(context: Context) = withContext(Dispatchers.IO) {
         if (!canConnect(context))
-            return
+            return@withContext
 
         val errorMessage = context.getString(R.string.temp_clear_fail_message)
         val url = "$serverLocation$clearTempPath"
@@ -151,14 +153,14 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun getCategories() : JSONArray? {
+    suspend fun getCategories() : JSONArray? = withContext(Dispatchers.IO) {
         if (!canConnect())
-            return null
+            return@withContext null
 
         val url = "$serverLocation$categoryPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        return response?.use {
+        response?.use {
             if (!it.isSuccessful)
                 null
             else
@@ -257,29 +259,33 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         httpClient.newCall(connection).await(autoClose = true)
     }
 
-    fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
-        if (search.isBlank() && !onlyNew)
-            return ServerSearchResult(null)
+    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
+        return withContext(Dispatchers.IO) {
+            if (search.isBlank() && !onlyNew)
+                return@withContext ServerSearchResult(null)
 
-        if (showRefresh)
-            updateRefreshing(true)
+            if (showRefresh)
+                updateRefreshing(true)
 
-        val jsonResults = runBlocking { internalSearchServer(search, onlyNew, sortMethod, descending, start) }
-        if (jsonResults == null) {
+            val jsonResults =
+                runBlocking { internalSearchServer(search, onlyNew, sortMethod, descending, start) }
+            if (jsonResults == null) {
+                if (showRefresh)
+                    updateRefreshing(false)
+                return@withContext ServerSearchResult(null)
+            }
+
+            val totalResults = jsonResults.getInt("recordsFiltered")
+
+            val dataArray = jsonResults.getJSONArray("data")
+            val results =
+                List(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
+
             if (showRefresh)
                 updateRefreshing(false)
-            return ServerSearchResult(null)
+
+            ServerSearchResult(results, totalResults, search, onlyNew)
         }
-
-        val totalResults = jsonResults.getInt("recordsFiltered")
-
-        val dataArray = jsonResults.getJSONArray("data")
-        val results = List(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
-
-        if (showRefresh)
-            updateRefreshing(false)
-
-        return ServerSearchResult(results, totalResults, search, onlyNew)
     }
 
     suspend fun getRandomArchives(count: UInt, filter: CharSequence? = null, categoryId: String? = null) : ServerSearchResult {

@@ -79,7 +79,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         if (WebHandler.serverLocation.isNotEmpty()) {
             val refresh = intent.getBooleanExtra(REFRESH_KEY, false)
             launch {
-                withContext(Dispatchers.IO) { ServerManager.init(applicationContext, !refresh && savedInstanceState != null, refresh) }
+                ServerManager.init(applicationContext, !refresh && savedInstanceState != null, refresh)
                 onServerInitialized()
             }
         }
@@ -124,7 +124,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         val closeButton: ImageView = findViewById(R.id.clear_bookmark)
         closeButton.setOnClickListener{
             launch {
-                val bookmarks = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmarks() }
+                val bookmarks = DatabaseReader.getBookmarks()
                 if (bookmarks.isNotEmpty()) {
                     with(Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_LONG)) {
                         ReaderTabHolder.removeAll()

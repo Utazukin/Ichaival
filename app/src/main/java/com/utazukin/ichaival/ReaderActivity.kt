@@ -514,13 +514,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     it.invalidateCache()
                     launch {
-                        withContext(Dispatchers.IO) {
-                            with(Glide.get(this@ReaderActivity)) {
-                                withContext(Dispatchers.Main) { clearMemory() }
-                                clearDiskCache()
-                            }
-                            DualPageHelper.clearMergedPages(cacheDir)
+                        with(Glide.get(this@ReaderActivity)) {
+                            clearMemory()
+                            withContext(Dispatchers.IO) { clearDiskCache() }
                         }
+                        DualPageHelper.clearMergedPages(cacheDir)
                         intent.putExtra(FORCE_REFRESH, true)
                         intent.putExtra(PAGE_ID, currentPage)
                         finish()

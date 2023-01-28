@@ -149,6 +149,8 @@ object DatabaseReader {
         notifyDeleteListeners()
     }
 
+    suspend fun getBookmarks() = withContext(Dispatchers.IO) { database.archiveDao().getBookmarks() }
+
     suspend fun updateBookmark(id: String, page: Int) : Boolean = database.updateBookmark(id, page)
 
     suspend fun updateBookmark(id: String, scaleType: ScaleType) = withContext(Dispatchers.IO) { database.updateBookmarkScaleType(id, scaleType) }
@@ -161,7 +163,7 @@ object DatabaseReader {
 
     suspend fun insertBookmark(tab: ReaderTab) = withContext(Dispatchers.IO) { database.insertBookmark(tab) }
 
-    suspend fun setArchiveNewFlag(id: String) {
+    suspend fun setArchiveNewFlag(id: String) = withContext(Dispatchers.IO) {
         database.archiveDao().updateNewFlag(id, false)
         WebHandler.setArchiveNewFlag(id)
     }

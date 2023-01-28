@@ -35,9 +35,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 const val FROM_READER_PAGE = "READER_PAGE"
 
@@ -103,7 +101,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             R.id.mark_read_item -> {
                 archiveId?.let {
                     launch {
-                        withContext(Dispatchers.IO) { DatabaseReader.setArchiveNewFlag(it) }
+                        DatabaseReader.setArchiveNewFlag(it)
                         item.isVisible = false
                     }
                 }

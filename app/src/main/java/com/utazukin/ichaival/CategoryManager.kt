@@ -60,7 +60,7 @@ object CategoryManager {
     suspend fun updateCategories(categoryJson: JSONArray?, filesDir: File) {
         val categoriesFile = File(filesDir, categoriesFilename)
         categories = parseCategories(categoryJson, categoriesFile)
-        withContext(Dispatchers.Main) { updateListeners() }
+        updateListeners()
     }
 
     fun getStaticCategories(id: String) : List<StaticCategory>? {
@@ -82,29 +82,37 @@ object CategoryManager {
             listener.onCategoriesUpdated(categories)
     }
 
-    private fun parseCategories(categoryJson: JSONArray?, categoriesFile: File) : List<ArchiveCategory>? {
-        var jsonCategories = categoryJson
-        when {
-            jsonCategories != null -> categoriesFile.writeText(jsonCategories.toString())
-            categoriesFile.exists() -> jsonCategories = JSONArray(categoriesFile.readText())
-            else -> return null
-        }
-
-        return buildList(jsonCategories.length()) {
-            for (i in 0 until jsonCategories.length()) {
-                val category = jsonCategories.getJSONObject(i)
-                val search = category.getString("search")
-                val name = category.getString("name")
-                val id = category.getString("id")
-                val pinned = category.getInt("pinned") == 1
-                if (search.isNotBlank())
-                    add(DynamicCategory(name, id, pinned, category.getString("search")))
-                else {
-                    val archives = category.getJSONArray("archives")
-                    add(StaticCategory(name, id, pinned, List(archives.length()) { k -> archives.getString(k) }))
-                }
+    private suspend fun parseCategories(categoryJson: JSONArray?, categoriesFile: File) : List<ArchiveCategory>? {
+        return withContext(Dispatchers.IO) {
+            var jsonCategories = categoryJson
+            when {
+                jsonCategories != null -> categoriesFile.writeText(jsonCategories.toString())
+                categoriesFile.exists() -> jsonCategories = JSONArray(categoriesFile.readText())
+                else -> return@withContext null
             }
-            sortBy { it.pinned }
+
+            buildList(jsonCategories.length()) {
+                for (i in 0 until jsonCategories.length()) {
+                    val category = jsonCategories.getJSONObject(i)
+                    val search = category.getString("search")
+                    val name = category.getString("name")
+                    val id = category.getString("id")
+                    val pinned = category.getInt("pinned") == 1
+                    if (search.isNotBlank())
+                        add(DynamicCategory(name, id, pinned, category.getString("search")))
+                    else {
+                        val archives = category.getJSONArray("archives")
+                        add(
+                            StaticCategory(
+                                name,
+                                id,
+                                pinned,
+                                List(archives.length()) { k -> archives.getString(k) })
+                        )
+                    }
+                }
+                sortBy { it.pinned }
+            }
         }
     }
 }

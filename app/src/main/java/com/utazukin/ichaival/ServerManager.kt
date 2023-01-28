@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 package com.utazukin.ichaival
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 
@@ -43,9 +45,9 @@ object ServerManager {
     private var initialized = false
     private var hasPassword = false
 
-    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
+    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) = withContext(Dispatchers.IO) {
         if (initialized && !force)
-            return
+            return@withContext
 
         val infoFile = File(context.filesDir, serverInfoFilename)
         val serverInfo = if (!useCachedInfo || force) {
