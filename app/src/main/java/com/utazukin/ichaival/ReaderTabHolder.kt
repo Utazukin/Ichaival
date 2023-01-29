@@ -24,6 +24,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.database.ReaderTabViewModel
+import com.utazukin.ichaival.reader.ScaleType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.collectLatest

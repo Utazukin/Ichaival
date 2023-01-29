@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.reader.webtoon
 
 import android.animation.AnimatorSet
 import android.animation.ValueAnimator
@@ -30,6 +30,7 @@ import android.view.animation.DecelerateInterpolator
 import androidx.core.animation.doOnEnd
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.utazukin.ichaival.reader.TouchZone
 import kotlin.math.abs
 
 private const val ANIMATOR_DURATION_TIME = 200

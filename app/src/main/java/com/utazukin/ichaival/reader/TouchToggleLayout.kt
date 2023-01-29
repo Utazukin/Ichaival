@@ -16,12 +16,17 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.reader
 
 import android.content.Context
+import android.util.AttributeSet
 import android.view.MotionEvent
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+import android.widget.RelativeLayout
 
-class WebtoonSubsamplingImageView(context: Context): SubsamplingScaleImageView(context) {
-    override fun onTouchEvent(event: MotionEvent) = false
+class TouchToggleLayout @JvmOverloads constructor(context: Context, attributeSet: AttributeSet? = null) : RelativeLayout(context, attributeSet) {
+    var enableTouch = true
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        return enableTouch && super.dispatchTouchEvent(ev)
+    }
 }

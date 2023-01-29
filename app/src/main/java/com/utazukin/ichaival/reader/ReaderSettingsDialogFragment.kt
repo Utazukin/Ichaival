@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.reader
 
 import android.content.Context
 import android.content.DialogInterface
@@ -30,6 +30,8 @@ import android.widget.Button
 import android.widget.Spinner
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.ServerManager
 
 enum class ScaleType(val value: Int) {
     FitPage(0),
@@ -81,7 +83,14 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun setupSpinner(view: View) {
-        val currentScale = arguments?.run { ScaleType.fromInt(getInt(SCALE_PARAM, 0)) } ?: ScaleType.FitPage
+        val currentScale = arguments?.run {
+            ScaleType.fromInt(
+                getInt(
+                    SCALE_PARAM,
+                    0
+                )
+            )
+        } ?: ScaleType.FitPage
 
         val spinner: Spinner = view.findViewById(R.id.scale_type_spinner)
         spinner.setSelection(currentScale.value)

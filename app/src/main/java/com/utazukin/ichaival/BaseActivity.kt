@@ -41,6 +41,10 @@ import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
+import com.utazukin.ichaival.database.DatabaseMessageListener
+import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.database.ReaderTabViewModel
+import com.utazukin.ichaival.reader.ReaderActivity
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 

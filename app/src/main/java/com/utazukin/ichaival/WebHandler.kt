@@ -24,6 +24,10 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Base64
 import androidx.preference.Preference
+import com.utazukin.ichaival.database.DatabaseMessageListener
+import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.database.DatabaseRefreshListener
+import com.utazukin.ichaival.database.ServerSearchResult
 import kotlinx.coroutines.*
 import okhttp3.*
 import org.json.JSONArray

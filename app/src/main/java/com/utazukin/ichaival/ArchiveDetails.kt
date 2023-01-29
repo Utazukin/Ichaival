@@ -35,6 +35,8 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.utazukin.ichaival.ArchiveDetailsFragment.TagInteractionListener
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
+import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.reader.ReaderActivity
 import kotlinx.coroutines.launch
 
 const val FROM_READER_PAGE = "READER_PAGE"

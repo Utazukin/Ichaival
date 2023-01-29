@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.reader
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -40,7 +40,13 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.google.android.material.color.MaterialColors
-import com.utazukin.ichaival.ReaderFragment.OnFragmentInteractionListener
+import com.utazukin.ichaival.*
+import com.utazukin.ichaival.database.DatabaseExtractListener
+import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.database.ReaderTabViewModel
+import com.utazukin.ichaival.reader.ReaderFragment.OnFragmentInteractionListener
+import com.utazukin.ichaival.reader.webtoon.WebtoonReaderViewHolder
+import com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.ceil
@@ -54,7 +60,9 @@ private const val CURRENT_PAGE_ID = "currentPage"
 private const val PROGRESS_UPDATE_DELAY = 500L //ms
 private const val FORCE_REFRESH = "force"
 
-class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener, TabsClearedListener, ReaderSettingsHandler, DatabaseExtractListener, ThumbRecyclerViewAdapter.ThumbInteractionListener {
+class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener,
+    TabsClearedListener, ReaderSettingsHandler, DatabaseExtractListener,
+    ThumbRecyclerViewAdapter.ThumbInteractionListener {
     private var mVisible: Boolean = false
     private var switchLayoutJob: Job? = null
 
@@ -159,14 +167,18 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mVisible = true
 
         pageSeekBar = findViewById(R.id.page_seek_bar)
-        pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout, R.attr.cardBackgroundColor))
+        pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout,
+            R.attr.cardBackgroundColor
+        ))
         progressStartText = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
 
         val bundle = intent.extras
         val arcid = bundle?.getString(ID_STRING) ?: savedInstanceState?.getString(ID_STRING) ?: return
         val savedPage = when {
-            savedInstanceState?.containsKey(CURRENT_PAGE_ID) == true -> savedInstanceState.getInt(CURRENT_PAGE_ID)
+            savedInstanceState?.containsKey(CURRENT_PAGE_ID) == true -> savedInstanceState.getInt(
+                CURRENT_PAGE_ID
+            )
             bundle?.containsKey(PAGE_ID) == true -> bundle.getInt(PAGE_ID)
             else -> null
         }
@@ -868,7 +880,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         fun getItemCount(): Int
     }
 
-    private inner class WebtoonAdapter : RecyclerView.Adapter<WebtoonReaderViewHolder>(), IReaderAdapter {
+    private inner class WebtoonAdapter : RecyclerView.Adapter<WebtoonReaderViewHolder>(),
+        IReaderAdapter {
         private val loadedPages = mutableListOf<Boolean>()
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WebtoonReaderViewHolder {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.fragment_reader, parent, false)
@@ -997,7 +1010,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private open inner class ReaderFragmentAdapter : ReaderAdapter<Boolean>() {
         override val defaultPageSize = 1u
 
-        override fun createFragment(position: Int): Fragment = ReaderFragment.createInstance(getAdjustedPage(position))
+        override fun createFragment(position: Int): Fragment =
+            ReaderFragment.createInstance(getAdjustedPage(position))
         override fun getItemCount(): Int = loadedPages.size
         override fun isPageLoaded(page: Int) = loadedPages[page]
         override fun getPositionFromPage(page: Int) = page

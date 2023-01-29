@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.reader
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -46,6 +46,7 @@ import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
+import com.utazukin.ichaival.*
 import kotlinx.coroutines.*
 import java.io.File
 import kotlin.math.ceil
@@ -133,7 +134,9 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
         rtol = if (savedInstanceState == null) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-            prefs.getBoolean(getString(R.string.rtol_pref_key), false) == !prefs.getBoolean(getString(R.string.dual_page_swap_key), false)
+            prefs.getBoolean(getString(R.string.rtol_pref_key), false) == !prefs.getBoolean(getString(
+                R.string.dual_page_swap_key
+            ), false)
         } else savedInstanceState.getBoolean(RTOL)
 
         topLayout = view.findViewById(R.id.reader_layout)
@@ -325,9 +328,18 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
         mergeJob = lifecycleScope.launch(Dispatchers.Default) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-            val compressString = prefs.getString(getString(R.string.compression_type_pref), getString(R.string.jpg_compress))
+            val compressString = prefs.getString(getString(R.string.compression_type_pref), getString(
+                R.string.jpg_compress
+            ))
             val compressType = PageCompressFormat.fromString(compressString, requireContext())
-            val mergedPath = DualPageHelper.getMergedPage(requireContext().cacheDir, archiveId!!, page, otherPage, rtol, compressType)
+            val mergedPath = DualPageHelper.getMergedPage(
+                requireContext().cacheDir,
+                archiveId!!,
+                page,
+                otherPage,
+                rtol,
+                compressType
+            )
             if (mergedPath != null) {
                 withContext(Dispatchers.Main) { createImageView(mergedPath) }
                 return@launch
@@ -403,7 +415,11 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
                     val merged = try {
                         val mergeInfo = MergeInfo(firstImg, secondImg, imgFile, otherImgFile, page, otherPage, compressType, archiveId!!, !rtol)
-                        DualPageHelper.mergeBitmaps(mergeInfo, requireContext().cacheDir, Glide.get(requireContext()).bitmapPool) { progressBar.progress = it }
+                        DualPageHelper.mergeBitmaps(
+                            mergeInfo,
+                            requireContext().cacheDir,
+                            Glide.get(requireContext()).bitmapPool
+                        ) { progressBar.progress = it }
                     } catch (e: Exception) { null }
                     catch (e: OutOfMemoryError) {
                         failedMessage = "Failed to merge pages: Out of Memory"

@@ -16,12 +16,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.database
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
+import com.utazukin.ichaival.*
 import kotlinx.coroutines.*
 
 private fun <T : Any, TT : Any> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
@@ -104,7 +105,7 @@ class StaticCategoryModel : ArchiveViewModel(), CategoryListener {
             viewModelScope.launch(Dispatchers.IO) {
                 val archives = when (sortMethod) {
                     SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending(results) else archiveDao.getTitleAscending(results)
-                    SortMethod.Date  -> if (descending) archiveDao.getDateDescending(results) else archiveDao.getTitleAscending(results)
+                    SortMethod.Date -> if (descending) archiveDao.getDateDescending(results) else archiveDao.getTitleAscending(results)
                 }
 
                 archiveDataFactory.updateSearchResults(archives.filter { it.isNew }.map { it.id })

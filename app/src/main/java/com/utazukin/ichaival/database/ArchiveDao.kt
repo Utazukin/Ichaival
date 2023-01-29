@@ -16,10 +16,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.database
 
 import androidx.paging.PagingSource
 import androidx.room.*
+import com.utazukin.ichaival.*
+import com.utazukin.ichaival.reader.ScaleType
 import org.json.JSONObject
 
 private const val MAX_PARAMETER_COUNT = 999

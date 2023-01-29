@@ -16,11 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.database
 
 import androidx.lifecycle.MutableLiveData
 import androidx.paging.DataSource
 import androidx.paging.PositionalDataSource
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ServerManager
+import com.utazukin.ichaival.SortMethod
+import com.utazukin.ichaival.WebHandler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope

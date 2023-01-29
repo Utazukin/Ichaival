@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.settings
 
 import android.content.Context
 import android.content.Intent
@@ -36,6 +36,11 @@ import androidx.preference.*
 import androidx.preference.EditTextPreference.OnBindEditTextListener
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.cache.DiskCache
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.ServerManager
+import com.utazukin.ichaival.WebHandler
+import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.reader.DualPageHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

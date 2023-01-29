@@ -23,21 +23,21 @@
                                          android:layout_width="match_parent"
                                          android:layout_height="match_parent"
                                          android:background="#000000"
-                                         tools:context=".ReaderActivity"
+                                         tools:context=".reader.ReaderActivity"
                                          android:id="@+id/drawer_layout"
                                          android:fitsSystemWindows="false">
 
-    <com.utazukin.ichaival.WebtoonFrameLayout
+    <com.utazukin.ichaival.reader.webtoon.WebtoonFrameLayout
         android:id="@+id/webtoon_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone">
 
-        <com.utazukin.ichaival.WebtoonRecyclerView
+        <com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
             android:id="@+id/webtoon_recycler"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-    </com.utazukin.ichaival.WebtoonFrameLayout>
+    </com.utazukin.ichaival.reader.webtoon.WebtoonFrameLayout>
 
     <FrameLayout
         android:id="@+id/reader_frame_layout"

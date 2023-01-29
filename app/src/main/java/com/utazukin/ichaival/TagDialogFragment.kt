@@ -37,6 +37,7 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.launch
 
 private const val ARCHIVE_PARAM = "archive"

@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.reader.webtoon
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -37,6 +37,8 @@ import com.bumptech.glide.request.target.Target
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
+import com.utazukin.ichaival.*
+import com.utazukin.ichaival.reader.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -45,7 +47,8 @@ import java.io.File
 
 class WebtoonReaderViewHolder(private val context: Context,
                               private val view: View,
-                              private val activity: ReaderActivity) : RecyclerView.ViewHolder(view), PageFragment {
+                              private val activity: ReaderActivity
+) : RecyclerView.ViewHolder(view), PageFragment {
     private var page = 0
     private var imagePath: String? = null
     private var mainImage: View? = null

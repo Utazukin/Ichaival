@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,13 +16,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.utazukin.ichaival
+package com.utazukin.ichaival.reader
 
 import android.graphics.*
 import android.os.Build
 import android.util.Size
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
-import com.utazukin.ichaival.PageCompressFormat.Companion.toBitmapFormat
+import com.utazukin.ichaival.reader.PageCompressFormat.Companion.toBitmapFormat
+import com.utazukin.ichaival.toRect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore

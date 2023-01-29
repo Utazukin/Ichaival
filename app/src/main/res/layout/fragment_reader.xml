@@ -17,13 +17,13 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<com.utazukin.ichaival.TouchToggleLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.utazukin.ichaival.reader.TouchToggleLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/reader_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
-    tools:context=".ReaderFragment">
+    tools:context=".reader.ReaderFragment">
 
     <TextView
         android:id="@+id/page_num"
@@ -55,4 +55,4 @@
         android:textSize="30sp"
         android:visibility="gone" />
 
-</com.utazukin.ichaival.TouchToggleLayout>
+</com.utazukin.ichaival.reader.TouchToggleLayout>

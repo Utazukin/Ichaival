@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import com.google.android.material.color.DynamicColors
+import com.utazukin.ichaival.database.DatabaseReader
 
 class App : Application() {
     override fun onCreate() {

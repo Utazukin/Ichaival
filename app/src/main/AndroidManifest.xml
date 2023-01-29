@@ -24,10 +24,10 @@
         </activity>
         <activity android:name="com.utazukin.ichaival.ArchiveSearch"/>
         <activity android:name="com.utazukin.ichaival.ArchiveRandomActivity"/>
-        <activity android:name="com.utazukin.ichaival.WebViewActivity"
-            android:parentActivityName="com.utazukin.ichaival.SettingsActivity"/>
+        <activity android:name="com.utazukin.ichaival.settings.WebViewActivity"
+            android:parentActivityName="com.utazukin.ichaival.settings.SettingsActivity"/>
         <activity
-                android:name="com.utazukin.ichaival.ReaderActivity"
+                android:name="com.utazukin.ichaival.reader.ReaderActivity"
                 android:configChanges="orientation|screenLayout|screenSize"
                 android:theme="?fullscreen_theme">
             <meta-data
@@ -35,7 +35,7 @@
                     android:value="com.utazukin.ichaival.ArchiveList"/>
         </activity>
         <activity
-                android:name="com.utazukin.ichaival.SettingsActivity"
+                android:name="com.utazukin.ichaival.settings.SettingsActivity"
                 android:label="@string/title_activity_settings"
                 android:parentActivityName="com.utazukin.ichaival.ArchiveList">
             <meta-data
