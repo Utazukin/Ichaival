@@ -199,8 +199,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
         })
 
-        val savedType = savedInstanceState?.getInt(SCALE_TYPE, -1)
-        if (savedType != null && savedType != -1) {
+        val savedType = savedInstanceState?.getInt(SCALE_TYPE, -1) ?: -1
+        if (savedType != -1) {
             currentScaleType = ScaleType.fromInt(savedType)
             isWebtoon = currentScaleType == ScaleType.Webtoon
             initializePager(appBar)
@@ -212,9 +212,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             archive?.let {
                 supportActionBar?.title = it.title
 
-                if (savedType == null || savedType == -1) {
-                    val bookmark = ReaderTabHolder.getTab(it.id)
-                    currentScaleType = bookmark?.scaleType ?: getScaleTypePref(prefs, resources)
+                if (savedType == -1) {
+                    val bookmarkScaleType = ReaderTabHolder.getTab(it.id)?.scaleType
+                    currentScaleType = when {
+                        bookmarkScaleType != null -> bookmarkScaleType
+                        it.isWebtoon -> ScaleType.Webtoon
+                        else -> getScaleTypePref(prefs, resources)
+                    }
                     isWebtoon = currentScaleType == ScaleType.Webtoon
                     initializePager(appBar)
                 }
