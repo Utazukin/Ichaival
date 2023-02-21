@@ -90,7 +90,7 @@ class ThumbRecyclerViewAdapter(
             setOnLongClickListener(onLongPressListener)
         }
 
-        val job = scope.launch {
+        imageLoadingJobs[holder] = scope.launch {
             val image = archive.getThumb(context, page)
 
             glide.load(image)
@@ -119,7 +119,6 @@ class ThumbRecyclerViewAdapter(
                 })
                 .into(holder.thumbView)
         }
-        imageLoadingJobs[holder] = job
     }
 
     override fun onViewRecycled(holder: ViewHolder) {

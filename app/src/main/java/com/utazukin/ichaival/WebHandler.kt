@@ -38,6 +38,7 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -359,9 +360,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).await()
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+
         response.use {
             when {
+                it == null || !isActive -> null
                 it.code == HttpURLConnection.HTTP_OK -> url
                 //The minion api is protected before v0.8.5, so return null if the thumbnail hasn't been generated yet
                 it.code == HttpURLConnection.HTTP_ACCEPTED && !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> null
@@ -402,7 +405,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() } ?: return@withContext null
         response.use {
-            if (!it.isSuccessful)
+            if (!it.isSuccessful || !isActive)
                 null
             else {
                 it.body?.run {
@@ -422,7 +425,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
         response?.use {
-            if (!it.isSuccessful)
+            if (!it.isSuccessful || !coroutineContext.isActive)
                 return false
 
             it.body?.run {
@@ -442,16 +445,19 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return suspendCancellableCoroutine {
             enqueue(object: Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    it.resumeWithException(e)
-                    if (errorMessage != null)
-                        handleErrorMessage(e, errorMessage)
+                    if (!it.isCancelled) {
+                        it.resumeWithException(e)
+                        if (errorMessage != null)
+                            handleErrorMessage(e, errorMessage)
+                    }
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    it.invokeOnCancellation { response.close() }
                     it.resume(response)
                 }
             })
+
+            it.invokeOnCancellation { cancel() }
         }
     }
 
@@ -465,13 +471,14 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    it.invokeOnCancellation { response.close() }
                     if (autoClose)
                         response.use { res -> it.resume(res) }
                     else
                         it.resume(response)
                 }
             })
+
+            it.invokeOnCancellation { tryOrNull { cancel() } }
         }
     }
 
