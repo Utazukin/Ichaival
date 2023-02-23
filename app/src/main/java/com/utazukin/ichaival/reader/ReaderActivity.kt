@@ -88,6 +88,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private var updateProgressJob: Job? = null
     private var dualPageEnabled = false
     private var isWebtoon = false
+    private var isBookmarked = false
 
     private val dualPageAdapter by lazy { ReaderMultiFragmentAdapter() }
     private val pageAdapter by lazy { ReaderFragmentAdapter() }
@@ -444,14 +445,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
         }
 
-        archive?.let {
-            val bookmarker = menu.findItem(R.id.bookmark_archive)
-            launch { setTabbedIcon(bookmarker, ReaderTabHolder.isTabbed(it.id)) }
-        }
+        setTabbedIcon(menu.findItem(R.id.bookmark_archive), isBookmarked)
         return super.onCreateOptionsMenu(menu)
     }
 
     private fun setTabbedIcon(menuItem: MenuItem?, tabbed: Boolean) {
+        isBookmarked = tabbed
         val icon = if (tabbed)
             R.drawable.ic_bookmark_white_24dp
         else
