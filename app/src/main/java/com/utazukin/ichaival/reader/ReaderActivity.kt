@@ -136,7 +136,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             var safeTop = insets.displayCutout?.safeInsetTop ?: 0
             val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             safeTop = if (safeTop > 0) safeTop else systemInsets.top
-            val safeBottom = insets.displayCutout?.safeInsetBottom
+            var safeBottom = insets.displayCutout?.safeInsetBottom ?: 0
+            safeBottom = if (safeBottom > 0) safeBottom else systemInsets.bottom
             val safeRight = insets.displayCutout?.safeInsetRight ?: systemInsets.right
             val safeLeft = insets.displayCutout?.safeInsetLeft
 
@@ -146,13 +147,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
             params = pageSeekLayout.layoutParams as FrameLayout.LayoutParams
             val margin = resources.getDimensionPixelSize(R.dimen.seek_bar_margin)
-            params.setMargins(safeInsetLeft + margin, params.topMargin, safeRight + margin, params.bottomMargin)
+            params.setMargins(safeInsetLeft + margin, params.topMargin, safeRight + margin, safeBottom + getDpWidth(params.bottomMargin))
             pageSeekLayout.layoutParams = params
 
             val bookmarkView: LinearLayout = findViewById(R.id.bookmark_list_layout)
             params = FrameLayout.LayoutParams(bookmarkView.layoutParams)
-            params.setMargins(safeLeft ?: params.leftMargin,
-                safeTop, params.rightMargin, safeBottom ?: params.bottomMargin)
+            params.setMargins(safeLeft ?: params.leftMargin, safeTop, params.rightMargin, safeBottom)
             bookmarkView.layoutParams = params
 
             insets
