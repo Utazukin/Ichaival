@@ -225,7 +225,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 }
 
                 if (savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
-                    launch(Dispatchers.IO) { WebHandler.updateProgress(it.id, currentPage) }
+                    launch { WebHandler.updateProgress(it.id, currentPage) }
 
                 //Use the page from the thumbnail over the bookmark
                 val page = max(savedPage ?: it.currentPage, 0)

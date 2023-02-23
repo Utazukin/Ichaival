@@ -126,9 +126,7 @@ object ReaderTabHolder {
     }
 
     fun resetServerProgress(id: String) {
-        scope.launch(Dispatchers.IO) {
-            WebHandler.updateProgress(id, 0)
-        }
+        scope.launch { WebHandler.updateProgress(id, 0) }
     }
 
     fun removeAll() {

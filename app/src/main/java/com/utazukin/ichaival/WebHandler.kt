@@ -261,7 +261,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val url = "$serverLocation${progressPath.format(id, page + 1)}"
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
-        httpClient.newCall(connection).await(autoClose = true)
+        withContext(Dispatchers.IO) { httpClient.newCall(connection).await(autoClose = true) }
     }
 
     suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
