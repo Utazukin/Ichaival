@@ -203,8 +203,9 @@ class ArchiveRecyclerViewAdapter(
                     setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size, selectedArchives.size))
                     setPositiveButton(R.string.yes) { dialog, _ ->
                         dialog.dismiss()
+                        val ids = selectedArchives.keys.map { it.id }
                         scope.launch(Dispatchers.IO) {
-                            val deleted = WebHandler.deleteArchives(selectedArchives.keys.map { it.id }.toList())
+                            val deleted = WebHandler.deleteArchives(ids)
                             if (deleted.isNotEmpty())
                                 DatabaseReader.deleteArchives(deleted)
                         }
