@@ -35,6 +35,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
@@ -410,7 +411,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             else {
                 it.body?.run {
                     val thumbFile = File(thumbDir, "$id.jpg")
-                    thumbFile.writeBytes(suspendBytes())
+                    thumbFile.outputStream().use { f ->  byteStream().use { b -> b.copyTo(f) } }
                     thumbFile
                 }
             }
@@ -547,7 +548,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         httpClient.newCall(connection).await(autoClose = true)
     }
 
-    suspend fun downloadArchiveList(context: Context) : JSONArray? = withContext(Dispatchers.IO) {
+    suspend fun downloadArchiveList(context: Context) : InputStream? = withContext(Dispatchers.IO) {
         if (!canConnect(context))
             return@withContext null
 
@@ -555,23 +556,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val url = "$serverLocation$archiveListPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
-        response?.use {
+        response?.let {
             if (!it.isSuccessful) {
                 handleErrorMessage(it.code, errorMessage)
                 return@withContext null
             }
-
-            val jsonString = it.body?.suspendString()
-            if (jsonString != null) {
-                val json = parseJsonArray(jsonString)
-                if (json == null)
-                    notifyError(JSONObject(jsonString).getString("error")) //Invalid api key
-
-                return@withContext json
-            }
-
-            notifyError(context.getString(R.string.get_archives_fail_message))
-            null
+            it.body?.byteStream()
         }
     }
 

@@ -23,10 +23,10 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
+import com.google.gson.JsonObject
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 
 @Entity
 data class Archive (
@@ -96,17 +96,17 @@ data class Archive (
     }
 }
 
-class ArchiveJson(json: JSONObject) {
-    val title: String = json.getString("title")
-    val id: String = json.getString("arcid")
+class ArchiveJson(json: JsonObject) {
+    val title: String = json.get("title").asString
+    val id: String = json.get("arcid").asString
     val tags: Map<String, List<String>>
-    val pageCount = json.optInt("pagecount")
-    val currentPage = if (json.has("progress")) json.getInt("progress") - 1 else 0
-    val isNew: Boolean
+    val pageCount = if (json.has("pagecount")) json.get("pagecount").asInt else 0
+    val currentPage = if (json.has("progress")) json.get("progress").asInt - 1 else 0
+    val isNew = json.get("isnew").asString.let { it == "block" || it == "true" }
     val dateAdded: Long
 
     init {
-        val tagString = json.getString("tags")
+        val tagString = json.get("tags").asString
         val tagList = tagString.split(",")
         tags = buildMap<String, MutableList<String>> {
             var timestamp = 0L
@@ -127,8 +127,6 @@ class ArchiveJson(json: JSONObject) {
             }
             dateAdded = timestamp
         }
-
-        json.getString("isnew").let { isNew = it == "block" || it == "true" }
     }
 
 }

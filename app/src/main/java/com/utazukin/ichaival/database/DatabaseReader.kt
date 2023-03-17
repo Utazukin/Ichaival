@@ -22,6 +22,11 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.ReaderTab
@@ -31,9 +36,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import java.io.File
+import java.io.InputStreamReader
+import java.lang.reflect.Type
 import java.util.*
+
+private class ArchiveDeserializer : JsonDeserializer<ArchiveJson> {
+    override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ArchiveJson {
+        return ArchiveJson(json.asJsonObject)
+    }
+}
 
 object DatabaseReader {
     private const val jsonLocation: String = "archives.json"
@@ -75,10 +87,18 @@ object DatabaseReader {
         if (forceUpdate || checkDirty(cacheDir)) {
             WebHandler.updateRefreshing(true)
             val jsonFile = File(cacheDir, jsonLocation)
-            val archiveJson = WebHandler.downloadArchiveList(context)
-            archiveJson?.let {
-                jsonFile.writeText(it.toString())
-                val serverArchives = readArchiveList(it)
+            WebHandler.downloadArchiveList(context)?.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
+            jsonFile.inputStream().use {
+                val serverArchives = mutableMapOf<String, ArchiveJson>()
+                JsonReader(InputStreamReader(it, "UTF-8")).use { reader ->
+                    val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer()).create()
+                    reader.beginArray()
+                    while (reader.hasNext()) {
+                        val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
+                        serverArchives[archive.id] = archive
+                    }
+                    reader.endArray()
+                }
                 database.insertAndRemove(serverArchives)
             }
             WebHandler.updateRefreshing(false)
@@ -171,18 +191,6 @@ object DatabaseReader {
     suspend fun setArchiveNewFlag(id: String) = withContext(Dispatchers.IO) {
         database.archiveDao().updateNewFlag(id, false)
         WebHandler.setArchiveNewFlag(id)
-    }
-
-    private fun readArchiveList(json: JSONArray) : Map<String, ArchiveJson> {
-        val length = json.length()
-        val archiveList = buildMap(length) {
-            for (i in 0 until length) {
-                val archive = ArchiveJson(json.getJSONObject(i))
-                put(archive.id, archive)
-            }
-        }
-
-        return archiveList
     }
 
     private fun getThumbDir(cacheDir: File) : File {
