@@ -70,12 +70,13 @@ class ArchiveListDataFactory(private val localSearch: Boolean) : ArchiveListData
     private var totalResultCount = 0
     private var onlyNew = false
     private var filter: CharSequence = ""
+    private var serverSearch = false
 
     override fun createDataSource() : ArchiveDataSourceBase {
         return if (localSearch)
             ArchiveListDataSource(results, sortMethod, descending, isSearch)
         else
-            ArchiveListServerSource(results, sortMethod, descending, isSearch, totalResultCount, onlyNew, filter)
+            ArchiveListServerSource(results, sortMethod, descending, isSearch, serverSearch, totalResultCount, onlyNew, filter)
     }
 
     override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
@@ -92,6 +93,7 @@ class ArchiveListDataFactory(private val localSearch: Boolean) : ArchiveListData
 
     override fun updateSearchResults(searchResults: List<String>?) {
         results = searchResults
+        serverSearch = false
         archiveLiveData.value?.invalidate()
     }
 
@@ -100,6 +102,7 @@ class ArchiveListDataFactory(private val localSearch: Boolean) : ArchiveListData
         onlyNew = searchResult.onlyNew
         filter = searchResult.filter
         totalResultCount = searchResult.totalSize
+        serverSearch = true
         archiveLiveData.value?.invalidate()
     }
 }
@@ -110,7 +113,7 @@ abstract class ArchiveDataSourceBase(protected val sortMethod: SortMethod,
     protected val database by lazy { DatabaseReader.database }
     abstract val searchResults: List<String>?
 
-    protected open fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = -1) : List<Archive> {
+    protected open fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
         if (isSearch && ids == null)
             return emptyList()
 
@@ -152,6 +155,7 @@ class ArchiveListServerSource(results: List<String>?,
                               sortMethod: SortMethod,
                               descending: Boolean,
                               isSearch: Boolean,
+                              private val serverSearch: Boolean,
                               val totalSize: Int,
                               private val onlyNew: Boolean,
                               private val filter: CharSequence) : ArchiveDataSourceBase(sortMethod, descending, isSearch) {
@@ -165,10 +169,11 @@ class ArchiveListServerSource(results: List<String>?,
     }
 
     override fun getArchives(ids: List<String>?, offset: Int, limit: Int): List<Archive> {
-        if (searchResults == null || ids == null)
-            return super.getArchives(ids, offset, limit)
-
-        return database.getArchives(ids, offset, limit)
+        return when {
+            //sortMethod == SortMethod.Alpha && (ids == null || !serverSearch) -> database.getArchives(titleSortResult, offset, limit)
+            searchResults == null || ids == null || !serverSearch -> super.getArchives(ids, offset, limit)
+            else -> database.getArchives(ids, offset, limit)
+        }
     }
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
