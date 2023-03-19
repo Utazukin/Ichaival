@@ -21,10 +21,7 @@ package com.utazukin.ichaival.database
 import androidx.lifecycle.MutableLiveData
 import androidx.paging.DataSource
 import androidx.paging.PositionalDataSource
-import com.utazukin.ichaival.Archive
-import com.utazukin.ichaival.ServerManager
-import com.utazukin.ichaival.SortMethod
-import com.utazukin.ichaival.WebHandler
+import com.utazukin.ichaival.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -225,7 +222,7 @@ class ArchiveListServerSource(results: List<String>?,
             val start = computeInitialLoadPosition(params, archiveCount)
             val size = computeInitialLoadSize(params, start, archiveCount)
             val archives = getArchives(null, start, size)
-            callback.onResult(archives, start, min(archives.size, archiveCount))
+            callback.onResult(archives, start, archiveCount)
         } else {
             val start = computeInitialLoadPosition(params, totalSize)
             val size = computeInitialLoadSize(params, start, totalSize)
@@ -233,7 +230,7 @@ class ArchiveListServerSource(results: List<String>?,
             if (start < totalResults.size && endIndex <= totalResults.size) {
                 val ids = getSubList(start, endIndex, totalResults)
                 val archives = getArchives(ids)
-                callback.onResult(archives, start, min(totalSize, archives.size))
+                callback.onResult(archives, start, totalSize)
             } else {
                 WebHandler.updateRefreshing(true)
                 runBlocking { loadResults(endIndex) }
@@ -241,7 +238,7 @@ class ArchiveListServerSource(results: List<String>?,
                 val ids = getSubList(start, endIndex, totalResults)
                 val archives = getArchives(ids)
                 WebHandler.updateRefreshing(false)
-                callback.onResult(archives, start, min(totalSize, archives.size))
+                callback.onResult(archives, start, totalSize)
             }
         }
     }

@@ -23,6 +23,7 @@ import androidx.room.*
 import com.utazukin.ichaival.*
 import com.utazukin.ichaival.reader.ScaleType
 import org.json.JSONObject
+import kotlin.math.min
 
 private const val MAX_PARAMETER_COUNT = 999
 
@@ -70,7 +71,7 @@ interface ArchiveDao {
     suspend fun getArchive(id: String) : Archive?
 
     @Query("Select * from archive where id in (:ids) limit :limit offset :offset")
-    fun getArchives(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+    fun getArchives(ids: List<String>, offset: Int = 0, limit: Int = -1) : List<Archive>
 
     @Query("Select title from archive where id = :id limit 1")
     fun getArchiveTitle(id: String) : String?
@@ -287,12 +288,15 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     private fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
+        val endIndex = min(offset + limit, ids.size)
+        val ids = ids.subList(offset, endIndex)
         return if (ids.size <= MAX_PARAMETER_COUNT - 2)
-            dataFunc(ids, offset, limit)
+            dataFunc(ids, 0, -1)
         else {
             buildList {
-                for (split in ids.chunked(MAX_PARAMETER_COUNT - 2))
-                    addAll(dataFunc(ids, offset, limit))
+                for (split in ids.chunked(MAX_PARAMETER_COUNT - 2)) {
+                        addAll(dataFunc(split, 0, -1))
+                }
             }
         }
     }
