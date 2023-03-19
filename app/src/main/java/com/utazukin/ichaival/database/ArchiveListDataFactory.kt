@@ -29,7 +29,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
-import java.lang.Integer.max
 import kotlin.math.min
 
 class ServerSearchResult(val results: List<String>?,
@@ -114,7 +113,7 @@ abstract class ArchiveDataSourceBase(protected val sortMethod: SortMethod,
     protected val database by lazy { DatabaseReader.database }
     abstract val searchResults: List<String>?
 
-    protected open fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+    protected open fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = -1) : List<Archive> {
         if (isSearch && ids == null)
             return emptyList()
 
@@ -136,10 +135,12 @@ class RandomServerSource(results: List<String>) : ArchiveDataSourceBase(SortMeth
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
-        val endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalSize)
-        val ids = getSubList(params.requestedStartPosition, endIndex, searchResults)
+        val start = computeInitialLoadPosition(params, totalSize)
+        val size = computeInitialLoadSize(params, start, totalSize)
+        val endIndex = min(start + size, totalSize)
+        val ids = getSubList(start, endIndex, searchResults)
         val archives = getArchives(ids)
-        callback.onResult(archives, params.requestedStartPosition, totalSize)
+        callback.onResult(archives, start, totalSize)
     }
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
@@ -164,6 +165,13 @@ class ArchiveListServerSource(results: List<String>?,
     init {
         if (results != null)
             totalResults.addAll(results)
+    }
+
+    override fun getArchives(ids: List<String>?, offset: Int, limit: Int): List<Archive> {
+        if (searchResults == null || ids == null)
+            return super.getArchives(ids, offset, limit)
+
+        return database.getArchives(ids, offset, limit)
     }
 
     override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<Archive>) {
@@ -213,27 +221,27 @@ class ArchiveListServerSource(results: List<String>?,
         if (isSearch && filter.isBlank())
             callback.onResult(emptyList(), 0, 0)
         else if (filter.isBlank() && !onlyNew) {
-            val archives = getArchives(null, params.requestedStartPosition, params.requestedLoadSize)
             val archiveCount = database.archiveDao().getArchiveCount()
-            callback.onResult(archives, params.requestedStartPosition, archiveCount)
+            val start = computeInitialLoadPosition(params, archiveCount)
+            val size = computeInitialLoadSize(params, start, archiveCount)
+            val archives = getArchives(null, start, size)
+            callback.onResult(archives, start, min(archives.size, archiveCount))
         } else {
-            var endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalSize)
-            if (params.requestedStartPosition < totalResults.size && endIndex <= totalResults.size) {
-                val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
+            val start = computeInitialLoadPosition(params, totalSize)
+            val size = computeInitialLoadSize(params, start, totalSize)
+            var endIndex = min(start + size, totalSize)
+            if (start < totalResults.size && endIndex <= totalResults.size) {
+                val ids = getSubList(start, endIndex, totalResults)
                 val archives = getArchives(ids)
-                val size = if (archives.size < ids.size && totalSize < params.requestedLoadSize) archives.size else totalSize
-                callback.onResult(archives, params.requestedStartPosition, size)
+                callback.onResult(archives, start, min(totalSize, archives.size))
             } else {
                 WebHandler.updateRefreshing(true)
                 runBlocking { loadResults(endIndex) }
-                endIndex = min(params.requestedStartPosition + params.requestedLoadSize, totalResults.size)
-                val ids = getSubList(params.requestedStartPosition, endIndex, totalResults)
+                endIndex = min(start + size, totalResults.size)
+                val ids = getSubList(start, endIndex, totalResults)
                 val archives = getArchives(ids)
                 WebHandler.updateRefreshing(false)
-                var startIndex = params.requestedStartPosition
-                while (startIndex > 0 && startIndex >= totalSize)
-                    startIndex = max(0, startIndex - params.requestedLoadSize)
-                callback.onResult(archives, startIndex, if (archives.size < ids.size) archives.size else totalSize)
+                callback.onResult(archives, start, min(totalSize, archives.size))
             }
         }
     }
@@ -261,9 +269,10 @@ class ArchiveListDataSource(results: List<String>?,
             getSubList(params.requestedStartPosition, endIndex, it)
         }
 
-        val archives = if (ids != null) getArchives(ids) else getArchives(null, params.requestedStartPosition, params.requestedLoadSize)
         val totalSize = if (ids != null || !isSearch) searchResults?.size ?: database.archiveDao().getArchiveCount() else 0
-        val startPosition = if (params.requestedStartPosition + archives.size > archives.size) 0 else params.requestedStartPosition
+        val startPosition = computeInitialLoadPosition(params, totalSize)
+        val size = computeInitialLoadSize(params, startPosition, totalSize)
+        val archives = if (ids != null) getArchives(ids) else getArchives(null, startPosition, size)
         callback.onResult(archives, startPosition, if (ids != null && archives.size < ids.size) archives.size else totalSize)
     }
 }
