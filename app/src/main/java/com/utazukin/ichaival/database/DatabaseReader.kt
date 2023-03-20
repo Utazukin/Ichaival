@@ -19,6 +19,7 @@
 package com.utazukin.ichaival.database
 
 import android.content.Context
+import android.database.DatabaseUtils
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -47,6 +48,33 @@ private class ArchiveDeserializer : JsonDeserializer<ArchiveJson> {
     }
 }
 
+private class DatabaseMigrations {
+    val MIGRATION_1_2 = object: Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("alter table archive add column pageCount INTEGER not null default 0")
+        }
+    }
+
+    val MIGRATION_2_3 = object: Migration(2, 3) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("alter table readertab add column scaleType TEXT")
+        }
+    }
+
+    val MIGRATION_3_4 = object: Migration(3, 4) {
+        val converters = DatabaseTypeConverters()
+        override fun migrate(database: SupportSQLiteDatabase) {
+            val cursor = database.query("select id, tags from archive")
+            while (cursor.moveToNext()) {
+                val tags = cursor.getString(cursor.getColumnIndexOrThrow("tags"))
+                val id = DatabaseUtils.sqlEscapeString(cursor.getString(cursor.getColumnIndexOrThrow("id")))
+                val tagMap = converters.fromStringv3(tags)
+                database.execSQL("update archive set tags = ${DatabaseUtils.sqlEscapeString(converters.fromMap(tagMap))} where id = $id")
+            }
+        }
+    }
+}
+
 object DatabaseReader {
     private const val jsonLocation: String = "archives.json"
 
@@ -57,29 +85,16 @@ object DatabaseReader {
     private val extractListeners = mutableListOf<DatabaseExtractListener>()
     private val deleteListeners = mutableListOf<DatabaseDeleteListener>()
 
-    private val MIGRATION_1_2 = object: Migration(1, 2) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("alter table archive add column pageCount INTEGER not null default 0")
-        }
-    }
-
-    private val MIGRATION_2_3 = object: Migration(2, 3) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("alter table readertab add column scaleType TEXT")
-        }
-    }
-
     lateinit var database: ArchiveDatabase
         private set
 
     fun init(context: Context) {
-        if (!this::database.isInitialized) {
-            database =
-                Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db")
-                    .addMigrations(MIGRATION_1_2)
-                    .addMigrations(MIGRATION_2_3)
-                    .build()
-        }
+        val migrations = DatabaseMigrations()
+        database = Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db")
+            .addMigrations(migrations.MIGRATION_1_2)
+            .addMigrations(migrations.MIGRATION_2_3)
+            .addMigrations(migrations.MIGRATION_3_4)
+            .build()
     }
 
     suspend fun updateArchiveList(context: Context, forceUpdate: Boolean = false) = withContext(Dispatchers.IO) {

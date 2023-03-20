@@ -99,33 +99,22 @@ data class Archive (
 class ArchiveJson(json: JsonObject) {
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString
-    val tags: Map<String, List<String>>
+    val tags: String = json.get("tags").asString
     val pageCount = if (json.has("pagecount")) json.get("pagecount").asInt else 0
     val currentPage = if (json.has("progress")) json.get("progress").asInt - 1 else 0
     val isNew = json.get("isnew").asString.let { it == "block" || it == "true" }
     val dateAdded: Long
 
     init {
-        val tagString = json.get("tags").asString
-        val tagList = tagString.split(",")
-        tags = buildMap<String, MutableList<String>> {
-            var timestamp = 0L
-            for (tag in tagList.map { it.trim() }) {
-                if (':' in tag) {
-                    val split = tag.split(":")
-                    val namespace = split[0]
-                    if (namespace == "date_added")
-                        timestamp = split[1].toLong()
-                    else {
-                        val namespaceList = getOrPut(namespace) { mutableListOf() }
-                        namespaceList.add(split[1])
-                    }
-                } else if (tag.isNotEmpty()) {
-                    val global = getOrPut("global") { mutableListOf() }
-                    global.add(tag)
-                }
-            }
-            dateAdded = timestamp
+        val timeStampIndex = tags.indexOf("date_added:")
+        dateAdded = if (timeStampIndex < 0) 0L
+        else {
+            var tagEnd = tags.indexOf(',', timeStampIndex)
+            if (tagEnd < 0)
+                tagEnd = tags.length
+
+            val dateTag = tags.substring(tags.indexOf(':', timeStampIndex) + 1, tagEnd)
+            dateTag.toLong()
         }
     }
 

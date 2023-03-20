@@ -160,10 +160,45 @@ interface ArchiveDao {
 
 class DatabaseTypeConverters {
     @TypeConverter
-    fun fromMap(value: Map<String, List<String>>) = JSONObject(value).toString()
+    fun fromMap(value: Map<String, List<String>>) : String {
+        val builder = StringBuilder()
+        for ((namespace, tags) in value) {
+            if (namespace != "global") {
+                for (tag in tags)
+                    builder.append("$namespace:$tag, ")
+            } else {
+                for (tag in tags)
+                    builder.append("$tag, ")
+            }
+        }
+
+        builder.delete(builder.length - 2, builder.length)
+        return builder.toString()
+    }
 
     @TypeConverter
     fun fromString(json: String) : Map<String, List<String>> {
+        return buildMap<String, MutableList<String>> {
+            val split = json.split(',')
+            for (tag in split.map { it.trim() }) {
+                val colonIndex = tag.indexOf(':')
+                if (colonIndex >= 0) {
+                    val namespace = tag.substring(0, colonIndex)
+                    if (namespace == "date_added")
+                        continue
+
+                    val t = tag.substring(colonIndex + 1, tag.length)
+                    val tags = getOrPut(namespace) { mutableListOf() }
+                    tags.add(t)
+                } else {
+                    val tags = getOrPut("global") { mutableListOf() }
+                    tags.add(tag)
+                }
+            }
+        }
+    }
+
+    fun fromStringv3(json: String) : Map<String, List<String>> {
         val jsonObject = JSONObject(json)
         return buildMap(jsonObject.length()) {
             for (key in jsonObject.keys()) {
@@ -175,7 +210,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class, ReaderTab::class], version = 3, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class], version = 4, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
