@@ -104,7 +104,7 @@ interface ArchiveDao {
     suspend fun getBookmarkCount() : Int
 
     @Query("Select * from readertab order by `index`")
-    fun getBookmarks() : List<ReaderTab>
+    suspend fun getBookmarks() : List<ReaderTab>
 
     @Query("Select id from readertab")
     fun getBookmarkedIds() : List<String>
@@ -130,8 +130,8 @@ interface ArchiveDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(archives: List<Archive>)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE, entity = Archive::class)
-    fun insertAllJson(archives: Collection<ArchiveJson>) : List<Long>
+    @Upsert(entity = Archive::class)
+    suspend fun insertAllJson(archives: Collection<ArchiveJson>)
 
     @Delete
     fun removeArchive(archive: Archive)
@@ -154,11 +154,8 @@ interface ArchiveDao {
     @Update
     fun updateBookmarks(tabs: List<ReaderTab>)
 
-    @Update(entity = Archive::class)
-    fun updateFromJson(archives: Collection<ArchiveJson>)
-
-    @Update(entity = Archive::class)
-    fun updateFromJson(archive: ArchiveJson)
+    @Upsert
+    suspend fun upsertBookmarks(tabs: List<ReaderTab>)
 }
 
 class DatabaseTypeConverters {
@@ -222,8 +219,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
     @Transaction
     suspend fun insertAndRemove(archives: Map<String, ArchiveJson>) {
-        val jsonValues = archives.values.toList()
-        val inserted = archiveDao().insertAllJson(jsonValues)
+        archiveDao().insertAllJson(archives.values)
 
         val allIds = archiveDao().getAllIds().toSet()
         val toRemove = allIds subtract archives.keys
@@ -237,23 +233,22 @@ abstract class ArchiveDatabase : RoomDatabase() {
             }
         }
 
-        for ((i, id) in inserted.withIndex()) {
-            if (id == -1L)
-                archiveDao().updateFromJson(jsonValues[i])
-        }
-
         if (ServerManager.serverTracksProgress) {
-            val bookmarks = archiveDao().getBookmarkedIds()
-            for (id in bookmarks) {
-                archives[id]?.let { archiveDao().updateBookmark(id, it.currentPage) }
-            }
+            val bookmarks = archiveDao().getBookmarks().associateBy { it.id }
             var bookmarkCount = bookmarks.size
-            for ((id, archive) in archives) {
-                if (archive.currentPage > 0 && !bookmarks.contains(id)) {
-                    val tab = ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage)
-                    archiveDao().addBookmark(tab)
+            val toUpdate = buildList {
+                for ((id, archive) in archives) {
+                    val bookmark = bookmarks[id]
+                    if (bookmark != null) {
+                        bookmark.page = archive.currentPage
+                        add(bookmark)
+                    } else if (archive.currentPage > 0)
+                        add(ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage))
                 }
             }
+
+            if (toUpdate.isNotEmpty())
+                archiveDao().upsertBookmarks(toUpdate)
         }
     }
 
@@ -342,7 +337,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     @Transaction
-    fun removeBookmark(tab: ReaderTab) {
+    suspend fun removeBookmark(tab: ReaderTab) {
         val tabs = archiveDao().getBookmarks()
         val adjustedTabs = tabs.filter { it.index > tab.index }
         for (adjustedTab in adjustedTabs)
