@@ -175,7 +175,9 @@ class DatabaseTypeConverters {
             }
         }
 
-        builder.delete(builder.length - 2, builder.length)
+        if (builder.isNotEmpty())
+            builder.delete(builder.length - 2, builder.length)
+
         return builder.toString()
     }
 
