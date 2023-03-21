@@ -31,20 +31,11 @@ typealias GetArchivesFunc = (List<String>, Int, Int) -> List<Archive>
 
 @Dao
 interface ArchiveDao {
-    @Query("Select * from archive")
-    suspend fun getAll() : List<Archive>
-
     @Query("Select id, title from archive")
     fun getAllTitleSort() : List<TitleSortArchive>
 
     @Query("Select count(id) from archive")
     fun getArchiveCount() : Int
-
-    @Query("Select * from archive order by :sortField collate nocase desc")
-    fun getAllDescending(sortField: String) : List<Archive>
-
-    @Query("Select * from archive order by :sortField collate nocase asc")
-    fun getAllAscending(sortField: String) : List<Archive>
 
     @Query("Select * from archive order by dateAdded desc limit :limit offset :offset")
     fun getDateDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
@@ -76,29 +67,23 @@ interface ArchiveDao {
     @Query("Select * from archive where id in (:ids) limit :limit offset :offset")
     fun getArchives(ids: List<String>, offset: Int = 0, limit: Int = -1) : List<Archive>
 
-    @Query("Select title from archive where id = :id limit 1")
-    fun getArchiveTitle(id: String) : String?
-
     @Query("update archive set pageCount = :pageCount where id = :id and pageCount <= 0")
-    fun updatePageCount(id: String, pageCount: Int)
+    suspend fun updatePageCount(id: String, pageCount: Int)
 
     @Query("Update archive set isNew = :isNew where id = :id")
-    fun updateNewFlag(id: String, isNew: Boolean)
+    suspend fun updateNewFlag(id: String, isNew: Boolean)
 
     @Query("Select id from archive")
     fun getAllIds() : List<String>
-
-    @Query("Select currentPage from archive where id = :id and currentPage >= 0 limit 1")
-    fun getBookmarkedPage(id: String) : Int?
 
     @Query("Update archive set currentPage = :page where id = :id")
     suspend fun updateBookmark(id: String, page: Int)
 
     @Query("Update archive set currentPage = -1 where id = :id")
-    fun removeBookmark(id: String)
+    suspend fun removeBookmark(id: String)
 
     @Query("Update archive set currentPage = -1 where id in (:ids)")
-    fun removeAllBookmarks(ids: List<String>)
+    suspend fun removeAllBookmarks(ids: List<String>)
 
     @Query("Select count(id) from readertab")
     suspend fun getBookmarkCount() : Int
@@ -107,7 +92,7 @@ interface ArchiveDao {
     suspend fun getBookmarks() : List<ReaderTab>
 
     @Query("Select id from readertab")
-    fun getBookmarkedIds() : List<String>
+    suspend fun getBookmarkedIds() : List<String>
 
     @Query("Select exists (select id from readertab where id = :id limit 1)")
     suspend fun isBookmarked(id: String) : Boolean
@@ -119,40 +104,28 @@ interface ArchiveDao {
     fun getDataBookmarks() : PagingSource<Int, ReaderTab>
 
     @Query("Delete from archive where id = :id")
-    fun removeArchive(id: String)
+    suspend fun removeArchive(id: String)
 
     @Query("Delete from archive where id in (:ids)")
-    fun removeArchives(ids: Collection<String>)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(vararg archives: Archive)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(archives: List<Archive>)
+    suspend fun removeArchives(ids: Collection<String>)
 
     @Upsert(entity = Archive::class)
     suspend fun insertAllJson(archives: Collection<ArchiveJson>)
 
     @Delete
-    fun removeArchive(archive: Archive)
-
-    @Delete
-    fun removeBookmark(tab: ReaderTab)
+    suspend fun removeBookmark(tab: ReaderTab)
 
     @Query("Delete from readertab")
-    fun clearBookmarks()
+    suspend fun clearBookmarks()
 
     @Update
-    fun updateArchive(archive: Archive)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addBookmark(tab: ReaderTab)
 
     @Update
     suspend fun updateBookmark(tab: ReaderTab)
 
     @Update
-    fun updateBookmarks(tabs: List<ReaderTab>)
+    suspend fun updateBookmarks(tabs: List<ReaderTab>)
 
     @Upsert
     suspend fun upsertBookmarks(tabs: List<ReaderTab>)
@@ -361,7 +334,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     @Transaction
-    fun clearBookmarks() : List<String> {
+    suspend fun clearBookmarks() : List<String> {
         val tabs = archiveDao().getBookmarkedIds()
         if (tabs.isNotEmpty()) {
             archiveDao().removeAllBookmarks(tabs)
