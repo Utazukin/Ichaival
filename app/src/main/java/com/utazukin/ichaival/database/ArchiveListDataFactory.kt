@@ -161,6 +161,16 @@ class ArchiveListServerSource(results: List<String>?,
                               private val filter: CharSequence) : ArchiveDataSourceBase(sortMethod, descending, isSearch) {
 
     private val totalResults = mutableListOf<String>()
+    private val titleSortResult by lazy {
+        val archives = database.archiveDao().getAllTitleSort()
+        val comparer = object : Comparator<TitleSortArchive> {
+            val naturalComparer = NaturalOrderComparator()
+            override fun compare(a: TitleSortArchive, b: TitleSortArchive) : Int {
+                return if (descending) naturalComparer.compare(b.title, a.title) else naturalComparer.compare(a.title, b.title)
+            }
+        }
+        archives.sortedWith(comparer).map { it.id }
+    }
     override val searchResults: List<String>? = if (filter.isBlank() && !isSearch && !onlyNew) null else totalResults
 
     init {
@@ -170,7 +180,7 @@ class ArchiveListServerSource(results: List<String>?,
 
     override fun getArchives(ids: List<String>?, offset: Int, limit: Int): List<Archive> {
         return when {
-            //sortMethod == SortMethod.Alpha && (ids == null || !serverSearch) -> database.getArchives(titleSortResult, offset, limit)
+            sortMethod == SortMethod.Alpha && (ids == null || !serverSearch) -> database.getArchives(titleSortResult, offset, limit)
             searchResults == null || ids == null || !serverSearch -> super.getArchives(ids, offset, limit)
             else -> database.getArchives(ids, offset, limit)
         }

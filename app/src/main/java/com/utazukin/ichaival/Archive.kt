@@ -96,6 +96,8 @@ data class Archive (
     }
 }
 
+data class TitleSortArchive(val id: String, val title: String)
+
 class ArchiveJson(json: JsonObject) {
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString
@@ -109,11 +111,12 @@ class ArchiveJson(json: JsonObject) {
         val timeStampIndex = tags.indexOf("date_added:")
         dateAdded = if (timeStampIndex < 0) 0L
         else {
-            var tagEnd = tags.indexOf(',', timeStampIndex)
+            val tagStart = tags.indexOf(':', timeStampIndex) + 1
+            var tagEnd = tags.indexOf(',', tagStart)
             if (tagEnd < 0)
                 tagEnd = tags.length
 
-            val dateTag = tags.substring(tags.indexOf(':', timeStampIndex) + 1, tagEnd)
+            val dateTag = tags.substring(tagStart, tagEnd)
             dateTag.toLong()
         }
     }

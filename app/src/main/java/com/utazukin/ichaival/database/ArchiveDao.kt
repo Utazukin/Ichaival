@@ -34,6 +34,9 @@ interface ArchiveDao {
     @Query("Select * from archive")
     suspend fun getAll() : List<Archive>
 
+    @Query("Select id, title from archive")
+    fun getAllTitleSort() : List<TitleSortArchive>
+
     @Query("Select count(id) from archive")
     fun getArchiveCount() : Int
 
