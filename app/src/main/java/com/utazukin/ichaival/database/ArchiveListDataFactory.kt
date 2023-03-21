@@ -245,15 +245,17 @@ class ArchiveListServerSource(results: List<String>?,
             if (start < totalResults.size && endIndex <= totalResults.size) {
                 val ids = getSubList(start, endIndex, totalResults)
                 val archives = getArchives(ids)
-                callback.onResult(archives, start, totalSize)
+                val count = if (archives.size != totalSize && archives.size % params.requestedLoadSize != 0) archives.size else totalSize
+                callback.onResult(archives, start, count)
             } else {
                 WebHandler.updateRefreshing(true)
                 runBlocking { loadResults(endIndex) }
                 endIndex = min(start + size, totalResults.size)
                 val ids = getSubList(start, endIndex, totalResults)
                 val archives = getArchives(ids)
+                val count = if (archives.size != totalSize && archives.size % params.requestedLoadSize != 0) archives.size else totalSize
                 WebHandler.updateRefreshing(false)
-                callback.onResult(archives, start, totalSize)
+                callback.onResult(archives, start, count)
             }
         }
     }
