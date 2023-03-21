@@ -20,6 +20,7 @@ package com.utazukin.ichaival.reader
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -724,9 +725,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             imagePager.setCurrentItem(dualPageAdapter.getPositionFromPage(jumpPage), false)
     }
 
-    override fun onLowMemory() {
-        super.onLowMemory()
-        imagePager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW)
+            imagePager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
     }
 
     override fun onExtract(id: String, pageCount: Int) {
