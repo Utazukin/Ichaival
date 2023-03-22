@@ -48,10 +48,10 @@ import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import kotlin.math.min
 
+const val STATIC_CATEGORY_SEARCH = "\b"
 private const val RESULTS_KEY = "search_results"
 private const val RESULTS_SIZE_KEY = "search_size"
 private const val DEFAULT_SEARCH_DELAY = 750L
-private const val STATIC_CATEGORY_SEARCH = "\b"
 private const val RANDOM_COUNT_KEY = "random_count"
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {

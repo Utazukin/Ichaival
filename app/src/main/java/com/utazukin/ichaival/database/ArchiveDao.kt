@@ -25,14 +25,15 @@ import com.utazukin.ichaival.reader.ScaleType
 import org.json.JSONObject
 import kotlin.math.min
 
-private const val MAX_PARAMETER_COUNT = 999
-
 typealias GetArchivesFunc = (List<String>, Int, Int) -> List<Archive>
 
 @Dao
 interface ArchiveDao {
     @Query("Select id, title from archive")
     fun getAllTitleSort() : List<TitleSortArchive>
+
+    @Query("Select id, title from archive where id in (:ids)")
+    fun getTitleSort(ids: List<String>) : List<TitleSortArchive>
 
     @Query("Select count(id) from archive")
     fun getArchiveCount() : Int
@@ -197,11 +198,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
         val allIds = archiveDao().getAllIds().toSet()
         val toRemove = allIds subtract archives.keys
         if (toRemove.isNotEmpty()) {
-            //Room has a max variable count of 999.
-            if (toRemove.size <= MAX_PARAMETER_COUNT)
+            if (toRemove.size <= MAX_BIND_PARAMETER_CNT)
                 archiveDao().removeArchives(toRemove)
             else {
-                for (splitList in toRemove.chunked(MAX_PARAMETER_COUNT))
+                for (splitList in toRemove.chunked(MAX_BIND_PARAMETER_CNT))
                     archiveDao().removeArchives(splitList)
             }
         }
@@ -295,16 +295,25 @@ abstract class ArchiveDatabase : RoomDatabase() {
         return getArchives(ids, offset, limit, archiveDao()::getArchives).sortedBy { idOrder[it.id] }
     }
 
+    fun getTitleSort(ids: List<String>? = null) : List<TitleSortArchive> {
+        return when {
+            ids == null -> archiveDao().getAllTitleSort()
+            ids.size <= MAX_BIND_PARAMETER_CNT -> archiveDao().getTitleSort(ids)
+            else -> buildList {
+                for (split in ids.chunked(MAX_BIND_PARAMETER_CNT))
+                    addAll(archiveDao().getTitleSort(split))
+            }
+        }
+    }
+
     private fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
         val endIndex = min(offset + limit, ids.size)
         val ids = ids.subList(offset, endIndex)
-        return if (ids.size <= MAX_PARAMETER_COUNT - 2)
-            dataFunc(ids, 0, -1)
-        else {
-            buildList {
-                for (split in ids.chunked(MAX_PARAMETER_COUNT - 2)) {
-                        addAll(dataFunc(split, 0, -1))
-                }
+        return when {
+            ids.size <= MAX_BIND_PARAMETER_CNT - 2 -> dataFunc(ids, 0, -1)
+            else -> buildList {
+                for (split in ids.chunked(MAX_BIND_PARAMETER_CNT - 2))
+                    addAll(dataFunc(split, 0, -1))
             }
         }
     }
