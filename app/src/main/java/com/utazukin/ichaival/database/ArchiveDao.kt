@@ -194,13 +194,10 @@ class DatabaseTypeConverters {
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
-    @Transaction
-    suspend fun insertAndRemove(archives: List<ArchiveJson>, updateTime: Long) {
+    suspend fun updateArchives(archives: List<ArchiveJson>, bookmarks: Map<String, ReaderTab>?) {
         archiveDao().insertAllJson(archives)
-        archiveDao().removeNotUpdated(updateTime)
 
-        if (ServerManager.serverTracksProgress) {
-            val bookmarks = archiveDao().getBookmarks().associateBy { it.id }
+        if (bookmarks != null) {
             var bookmarkCount = bookmarks.size
             val toUpdate = buildList {
                 for (archive in archives) {
@@ -217,6 +214,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
                 archiveDao().upsertBookmarks(toUpdate)
         }
     }
+
+    suspend fun removeOldArchives(updateTime: Long) = archiveDao().removeNotUpdated(updateTime)
+
+    suspend fun getBookmarks() = archiveDao().getBookmarks().associateBy { it.id }
 
     @Transaction
     suspend fun addBookmark(tab: ReaderTab) {

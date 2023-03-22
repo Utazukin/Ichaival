@@ -22,16 +22,14 @@ import android.content.Context
 import android.database.DatabaseUtils
 import androidx.room.Room
 import androidx.room.migration.Migration
+import androidx.room.withTransaction
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.stream.JsonReader
-import com.utazukin.ichaival.Archive
-import com.utazukin.ichaival.ArchiveJson
-import com.utazukin.ichaival.ReaderTab
-import com.utazukin.ichaival.WebHandler
+import com.utazukin.ichaival.*
 import com.utazukin.ichaival.reader.ScaleType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -83,6 +81,7 @@ private class DatabaseMigrations {
 
 object DatabaseReader {
     private const val jsonLocation: String = "archives.json"
+    private const val MAX_ARCHIVE_SYNC = 1000
 
     private var isDirty = false
     private val archivePageMap = mutableMapOf<String, List<String>>()
@@ -108,24 +107,40 @@ object DatabaseReader {
         val cacheDir = context.noBackupFilesDir
         if (forceUpdate || checkDirty(cacheDir)) {
             WebHandler.updateRefreshing(true)
-            val jsonFile = File(cacheDir, jsonLocation)
-            WebHandler.downloadArchiveList(context)?.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
-            jsonFile.inputStream().use {
-                val serverArchives = mutableListOf<ArchiveJson>()
-                val currentTime = Calendar.getInstance().timeInMillis
-                JsonReader(InputStreamReader(it, "UTF-8")).use { reader ->
-                    val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
-                    reader.beginArray()
-                    while (reader.hasNext()) {
-                        val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
-                        serverArchives.add(archive)
-                    }
-                    reader.endArray()
-                }
-                database.insertAndRemove(serverArchives, currentTime)
+            val archiveStream = WebHandler.downloadArchiveList(context)
+            if (archiveStream != null) {
+                val jsonFile = File(cacheDir, jsonLocation)
+                archiveStream.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
+                readArchiveJson(jsonFile)
             }
             WebHandler.updateRefreshing(false)
             isDirty = false
+        }
+    }
+
+    private suspend fun readArchiveJson(jsonFile: File) = jsonFile.inputStream().use {
+        val serverArchives = mutableListOf<ArchiveJson>()
+        val currentTime = Calendar.getInstance().timeInMillis
+        val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
+        database.withTransaction {
+            val bookmarks = if (ServerManager.serverTracksProgress) database.getBookmarks() else null
+            JsonReader(InputStreamReader(it, "UTF-8")).use { reader ->
+                reader.beginArray()
+                while (reader.hasNext()) {
+                    val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
+                    serverArchives.add(archive)
+
+                    if (serverArchives.size == MAX_ARCHIVE_SYNC) {
+                        database.updateArchives(serverArchives, bookmarks)
+                        serverArchives.clear()
+                    }
+                }
+                reader.endArray()
+            }
+
+            if (serverArchives.isNotEmpty())
+                database.updateArchives(serverArchives, bookmarks)
+            database.removeOldArchives(currentTime)
         }
     }
 
