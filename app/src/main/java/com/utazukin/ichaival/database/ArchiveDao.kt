@@ -119,7 +119,7 @@ interface ArchiveDao {
     @Query("Delete from readertab")
     suspend fun clearBookmarks()
 
-    @Update
+    @Insert
     suspend fun addBookmark(tab: ReaderTab)
 
     @Update
