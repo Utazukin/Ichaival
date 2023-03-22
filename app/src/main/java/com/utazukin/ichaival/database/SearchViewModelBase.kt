@@ -103,12 +103,7 @@ class StaticCategoryModel : ArchiveViewModel(), CategoryListener {
             updateSort(sortMethod, descending, true)
         } else {
             viewModelScope.launch(Dispatchers.IO) {
-                val archives = when (sortMethod) {
-                    SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending(results) else archiveDao.getTitleAscending(results)
-                    SortMethod.Date -> if (descending) archiveDao.getDateDescending(results) else archiveDao.getTitleAscending(results)
-                }
-
-                archiveDataFactory.updateSearchResults(archives.filter { it.isNew }.map { it.id })
+                archiveDataFactory.updateSearchResults(DatabaseReader.database.getNewArchiveIds(results))
             }
         }
     }

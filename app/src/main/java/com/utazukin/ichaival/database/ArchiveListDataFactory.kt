@@ -28,7 +28,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlin.math.min
 
-class ServerSearchResult(val results: List<String>?,
+data class ServerSearchResult(val results: List<String>?,
                          val totalSize: Int = 0,
                          val filter: CharSequence = "",
                          val onlyNew: Boolean = false)
@@ -281,15 +281,21 @@ class ArchiveListDataSource(results: List<String>?,
     }
 
     override fun getArchives(ids: List<String>?, offset: Int, limit: Int): List<Archive> {
-        if (ids == null)
-            return super.getArchives(null, offset, limit)
+        if (ids == null && isSearch)
+            return emptyList()
 
-        return database.getArchives(ids, offset, limit)
+        if (sortMethod == SortMethod.Alpha) {
+            if (ids != null)
+                return database.getArchives(ids, offset, limit)
+            return database.getArchives(getSortedResults(), offset, limit)
+        }
+
+        return super.getArchives(ids, offset, limit)
     }
 
     override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<Archive>) {
         val ids = searchResults?.let {
-            val sortedResult = getSortedResults(it)
+            val sortedResult = if (sortMethod == SortMethod.Alpha) getSortedResults(it) else it
             val endIndex = min(params.requestedStartPosition + params.requestedLoadSize, sortedResult.size)
             getSubList(params.requestedStartPosition, endIndex, sortedResult)
         }

@@ -65,6 +65,9 @@ interface ArchiveDao {
     @Query("Select * from archive where id = :id limit 1")
     suspend fun getArchive(id: String) : Archive?
 
+    @Query("Select id from archive where id in (:ids) and isNew = true")
+    suspend fun getNewArchives(ids: List<String>) : List<String>
+
     @Query("Select * from archive where id in (:ids) limit :limit offset :offset")
     fun getArchives(ids: List<String>, offset: Int = 0, limit: Int = -1) : List<Archive>
 
@@ -287,6 +290,16 @@ abstract class ArchiveDatabase : RoomDatabase() {
     fun getArchives(ids: List<String>, offset: Int, limit: Int) : List<Archive> {
         val idOrder = ids.withIndex().associate { it.value to it.index }
         return getArchives(ids, offset, limit, archiveDao()::getArchives).sortedBy { idOrder[it.id] }
+    }
+
+    suspend fun getNewArchiveIds(ids: List<String>) : List<String> {
+        return when {
+            ids.size < MAX_BIND_PARAMETER_CNT - 1 -> archiveDao().getNewArchives(ids)
+            else -> buildList {
+                for (split in ids.chunked(MAX_BIND_PARAMETER_CNT - 1))
+                    addAll(archiveDao().getNewArchives(split))
+            }
+        }
     }
 
     fun getTitleSort(ids: List<String>? = null) : List<TitleSortArchive> {
