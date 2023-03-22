@@ -42,9 +42,9 @@ import java.io.InputStreamReader
 import java.lang.reflect.Type
 import java.util.*
 
-private class ArchiveDeserializer : JsonDeserializer<ArchiveJson> {
+private class ArchiveDeserializer(val updateTime: Long) : JsonDeserializer<ArchiveJson> {
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ArchiveJson {
-        return ArchiveJson(json.asJsonObject)
+        return ArchiveJson(json.asJsonObject, updateTime)
     }
 }
 
@@ -73,6 +73,12 @@ private class DatabaseMigrations {
             }
         }
     }
+
+    val MIGRATION_4_5 = object: Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("alter table archive add column updatedAt INTEGER not null default 0")
+        }
+    }
 }
 
 object DatabaseReader {
@@ -94,6 +100,7 @@ object DatabaseReader {
             .addMigrations(migrations.MIGRATION_1_2)
             .addMigrations(migrations.MIGRATION_2_3)
             .addMigrations(migrations.MIGRATION_3_4)
+            .addMigrations(migrations.MIGRATION_4_5)
             .build()
     }
 
@@ -104,17 +111,18 @@ object DatabaseReader {
             val jsonFile = File(cacheDir, jsonLocation)
             WebHandler.downloadArchiveList(context)?.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
             jsonFile.inputStream().use {
-                val serverArchives = mutableMapOf<String, ArchiveJson>()
+                val serverArchives = mutableListOf<ArchiveJson>()
+                val currentTime = Calendar.getInstance().timeInMillis
                 JsonReader(InputStreamReader(it, "UTF-8")).use { reader ->
-                    val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer()).create()
+                    val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
                     reader.beginArray()
                     while (reader.hasNext()) {
                         val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
-                        serverArchives[archive.id] = archive
+                        serverArchives.add(archive)
                     }
                     reader.endArray()
                 }
-                database.insertAndRemove(serverArchives)
+                database.insertAndRemove(serverArchives, currentTime)
             }
             WebHandler.updateRefreshing(false)
             isDirty = false

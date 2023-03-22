@@ -36,12 +36,10 @@ data class Archive (
     @ColumnInfo var isNew: Boolean,
     @ColumnInfo val tags: Map<String, List<String>>,
     @ColumnInfo var currentPage: Int,
-    @ColumnInfo var pageCount: Int
+    @ColumnInfo var pageCount: Int,
+    @ColumnInfo val updatedAt: Long
 ) {
 
-    @Ignore
-    constructor(id: String, title: String, dateAdded: Long, isNew: Boolean, tags: Map<String, List<String>>)
-            : this(id, title, dateAdded, isNew, tags, -1, 0)
     val numPages: Int
         get() = if (ServerManager.checkVersionAtLeast(0, 7, 7) && pageCount > 0) pageCount else DatabaseReader.getPageCount(id)
 
@@ -98,7 +96,7 @@ data class Archive (
 
 data class TitleSortArchive(val id: String, val title: String)
 
-class ArchiveJson(json: JsonObject) {
+class ArchiveJson(json: JsonObject, val updatedAt: Long) {
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString
     val tags: String = json.get("tags").asString

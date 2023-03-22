@@ -113,6 +113,9 @@ interface ArchiveDao {
     @Upsert(entity = Archive::class)
     suspend fun insertAllJson(archives: Collection<ArchiveJson>)
 
+    @Query("Delete from archive where updatedAt < :updateTime")
+    suspend fun removeNotUpdated(updateTime: Long)
+
     @Delete
     suspend fun removeBookmark(tab: ReaderTab)
 
@@ -186,37 +189,27 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class, ReaderTab::class], version = 4, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class], version = 5, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
 
     @Transaction
-    suspend fun insertAndRemove(archives: Map<String, ArchiveJson>) {
-        archiveDao().insertAllJson(archives.values)
-
-        val allIds = archiveDao().getAllIds().toSet()
-        val toRemove = allIds subtract archives.keys
-        if (toRemove.isNotEmpty()) {
-            if (toRemove.size <= MAX_BIND_PARAMETER_CNT)
-                archiveDao().removeArchives(toRemove)
-            else {
-                for (splitList in toRemove.chunked(MAX_BIND_PARAMETER_CNT))
-                    archiveDao().removeArchives(splitList)
-            }
-        }
+    suspend fun insertAndRemove(archives: List<ArchiveJson>, updateTime: Long) {
+        archiveDao().insertAllJson(archives)
+        archiveDao().removeNotUpdated(updateTime)
 
         if (ServerManager.serverTracksProgress) {
             val bookmarks = archiveDao().getBookmarks().associateBy { it.id }
             var bookmarkCount = bookmarks.size
             val toUpdate = buildList {
-                for ((id, archive) in archives) {
-                    val bookmark = bookmarks[id]
+                for (archive in archives) {
+                    val bookmark = bookmarks[archive.id]
                     if (bookmark != null) {
                         bookmark.page = archive.currentPage
                         add(bookmark)
                     } else if (archive.currentPage > 0)
-                        add(ReaderTab(id, archive.title, bookmarkCount++, archive.currentPage))
+                        add(ReaderTab(archive.id, archive.title, bookmarkCount++, archive.currentPage))
                 }
             }
 
