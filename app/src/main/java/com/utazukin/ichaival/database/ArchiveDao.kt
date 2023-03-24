@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 typealias GetArchivesFunc = suspend (List<String>, Int, Int) -> List<Archive>
-typealias GetArchivesBigFunc = suspend (Int, Int) -> List<Archive>
+typealias GetArchivesBigFunc = suspend (Int, Int, Boolean) -> List<Archive>
 
 @Dao
 interface ArchiveDao {
@@ -89,7 +89,7 @@ interface ArchiveDao {
     @Query("Select * from archive order by random() limit 1")
     suspend fun getRandom() : Archive
 
-    @Query("Select * from archive left join readertab on archive.id = readertab.id where readertab.id is null order by random() limit 1")
+    @Query("Select archive.* from archive left join readertab on archive.id = readertab.id where readertab.id is null order by random() limit 1")
     suspend fun getRandomExcludeBookmarked() : Archive?
 
     @Query("Select * from archive where id = :id limit 1")
@@ -162,24 +162,24 @@ interface ArchiveDao {
     suspend fun updateTitleSort(sort: List<TitleSortArchive>)
 
     @SkipQueryVerification
-    @Query("Select * from archive join search on search.id = archive.id order by search.position limit :limit offset :offset")
-    suspend fun getArchivesBig(offset: Int, limit: Int) : List<Archive>
+    @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew = true order by search.position limit :limit offset :offset")
+    suspend fun getArchivesBig(offset: Int, limit: Int, onlyNew: Boolean) : List<Archive>
 
     @SkipQueryVerification
-    @Query("Select * from archive join search on search.id = archive.id order by archive.dateAdded desc limit :limit offset :offset")
-    suspend fun getArchivesBigByDateDescending(offset: Int, limit: Int) : List<Archive>
+    @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew order by archive.dateAdded desc limit :limit offset :offset")
+    suspend fun getArchivesBigByDateDescending(offset: Int, limit: Int, onlyNew: Boolean) : List<Archive>
 
     @SkipQueryVerification
-    @Query("Select * from archive join search on search.id = archive.id order by archive.dateAdded asc limit :limit offset :offset")
-    suspend fun getArchivesBigByDate(offset: Int, limit: Int) : List<Archive>
+    @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew order by archive.dateAdded asc limit :limit offset :offset")
+    suspend fun getArchivesBigByDate(offset: Int, limit: Int, onlyNew: Boolean) : List<Archive>
 
     @SkipQueryVerification
-    @Query("Select * from archive join search on search.id = archive.id order by archive.titleSortIndex desc limit :limit offset :offset")
-    suspend fun getArchivesBigByTitleDescending(offset: Int, limit: Int) : List<Archive>
+    @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew order by archive.titleSortIndex desc limit :limit offset :offset")
+    suspend fun getArchivesBigByTitleDescending(offset: Int, limit: Int, onlyNew: Boolean) : List<Archive>
 
     @SkipQueryVerification
-    @Query("Select * from archive join search on search.id = archive.id order by archive.titleSortIndex asc limit :limit offset :offset")
-    suspend fun getArchivesBigByTitle(offset: Int, limit: Int) : List<Archive>
+    @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew order by archive.titleSortIndex asc limit :limit offset :offset")
+    suspend fun getArchivesBigByTitle(offset: Int, limit: Int, onlyNew: Boolean) : List<Archive>
 
     @SkipQueryVerification
     @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew = true order by archive.dateAdded")
@@ -363,34 +363,34 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    suspend fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+    suspend fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getTitleDescending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getTitleDescending)
-            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByTitleDescending)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByTitleDescending, onlyNew)
         }
     }
 
-    suspend fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+    suspend fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getTitleAscending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getTitleAscending)
-            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByTitle)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByTitle, onlyNew)
         }
     }
-    suspend fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+    suspend fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getDateDescending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getDateDescending)
-            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByDateDescending)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByDateDescending, onlyNew)
         }
     }
 
-    suspend fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+    suspend fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getDateAscending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getDateAscending)
-            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByDate)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByDate, onlyNew)
         }
     }
 
@@ -428,14 +428,14 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
     private suspend fun createSearchTableSuspend(ids: List<String>, useIndex: Boolean) = withContext(Dispatchers.IO) { createSearchTable(ids, useIndex) }
 
-    private suspend fun getArchivesBig(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesBigFunc? = null) : List<Archive> {
+    private suspend fun getArchivesBig(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesBigFunc? = null, onlyNew: Boolean = false) : List<Archive> {
         return if (dataFunc == null) {
             val idOrder = ids.filterIndexed { i, _ -> i >= offset && i < offset + limit }
             createSearchTableSuspend(idOrder, true)
-            archiveDao().getArchivesBig(0, -1)
+            archiveDao().getArchivesBig(0, -1, onlyNew)
         } else {
             createSearchTableSuspend(ids, false)
-            dataFunc(offset, limit)
+            dataFunc(offset, limit, onlyNew)
         }
     }
 

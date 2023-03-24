@@ -21,6 +21,7 @@ package com.utazukin.ichaival.database
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
+import androidx.room.RoomDatabase
 import com.utazukin.ichaival.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
@@ -88,6 +89,8 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             ArchiveListRandomPagingSource(filter ?: "", randomCount, categoryId, database)
         else if (!isLocal && categoryId == null && (onlyNew || filter?.isNotEmpty() == true))
             ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
+        else if (searchResults?.run { size > RoomDatabase.MAX_BIND_PARAMETER_CNT } == true)
+            ArchiveListBigPagingSource(searchResults!!, database, sortMethod, descending, onlyNew)
         else if (filter.isNullOrEmpty() || isLocal || searchResults != null) {
             when {
                 isSearch && searchResults?.isEmpty() != false -> emptySource

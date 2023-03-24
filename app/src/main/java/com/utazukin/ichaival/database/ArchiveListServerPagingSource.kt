@@ -153,3 +153,31 @@ class ArchiveListRandomPagingSource(filter: CharSequence, private val count: UIn
         return LoadResult.Page(archives, prev, next, prev?.plus(1) ?: 0, next?.let { totalSize - it } ?: 0)
     }
 }
+
+class ArchiveListBigPagingSource(private val ids: List<String>,
+                                 private val database: ArchiveDatabase,
+                                 private val sortMethod: SortMethod,
+                                 private val descending: Boolean,
+                                 private val onlyNew: Boolean) : PagingSource<Int, Archive>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Archive>) = state.anchorPosition
+
+    private suspend fun getArchives(position: Int, loadSize: Int) : List<Archive> {
+        return when {
+            sortMethod == SortMethod.Alpha && descending -> database.getTitleDescending(ids, position, loadSize, onlyNew)
+            sortMethod == SortMethod.Alpha -> database.getTitleAscending(ids, position, loadSize, onlyNew)
+            sortMethod == SortMethod.Date && descending -> database.getDateDescending(ids, position, loadSize, onlyNew)
+            else -> database.getDateAscending(ids, position, loadSize, onlyNew)
+        }
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
+        val position = if (params is LoadParams.Refresh) 0 else params.key ?: 0
+        val prev = if (position > 0) position - 1 else null
+        val endIndex = min(position + params.loadSize, ids.size)
+        val next = if (endIndex >= ids.size) null else endIndex
+        val archives = getArchives(position, params.loadSize)
+        return LoadResult.Page(archives, prev, next, prev?.plus(1) ?: 0, next?.let { ids.size - it } ?: 0)
+    }
+
+}
