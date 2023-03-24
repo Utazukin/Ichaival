@@ -18,49 +18,43 @@
 
 package com.utazukin.ichaival.database
 
+import android.content.ContentValues
 import androidx.paging.PagingSource
 import androidx.room.*
 import com.utazukin.ichaival.*
 import com.utazukin.ichaival.reader.ScaleType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import kotlin.math.min
 
-typealias GetArchivesFunc = (List<String>, Int, Int) -> List<Archive>
+typealias GetArchivesFunc = suspend (List<String>, Int, Int) -> List<Archive>
+typealias GetArchivesBigFunc = suspend (Int, Int) -> List<Archive>
 
 @Dao
 interface ArchiveDao {
+    @Query("Select * from archive limit :limit offset :offset")
+    suspend fun getArchives(offset: Int, limit: Int): List<Archive>
+
     @Query("Select id, title from archive")
-    fun getAllTitleSort() : List<TitleSortArchive>
+    suspend fun getAllTitleSort() : MutableList<TitleSortArchive>
 
     @Query("Select id, title from archive where id in (:ids)")
-    fun getTitleSort(ids: List<String>) : List<TitleSortArchive>
+    suspend fun getTitleSort(ids: List<String>) : MutableList<TitleSortArchive>
 
     @Query("Select count(id) from archive")
-    fun getArchiveCount() : Int
+    suspend fun getArchiveCount() : Int
 
     @Query("Select * from archive order by dateAdded desc limit :limit offset :offset")
-    fun getDateDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+    suspend fun getDateDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
     @Query("Select * from archive where id in (:ids) order by dateAdded desc limit :limit offset :offset")
-    fun getDateDescending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
-
-    @Query("Select * from archive order by title collate nocase desc limit :limit offset :offset")
-    fun getTitleDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
-
-    @Query("Select * from archive where id in (:ids) order by title collate nocase desc limit :limit offset :offset")
-    fun getTitleDescending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+    suspend fun getDateDescending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
     @Query("Select * from archive order by dateAdded asc limit :limit offset :offset")
-    fun getDateAscending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+    suspend fun getDateAscending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
     @Query("Select * from archive where id in (:ids) order by dateAdded asc limit :limit offset :offset")
-    fun getDateAscending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
-
-    @Query("Select * from archive order by title collate nocase asc limit :limit offset :offset")
-    fun getTitleAscending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
-
-    @Query("Select * from archive where id in (:ids) order by title collate nocase asc limit :limit offset :offset")
-    fun getTitleAscending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+    suspend fun getDateAscending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
     @Query("Select * from archive where id = :id limit 1")
     suspend fun getArchive(id: String) : Archive?
@@ -68,8 +62,11 @@ interface ArchiveDao {
     @Query("Select id from archive where id in (:ids) and isNew = true")
     suspend fun getNewArchives(ids: List<String>) : List<String>
 
+    @Query("Select id from archive where isNew = true")
+    suspend fun getNewArchives() : List<String>
+
     @Query("Select * from archive where id in (:ids) limit :limit offset :offset")
-    fun getArchives(ids: List<String>, offset: Int = 0, limit: Int = -1) : List<Archive>
+    suspend fun getArchives(ids: List<String>, offset: Int = 0, limit: Int = -1) : List<Archive>
 
     @Query("update archive set pageCount = :pageCount where id = :id and pageCount <= 0")
     suspend fun updatePageCount(id: String, pageCount: Int)
@@ -78,7 +75,7 @@ interface ArchiveDao {
     suspend fun updateNewFlag(id: String, isNew: Boolean)
 
     @Query("Select id from archive")
-    fun getAllIds() : List<String>
+    suspend fun getAllIds() : List<String>
 
     @Query("Update archive set currentPage = :page where id = :id")
     suspend fun updateBookmark(id: String, page: Int)
@@ -136,6 +133,26 @@ interface ArchiveDao {
 
     @Upsert
     suspend fun upsertBookmarks(tabs: List<ReaderTab>)
+
+    @SkipQueryVerification
+    @Query("Select * from archive join search on search.id = archive.id order by search.position limit :limit offset :offset")
+    suspend fun getArchivesBig(offset: Int, limit: Int) : List<Archive>
+
+    @SkipQueryVerification
+    @Query("Select archive.id from archive join search on search.id = archive.id where archive.isNew = true")
+    suspend fun getArchivesNewBig() : List<String>
+
+    @SkipQueryVerification
+    @Query("Select archive.id, archive.title from archive join search on search.id = archive.id order by search.position")
+    suspend fun getTitleSortBig() : MutableList<TitleSortArchive>
+
+    @SkipQueryVerification
+    @Query("Select * from archive join search on search.id = archive.id order by archive.dateAdded desc limit :limit offset :offset")
+    suspend fun getArchivesBigByDateDescending(offset: Int, limit: Int) : List<Archive>
+
+    @SkipQueryVerification
+    @Query("Select * from archive join search on search.id = archive.id order by archive.dateAdded asc limit :limit offset :offset")
+    suspend fun getArchivesBigByDate(offset: Int, limit: Int) : List<Archive>
 }
 
 class DatabaseTypeConverters {
@@ -259,69 +276,90 @@ abstract class ArchiveDatabase : RoomDatabase() {
         return false
     }
 
-    fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null)
-            archiveDao().getTitleDescending(offset, limit)
-        else
-            getArchives(ids, offset, limit, archiveDao()::getTitleDescending)
+    suspend fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return when {
+            ids == null -> archiveDao().getDateDescending(offset, limit)
+            ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getDateDescending)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByDateDescending)
+        }
     }
 
-    fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null)
-            archiveDao().getTitleAscending(offset, limit)
-        else
-           getArchives(ids, offset, limit, archiveDao()::getTitleAscending)
+    suspend fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return when {
+            ids == null -> archiveDao().getDateAscending(offset, limit)
+            ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getDateAscending)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByDate)
+        }
     }
 
-    fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null)
-            archiveDao().getDateDescending(offset, limit)
-        else
-            getArchives(ids, offset, limit, archiveDao()::getDateDescending)
-    }
-
-    fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
-        return if (ids == null)
-            archiveDao().getDateAscending(offset, limit)
-        else
-            getArchives(ids, offset, limit, archiveDao()::getDateAscending)
-    }
-
-    fun getArchives(ids: List<String>, offset: Int, limit: Int) : List<Archive> {
-        val idOrder = ids.withIndex().associate { it.value to it.index }
-        return getArchives(ids, offset, limit, archiveDao()::getArchives).sortedBy { idOrder[it.id] }
-    }
+    suspend fun getArchives(ids: List<String>, offset: Int, limit: Int) = getArchivesBig(ids, offset, limit)
 
     suspend fun getNewArchiveIds(ids: List<String>) : List<String> {
         return when {
             ids.size < MAX_BIND_PARAMETER_CNT - 1 -> archiveDao().getNewArchives(ids)
-            else -> buildList {
-                for (split in ids.chunked(MAX_BIND_PARAMETER_CNT - 1))
-                    addAll(archiveDao().getNewArchives(split))
+            else -> {
+                createSearchTable(ids, false)
+                archiveDao().getArchivesNewBig()
             }
         }
     }
 
-    fun getTitleSort(ids: List<String>? = null) : List<TitleSortArchive> {
+    suspend fun getTitleSort(ids: List<String>? = null) : MutableList<TitleSortArchive> {
         return when {
             ids == null -> archiveDao().getAllTitleSort()
             ids.size <= MAX_BIND_PARAMETER_CNT -> archiveDao().getTitleSort(ids)
-            else -> buildList {
-                for (split in ids.chunked(MAX_BIND_PARAMETER_CNT))
-                    addAll(archiveDao().getTitleSort(split))
+            else -> {
+                createSearchTable(ids, false)
+                archiveDao().getTitleSortBig()
             }
         }
     }
 
-    private fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
-        val endIndex = min(offset + limit, ids.size)
-        val ids = ids.subList(offset, endIndex)
-        return when {
-            ids.size <= MAX_BIND_PARAMETER_CNT - 2 -> dataFunc(ids, 0, -1)
-            else -> buildList {
-                for (split in ids.chunked(MAX_BIND_PARAMETER_CNT - 2))
-                    addAll(dataFunc(split, 0, -1))
+    private suspend fun createSearchTable(ids: List<String>, useIndex: Boolean) = withContext(Dispatchers.IO) {
+        openHelper.writableDatabase.use { db ->
+            db.beginTransaction()
+            db.execSQL("drop table if exists search")
+            val value = ContentValues()
+            if (useIndex) {
+                db.execSQL("create table if not exists search (id text primary key, position integer unique)")
+                for (i in ids.indices) {
+                    with(value) {
+                        clear()
+                        put("id", ids[i])
+                        put("position", i)
+                    }
+                    db.insert("search", OnConflictStrategy.IGNORE, value)
+                }
+            } else {
+                db.execSQL("create table if not exists search (id text primary key)")
+                for (id in ids) {
+                    with(value) {
+                        clear()
+                        put("id", id)
+                    }
+                    db.insert("search", OnConflictStrategy.IGNORE, value)
+                }
             }
+            db.setTransactionSuccessful()
+            db.endTransaction()
+        }
+    }
+
+    private suspend fun getArchivesBig(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesBigFunc? = null) : List<Archive> {
+        return if (dataFunc == null) {
+            val idOrder = ids.filterIndexed { i, _ -> i >= offset && i < offset + limit }
+            createSearchTable(idOrder, true)
+            archiveDao().getArchivesBig(0, -1)
+        } else {
+            createSearchTable(ids, false)
+            dataFunc(offset, limit)
+        }
+    }
+
+    private suspend fun getArchives(ids: List<String>, offset: Int, limit: Int, dataFunc: GetArchivesFunc) : List<Archive> {
+        return when {
+            offset >= ids.size -> emptyList()
+            else -> dataFunc(ids, offset, limit)
         }
     }
 

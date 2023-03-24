@@ -370,7 +370,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     else {
                         getViewModel<RandomViewModel>().filter(result)
                         jumpToTop = true
-                        viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
+                        viewModel?.run {
+                            cancel()
+                            monitor(lifecycleScope) { listAdapter.submitData(it) }
+                        }
                         if (listView.adapter == null)
                             listView.adapter = listAdapter
                     }
@@ -382,7 +385,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                             getViewModel<RandomViewModel>().filter(result)
                         }
                     }
-                    viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
+                    viewModel?.run {
+                        cancel()
+                        monitor(lifecycleScope) { listAdapter.submitData(it) }
+                    }
                     listView.adapter = listAdapter
                     savedState = null
                 }
@@ -426,7 +432,11 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     }
                 }
             }
-            viewModel?.archiveList?.observe(viewLifecycleOwner) { listAdapter.submitList(it) }
+
+            viewModel?.run {
+                cancel()
+                monitor(lifecycleScope) { listAdapter.submitData(it) }
+            }
             listView.adapter = listAdapter
             if (savedState == null)
                 updateSortMethod(method, desc, prefs)
@@ -451,12 +461,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             searchView.clearFocus()
             enableRefresh(false)
 
+            viewModel?.cancel()
             val model = ViewModelProviders.of(this)[StaticCategoryModel::class.java].apply {
+                monitor(lifecycleScope) {
+                    with(listView.adapter as ArchiveRecyclerViewAdapter) { submitData(it) }
+                }
                 init(category.archiveIds, category.id, sortMethod, descending, newCheckBox.isChecked)
             }
-            model.archiveList?.observe(viewLifecycleOwner) { with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) } }
 
-            model.filter(newCheckBox.isChecked)
             viewModel = model
         }
     }
@@ -590,19 +602,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        when (val serverSource = viewModel?.archiveList?.value?.dataSource) {
-            is ArchiveListServerSource ->
-                with(serverSource) {
-                    searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
-                    outState.putInt(RESULTS_SIZE_KEY, totalSize)
-                }
-            is RandomServerSource -> {
-                with(serverSource) {
-                    outState.putStringArray(RESULTS_KEY, searchResults.toTypedArray())
-                    outState.putInt(RESULTS_SIZE_KEY, searchResults.size)
-                }
+        viewModel?.run {
+            searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
+            val total = totalSize ?: searchResults?.size ?: 0
+            if (total > 0)
+                outState.putInt(RESULTS_SIZE_KEY, total)
+            if (activity is ArchiveRandomActivity)
                 randomCount?.let { outState.putInt(RANDOM_COUNT_KEY, it.toInt()) }
-            }
         }
     }
 
@@ -666,8 +672,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
         }
 
-        model.archiveList?.observe(viewLifecycleOwner) { with(listView.adapter as ArchiveRecyclerViewAdapter) { submitList(it) } }
-
+        viewModel?.cancel()
+        model.monitor(lifecycleScope) { with(listView.adapter as ArchiveRecyclerViewAdapter) { submitData(it) } }
         model.updateSort(sortMethod, descending)
         viewModel = model
     }

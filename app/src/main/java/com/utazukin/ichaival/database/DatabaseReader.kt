@@ -100,6 +100,7 @@ object DatabaseReader {
             .addMigrations(migrations.MIGRATION_2_3)
             .addMigrations(migrations.MIGRATION_3_4)
             .addMigrations(migrations.MIGRATION_4_5)
+            .fallbackToDestructiveMigration()
             .build()
     }
 

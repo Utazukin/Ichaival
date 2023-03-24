@@ -18,31 +18,40 @@
 
 package com.utazukin.ichaival.database
 
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.*
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.utazukin.ichaival.*
 import kotlinx.coroutines.*
-
-private fun <T : Any, TT : Any> DataSource.Factory<T, TT>.toLiveData(pageSize: Int = 50) = LivePagedListBuilder(this, pageSize).build()
+import kotlinx.coroutines.flow.collectLatest
 
 class ReaderTabViewModel : ViewModel() {
     val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
 }
 
 abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
-    var archiveList: LiveData<PagedList<Archive>>? = null
-        protected set
-    protected abstract val archiveDataFactory: ArchiveListDataFactoryBase
+    val totalSize
+        get() = archivePagingSource.totalSize
+    val searchResults
+        get() = archivePagingSource.results
+    protected abstract var archivePagingSource: ArchiveListPagingSourceBase
     protected val archiveDao by lazy { DatabaseReader.database.archiveDao() }
+    private var collectJob: Job? = null
+    private val archiveList = Pager(PagingConfig(ServerManager.pageSize), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
 
     init {
         DatabaseReader.registerDeleteListener(this)
     }
 
+    private fun getPagingSource() : ArchiveListPagingSourceBase {
+        archivePagingSource = archivePagingSource.copy()
+        return archivePagingSource
+    }
     suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? = withContext(Dispatchers.IO) {
-        var data: Collection<String> = archiveDataFactory.currentSource?.searchResults ?: archiveDao.getAllIds()
+        var data: Collection<String> = archivePagingSource.results ?: archiveDao.getAllIds()
 
         if (excludeBookmarked)
             data = data.subtract(archiveDao.getBookmarks().map { it.id }.toSet())
@@ -56,42 +65,70 @@ abstract class SearchViewModelBase : ViewModel(), DatabaseDeleteListener {
         super.onCleared()
         DatabaseReader.unregisterDeleteListener(this)
     }
-    fun reset() = archiveDataFactory.reset()
+    fun reset() = archivePagingSource.invalidate()
+
+    fun monitor(scope: CoroutineScope, action: suspend (PagingData<Archive>) -> Unit) {
+        collectJob?.cancel()
+        collectJob = scope.launch { archiveList.collectLatest(action) }
+    }
+
+    fun cancel() {
+        collectJob?.cancel()
+        collectJob = null
+    }
+
     override fun onDelete() {
         reset()
     }
 }
 
 class RandomViewModel : SearchViewModelBase() {
-    override val archiveDataFactory = RandomArchiveListDataFactory()
-    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {}
-    fun filter(searchResult: ServerSearchResult) = archiveDataFactory.updateSearchResults(searchResult)
+    override var archivePagingSource: ArchiveListPagingSourceBase = ArchiveListPagingSourceRandom()
 
-    init {
-        archiveList = archiveDataFactory.toLiveData(ServerManager.pageSize)
+    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {}
+    fun filter(searchResult: ServerSearchResult) {
+        with(archivePagingSource) {
+            updateSearchResults(searchResult)
+            invalidate()
+        }
     }
 }
 
 class SearchViewModel : SearchViewModelBase() {
-    override val archiveDataFactory = ArchiveListDataFactory(false)
+    override var archivePagingSource: ArchiveListPagingSourceBase = ArchiveListPagingSourceServer()
+    private var initiated = false
 
     fun init(method: SortMethod, desc: Boolean, force: Boolean = false, isSearch: Boolean = false) {
-        if (archiveList != null && !force)
+        if (initiated && !force)
             return
 
-        archiveDataFactory.isSearch = isSearch
-        archiveDataFactory.updateSort(method, desc, true)
-        archiveList = archiveDataFactory.toLiveData(ServerManager.pageSize)
+        initiated = true
+        with(archivePagingSource) {
+            this.isSearch = isSearch
+            updateSort(method, desc, true)
+            invalidate()
+        }
     }
 
-    fun filter(searchResult: ServerSearchResult) = archiveDataFactory.updateSearchResults(searchResult)
+    fun filter(searchResult: ServerSearchResult) {
+        with(archivePagingSource) {
+            updateSearchResults(searchResult)
+            invalidate()
+        }
+    }
 
-    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) = archiveDataFactory.updateSort(method, desc, force)
+    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
+        with(archivePagingSource) {
+            if (updateSort(method, desc, force))
+                invalidate()
+        }
+    }
 }
 
 class StaticCategoryModel : ArchiveViewModel(), CategoryListener {
     private lateinit var results: List<String>
     private var categoryId: String? = null
+    private var initiated = false
 
     init {
         CategoryManager.addUpdateListener(this)
@@ -99,21 +136,28 @@ class StaticCategoryModel : ArchiveViewModel(), CategoryListener {
 
     fun filter(onlyNew: Boolean) {
         if (!onlyNew) {
-            archiveDataFactory.updateSearchResults(results)
-            updateSort(sortMethod, descending, true)
+            archivePagingSource.let {
+                it.updateSearchResults(results)
+                it.invalidate()
+            }
         } else {
-            viewModelScope.launch(Dispatchers.IO) {
-                archiveDataFactory.updateSearchResults(DatabaseReader.database.getNewArchiveIds(results))
+            viewModelScope.launch {
+                archivePagingSource.let {
+                    it.updateSearchResults(DatabaseReader.database.getNewArchiveIds(results))
+                    it.invalidate()
+                }
             }
         }
     }
 
     fun init(ids: List<String>, id: String, method: SortMethod, desc: Boolean, onlyNew: Boolean) {
-        if (archiveList == null || id != categoryId) {
+        if (!initiated || id != categoryId) {
+            initiated = true
             categoryId = id
-            archiveDataFactory.isSearch = false
-            archiveDataFactory.updateSort(method, desc, true)
-            archiveList = archiveDataFactory.toLiveData()
+            with(archivePagingSource) {
+                isSearch = false
+                updateSort(method, desc, true)
+            }
             sortMethod = method
             descending = desc
             results = ids
@@ -136,16 +180,20 @@ class StaticCategoryModel : ArchiveViewModel(), CategoryListener {
 }
 
 open class ArchiveViewModel : SearchViewModelBase() {
-    override val archiveDataFactory = ArchiveListDataFactory(true)
+    override var archivePagingSource: ArchiveListPagingSourceBase = ArchiveListPagingSourceLocal()
     protected var sortMethod = SortMethod.Alpha
     protected var descending = false
     private var job: Job? = null
+    private var initiated = false
 
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence, onlyNew: Boolean, isSearch: Boolean = false) {
-        if (archiveList == null) {
-            archiveDataFactory.isSearch = isSearch
-            archiveDataFactory.updateSort(method, desc, true)
-            archiveList = archiveDataFactory.toLiveData()
+        if (!initiated) {
+            initiated = true
+            with(archivePagingSource) {
+                this.isSearch = isSearch
+                updateSort(method, desc, true)
+                invalidate()
+            }
             sortMethod = method
             descending = desc
             filter(filter, onlyNew)
@@ -157,15 +205,9 @@ open class ArchiveViewModel : SearchViewModelBase() {
         job = viewModelScope.launch(Dispatchers.IO) {
             val ids = internalFilter(filter ?: "", onlyNew)
             yield()
-            archiveDataFactory.updateSearchResults(ids)
-        }
-    }
-
-    private suspend fun getArchives() : List<Archive> {
-        return withContext(Dispatchers.IO) {
-            when (sortMethod) {
-                SortMethod.Alpha -> if (descending) archiveDao.getTitleDescending() else archiveDao.getTitleAscending()
-                SortMethod.Date -> if (descending) archiveDao.getDateDescending() else archiveDao.getDateAscending()
+            with(archivePagingSource) {
+                updateSearchResults(ids)
+                invalidate()
             }
         }
     }
@@ -180,19 +222,22 @@ open class ArchiveViewModel : SearchViewModelBase() {
                 mValues.add(archive.id)
         }
 
-        val allArchives = getArchives()
         if (filter.isEmpty())
-            return if (onlyNew) allArchives.filter { it.isNew }.map { it.id } else null
-        else {
-            val terms = parseTermsInfo(filter)
-            val titleSearch = filter.removeSurrounding("\"")
+            return if (onlyNew) archiveDao.getNewArchives() else null
+
+        val archiveLimit = 1000
+        val totalCount = archiveDao.getArchiveCount()
+        val terms = parseTermsInfo(filter)
+        val titleSearch = filter.removeSurrounding("\"")
+        for (i in 0 until totalCount step archiveLimit) {
+            val allArchives = archiveDao.getArchives(i, archiveLimit)
             for (archive in allArchives) {
                 if (archive.title.contains(titleSearch, ignoreCase = true))
                     addIfNew(archive)
                 else {
                     var hasTag = true
                     for (t in terms) {
-                        if (t.term.startsWith("-"))  {
+                        if (t.term.startsWith("-")) {
                             if (archive.containsTag(t.term.substring(1), t.exact)) {
                                 hasTag = false
                                 break
@@ -208,8 +253,14 @@ open class ArchiveViewModel : SearchViewModelBase() {
                 }
             }
         }
+
         return mValues
     }
 
-    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) = archiveDataFactory.updateSort(method, desc, force)
+    override fun updateSort(method: SortMethod, desc: Boolean, force: Boolean) {
+        with(archivePagingSource) {
+            if (updateSort(method, desc, force))
+                invalidate()
+        }
+    }
 }

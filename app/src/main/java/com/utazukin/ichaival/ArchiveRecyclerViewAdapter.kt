@@ -31,7 +31,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.paging.PagedListAdapter
+import androidx.paging.PagingDataAdapter
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -63,7 +63,7 @@ enum class ListViewType {
 class ArchiveRecyclerViewAdapter(
     fragment: Fragment,
     private val longListener: ((a: Archive) -> Boolean)?
-) : PagedListAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
+) : PagingDataAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
 
     private var multiSelect = false
     private val selectedArchives = mutableMapOf<Archive, Int>()
