@@ -320,6 +320,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         WebHandler.unregisterRefreshListener(this)
     }
 
+    fun refreshRandom() = viewModel.reset()
+
     fun setupRandomList(count: Int = -1) {
         lifecycleScope.launch {
             with(requireActivity().intent) {
@@ -587,7 +589,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchJob?.cancel()
         searchView.clearFocus()
         isLocalSearch = local
-        with(viewModel) {
+        viewModel.deferReset {
             isLocal = local
             onlyNew = false
             filter("")

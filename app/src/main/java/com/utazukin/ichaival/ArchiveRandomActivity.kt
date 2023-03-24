@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
         when (item.itemId) {
             R.id.random_archive_refresh ->  {
                 val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-                listFragment?.setupRandomList()
+                listFragment?.refreshRandom()
             }
             R.id.change_random_count -> {
                 val prefs = PreferenceManager.getDefaultSharedPreferences(this)
@@ -102,7 +102,7 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
                 dialog.show()
             }
             android.R.id.home -> {
-                onBackPressed()
+                onBackPressedDispatcher.onBackPressed()
                 return true
             }
         }

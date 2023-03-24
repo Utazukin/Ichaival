@@ -56,7 +56,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             }
         }
 
-    var delayReset = true
+    private var resetDisabled = true
         set(value) {
             if (field != value) {
                 field = value
@@ -111,6 +111,12 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             archiveDao.getRandomExcludeBookmarked()
         else
             archiveDao.getRandom()
+    }
+
+    fun deferReset(block: SearchViewModel.() -> Unit) {
+        resetDisabled = true
+        block()
+        resetDisabled = false
     }
 
     fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false) {
@@ -191,7 +197,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             this.onlyNew = onlyNew
             initiated = true
             filter(filter)
-            delayReset = false
+            resetDisabled = false
         }
     }
 
@@ -202,7 +208,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     }
 
     fun reset() {
-        if (delayReset)
+        if (resetDisabled)
             return
 
         filterJob?.cancel()
