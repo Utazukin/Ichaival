@@ -94,7 +94,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         when (item.itemId) {
             R.id.random_item -> {
                 launch {
-                    DatabaseReader.getRandomArchive()?.let {
+                    DatabaseReader.getRandomArchive().let {
                         startDetailsActivity(it.id)
                         supportFinishAfterTransition()
                     }

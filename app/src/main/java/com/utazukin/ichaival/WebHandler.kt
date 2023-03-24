@@ -300,7 +300,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         updateRefreshing(true)
 
-        val encodedSearch = if (filter == null) null else withContext(Dispatchers.IO) { URLEncoder.encode(filter.toString(), "utf-8") }
+        val encodedSearch = if (filter.isNullOrEmpty()) null else withContext(Dispatchers.IO) { URLEncoder.encode(filter.toString(), "utf-8") }
         val url = "$serverLocation$randomPath?count=$count${if (encodedSearch == null) "" else "&filter=$encodedSearch"}${if (categoryId == null) "" else "&category=$categoryId"}"
         val idKey = if (ServerManager.checkVersionAtLeast(0, 8, 8)) "arcid" else "id"
 

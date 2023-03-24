@@ -211,12 +211,7 @@ object DatabaseReader {
 
     suspend fun getArchive(id: String) = withContext(Dispatchers.IO) { database.archiveDao().getArchive(id) }
 
-    suspend fun getRandomArchive() : Archive? {
-        return withContext(Dispatchers.IO) {
-            val ids = database.archiveDao().getAllIds()
-            getArchive(ids.random())
-        }
-    }
+    suspend fun getRandomArchive() = database.archiveDao().getRandom()
 
     suspend fun deleteArchive(id: String) = withContext(Dispatchers.IO) {
         database.archiveDao().removeArchive(id)

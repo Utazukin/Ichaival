@@ -522,7 +522,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             }
             R.id.random_archive_button -> {
                 launch {
-                    DatabaseReader.getRandomArchive()?.let {
+                    DatabaseReader.getRandomArchive().let {
                         startReaderActivity(it.id)
                         finish()
                     }
