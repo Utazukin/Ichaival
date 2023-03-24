@@ -37,7 +37,8 @@ data class Archive (
     @ColumnInfo val tags: Map<String, List<String>>,
     @ColumnInfo var currentPage: Int,
     @ColumnInfo var pageCount: Int,
-    @ColumnInfo val updatedAt: Long
+    @ColumnInfo val updatedAt: Long,
+    @ColumnInfo val titleSortIndex: Int
 ) {
 
     val numPages: Int
@@ -95,6 +96,7 @@ data class Archive (
 }
 
 data class TitleSortArchive(val id: String, val title: String)
+data class TitleSortArchiveIndex(val id: String, val titleSortIndex: Int)
 
 class ArchiveJson(json: JsonObject, val updatedAt: Long) {
     val title: String = json.get("title").asString
@@ -104,6 +106,7 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long) {
     val currentPage = if (json.has("progress")) json.get("progress").asInt - 1 else 0
     val isNew = json.get("isnew").asString.let { it == "block" || it == "true" }
     val dateAdded: Long
+    val titleSortIndex = 0
 
     init {
         val timeStampIndex = tags.indexOf("date_added:")

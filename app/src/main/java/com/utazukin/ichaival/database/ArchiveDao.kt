@@ -44,6 +44,19 @@ interface ArchiveDao {
     @Query("Select count(id) from archive")
     suspend fun getArchiveCount() : Int
 
+    @Query("Select * from archive order by titleSortIndex desc limit :limit offset :offset")
+    suspend fun getTitleDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+
+    @Query("Select * from archive where id in (:ids) order by titleSortIndex desc limit :limit offset :offset")
+    suspend fun getTitleDescending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+
+    @Query("Select * from archive order by titleSortIndex asc limit :limit offset :offset")
+    suspend fun getTitleAscending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+
+    @Query("Select * from archive where id in (:ids) order by titleSortIndex asc limit :limit offset :offset")
+    suspend fun getTitleAscending(ids: List<String>, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
+
+
     @Query("Select * from archive order by dateAdded desc limit :limit offset :offset")
     suspend fun getDateDescending(offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive>
 
@@ -134,6 +147,9 @@ interface ArchiveDao {
     @Upsert
     suspend fun upsertBookmarks(tabs: List<ReaderTab>)
 
+    @Update(entity = Archive::class)
+    suspend fun updateTitleSort(sort: List<TitleSortArchiveIndex>)
+
     @SkipQueryVerification
     @Query("Select * from archive join search on search.id = archive.id order by search.position limit :limit offset :offset")
     suspend fun getArchivesBig(offset: Int, limit: Int) : List<Archive>
@@ -153,6 +169,14 @@ interface ArchiveDao {
     @SkipQueryVerification
     @Query("Select * from archive join search on search.id = archive.id order by archive.dateAdded asc limit :limit offset :offset")
     suspend fun getArchivesBigByDate(offset: Int, limit: Int) : List<Archive>
+
+    @SkipQueryVerification
+    @Query("Select * from archive join search on search.id = archive.id order by archive.titleSortIndex desc limit :limit offset :offset")
+    suspend fun getArchivesBigByTitleDescending(offset: Int, limit: Int) : List<Archive>
+
+    @SkipQueryVerification
+    @Query("Select * from archive join search on search.id = archive.id order by archive.titleSortIndex asc limit :limit offset :offset")
+    suspend fun getArchivesBigByTitle(offset: Int, limit: Int) : List<Archive>
 }
 
 class DatabaseTypeConverters {
@@ -209,7 +233,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class, ReaderTab::class], version = 5, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class], version = 6, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
@@ -276,6 +300,21 @@ abstract class ArchiveDatabase : RoomDatabase() {
         return false
     }
 
+    suspend fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return when {
+            ids == null -> archiveDao().getTitleDescending(offset, limit)
+            ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getTitleDescending)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByTitleDescending)
+        }
+    }
+
+    suspend fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
+        return when {
+            ids == null -> archiveDao().getTitleAscending(offset, limit)
+            ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getTitleAscending)
+            else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByTitle)
+        }
+    }
     suspend fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
         return when {
             ids == null -> archiveDao().getDateDescending(offset, limit)

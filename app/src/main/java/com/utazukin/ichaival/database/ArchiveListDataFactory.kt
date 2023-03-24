@@ -20,7 +20,10 @@ package com.utazukin.ichaival.database
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.utazukin.ichaival.*
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ServerManager
+import com.utazukin.ichaival.SortMethod
+import com.utazukin.ichaival.WebHandler
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -43,32 +46,14 @@ abstract class ArchiveListPagingSourceBase : PagingSource<Int, Archive>() {
     protected var filter: CharSequence = ""
     protected val database
         get() = DatabaseReader.database
-    private var titleSortResult: List<String>? = null
     override val jumpingSupported = true
-
-    private suspend fun getSortedResults(ids: List<String>? = null) : List<String> {
-        titleSortResult?.let {
-            if (ids == null || it.size >= ids.size)
-                return it
-        }
-
-        val comparer = object : Comparator<TitleSortArchive> {
-            val naturalComparer = NaturalOrderComparator()
-            override fun compare(a: TitleSortArchive, b: TitleSortArchive) : Int {
-                return if (descending) naturalComparer.compare(b.title, a.title) else naturalComparer.compare(a.title, b.title)
-            }
-        }
-
-        val archives = database.getTitleSort(ids).apply { sortWith(comparer) }
-        return archives.map { it.id }.also { titleSortResult = it }
-    }
 
     protected open suspend fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE) : List<Archive> {
         if (isSearch && ids == null)
             return emptyList()
 
         return when (sortMethod) {
-            SortMethod.Alpha -> database.getArchives(getSortedResults(ids), offset, limit)
+            SortMethod.Alpha -> if (descending) database.getTitleDescending(ids, offset, limit) else database.getTitleAscending(ids, offset, limit)
             SortMethod.Date -> if (descending) database.getDateDescending(ids, offset, limit) else database.getDateAscending(ids, offset, limit)
         }
     }
