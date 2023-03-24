@@ -335,9 +335,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 }
                 randomCount = count
 
-                with(viewModel) {
+                viewModel.deferReset {
                     isLocal = isLocalSearch
-                    init(sortMethod, descending, filter, newCheckBox.isChecked, true)
+                    init(sortMethod, descending, filter, newCheckBox.isChecked)
+                    updateResults(emptyList(), category)
                     monitor(lifecycleScope) { listAdapter.submitData(it) }
                     randomCount = count
                 }
