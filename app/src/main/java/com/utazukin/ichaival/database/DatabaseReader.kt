@@ -87,8 +87,8 @@ private class DatabaseMigrations {
 }
 
 object DatabaseReader {
+    const val MAX_WORKING_ARCHIVES = 1000
     private const val jsonLocation: String = "archives.json"
-    private const val MAX_ARCHIVE_SYNC = 1000
 
     private var isDirty = false
     private val archivePageMap = mutableMapOf<String, List<String>>()
@@ -128,8 +128,8 @@ object DatabaseReader {
     }
 
     private suspend fun readArchiveJson(jsonFile: File) = jsonFile.inputStream().use {
-        val serverArchives = mutableListOf<ArchiveJson>()
-        val titleSort = mutableListOf<TitleSortArchive>()
+        val serverArchives = ArrayList<ArchiveJson>(MAX_WORKING_ARCHIVES)
+        val titleSort = ArrayList<TitleSortArchive>(MAX_WORKING_ARCHIVES)
         val currentTime = Calendar.getInstance().timeInMillis
         val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
         database.withTransaction {
@@ -139,30 +139,24 @@ object DatabaseReader {
                 while (reader.hasNext()) {
                     val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
                     serverArchives.add(archive)
+                    titleSort.add(TitleSortArchive(archive.id, archive.title))
 
-                    if (serverArchives.size == MAX_ARCHIVE_SYNC) {
+                    if (serverArchives.size == MAX_WORKING_ARCHIVES) {
                         database.updateArchives(serverArchives, bookmarks)
-                        titleSort.addAll(serverArchives.asSequence().map { TitleSortArchive(it.id, it.title) })
                         serverArchives.clear()
                     }
                 }
                 reader.endArray()
             }
 
-            if (serverArchives.isNotEmpty()) {
+            if (serverArchives.isNotEmpty())
                 database.updateArchives(serverArchives, bookmarks)
-                titleSort.addAll(serverArchives.asSequence().map { TitleSortArchive(it.id, it.title) })
-            }
             database.removeOldArchives(currentTime)
 
-            val comparer = object : Comparator<TitleSortArchive> {
-                val naturalComparer = NaturalOrderComparator()
-                override fun compare(a: TitleSortArchive, b: TitleSortArchive) : Int {
-                    return naturalComparer.compare(a.title, b.title)
-                }
-            }
-            titleSort.sortWith(comparer)
-            database.archiveDao().updateTitleSort(titleSort.mapIndexed { i, it -> TitleSortArchiveIndex(it.id, i) })
+            titleSort.sort()
+            for ((i, archive) in titleSort.withIndex())
+                archive.titleSortIndex = i
+            database.archiveDao().updateTitleSort(titleSort)
         }
     }
 

@@ -216,21 +216,20 @@ open class ArchiveViewModel : SearchViewModelBase() {
         if (filter == null)
             return emptyList()
 
-        val mValues = mutableListOf<String>()
+        if (filter.isEmpty())
+            return if (onlyNew) archiveDao.getNewArchives() else null
+
+        val mValues = ArrayList<String>(DatabaseReader.MAX_WORKING_ARCHIVES)
         fun addIfNew(archive: Archive) {
             if (!onlyNew || archive.isNew)
                 mValues.add(archive.id)
         }
 
-        if (filter.isEmpty())
-            return if (onlyNew) archiveDao.getNewArchives() else null
-
-        val archiveLimit = 1000
         val totalCount = archiveDao.getArchiveCount()
         val terms = parseTermsInfo(filter)
         val titleSearch = filter.removeSurrounding("\"")
-        for (i in 0 until totalCount step archiveLimit) {
-            val allArchives = archiveDao.getArchives(i, archiveLimit)
+        for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
+            val allArchives = archiveDao.getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
             for (archive in allArchives) {
                 if (archive.title.contains(titleSearch, ignoreCase = true))
                     addIfNew(archive)

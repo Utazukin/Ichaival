@@ -35,12 +35,6 @@ interface ArchiveDao {
     @Query("Select * from archive limit :limit offset :offset")
     suspend fun getArchives(offset: Int, limit: Int): List<Archive>
 
-    @Query("Select id, title from archive")
-    suspend fun getAllTitleSort() : MutableList<TitleSortArchive>
-
-    @Query("Select id, title from archive where id in (:ids)")
-    suspend fun getTitleSort(ids: List<String>) : MutableList<TitleSortArchive>
-
     @Query("Select count(id) from archive")
     suspend fun getArchiveCount() : Int
 
@@ -148,7 +142,7 @@ interface ArchiveDao {
     suspend fun upsertBookmarks(tabs: List<ReaderTab>)
 
     @Update(entity = Archive::class)
-    suspend fun updateTitleSort(sort: List<TitleSortArchiveIndex>)
+    suspend fun updateTitleSort(sort: List<TitleSortArchive>)
 
     @SkipQueryVerification
     @Query("Select * from archive join search on search.id = archive.id order by search.position limit :limit offset :offset")
@@ -339,17 +333,6 @@ abstract class ArchiveDatabase : RoomDatabase() {
             else -> {
                 createSearchTable(ids, false)
                 archiveDao().getArchivesNewBig()
-            }
-        }
-    }
-
-    suspend fun getTitleSort(ids: List<String>? = null) : MutableList<TitleSortArchive> {
-        return when {
-            ids == null -> archiveDao().getAllTitleSort()
-            ids.size <= MAX_BIND_PARAMETER_CNT -> archiveDao().getTitleSort(ids)
-            else -> {
-                createSearchTable(ids, false)
-                archiveDao().getTitleSortBig()
             }
         }
     }
