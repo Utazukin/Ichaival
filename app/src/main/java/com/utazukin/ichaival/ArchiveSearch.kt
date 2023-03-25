@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -62,8 +62,8 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         setSupportActionBar(findViewById(R.id.toolbar))
     }
 
-    override fun onServerInitialized() {
-        super.onServerInitialized()
+    override fun onServerInitialized(serverSupported: Boolean) {
+        super.onServerInitialized(serverSupported)
         val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.setupArchiveList()
     }

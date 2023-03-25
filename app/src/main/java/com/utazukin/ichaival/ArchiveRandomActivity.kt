@@ -109,8 +109,8 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onServerInitialized() {
-        super.onServerInitialized()
+    override fun onServerInitialized(serverSupported: Boolean) {
+        super.onServerInitialized(serverSupported)
         val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
         listFragment?.setupRandomList()
     }

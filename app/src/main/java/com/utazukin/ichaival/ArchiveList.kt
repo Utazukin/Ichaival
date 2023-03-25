@@ -29,6 +29,7 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
+import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.navigation.NavigationView
@@ -193,11 +194,16 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         }
     }
 
-    override fun onServerInitialized() {
-        super.onServerInitialized()
+    override fun onServerInitialized(serverSupported: Boolean) {
+        super.onServerInitialized(serverSupported)
         ServerManager.serverName?.let { supportActionBar?.title = it }
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-        listFragment?.setupArchiveList()
+        if (serverSupported) {
+            val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
+            listFragment?.setupArchiveList()
+        } else {
+            setupText.text = getString(R.string.unsupported_server_message)
+            handleSetupText(true)
+        }
     }
 
     override fun onCategoryChanged(category: ArchiveCategory) {
@@ -211,9 +217,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     }
 
     private fun handleSetupText(setup: Boolean) {
-        if (setup)
+        if (setup) {
             setupText.setOnClickListener { startSettingsActivity() }
-        else
+            setupText.isVisible = true
+        } else
             setupText.visibility = View.GONE
     }
 

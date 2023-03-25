@@ -45,9 +45,9 @@ object ServerManager {
     private var initialized = false
     private var hasPassword = false
 
-    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) {
+    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) : Boolean {
         if (initialized && !force)
-            return
+            return false
 
         val infoFile = File(context.filesDir, serverInfoFilename)
         val serverInfo = withContext(Dispatchers.IO) {
@@ -88,6 +88,8 @@ object ServerManager {
         parseCategories(context)
 
         initialized = true
+
+        return checkVersionAtLeast(0, 8, 2)
     }
 
     fun checkVersionAtLeast(major: Int, minor: Int, patch: Int) : Boolean {

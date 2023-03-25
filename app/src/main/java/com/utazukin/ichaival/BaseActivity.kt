@@ -86,14 +86,14 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         if (WebHandler.serverLocation.isNotEmpty()) {
             val refresh = intent.getBooleanExtra(REFRESH_KEY, false)
             launch {
-                ServerManager.init(applicationContext, !refresh && savedInstanceState != null, refresh)
-                onServerInitialized()
+                val supported = ServerManager.init(applicationContext, !refresh && savedInstanceState != null, refresh)
+                onServerInitialized(supported)
             }
         }
         intent.removeExtra(REFRESH_KEY)
     }
 
-    protected open fun onServerInitialized() {}
+    protected open fun onServerInitialized(serverSupported: Boolean) {}
 
     protected open fun setTheme() {
         when (getCustomTheme()) {
