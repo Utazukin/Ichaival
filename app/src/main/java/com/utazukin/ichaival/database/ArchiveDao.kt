@@ -36,7 +36,7 @@ interface ArchiveDao {
     suspend fun getArchives(offset: Int, limit: Int): List<Archive>
 
     @Query("Select * from archive where id in (:ids) limit :limit offset :offset")
-    suspend fun getArchives(ids: List<String>, offset: Int, limit: Int): List<Archive>
+    suspend fun getArchives(ids: List<String>, offset: Int, limit: Int): MutableList<Archive>
 
     @Query("Select count(id) from archive")
     suspend fun getArchiveCount() : Int
@@ -396,7 +396,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
     suspend fun getArchives(ids: List<String>, offset: Int, limit: Int) : List<Archive> {
         return when {
-            ids.size < MAX_BIND_PARAMETER_CNT - 2 -> archiveDao().getArchives(ids, offset, limit)
+            ids.size < MAX_BIND_PARAMETER_CNT - 2 -> {
+                val idOrder = ids.withIndex().associate { it.value to it.index }
+                archiveDao().getArchives(ids, offset, limit).apply { sortBy { idOrder[it.id] } }
+            }
             else -> getArchivesBig(ids, offset, limit)
         }
     }

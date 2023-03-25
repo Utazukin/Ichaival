@@ -33,6 +33,7 @@ import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -273,18 +274,28 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (showRefresh)
                 updateRefreshing(true)
 
-            val jsonResults = searchServerRaw(search, onlyNew, sortMethod, descending, start)
-            if (jsonResults == null) {
+            val jsonStream = searchServerRaw(search, onlyNew, sortMethod, descending, start)
+            if (jsonStream == null) {
                 if (showRefresh)
                     updateRefreshing(false)
                 return@withContext ServerSearchResult(null)
             }
 
+            val jsonResults = jsonStream.use {
+                val reader = BufferedReader(it.reader())
+                val builder = StringBuilder()
+                var line = reader.readLine()
+                while (line != null){
+                    builder.append(line)
+                    line = reader.readLine()
+                }
+                JSONObject(builder.toString())
+            }
+
             val totalResults = jsonResults.getInt("recordsFiltered")
 
             val dataArray = jsonResults.getJSONArray("data")
-            val results =
-                List(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
+            val results = List(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
 
             if (showRefresh)
                 updateRefreshing(false)
