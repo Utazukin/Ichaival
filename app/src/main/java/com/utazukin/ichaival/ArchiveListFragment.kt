@@ -180,14 +180,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                     super.onItemRangeInserted(positionStart, itemCount)
                     val size = listAdapter.itemCount
-                    jumpToTop = savedState == null
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
 
                 override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
                     super.onItemRangeRemoved(positionStart, itemCount)
                     val size = listAdapter.itemCount
-                    jumpToTop = savedState == null
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
             })
