@@ -82,8 +82,8 @@ data class Archive (
         if (colonIndex > 0) {
             val namespace = tag.substring(0, colonIndex)
             val normalized = tag.substring(colonIndex + 1)
-            val nTags = tags[namespace]
-            return nTags?.any { if (exact) it.equals(normalized, ignoreCase = true) else it.contains(normalized, ignoreCase = true) } == true
+            val nTags = tags[namespace] ?: return false
+            return if (exact) nTags.any { it.equals(normalized, ignoreCase = true) } else nTags.any { it.contains(normalized, ignoreCase = true) }
         }
         else {
             for (t in tags.values) {
@@ -101,7 +101,7 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int
     val tags: String = json.get("tags").asString
     val pageCount = if (json.has("pagecount")) json.get("pagecount").asInt else 0
     val currentPage = if (json.has("progress")) json.get("progress").asInt - 1 else 0
-    val isNew = json.get("isnew").asString.let { it == "block" || it == "true" }
+    val isNew = json.get("isnew").asString.let { it == "true" }
     val dateAdded: Long
 
     init {

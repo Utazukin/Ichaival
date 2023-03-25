@@ -51,13 +51,14 @@ fun getDpAdjusted(pxSize: Int) : Int {
     return (pxSize * metrics.density).toInt()
 }
 
-data class TermInfo(val term: String, val exact: Boolean)
+data class TermInfo(val term: String, val exact: Boolean, val negative: Boolean)
 
 fun parseTermsInfo(query: CharSequence) : List<TermInfo> {
     val terms = mutableListOf<TermInfo>()
     val term = StringBuilder()
     val stack = Stack<Char>()
     var exact = false
+    var negative = false
     for (c in query) {
         when {
             c == '\\' && stack.peekOrNull() != c -> stack.push(c)
@@ -77,11 +78,13 @@ fun parseTermsInfo(query: CharSequence) : List<TermInfo> {
             }
             c == '\'' || c== '"' -> stack.push(c)
             c == ' ' && stack.empty() -> {
-                terms.add(TermInfo(term.toString(), exact))
+                terms.add(TermInfo(term.toString(), exact, negative))
                 term.clear()
                 exact = false
+                negative = false
             }
             c == '_' && stack.empty() -> term.append(' ')
+            c == '-' && stack.empty() && term.isEmpty() -> negative = true
             else -> term.append(c)
         }
     }
@@ -90,7 +93,7 @@ fun parseTermsInfo(query: CharSequence) : List<TermInfo> {
         term.append(stack.pop())
 
     if (term.isNotEmpty())
-        terms.add(TermInfo(term.toString(), exact))
+        terms.add(TermInfo(term.toString(), exact, negative))
 
     return terms
 }

@@ -26,6 +26,7 @@ import com.utazukin.ichaival.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
+import kotlin.math.min
 
 class ReaderTabViewModel : ViewModel() {
     private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
@@ -160,8 +161,8 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         if (filter.isEmpty())
             return null
 
-        val mValues = ArrayList<String>(DatabaseReader.MAX_WORKING_ARCHIVES)
         val totalCount = archiveDao.getArchiveCount()
+        val mValues = ArrayList<String>(min(totalCount, DatabaseReader.MAX_WORKING_ARCHIVES))
         val terms = parseTermsInfo(filter)
         val titleSearch = filter.removeSurrounding("\"")
         for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
@@ -171,21 +172,12 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
                 if (archive.title.contains(titleSearch, ignoreCase = true))
                     mValues.add(archive.id)
                 else {
-                    var hasTag = true
-                    for (t in terms) {
-                        if (t.term.startsWith("-")) {
-                            if (archive.containsTag(t.term.substring(1), t.exact)) {
-                                hasTag = false
-                                break
-                            }
-                        } else if (!archive.containsTag(t.term, t.exact)) {
-                            hasTag = false
+                    for (termInfo in terms) {
+                        if (archive.containsTag(termInfo.term, termInfo.exact) != termInfo.negative) {
+                            mValues.add(archive.id)
                             break
                         }
                     }
-
-                    if (hasTag)
-                        mValues.add(archive.id)
                 }
             }
         }
