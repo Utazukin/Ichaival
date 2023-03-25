@@ -95,20 +95,6 @@ data class Archive (
     }
 }
 
-data class TitleSortArchive(val id: String, @Ignore private val title: String) : Comparable<TitleSortArchive> {
-    var titleSortIndex: Int = -1
-
-    constructor(id: String, titleSortIndex: Int) : this(id, "") {
-        this.titleSortIndex = titleSortIndex
-    }
-
-    override fun compareTo(other: TitleSortArchive) = naturalComparer.compare(title, other.title)
-
-    companion object {
-        private val naturalComparer by lazy { NaturalOrderComparator() }
-    }
-}
-
 class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int) {
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString

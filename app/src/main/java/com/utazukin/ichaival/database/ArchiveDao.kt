@@ -161,9 +161,6 @@ interface ArchiveDao {
     @Upsert
     suspend fun upsertBookmarks(tabs: List<ReaderTab>)
 
-    @Update(entity = Archive::class)
-    suspend fun updateTitleSort(sort: List<TitleSortArchive>)
-
     @SkipQueryVerification
     @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew = true order by search.position limit :limit offset :offset")
     suspend fun getArchivesBig(offset: Int, limit: Int, onlyNew: Boolean) : List<Archive>
