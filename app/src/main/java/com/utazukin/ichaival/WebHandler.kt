@@ -321,7 +321,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return result
     }
 
-    suspend fun searchServerRaw(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : JSONObject? {
+    suspend fun searchServerRaw(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : InputStream? {
         if (!canConnect())
             return null
 
@@ -335,11 +335,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        return response?.use {
+        return response?.let {
             if (!it.isSuccessful)
                 null
             else
-                it.body?.run { JSONObject(suspendString()) }
+                it.body?.byteStream()
         }
     }
 
