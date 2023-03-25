@@ -255,7 +255,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton.setOnClickListener {
             listAdapter.disableMultiSelect()
             val randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 1)
-            if (randomCount > 1 && ServerManager.checkVersionAtLeast(0, 8, 2)) {
+            if (randomCount > 1) {
                 val intent = Intent(context, ArchiveRandomActivity::class.java)
                 val bundle = Bundle().apply {
                     if (searchView.query.isNotBlank() && searchView.query?.startsWith(STATIC_CATEGORY_SEARCH) != true)

@@ -42,8 +42,10 @@ import java.lang.reflect.Type
 import java.util.*
 
 private class ArchiveDeserializer(val updateTime: Long) : JsonDeserializer<ArchiveJson> {
+    private var index = 0
+
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ArchiveJson {
-        return ArchiveJson(json.asJsonObject, updateTime)
+        return ArchiveJson(json.asJsonObject, updateTime, index++)
     }
 }
 
@@ -122,7 +124,7 @@ object DatabaseReader {
         val cacheDir = context.noBackupFilesDir
         if (forceUpdate || checkDirty(cacheDir)) {
             WebHandler.updateRefreshing(true)
-            val archiveStream = WebHandler.downloadArchiveList(context)
+            val archiveStream = WebHandler.searchServerRaw("", false, SortMethod.Alpha, false, -1)
             if (archiveStream != null) {
                 val jsonFile = File(cacheDir, jsonLocation)
                 archiveStream.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
@@ -135,34 +137,33 @@ object DatabaseReader {
 
     private suspend fun readArchiveJson(jsonFile: File) = jsonFile.inputStream().use {
         val serverArchives = ArrayList<ArchiveJson>(MAX_WORKING_ARCHIVES)
-        val titleSort = ArrayList<TitleSortArchive>(MAX_WORKING_ARCHIVES)
         val currentTime = Calendar.getInstance().timeInMillis
         val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
         database.withTransaction {
             val bookmarks = if (ServerManager.serverTracksProgress) database.getBookmarks() else null
             JsonReader(InputStreamReader(it, "UTF-8")).use { reader ->
-                reader.beginArray()
+                reader.beginObject()
                 while (reader.hasNext()) {
-                    val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
-                    serverArchives.add(archive)
-                    titleSort.add(TitleSortArchive(archive.id, archive.title))
+                    if (reader.nextName() == "data") {
+                        reader.beginArray()
+                        while (reader.hasNext()) {
+                            val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
+                            serverArchives.add(archive)
 
-                    if (serverArchives.size == MAX_WORKING_ARCHIVES) {
-                        database.updateArchives(serverArchives, bookmarks)
-                        serverArchives.clear()
-                    }
+                            if (serverArchives.size == MAX_WORKING_ARCHIVES) {
+                                database.updateArchives(serverArchives, bookmarks)
+                                serverArchives.clear()
+                            }
+                        }
+                        reader.endArray()
+                    } else reader.skipValue()
                 }
-                reader.endArray()
+                reader.endObject()
             }
 
             if (serverArchives.isNotEmpty())
                 database.updateArchives(serverArchives, bookmarks)
             database.removeOldArchives(currentTime)
-
-            titleSort.sort()
-            for ((i, archive) in titleSort.withIndex())
-                archive.titleSortIndex = i
-            database.archiveDao().updateTitleSort(titleSort)
         }
     }
 

@@ -80,7 +80,7 @@ object ServerManager {
             }
 
             pageSize = serverInfo.getInt("archives_per_page")
-            serverTracksProgress = serverInfo.optInt("server_tracks_progress", 1) == 1 && checkVersionAtLeast(0,7,7)
+            serverTracksProgress = serverInfo.optInt("server_tracks_progress", 1) == 1
             hasPassword = serverInfo.getInt("has_password") == 1
             serverName = serverInfo.getString("name")
         }

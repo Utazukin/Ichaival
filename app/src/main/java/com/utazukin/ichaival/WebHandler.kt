@@ -273,8 +273,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (showRefresh)
                 updateRefreshing(true)
 
-            val jsonResults =
-                runBlocking { internalSearchServer(search, onlyNew, sortMethod, descending, start) }
+            val jsonResults = searchServerRaw(search, onlyNew, sortMethod, descending, start)
             if (jsonResults == null) {
                 if (showRefresh)
                     updateRefreshing(false)
@@ -322,8 +321,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return result
     }
 
-    @Suppress("BlockingMethodInNonBlockingContext")
-    private suspend fun internalSearchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : JSONObject? {
+    suspend fun searchServerRaw(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : InputStream? {
         if (!canConnect())
             return null
 
@@ -337,11 +335,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        return response?.use {
+        return response?.let {
             if (!it.isSuccessful)
                 null
             else
-                it.body?.run { JSONObject(suspendString()) }
+                it.body?.byteStream()
         }
     }
 
@@ -498,15 +496,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         notify(context.getString(R.string.archive_extract_message))
 
         val errorMessage = context.getString(R.string.archive_extract_fail_message)
-        val connection = if (ServerManager.checkVersionAtLeast(0, 8, 2)) {
-            var url = "$serverLocation${extractPath.format(id)}"
-            if (forceFull)
-                url += "?force=true"
-            createServerConnection(url, "POST", FormBody.Builder().build())
-        } else {
-            val url = "$serverLocation${filesPath.format(id)}"
-            createServerConnection(url)
-        }
+        var url = "$serverLocation${extractPath.format(id)}"
+        if (forceFull)
+            url += "?force=true"
+        val connection = createServerConnection(url, "POST", FormBody.Builder().build())
 
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
         return response?.use {
@@ -536,8 +529,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
     private suspend fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
-
-    private suspend fun ResponseBody.suspendBytes() = withContext(Dispatchers.IO) { bytes() }
 
     suspend fun setArchiveNewFlag(id: String) {
         if (!canConnect())

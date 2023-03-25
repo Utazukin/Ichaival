@@ -42,7 +42,7 @@ data class Archive (
 ) {
 
     val numPages: Int
-        get() = if (ServerManager.checkVersionAtLeast(0, 7, 7) && pageCount > 0) pageCount else DatabaseReader.getPageCount(id)
+        get() = pageCount
 
     @delegate:Ignore
     val isWebtoon by lazy { containsTag("webtoon", false) }
@@ -109,7 +109,7 @@ data class TitleSortArchive(val id: String, @Ignore private val title: String) :
     }
 }
 
-class ArchiveJson(json: JsonObject, val updatedAt: Long) {
+class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int) {
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString
     val tags: String = json.get("tags").asString
@@ -117,7 +117,6 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long) {
     val currentPage = if (json.has("progress")) json.get("progress").asInt - 1 else 0
     val isNew = json.get("isnew").asString.let { it == "block" || it == "true" }
     val dateAdded: Long
-    val titleSortIndex = 0
 
     init {
         val timeStampIndex = tags.indexOf("date_added:")

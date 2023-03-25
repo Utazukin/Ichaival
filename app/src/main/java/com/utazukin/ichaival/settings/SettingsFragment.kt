@@ -123,13 +123,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<Preference>(getString(R.string.scale_type_pref))?.let { bindPreferenceSummaryToValue(it) }
 
         findPreference<EditTextPreference>(getString(R.string.random_count_pref))?.let {
-            if (ServerManager.checkVersionAtLeast(0, 8, 2)) {
-                it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER))
-                bindPreferenceSummaryFormat(it)
-            } else {
-                it.isVisible = false
-                it.parent?.isVisible = false
-            }
+            it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER))
+            bindPreferenceSummaryFormat(it)
         }
 
         findPreference<EditTextPreference>(getString(R.string.search_delay_key))?.let {
@@ -174,8 +169,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 setOnPreferenceClickListener {
                     lifecycleScope.launch {
                         launch { WebHandler.clearTempFolder(requireContext()) }
-                        if (!ServerManager.checkVersionAtLeast(0, 8, 2))
-                            DatabaseReader.invalidateImageCache()
+                        DatabaseReader.invalidateImageCache()
                         with(Glide.get(requireContext())) {
                             clearMemory()
                             withContext(Dispatchers.IO) { clearDiskCache()}
