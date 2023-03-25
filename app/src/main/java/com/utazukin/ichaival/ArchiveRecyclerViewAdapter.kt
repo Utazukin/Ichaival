@@ -164,6 +164,7 @@ class ArchiveRecyclerViewAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         thumbLoadingJobs.remove(holder)?.cancel()
         holder.archiveImage.setImageBitmap(null)
+        holder.archiveName.text = ""
         glideManager.clear(holder.archiveImage)
         super.onViewRecycled(holder)
     }

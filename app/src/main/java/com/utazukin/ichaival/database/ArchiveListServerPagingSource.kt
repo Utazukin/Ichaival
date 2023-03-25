@@ -145,10 +145,10 @@ class ArchiveListRandomPagingSource(filter: CharSequence, private val count: UIn
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
         val position = if (params is LoadParams.Refresh) 0 else params.key ?: 0
         val prev = if (position > 0) position - 1 else null
+        if (totalResults.isEmpty())
+            loadResults(0)
         val endIndex = min(position + params.loadSize, totalSize)
         val next = if (endIndex >= totalSize) null else endIndex
-        if (totalResults.isEmpty())
-            loadResults(endIndex)
         val archives = getArchives(totalResults, position, params.loadSize)
         return LoadResult.Page(archives, prev, next, prev?.plus(1) ?: 0, next?.let { totalSize - it } ?: 0)
     }
