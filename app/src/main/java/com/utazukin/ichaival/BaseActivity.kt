@@ -31,6 +31,7 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.drawerlayout.widget.DrawerLayout.DrawerListener
 import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -45,8 +46,10 @@ import com.utazukin.ichaival.database.DatabaseMessageListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.ReaderTabViewModel
 import com.utazukin.ichaival.reader.ReaderActivity
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 const val TAG_SEARCH = "tag"
 const val REFRESH_KEY = "refresh"
@@ -183,9 +186,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         })
 
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
-        launch(Dispatchers.Default) {
-            viewModel.bookmarks.collectLatest { data -> adapter.submitData(data) }
-        }
+        viewModel.monitor(lifecycleScope) { adapter.submitData(it) }
     }
 
     protected open fun handleBackPressed() {

@@ -34,6 +34,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -49,7 +50,6 @@ import com.utazukin.ichaival.reader.ReaderFragment.OnFragmentInteractionListener
 import com.utazukin.ichaival.reader.webtoon.WebtoonReaderViewHolder
 import com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -382,9 +382,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun setupReaderTabAdapter(adapter: ReaderTabViewAdapter) {
         val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
-        launch(Dispatchers.Default) {
-            viewModel.bookmarks.collectLatest { data -> adapter.submitData(data) }
-        }
+        viewModel.monitor(lifecycleScope) { adapter.submitData(it) }
     }
 
     override fun onStart() {

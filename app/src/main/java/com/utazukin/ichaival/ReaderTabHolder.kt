@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProviders
-import androidx.lifecycle.viewModelScope
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -29,7 +28,6 @@ import com.utazukin.ichaival.database.ReaderTabViewModel
 import com.utazukin.ichaival.reader.ScaleType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -108,7 +106,7 @@ object ReaderTabHolder {
     fun initialize(context: FragmentActivity) {
         if (!initialized) {
             val viewModel = ViewModelProviders.of(context)[ReaderTabViewModel::class.java]
-            viewModel.viewModelScope.launch { viewModel.bookmarks.collectLatest { tabCount = DatabaseReader.database.archiveDao().getBookmarkCount() } }
+            viewModel.monitor(scope) { tabCount = DatabaseReader.database.archiveDao().getBookmarkCount() }
             initialized = true
         }
     }

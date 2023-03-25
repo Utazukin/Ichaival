@@ -28,7 +28,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 
 class ReaderTabViewModel : ViewModel() {
-    val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
+    private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
+    fun monitor(scope: CoroutineScope, action: suspend (PagingData<ReaderTab>) -> Unit) {
+        scope.launch { bookmarks.collectLatest(action) }
+    }
 }
 
 class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {

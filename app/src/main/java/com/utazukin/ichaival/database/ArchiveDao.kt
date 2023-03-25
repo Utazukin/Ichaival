@@ -397,32 +397,36 @@ abstract class ArchiveDatabase : RoomDatabase() {
     suspend fun getArchives(ids: List<String>, offset: Int, limit: Int) = getArchivesBig(ids, offset, limit)
 
     private fun createSearchTable(ids: List<String>, useIndex: Boolean) {
-        openHelper.writableDatabase.use { db ->
-            db.beginTransaction()
-            db.execSQL("drop table if exists search")
-            val value = ContentValues()
-            if (useIndex) {
-                db.execSQL("create table if not exists search (id text primary key, position integer unique)")
-                for (i in ids.indices) {
-                    with(value) {
-                        clear()
-                        put("id", ids[i])
-                        put("position", i)
+        with(openHelper.writableDatabase) {
+            try {
+                beginTransaction()
+                execSQL("drop table if exists search")
+                val value = ContentValues()
+                if (useIndex) {
+                    execSQL("create table if not exists search (id text primary key, position integer unique)")
+                    for (i in ids.indices) {
+                        with(value) {
+                            clear()
+                            put("id", ids[i])
+                            put("position", i)
+                        }
+                        insert("search", OnConflictStrategy.IGNORE, value)
                     }
-                    db.insert("search", OnConflictStrategy.IGNORE, value)
-                }
-            } else {
-                db.execSQL("create table if not exists search (id text primary key)")
-                for (id in ids) {
-                    with(value) {
-                        clear()
-                        put("id", id)
+                } else {
+                    execSQL("create table if not exists search (id text primary key)")
+                    for (id in ids) {
+                        with(value) {
+                            clear()
+                            put("id", id)
+                        }
+                        insert("search", OnConflictStrategy.IGNORE, value)
                     }
-                    db.insert("search", OnConflictStrategy.IGNORE, value)
                 }
+                setTransactionSuccessful()
             }
-            db.setTransactionSuccessful()
-            db.endTransaction()
+            finally {
+                endTransaction()
+            }
         }
     }
 
