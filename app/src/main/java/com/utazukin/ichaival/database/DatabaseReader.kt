@@ -202,13 +202,11 @@ object DatabaseReader {
         }
     }
 
-    fun getPageCount(id: String) : Int = archivePageMap[id]?.size ?: -1
-
     fun invalidateImageCache(id: String) = archivePageMap.remove(id)
 
     fun invalidateImageCache() = archivePageMap.clear()
 
-    suspend fun isBookmarked(id: String) = withContext(Dispatchers.IO) { database.archiveDao().isBookmarked(id) }
+    suspend fun isBookmarked(id: String) = database.archiveDao().isBookmarked(id)
 
     private fun checkDirty(fileDir: File) : Boolean {
         val jsonCache = File(fileDir, jsonLocation)
@@ -220,13 +218,10 @@ object DatabaseReader {
 
     suspend fun getRandomArchive() = database.archiveDao().getRandom()
 
-    suspend fun deleteArchive(id: String) = withContext(Dispatchers.IO) {
-        database.archiveDao().removeArchive(id)
-        notifyDeleteListeners()
-    }
+    suspend fun deleteArchive(id: String) = deleteArchives(listOf(id))
 
-    suspend fun deleteArchives(ids: List<String>) = withContext(Dispatchers.IO) {
-        database.archiveDao().removeArchives(ids)
+    suspend fun deleteArchives(ids: Collection<String>) {
+        database.deleteArchives(ids)
         notifyDeleteListeners()
     }
 

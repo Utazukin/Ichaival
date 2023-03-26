@@ -143,8 +143,14 @@ interface ArchiveDao {
     @Query("Delete from archive where updatedAt < :updateTime")
     suspend fun removeNotUpdated(updateTime: Long)
 
+    @Query("Delete from readertab where id in (select readertab.id from readertab join archive on readertab.id = archive.id where archive.updatedAt < :updateTime)")
+    suspend fun removeNotUpdatedBookmarks(updateTime: Long)
+
     @Delete
     suspend fun removeBookmark(tab: ReaderTab)
+
+    @Query("Delete from readertab where id in (:ids)")
+    suspend fun removeBookmarks(ids: Collection<String>)
 
     @Query("Delete from readertab")
     suspend fun clearBookmarks()
@@ -278,7 +284,10 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    suspend fun removeOldArchives(updateTime: Long) = archiveDao().removeNotUpdated(updateTime)
+    suspend fun removeOldArchives(updateTime: Long) = withTransaction {
+        archiveDao().removeNotUpdatedBookmarks(updateTime)
+        archiveDao().removeNotUpdated(updateTime)
+    }
 
     suspend fun getBookmarks() = archiveDao().getBookmarks().associateBy { it.id }
 
@@ -317,6 +326,11 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
 
         return false
+    }
+
+    suspend fun deleteArchives(ids: Collection<String>) = withTransaction {
+        archiveDao().removeArchives(ids)
+        archiveDao().removeBookmarks(ids)
     }
 
     fun getTitleDescendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
