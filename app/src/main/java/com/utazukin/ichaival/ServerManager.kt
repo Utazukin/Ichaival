@@ -47,7 +47,7 @@ object ServerManager {
 
     suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) : Boolean {
         if (initialized && !force)
-            return false
+            return checkVersionAtLeast(0, 8, 2)
 
         val infoFile = File(context.filesDir, serverInfoFilename)
         val serverInfo = withContext(Dispatchers.IO) {
