@@ -439,6 +439,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         val terms = parseTermsInfo(it)
                         val builder = StringBuilder()
                         for (info in terms.dropLast(1)) {
+                            if (info.negative)
+                                builder.append('-')
+
                             builder.append(
                                 when {
                                     info.term.endsWith('$') && info.exact -> "\"${info.term.removeSuffix("$")}\"$"
