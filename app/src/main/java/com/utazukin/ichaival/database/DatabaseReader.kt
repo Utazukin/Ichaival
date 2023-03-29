@@ -244,10 +244,11 @@ object DatabaseReader {
         WebHandler.setArchiveNewFlag(id)
     }
 
-    private fun getThumbDir(cacheDir: File) : File {
-        val thumbDir = File(cacheDir, "thumbs")
+    private fun getThumbDir(cacheDir: File, id: String) : File {
+        val thumbDir = File(cacheDir, "thumbs/${id.substring(0, 3)}")
         if (!thumbDir.exists())
-            thumbDir.mkdir()
+            thumbDir.mkdirs()
+
         return thumbDir
     }
 
@@ -262,7 +263,7 @@ object DatabaseReader {
             return Pair(null, -1)
 
         return withContext(Dispatchers.IO) {
-            val thumbDir = getThumbDir(context.noBackupFilesDir)
+            val thumbDir = getThumbDir(context.noBackupFilesDir, id)
             val image = File(thumbDir, "$id.jpg")
             if (image.exists())
                 image.delete()
@@ -275,7 +276,7 @@ object DatabaseReader {
 
     suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : Pair<String?, Long> {
         return withContext(Dispatchers.IO) {
-            val thumbDir = getThumbDir(context.noBackupFilesDir)
+            val thumbDir = getThumbDir(context.noBackupFilesDir, id)
 
             var image: File? = File(thumbDir, "$id.jpg")
             if (image?.exists() == false)
