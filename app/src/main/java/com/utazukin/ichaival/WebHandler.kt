@@ -81,6 +81,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     var serverLocation: String = ""
     var apiKey: String = ""
+        set(value) {
+            field = if (value.isNotEmpty()) "Bearer ${Base64.encodeToString(value.toByteArray(), Base64.NO_WRAP)}" else ""
+        }
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS)
@@ -92,8 +95,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     var listener: DatabaseMessageListener? = null
     private val refreshListeners = mutableListOf<DatabaseRefreshListener>()
     var connectivityManager: ConnectivityManager? = null
-    val encodedKey
-        get() = "Bearer ${Base64.encodeToString(apiKey.toByteArray(), Base64.NO_WRAP)}"
 
     suspend fun getServerInfo(context: Context): JSONObject? {
         if (!canConnect(context))
@@ -376,8 +377,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             when {
                 it == null || !isActive -> null
                 it.code == HttpURLConnection.HTTP_OK -> url
-                //The minion api is protected before v0.8.5, so return null if the thumbnail hasn't been generated yet
-                it.code == HttpURLConnection.HTTP_ACCEPTED && !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> null
                 it.code == HttpURLConnection.HTTP_ACCEPTED -> {
                     it.body?.run {
                         val json = JSONObject(suspendString())
@@ -602,7 +601,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             method(method, body)
             url(url)
             if (apiKey.isNotEmpty())
-                addHeader("Authorization", encodedKey)
+                addHeader("Authorization", apiKey)
             build()
         }
     }
