@@ -278,11 +278,11 @@ object DatabaseReader {
         return withContext(Dispatchers.IO) {
             val thumbDir = getThumbDir(context.noBackupFilesDir, id)
 
-            var image: File? = File(thumbDir, "$id.jpg")
-            if (image?.exists() == false)
-                image = WebHandler.downloadThumb(context, id, thumbDir, page)
+            val image = File(thumbDir, "$id.jpg")
+            if (!image.exists())
+                WebHandler.downloadThumb(context, id, page)?.use { image.outputStream().use { f -> it.copyTo(f) } } ?: return@withContext Pair(null, -1)
 
-            image?.run { Pair(path, lastModified()) } ?: Pair(null, -1)
+            with(image) { Pair(path, lastModified()) }
         }
     }
 }

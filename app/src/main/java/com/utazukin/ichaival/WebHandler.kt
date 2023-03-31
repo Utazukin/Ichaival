@@ -34,7 +34,6 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -399,7 +398,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return jobComplete
     }
 
-    suspend fun downloadThumb(context: Context, id: String, thumbDir: File, page: Int? = null) : File? = withContext(Dispatchers.IO) {
+    suspend fun downloadThumb(context: Context, id: String, page: Int? = null) : InputStream? = withContext(Dispatchers.IO) {
         if (!canConnect(context, page == null))
             return@withContext null
 
@@ -412,16 +411,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
 
         val connection = createServerConnection(url)
-        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() } ?: return@withContext null
-        response.use {
-            if (!it.isSuccessful || !isActive)
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+        response.let {
+            if (it?.isSuccessful != true || !isActive)
                 null
             else {
-                it.body?.run {
-                    val thumbFile = File(thumbDir, "$id.jpg")
-                    thumbFile.outputStream().use { f ->  byteStream().use { b -> b.copyTo(f) } }
-                    thumbFile
-                }
+                it.body?.byteStream()
             }
         }
     }
