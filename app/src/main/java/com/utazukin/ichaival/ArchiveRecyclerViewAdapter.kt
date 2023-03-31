@@ -37,6 +37,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
 import com.google.android.material.color.MaterialColors
@@ -125,16 +126,15 @@ class ArchiveRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let {
             holder.archiveName.text = it.title
-            val job = scope.launch(Dispatchers.Main) {
+            thumbLoadingJobs[holder] = scope.launch(Dispatchers.Main) {
                 val (imagePath, modifiedTime) = DatabaseReader.getArchiveImage(it, holder.mView.context)
                 imagePath?.let { path ->
                     var builder = glideManager.load(path).format(DecodeFormat.PREFER_RGB_565).transition(DrawableTransitionOptions.withCrossFade()).signature(ObjectKey(modifiedTime))
                     if (listViewType == ListViewType.Cover)
-                        builder = builder.transform(StartCrop())
+                        builder = builder.downsample(DownsampleStrategy.CENTER_OUTSIDE).transform(StartCrop())
                     builder.into(holder.archiveImage)
                 }
             }
-            thumbLoadingJobs[holder] = job
 
             if (listViewType == ListViewType.Card && holder.mContentView != null) {
                 if (selectedArchives.contains(it))
@@ -163,9 +163,9 @@ class ArchiveRecyclerViewAdapter(
 
     override fun onViewRecycled(holder: ViewHolder) {
         thumbLoadingJobs.remove(holder)?.cancel()
+        glideManager.clear(holder.archiveImage)
         holder.archiveImage.setImageBitmap(null)
         holder.archiveName.text = ""
-        glideManager.clear(holder.archiveImage)
         super.onViewRecycled(holder)
     }
 

@@ -40,10 +40,6 @@ class ProgressGlideModule : AppGlideModule() {
     override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
         val client = OkHttpClient.Builder().addInterceptor(createInterceptor(ResponseProgressListener())).build()
         registry.replace(GlideUrl::class.java, InputStream::class.java, OkHttpUrlLoader.Factory(client))
-
-        val decoder = GlideImageDecoder(context, glide.bitmapPool)
-        registry.prepend(Registry.BUCKET_BITMAP_DRAWABLE, ByteBuffer::class.java, BitmapDrawable::class.java, decoder)
-        registry.prepend(Registry.BUCKET_BITMAP, ByteBuffer::class.java, BitmapDrawable::class.java, decoder)
     }
 
     companion object {
