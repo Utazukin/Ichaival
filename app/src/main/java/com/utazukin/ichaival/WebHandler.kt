@@ -376,6 +376,8 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             when {
                 it == null || !isActive -> null
                 it.code == HttpURLConnection.HTTP_OK -> url
+                //The minion api is protected before v0.8.5, so return null if the thumbnail hasn't been generated yet
+                it.code == HttpURLConnection.HTTP_ACCEPTED && !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> null
                 it.code == HttpURLConnection.HTTP_ACCEPTED -> {
                     it.body?.run {
                         val json = JSONObject(suspendString())
@@ -391,7 +393,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private suspend fun waitForJob(jobId: Int): Boolean {
         var jobComplete: Boolean?
         do {
-            delay(500)
+            delay(100)
             jobComplete = checkJobStatus(jobId)
         } while (jobComplete == null)
 
@@ -445,7 +447,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return false
     }
 
-    private suspend fun Call.awaitWithFail(errorMessage: String? = null) : Response {
+    private suspend inline fun Call.awaitWithFail(errorMessage: String? = null) : Response {
         return suspendCancellableCoroutine {
             enqueue(object: Callback {
                 override fun onFailure(call: Call, e: IOException) {
@@ -465,7 +467,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    private suspend fun Call.await(errorMessage: String? = null, autoClose: Boolean = false) : Response {
+    private suspend inline fun Call.await(errorMessage: String? = null, autoClose: Boolean = false) : Response {
         return suspendCancellableCoroutine {
             enqueue(object: Callback{
                 override fun onFailure(call: Call, e: IOException) {
@@ -533,7 +535,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    private suspend fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
+    private suspend inline fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
 
     suspend fun setArchiveNewFlag(id: String) {
         if (!canConnect())
