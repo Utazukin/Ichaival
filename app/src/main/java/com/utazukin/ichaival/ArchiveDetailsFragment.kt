@@ -171,7 +171,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     private suspend fun setupCategories(archive: Archive) {
         val categories = CategoryManager.getStaticCategories(archive.id)
-        if (categories.isNotEmpty()) {
+        if (categories.isNotEmpty() || ServerManager.canEdit) {
             catLayout.visibility = View.VISIBLE
             for (category in categories) {
                 val catView = createCatView(category, archive.id)
