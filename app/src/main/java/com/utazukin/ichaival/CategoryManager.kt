@@ -62,7 +62,7 @@ object CategoryManager {
         }
     }
 
-    suspend fun getAllCategories() = DatabaseReader.database.archiveDao().getAllCategories()
+    suspend inline fun getAllCategories() = DatabaseReader.database.archiveDao().getAllCategories()
 
     fun removeUpdateListener(listener: CategoryListener) = listeners.remove(listener)
 
@@ -76,7 +76,7 @@ object CategoryManager {
         updateListeners()
     }
 
-    suspend fun getStaticCategories(id: String) = DatabaseReader.database.archiveDao().getCategoryArchives(id)
+    suspend inline fun getStaticCategories(id: String) = DatabaseReader.database.archiveDao().getCategoryArchives(id)
 
     suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false): ArchiveCategory? {
         val json = WebHandler.createCategory(context, name, search, pinned)

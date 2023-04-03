@@ -209,7 +209,10 @@ interface ArchiveDao {
     @Upsert
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>)
 
-    @Query("Select * from archivecategory")
+    @Query("Delete from staticcategoryref where archiveId in (select archiveId from staticcategoryref join archive on archiveId = archive.id where archive.updatedAt < :updateTime)")
+    suspend fun removeOldCategoryReferences(updateTime: Long)
+
+    @Query("Select * from archivecategory order by pinned")
     suspend fun getAllCategories() : List<ArchiveCategory>
 
     @Query("Select archivecategory.* from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
@@ -310,6 +313,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
 
     suspend fun removeOldArchives(updateTime: Long) = withTransaction {
         archiveDao().removeNotUpdatedBookmarks(updateTime)
+        archiveDao().removeOldCategoryReferences(updateTime)
         archiveDao().removeNotUpdated(updateTime)
     }
 
