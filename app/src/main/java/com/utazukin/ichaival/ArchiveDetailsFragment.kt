@@ -169,9 +169,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    private fun setupCategories(archive: Archive) {
+    private suspend fun setupCategories(archive: Archive) {
         val categories = CategoryManager.getStaticCategories(archive.id)
-        if (categories != null) {
+        if (categories.isNotEmpty()) {
             catLayout.visibility = View.VISIBLE
             for (category in categories) {
                 val catView = createCatView(category, archive.id)
@@ -313,7 +313,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         if (archive == null) return
 
         setUpTags(archive)
-        setupCategories(archive)
+        lifecycleScope.launch { setupCategories(archive) }
 
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive.title

@@ -138,7 +138,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
         categories?.let {
             catGroup.removeAllViews()
             for ((i, category) in it.withIndex()) {
-                if (category is StaticCategory) {
+                if (category.isStatic) {
                     val categoryButton = AppCompatRadioButton(context).apply {
                         text = category.name
                         id = i

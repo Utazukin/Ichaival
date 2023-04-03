@@ -202,6 +202,30 @@ interface ArchiveDao {
     @SkipQueryVerification
     @Query("Select * from archive join search on search.id = archive.id where not :onlyNew or archive.isNew = true order by archive.titleSortIndex asc")
     fun getArchivesBigByTitleSource(onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Upsert
+    suspend fun insertCategories(categories: Collection<ArchiveCategory>)
+
+    @Upsert
+    suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>)
+
+    @Query("Select * from archivecategory")
+    suspend fun getAllCategories() : List<ArchiveCategory>
+
+    @Query("Select archivecategory.* from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
+    suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
+
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.titleSortIndex asc")
+    fun getStaticCategoryArchiveTitleAsc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.titleSortIndex desc")
+    fun getStaticCategoryArchiveTitleDesc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.dateAdded asc")
+    fun getStaticCategoryArchiveDateAsc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.dateAdded desc")
+    fun getStaticCategoryArchiveDateDesc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, Archive>
 }
 
 class DatabaseTypeConverters {
@@ -258,7 +282,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class, ReaderTab::class], version = 6, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class, ArchiveCategory::class, StaticCategoryRef::class], version = 7, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
@@ -374,6 +398,16 @@ abstract class ArchiveDatabase : RoomDatabase() {
                 createSearchTable(ids, false)
                 archiveDao().getArchivesBigByDateSource(onlyNew)
             }
+        }
+    }
+
+    fun getStaticCategorySource(categoryId: String?, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive>? {
+        return when {
+            categoryId == null -> null
+            sortMethod == SortMethod.Alpha && descending -> archiveDao().getStaticCategoryArchiveTitleDesc(categoryId, onlyNew)
+            sortMethod == SortMethod.Alpha -> archiveDao().getStaticCategoryArchiveTitleAsc(categoryId, onlyNew)
+            sortMethod == SortMethod.Date && descending -> archiveDao().getStaticCategoryArchiveDateDesc(categoryId, onlyNew)
+            else -> archiveDao().getStaticCategoryArchiveDateAsc(categoryId, onlyNew)
         }
     }
 

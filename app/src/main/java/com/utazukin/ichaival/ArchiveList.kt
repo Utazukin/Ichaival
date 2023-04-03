@@ -87,9 +87,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        if (CategoryManager.categories != null)
-            menu.findItem(R.id.filter_menu)?.isVisible = true
-
+        menu.findItem(R.id.filter_menu)?.isVisible = CategoryManager.hasCategories
         return super.onCreateOptionsMenu(menu)
     }
 

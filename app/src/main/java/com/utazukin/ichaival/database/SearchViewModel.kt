@@ -95,7 +95,9 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
         else if (searchResults?.run { size > RoomDatabase.MAX_BIND_PARAMETER_CNT } == true)
             ArchiveListBigPagingSource(searchResults!!, database, sortMethod, descending, onlyNew)
-        else if (filter.isNullOrEmpty() || isLocal || searchResults != null) {
+        else if (categoryId != null) {
+            database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew) ?: emptySource
+        } else if (filter.isNullOrEmpty() || isLocal || searchResults != null) {
             when {
                 isSearch && searchResults?.isEmpty() != false -> emptySource
                 sortMethod == SortMethod.Alpha && descending -> database.getTitleDescendingSource(searchResults, onlyNew)
@@ -134,9 +136,15 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         }
     }
 
-    fun updateResults(results: List<String>, categoryId: String? = null){
+    fun updateResults(categoryId: String?){
         this.categoryId = categoryId
+        searchResults = null
+        reset()
+    }
+
+    fun updateResults(results: List<String>) {
         searchResults = results
+        categoryId = null
         reset()
     }
 

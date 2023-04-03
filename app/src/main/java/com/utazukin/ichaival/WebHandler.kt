@@ -160,18 +160,18 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun getCategories() : JSONArray? = withContext(Dispatchers.IO) {
+    suspend fun getCategories() : InputStream? = withContext(Dispatchers.IO) {
         if (!canConnect())
             return@withContext null
 
         val url = "$serverLocation$categoryPath"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        response?.use {
+        response?.let {
             if (!it.isSuccessful)
                 null
             else
-                it.body?.run { parseJsonArray(suspendString()) }
+                it.body?.byteStream()
         }
     }
 

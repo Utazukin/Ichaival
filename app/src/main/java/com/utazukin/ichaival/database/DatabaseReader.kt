@@ -87,7 +87,16 @@ private class DatabaseHelper {
             DatabaseReader.setDatabaseDirty()
         }
     }
-    val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+
+    private val MIGRATION_6_7 = object: Migration(6, 7) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("create table if not exists archivecategory (name text not null, id text not null primary key, search text, pinned integer not null)")
+            database.execSQL("create table if not exists staticcategoryref (categoryId text, archiveId text, primary key (categoryId, archiveId))")
+            DatabaseReader.setDatabaseDirty()
+        }
+
+    }
+    val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 
     val callbacks = object: RoomDatabase.Callback() {
         override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
@@ -129,6 +138,7 @@ object DatabaseReader {
                 val jsonFile = File(cacheDir, jsonLocation)
                 archiveStream.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
                 readArchiveJson(jsonFile)
+                ServerManager.parseCategories(context)
             }
             WebHandler.updateRefreshing(false)
             isDirty = false

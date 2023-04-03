@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2023 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,10 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import com.utazukin.ichaival.database.DatabaseReader
+import kotlinx.coroutines.launch
 
 enum class SortMethod(val value: Int) {
     Alpha(1),
@@ -47,7 +50,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     private var sortMethod = SortMethod.Alpha
     private var descending = false
     private val categoryButtons = mutableListOf<AppCompatRadioButton>()
-    private var savedCategory: StaticCategory? = null
+    private var savedCategory: ArchiveCategory? = null
     val selectedCategory: ArchiveCategory?
         get() {
             return when {
@@ -66,26 +69,28 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         sortMethod = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
         descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
-        onCategoriesUpdated(CategoryManager.categories)
+        lifecycleScope.launch {
+            onCategoriesUpdated(DatabaseReader.database.archiveDao().getAllCategories())
 
-        with(view) {
-            val dirGroup: RadioGroup = findViewById(R.id.direction_group)
-            val sortGroup: RadioGroup = findViewById(R.id.sort_group)
-            when (sortMethod) {
-                SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
-                SortMethod.Date -> sortGroup.check(R.id.rad_date)
-            }
+            with(view) {
+                val dirGroup: RadioGroup = findViewById(R.id.direction_group)
+                val sortGroup: RadioGroup = findViewById(R.id.sort_group)
+                when (sortMethod) {
+                    SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
+                    SortMethod.Date -> sortGroup.check(R.id.rad_date)
+                }
 
-            dirGroup.check(if (descending) R.id.rad_desc else R.id.rad_asc)
+                dirGroup.check(if (descending) R.id.rad_desc else R.id.rad_asc)
 
-            sortGroup.setOnCheckedChangeListener { _, id ->
-                sortMethod = getMethodFromId(id)
-                listener?.onSortChanged(sortMethod, descending)
-            }
+                sortGroup.setOnCheckedChangeListener { _, id ->
+                    sortMethod = getMethodFromId(id)
+                    listener?.onSortChanged(sortMethod, descending)
+                }
 
-            dirGroup.setOnCheckedChangeListener { _, id ->
-                descending = getDirectionFromId(id)
-                listener?.onSortChanged(sortMethod, descending)
+                dirGroup.setOnCheckedChangeListener { _, id ->
+                    descending = getDirectionFromId(id)
+                    listener?.onSortChanged(sortMethod, descending)
+                }
             }
         }
 
@@ -95,10 +100,11 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         with(outState){
-            (selectedCategory as? StaticCategory)?.let {
-                putString("name", it.name)
-                putString("id", it.id)
-                putStringArray("archiveIds", it.archiveIds.toTypedArray())
+            selectedCategory?.let {
+                if (it.isStatic) {
+                    putString("name", it.name)
+                    putString("id", it.id)
+                }
             }
         }
     }
@@ -108,7 +114,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         savedInstanceState?.run {
             val name = getString("name")
             if (name != null)
-                savedCategory = StaticCategory(name, getString("id")!!, false, getStringArray("archiveIds")!!.toList())
+                savedCategory = ArchiveCategory(name, getString("id")!!, "", false)
         }
     }
 

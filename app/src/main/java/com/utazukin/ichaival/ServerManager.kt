@@ -85,8 +85,6 @@ object ServerManager {
             serverName = serverInfo.getString("name")
         }
 
-        parseCategories(context)
-
         initialized = true
 
         return checkVersionAtLeast(0, 8, 2)
@@ -123,7 +121,7 @@ object ServerManager {
     }
 
     suspend fun parseCategories(context: Context) {
-        WebHandler.getCategories()?.let { CategoryManager.updateCategories(it, context.filesDir) }
+        CategoryManager.updateCategories(WebHandler.getCategories(), context.filesDir)
     }
 
 }
