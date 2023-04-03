@@ -58,9 +58,11 @@ object CategoryManager {
     fun addUpdateListener(listener: CategoryListener) {
         listeners.add(listener)
         scope.launch {
-            listener.onCategoriesUpdated(DatabaseReader.database.archiveDao().getAllCategories())
+            listener.onCategoriesUpdated(getAllCategories())
         }
     }
+
+    suspend fun getAllCategories() = DatabaseReader.database.archiveDao().getAllCategories()
 
     fun removeUpdateListener(listener: CategoryListener) = listeners.remove(listener)
 
@@ -83,7 +85,7 @@ object CategoryManager {
 
     private fun updateListeners() {
         scope.launch {
-            val categories = DatabaseReader.database.archiveDao().getAllCategories()
+            val categories = getAllCategories()
             for (listener in listeners)
                 listener.onCategoriesUpdated(categories)
         }

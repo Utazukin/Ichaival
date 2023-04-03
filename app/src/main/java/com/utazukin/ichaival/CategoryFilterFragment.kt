@@ -29,7 +29,6 @@ import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
-import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.launch
 
 enum class SortMethod(val value: Int) {
@@ -70,7 +69,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
         lifecycleScope.launch {
-            onCategoriesUpdated(DatabaseReader.database.archiveDao().getAllCategories())
+            onCategoriesUpdated(CategoryManager.getAllCategories())
 
             with(view) {
                 val dirGroup: RadioGroup = findViewById(R.id.direction_group)
