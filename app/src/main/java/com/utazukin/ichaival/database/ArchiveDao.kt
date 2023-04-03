@@ -357,7 +357,16 @@ abstract class ArchiveDatabase : RoomDatabase() {
         archiveDao().removeBookmarks(ids)
     }
 
-    fun getTitleDescendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
+    fun getArchiveSource(ids: List<String>? = null, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
+        return when {
+            sortMethod == SortMethod.Alpha && descending -> getTitleDescendingSource(ids, onlyNew)
+            sortMethod == SortMethod.Alpha -> getTitleAscendingSource(ids, onlyNew)
+            sortMethod == SortMethod.Date && descending -> getDateDescendingSource(ids, onlyNew)
+            else -> getDateAscendingSource(ids, onlyNew)
+        }
+    }
+
+    private fun getTitleDescendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
         return when {
             ids == null -> archiveDao().getTitleDescendingSource(onlyNew)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> archiveDao().getTitleDescendingSource(ids, onlyNew)
@@ -368,7 +377,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    fun getTitleAscendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
+    private fun getTitleAscendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
         return when {
             ids == null -> archiveDao().getTitleAscendingSource(onlyNew)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> archiveDao().getTitleAscendingSource(ids, onlyNew)
@@ -379,7 +388,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    fun getDateDescendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
+    private fun getDateDescendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
         return when {
             ids == null -> archiveDao().getDateDescendingSource(onlyNew)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> archiveDao().getDateDescendingSource(ids, onlyNew)
@@ -390,7 +399,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    fun getDateAscendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
+    private fun getDateAscendingSource(ids: List<String>? = null, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
         return when {
             ids == null -> archiveDao().getDateAscendingSource(onlyNew)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> archiveDao().getDateAscendingSource(ids, onlyNew)
@@ -411,7 +420,16 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    suspend fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
+    suspend fun getArchives(ids: List<String>?, sortMethod: SortMethod, descending: Boolean, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
+        return when {
+            sortMethod == SortMethod.Alpha && descending -> getTitleDescending(ids, offset, limit, onlyNew)
+            sortMethod == SortMethod.Alpha -> getTitleAscending(ids, offset, limit, onlyNew)
+            sortMethod == SortMethod.Date && descending -> getDateDescending(ids, offset, limit, onlyNew)
+            else -> getDateAscending(ids, offset, limit, onlyNew)
+        }
+    }
+
+    private suspend fun getTitleDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getTitleDescending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getTitleDescending)
@@ -419,14 +437,14 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    suspend fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
+    private suspend fun getTitleAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getTitleAscending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getTitleAscending)
             else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByTitle, onlyNew)
         }
     }
-    suspend fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
+    private suspend fun getDateDescending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getDateDescending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getDateDescending)
@@ -434,7 +452,7 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    suspend fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
+    private suspend fun getDateAscending(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE, onlyNew: Boolean = false) : List<Archive> {
         return when {
             ids == null -> archiveDao().getDateAscending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getDateAscending)
