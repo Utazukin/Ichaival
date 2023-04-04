@@ -76,7 +76,6 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     private var archivePagingSource: PagingSource<Int, Archive>? = null
     private val archiveDao by lazy { database.archiveDao() }
     private val database get() = DatabaseReader.database
-    private val emptySource by lazy { EmptySource() }
     private var filterJob: Job? = null
     private lateinit var archiveList: Flow<PagingData<Archive>>
     private var categoryId: String? = null
@@ -90,9 +89,9 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     private fun getPagingSource() : PagingSource<Int, Archive> {
         val source = when {
             randomCount > 0u -> ArchiveListRandomPagingSource(filter ?: "", randomCount, categoryId, database)
-            categoryId != null -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew) ?: emptySource
+            categoryId != null -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew) ?: EmptySource()
             !isLocal && (onlyNew || filter?.isNotEmpty() == true) -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
-            isSearch && searchResults?.isEmpty() == false -> emptySource
+            isSearch && searchResults?.isEmpty() != false -> EmptySource()
             filter.isNullOrEmpty() || isLocal || searchResults != null -> database.getArchiveSource(searchResults, sortMethod, descending, onlyNew)
             else -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
         }
@@ -139,27 +138,29 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         searchResults = null
         if (isLocal) {
             filterJob?.cancel()
-            filterJob = viewModelScope.launch(Dispatchers.IO) {
-                searchResults = internalFilter(filter ?: "")
-                yield()
+            if (search == null) {
+                searchResults = emptyList()
                 reset()
+            } else if (search.isEmpty()) {
+                searchResults = null
+                reset()
+            } else {
+                filterJob = viewModelScope.launch(Dispatchers.IO) {
+                    searchResults = internalFilter(search)
+                    yield()
+                    reset()
+                }
             }
         } else reset()
     }
 
-    private suspend fun internalFilter(filter: CharSequence?) : List<String>? {
-        if (filter == null)
-            return emptyList()
-
-        if (filter.isEmpty())
-            return null
-
+    private suspend fun internalFilter(filter: CharSequence) : List<String> {
         val totalCount = archiveDao.getArchiveCount()
         val mValues = ArrayList<String>(min(totalCount, DatabaseReader.MAX_WORKING_ARCHIVES))
         val terms = parseTermsInfo(filter)
         val titleSearch = filter.removeSurrounding("\"")
+        WebHandler.updateRefreshing(true)
         for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
-            yield()
             val allArchives = archiveDao.getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
             for (archive in allArchives) {
                 if (archive.title.contains(titleSearch, ignoreCase = true))
@@ -174,6 +175,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
                 }
             }
         }
+        WebHandler.updateRefreshing(false)
 
         return mValues
     }

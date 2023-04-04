@@ -32,9 +32,9 @@ data class ServerSearchResult(val results: List<String>?,
                          val filter: CharSequence = "",
                          val onlyNew: Boolean = false)
 
-class EmptySource : PagingSource<Int, Archive>() {
-    override fun getRefreshKey(state: PagingState<Int, Archive>) = null
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> = LoadResult.Page(emptyList(), null, null)
+class EmptySource<Key : Any, Value : Any> : PagingSource<Key, Value>() {
+    override fun getRefreshKey(state: PagingState<Key, Value>) = null
+    override suspend fun load(params: LoadParams<Key>): LoadResult<Key, Value> = LoadResult.Page(emptyList(), null, null)
 }
 
 open class ArchiveListServerPagingSource(
@@ -48,26 +48,22 @@ open class ArchiveListServerPagingSource(
     protected val totalResults = mutableListOf<String>()
     var totalSize = -1
         protected set
-    override val jumpingSupported = true
     private val coroutineContext = Dispatchers.IO + SupervisorJob()
 
     init {
         registerInvalidatedCallback { coroutineContext.cancel() }
     }
 
-    protected open suspend fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE): List<Archive> {
+    protected suspend fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE): List<Archive> {
         if (isSearch && ids == null)
             return emptyList()
-
-        if (sortMethod == SortMethod.Alpha && ids != null)
-            return database.getArchives(ids, offset, limit)
 
         return database.getArchives(ids, sortMethod, descending, offset, limit, onlyNew)
     }
 
     override fun getRefreshKey(state: PagingState<Int, Archive>) = state.anchorPosition
 
-    protected open suspend fun loadResults(endIndex: Int): Unit = coroutineScope {
+    private suspend fun loadResults(endIndex: Int): Unit = coroutineScope {
         if (totalSize < 0) {
             val results = WebHandler.searchServer(filter, onlyNew, sortMethod, descending, 0, false)
             totalSize = results.totalSize
@@ -126,27 +122,21 @@ open class ArchiveListServerPagingSource(
 
 class ArchiveListRandomPagingSource(filter: CharSequence, private val count: UInt, private val categoryId: String?, database: ArchiveDatabase)
     : ArchiveListServerPagingSource(false, false, SortMethod.Alpha, false, filter, database) {
-    override suspend fun loadResults(endIndex: Int) {
+    private suspend fun loadResults() {
         val result = WebHandler.getRandomArchives(count, filter, categoryId)
         totalSize = result.totalSize
         result.results?.let { totalResults.addAll(it) }
-    }
-
-    override suspend fun getArchives(ids: List<String>?, offset: Int, limit: Int): List<Archive> {
-        if (ids == null)
-            return emptyList()
-
-        return database.getArchives(ids, offset, limit)
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
         val position = if (params is LoadParams.Refresh) 0 else params.key ?: 0
         val prev = if (position > 0) position - 1 else null
         if (totalResults.isEmpty())
-            loadResults(0)
+            loadResults()
+
         val endIndex = min(position + params.loadSize, totalSize)
         val next = if (endIndex >= totalSize) null else endIndex
-        val archives = getArchives(totalResults, position, params.loadSize)
+        val archives = if (totalResults.isEmpty()) emptyList() else getArchives(totalResults, position, params.loadSize)
         return LoadResult.Page(archives, prev, next, prev?.plus(1) ?: 0, next?.let { totalSize - it } ?: 0)
     }
 }

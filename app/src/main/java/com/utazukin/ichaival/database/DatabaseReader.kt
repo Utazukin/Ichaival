@@ -37,7 +37,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.InputStreamReader
 import java.lang.reflect.Type
 import java.util.*
 
@@ -151,7 +150,7 @@ object DatabaseReader {
         val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
         database.withTransaction {
             val bookmarks = if (ServerManager.serverTracksProgress) database.getBookmarks() else null
-            JsonReader(InputStreamReader(it, "UTF-8")).use { reader ->
+            JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                 reader.beginObject()
                 while (reader.hasNext()) {
                     if (reader.nextName() == "data") {
@@ -212,7 +211,9 @@ object DatabaseReader {
         }
     }
 
-    fun invalidateImageCache(id: String) = archivePageMap.remove(id)
+    fun invalidateImageCache(id: String) {
+        archivePageMap.remove(id)
+    }
 
     fun invalidateImageCache() = archivePageMap.clear()
 

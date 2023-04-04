@@ -261,7 +261,7 @@ class DatabaseTypeConverters {
     fun fromString(json: String) : Map<String, List<String>> {
         return buildMap<String, MutableList<String>> {
             val split = json.split(',')
-            for (tag in split.map { it.trim() }) {
+            for (tag in split.asSequence().map { it.trim() }) {
                 val colonIndex = tag.indexOf(':')
                 if (colonIndex >= 0) {
                     val namespace = tag.substring(0, colonIndex)
@@ -476,16 +476,6 @@ abstract class ArchiveDatabase : RoomDatabase() {
             ids == null -> archiveDao().getDateAscending(offset, limit)
             ids.size < MAX_BIND_PARAMETER_CNT - 2 -> getArchives(ids, offset, limit, archiveDao()::getDateAscending)
             else -> getArchivesBig(ids, offset, limit, archiveDao()::getArchivesBigByDate, onlyNew)
-        }
-    }
-
-    suspend fun getArchives(ids: List<String>, offset: Int, limit: Int) : List<Archive> {
-        return when {
-            ids.size < MAX_BIND_PARAMETER_CNT - 2 -> {
-                val idOrder = ids.withIndex().associate { it.value to it.index }
-                archiveDao().getArchives(ids, offset, limit).apply { sortBy { idOrder[it.id] } }
-            }
-            else -> getArchivesBig(ids, offset, limit)
         }
     }
 
