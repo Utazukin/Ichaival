@@ -168,11 +168,11 @@
     <string name="archive_list_type_key" translatable="false">archive_list_type_key</string>
     <string name="archive_list_type_pref_title">リストビュー</string>
     <string name="other_namespace">他の</string>
-    <string name="category_removed_message">％1$sから削除されました。</string>
-    <string name="category_remove_message">％1$sから削除します。</string>
-    <string name="category_add_message">％1$sに追加されました。</string>
+    <string name="category_removed_message">%1$sから削除されました。</string>
+    <string name="category_remove_message">%1$sから削除します。</string>
+    <string name="category_add_message">%1$sに追加されました。</string>
     <string name="update_thumbnail_message">サムネイルは再起動後に更新されます。</string>
-    <string name="selected_archives">％1$dが選択されました</string>
+    <string name="selected_archives">%1$dが選択されました</string>
     <string name="deleted_archive">"%1$s"を削除</string>
     <string name="delete_archive_prompt">"%1$s"を削除しますか？</string>
     <string name="yes">はい</string>
