@@ -233,7 +233,7 @@ class ArchiveRecyclerViewAdapter(
         if (!multiSelect || selectedArchives.none())
             return
 
-        Toast.makeText(context, "Added to ${category.name}.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.category_add_message, category.name), Toast.LENGTH_SHORT).show()
         actionMode?.finish()
     }
 
