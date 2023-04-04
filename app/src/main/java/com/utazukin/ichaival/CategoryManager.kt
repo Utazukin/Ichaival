@@ -48,11 +48,10 @@ data class ArchiveCategoryFull(
 data class ArchiveCategory(
     val name: String,
     val id: String,
-    val search: String? = null,
-    val pinned: Boolean) {
+    val search: String? = null) {
     @Ignore val isStatic = search.isNullOrBlank()
 
-    constructor(name: String, id: String) : this(name, id, "", false)
+    constructor(name: String, id: String) : this(name, id, "")
 }
 
 @Entity(primaryKeys = ["categoryId", "archiveId"])
@@ -90,7 +89,7 @@ object CategoryManager {
 
     suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false): ArchiveCategory? {
         val json = WebHandler.createCategory(context, name, search, pinned)
-        return json?.run { ArchiveCategory(name, getString("category_id"), search, pinned) }
+        return json?.run { ArchiveCategory(name, getString("category_id"), search) }
     }
 
     private fun updateListeners() {
@@ -107,7 +106,7 @@ object CategoryManager {
             val staticRefs = ArrayList<StaticCategoryRef>(DatabaseReader.MAX_WORKING_ARCHIVES)
             var insertedCategories = false
             val currentTime = Calendar.getInstance().timeInMillis
-            JsonReader(categoriesFile.bufferedReader()).use { reader ->
+            JsonReader(categoriesFile.bufferedReader(Charsets.UTF_8)).use { reader ->
                 reader.beginArray()
                 while (reader.hasNext()) {
                     var name = ""
