@@ -71,7 +71,7 @@ object CategoryManager {
             return
 
         val categoriesFile = File(filesDir, categoriesFilename)
-        categoryJson.use { categoriesFile.outputStream().use { f -> it.copyTo(f) } }
+        withContext(Dispatchers.IO) { categoryJson.use { categoriesFile.outputStream().use { f -> it.copyTo(f) } } }
         parseCategories(categoriesFile)
         updateListeners()
     }
