@@ -479,8 +479,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun enableRefresh(enable: Boolean) {
-        menu?.findItem(R.id.refresh_archives)?.isVisible = enable
-        swipeRefreshLayout.isEnabled = canSwipeRefresh && enable
+        val isSearch = activity is ArchiveSearch
+        menu?.findItem(R.id.refresh_archives)?.isVisible = enable && !isSearch
+        swipeRefreshLayout.isEnabled = canSwipeRefresh && enable && !isSearch
     }
 
     fun updateSortMethod(method: SortMethod, desc: Boolean) {
