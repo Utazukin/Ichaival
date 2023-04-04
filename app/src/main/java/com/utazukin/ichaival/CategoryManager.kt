@@ -31,22 +31,32 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
+import java.util.*
 
 interface CategoryListener {
     fun onCategoriesUpdated(categories: List<ArchiveCategory>?)
 }
 
-@Entity
-data class ArchiveCategory(
+@Entity(tableName = "archiveCategory")
+data class ArchiveCategoryFull(
     val name: String,
     @PrimaryKey val id: String,
     val search: String? = null,
+    val pinned: Boolean,
+    val updatedAt: Long)
+
+data class ArchiveCategory(
+    val name: String,
+    val id: String,
+    val search: String? = null,
     val pinned: Boolean) {
     @Ignore val isStatic = search.isNullOrBlank()
+
+    constructor(name: String, id: String) : this(name, id, "", false)
 }
 
 @Entity(primaryKeys = ["categoryId", "archiveId"])
-data class StaticCategoryRef(val categoryId: String, val archiveId: String)
+data class StaticCategoryRef(val categoryId: String, val archiveId: String, val updatedAt: Long)
 
 object CategoryManager {
     private const val categoriesFilename = "categories.json"
@@ -93,9 +103,10 @@ object CategoryManager {
 
     private suspend fun parseCategories(categoriesFile: File) = withContext(Dispatchers.IO) {
         DatabaseReader.database.withTransaction {
-            val categories = ArrayList<ArchiveCategory>(DatabaseReader.MAX_WORKING_ARCHIVES)
+            val categories = ArrayList<ArchiveCategoryFull>(DatabaseReader.MAX_WORKING_ARCHIVES)
             val staticRefs = ArrayList<StaticCategoryRef>(DatabaseReader.MAX_WORKING_ARCHIVES)
             var insertedCategories = false
+            val currentTime = Calendar.getInstance().timeInMillis
             JsonReader(categoriesFile.bufferedReader()).use { reader ->
                 reader.beginArray()
                 while (reader.hasNext()) {
@@ -125,7 +136,7 @@ object CategoryManager {
 
                     if (archives.isNotEmpty()) {
                         for (archive in archives) {
-                            staticRefs.add(StaticCategoryRef(id, archive))
+                            staticRefs.add(StaticCategoryRef(id, archive, currentTime))
 
                             if (staticRefs.size == DatabaseReader.MAX_WORKING_ARCHIVES) {
                                 insertedCategories = true
@@ -136,7 +147,7 @@ object CategoryManager {
                         archives.clear()
                     }
 
-                    categories.add(ArchiveCategory(name, id, search, pinned))
+                    categories.add(ArchiveCategoryFull(name, id, search, pinned, currentTime))
                     if (categories.size == DatabaseReader.MAX_WORKING_ARCHIVES) {
                         DatabaseReader.database.archiveDao().insertCategories(categories)
                         categories.clear()
@@ -151,6 +162,8 @@ object CategoryManager {
                 DatabaseReader.database.archiveDao().insertCategories(categories)
             if (staticRefs.isNotEmpty())
                 DatabaseReader.database.archiveDao().insertStaticCategories(staticRefs)
+            
+            DatabaseReader.database.removeOutdatedCategories(currentTime)
         }
     }
 }

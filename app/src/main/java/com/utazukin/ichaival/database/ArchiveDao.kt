@@ -204,18 +204,24 @@ interface ArchiveDao {
     fun getArchivesBigByTitleSource(onlyNew: Boolean) : PagingSource<Int, Archive>
 
     @Upsert
-    suspend fun insertCategories(categories: Collection<ArchiveCategory>)
+    suspend fun insertCategories(categories: Collection<ArchiveCategoryFull>)
 
     @Upsert
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>)
 
+    @Query("Delete from staticcategoryref where updatedAt < :updateTime")
+    suspend fun removeOutdatedStaticCategories(updateTime: Long)
+
+    @Query("Delete from archivecategory where updatedAt < :updateTime")
+    suspend fun removeOutdatedCategories(updateTime: Long)
+
     @Query("Delete from staticcategoryref where archiveId in (select archiveId from staticcategoryref join archive on archiveId = archive.id where archive.updatedAt < :updateTime)")
     suspend fun removeOldCategoryReferences(updateTime: Long)
 
-    @Query("Select * from archivecategory order by pinned")
+    @Query("Select id, name, search, pinned from archivecategory order by pinned")
     suspend fun getAllCategories() : List<ArchiveCategory>
 
-    @Query("Select archivecategory.* from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
+    @Query("Select id, name, search, pinned from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
     suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
 
     @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.titleSortIndex asc")
@@ -285,7 +291,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [Archive::class, ReaderTab::class, ArchiveCategory::class, StaticCategoryRef::class], version = 7, exportSchema = false)
+@Database(entities = [Archive::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class], version = 7, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
@@ -312,9 +318,18 @@ abstract class ArchiveDatabase : RoomDatabase() {
     }
 
     suspend fun removeOldArchives(updateTime: Long) = withTransaction {
-        archiveDao().removeNotUpdatedBookmarks(updateTime)
-        archiveDao().removeOldCategoryReferences(updateTime)
-        archiveDao().removeNotUpdated(updateTime)
+        with(archiveDao()) {
+            removeNotUpdatedBookmarks(updateTime)
+            removeOldCategoryReferences(updateTime)
+            removeNotUpdated(updateTime)
+        }
+    }
+
+    suspend fun removeOutdatedCategories(updateTime: Long) = withTransaction {
+        with(archiveDao()) {
+            removeOutdatedStaticCategories(updateTime)
+            removeOutdatedCategories(updateTime)
+        }
     }
 
     suspend fun getBookmarks() = archiveDao().getBookmarks().associateBy { it.id }

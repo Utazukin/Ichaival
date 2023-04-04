@@ -113,7 +113,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         savedInstanceState?.run {
             val name = getString("name")
             if (name != null)
-                savedCategory = ArchiveCategory(name, getString("id")!!, "", false)
+                savedCategory = ArchiveCategory(name, getString("id")!!)
         }
     }
 

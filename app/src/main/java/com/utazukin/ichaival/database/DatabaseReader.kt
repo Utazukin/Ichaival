@@ -90,8 +90,8 @@ private class DatabaseHelper {
 
     private val MIGRATION_6_7 = object: Migration(6, 7) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("create table if not exists archivecategory (name text not null, id text not null primary key, search text, pinned integer not null)")
-            database.execSQL("create table if not exists staticcategoryref (categoryId text not null, archiveId text not null, primary key (categoryId, archiveId))")
+            database.execSQL("create table if not exists archivecategory (name text not null, id text not null primary key, search text, pinned integer not null, updatedAt not null default 0)")
+            database.execSQL("create table if not exists staticcategoryref (categoryId text not null, archiveId text not null, updatedAt not null default 0, primary key (categoryId, archiveId))")
             DatabaseReader.setDatabaseDirty()
         }
 
