@@ -28,38 +28,40 @@ import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@Entity
-data class Archive (
+@Entity(tableName = "archive")
+data class ArchiveFull(
     @PrimaryKey val id: String,
     @ColumnInfo val title: String,
     @ColumnInfo val dateAdded: Long,
-    @ColumnInfo var isNew: Boolean,
+    @ColumnInfo val isNew: Boolean,
     @ColumnInfo val tags: Map<String, List<String>>,
-    @ColumnInfo var currentPage: Int,
-    @ColumnInfo var pageCount: Int,
+    @ColumnInfo val currentPage: Int,
+    @ColumnInfo val pageCount: Int,
     @ColumnInfo val updatedAt: Long,
     @ColumnInfo val titleSortIndex: Int
-) {
+)
 
-    val numPages: Int
-        get() = pageCount
+data class Archive (
+    val id: String,
+    val title: String,
+    val dateAdded: Long,
+    var isNew: Boolean,
+    val tags: Map<String, List<String>>,
+    var currentPage: Int,
+    @ColumnInfo(name = "pageCount") var numPages: Int) {
 
     @delegate:Ignore
     val isWebtoon by lazy { containsTag("webtoon", false) }
 
     suspend fun extract(context: Context, forceFull: Boolean = false) {
         val pages = DatabaseReader.getPageList(context, id, forceFull)
-        if (pageCount <= 0)
-            pageCount = pages.size
+        if (numPages <= 0)
+            numPages = pages.size
     }
 
-    fun invalidateCache() {
-        DatabaseReader.invalidateImageCache(id)
-    }
+    fun invalidateCache() = DatabaseReader.invalidateImageCache(id)
 
-    fun hasPage(page: Int) : Boolean {
-        return numPages <= 0 || (page in 0 until numPages)
-    }
+    fun hasPage(page: Int) = numPages <= 0 || (page in 0 until numPages)
 
     suspend fun clearNewFlag() = withContext(Dispatchers.IO) {
         DatabaseReader.setArchiveNewFlag(id)
