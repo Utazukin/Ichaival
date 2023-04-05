@@ -90,7 +90,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         val source = when {
             randomCount > 0u -> ArchiveListRandomPagingSource(filter ?: "", randomCount, categoryId, database)
             categoryId != null -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew) ?: EmptySource()
-            !isLocal && (onlyNew || filter?.isNotEmpty() == true) -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
+            !isLocal && filter?.isNotEmpty() == true -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
             isSearch && searchResults?.isEmpty() != false -> EmptySource()
             filter.isNullOrEmpty() || isLocal || searchResults != null -> database.getArchiveSource(searchResults, sortMethod, descending, onlyNew)
             else -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
