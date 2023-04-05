@@ -133,12 +133,12 @@ object DatabaseReader {
         if (forceUpdate || checkDirty(cacheDir)) {
             WebHandler.updateRefreshing(true)
             val archiveStream = WebHandler.searchServerRaw("", false, SortMethod.Alpha, false, -1)
-            if (archiveStream != null) {
-                val jsonFile = File(cacheDir, jsonLocation)
-                archiveStream.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
+            val jsonFile = File(cacheDir, jsonLocation)
+            archiveStream?.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
+
+            if (jsonFile.exists())
                 readArchiveJson(jsonFile)
-                ServerManager.parseCategories(context)
-            }
+            ServerManager.parseCategories(context)
             WebHandler.updateRefreshing(false)
             isDirty = false
         }

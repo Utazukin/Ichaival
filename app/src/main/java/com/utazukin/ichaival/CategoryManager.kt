@@ -76,13 +76,12 @@ object CategoryManager {
     fun removeUpdateListener(listener: CategoryListener) = listeners.remove(listener)
 
     suspend fun updateCategories(categoryJson: InputStream?, filesDir: File) {
-        if (categoryJson == null)
-            return
-
         val categoriesFile = File(filesDir, categoriesFilename)
-        withContext(Dispatchers.IO) { categoryJson.use { categoriesFile.outputStream().use { f -> it.copyTo(f) } } }
-        parseCategories(categoriesFile)
-        updateListeners()
+        withContext(Dispatchers.IO) { categoryJson?.use { categoriesFile.outputStream().use { f -> it.copyTo(f) } } }
+        if (categoriesFile.exists()) {
+            parseCategories(categoriesFile)
+            updateListeners()
+        }
     }
 
     suspend inline fun getStaticCategories(id: String) = DatabaseReader.database.archiveDao().getCategoryArchives(id)
