@@ -235,6 +235,27 @@ interface ArchiveDao {
 
     @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.dateAdded desc")
     fun getStaticCategoryArchiveDateDesc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSearch(reference: SearchArchiveRef)
+
+    @Query("Delete from search")
+    suspend fun clearSearchCache()
+
+    @Query("Select count(archiveId) from search where searchText = :search")
+    suspend fun getCachedSearchCount(search: String) : Int
+
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by titleSortIndex asc")
+    fun getSearchResultsTitleAscending(search: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by titleSortIndex desc")
+    fun getSearchResultsTitleDescending(search: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by dateAdded asc")
+    fun getSearchResultsDateAscending(search: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by dateAdded desc")
+    fun getSearchResultsDateDescending(search: String, onlyNew: Boolean) : PagingSource<Int, Archive>
 }
 
 class DatabaseTypeConverters {
@@ -291,7 +312,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [ArchiveFull::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class], version = 7, exportSchema = false)
+@Database(entities = [ArchiveFull::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class, SearchArchiveRef::class], version = 8, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
@@ -382,6 +403,15 @@ abstract class ArchiveDatabase : RoomDatabase() {
             sortMethod == SortMethod.Alpha -> getTitleAscendingSource(ids, onlyNew)
             sortMethod == SortMethod.Date && descending -> getDateDescendingSource(ids, onlyNew)
             else -> getDateAscendingSource(ids, onlyNew)
+        }
+    }
+
+    fun getArchiveSearchSource(search: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean) : PagingSource<Int, Archive> {
+        return when {
+            sortMethod == SortMethod.Alpha && descending -> archiveDao().getSearchResultsTitleDescending(search, onlyNew)
+            sortMethod == SortMethod.Alpha -> archiveDao().getSearchResultsTitleAscending(search, onlyNew)
+            sortMethod == SortMethod.Date && descending -> archiveDao().getSearchResultsDateDescending(search, onlyNew)
+            else -> archiveDao().getSearchResultsDateAscending(search, onlyNew)
         }
     }
 

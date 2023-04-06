@@ -20,11 +20,13 @@ package com.utazukin.ichaival.database
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import androidx.room.withTransaction
 import com.utazukin.ichaival.Archive
-import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.WebHandler
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlin.math.min
 
 data class ServerSearchResult(val results: List<String>?,
@@ -42,16 +44,20 @@ open class ArchiveListServerPagingSource(
     private val onlyNew: Boolean,
     private val sortMethod: SortMethod,
     private val descending: Boolean,
-    protected val filter: CharSequence,
+    protected val filter: String,
     protected val database: ArchiveDatabase
 ) : PagingSource<Int, Archive>() {
     protected val totalResults = mutableListOf<String>()
     var totalSize = -1
         protected set
     private val coroutineContext = Dispatchers.IO + SupervisorJob()
+    private val roomSource = database.getArchiveSearchSource(filter, sortMethod, descending, onlyNew)
 
     init {
-        registerInvalidatedCallback { coroutineContext.cancel() }
+        registerInvalidatedCallback {
+            coroutineContext.cancel()
+            roomSource.invalidate()
+        }
     }
 
     protected suspend fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE): List<Archive> {
@@ -63,64 +69,29 @@ open class ArchiveListServerPagingSource(
 
     override fun getRefreshKey(state: PagingState<Int, Archive>) = state.anchorPosition
 
-    private suspend fun loadResults(endIndex: Int): Unit = coroutineScope {
-        if (totalSize < 0) {
-            val results = WebHandler.searchServer(filter, onlyNew, sortMethod, descending, 0, false)
+    private suspend fun loadResults() {
+        val cacheCount = database.archiveDao().getCachedSearchCount(filter)
+        if (cacheCount == 0) {
+            WebHandler.updateRefreshing(true)
+            val results = WebHandler.searchServer(filter, false, sortMethod, descending, -1, false)
             totalSize = results.totalSize
-            results.results?.let { totalResults.addAll(it) }
-        }
-
-        val remaining = endIndex - totalResults.size
-        val currentSize = totalResults.size
-        val pages = remaining.floorDiv(ServerManager.pageSize)
-        val jobs = buildList(pages + 1) {
-            for (i in 0 until pages) {
-                val job = async(coroutineContext) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + i * ServerManager.pageSize, false) }
-                add(job)
+            results.results?.let {
+                database.withTransaction {
+                    for (result in it)
+                        database.archiveDao().insertSearch(SearchArchiveRef(filter, result))
+                }
             }
-
-            val job = async(coroutineContext) { WebHandler.searchServer(filter, onlyNew, sortMethod, descending, currentSize + pages * ServerManager.pageSize, false) }
-            add(job)
-        }
-
-        totalResults.addAll(jobs.awaitAll().mapNotNull { it.results }.flatten())
-    }
-
-    private fun computeNextKey(position: Int, loadSize: Int, total: Int) : Int? {
-        val next = position + loadSize
-        return if (next >= total) null else next
+            WebHandler.updateRefreshing(false)
+        } else totalSize = cacheCount
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
-        val position = if (params is LoadParams.Refresh) 0 else params.key ?: 0
-        val prev = if (position > 0) position - 1 else null
-        return if (isSearch && filter.isBlank()) //Search mode with no search.  Display none.
-            LoadResult.Page(emptyList(), null, null)
-        else if (filter.isBlank() && !onlyNew) { //This isn't search mode.  Display all.
-            val archiveCount = database.archiveDao().getArchiveCount()
-            val archives = getArchives(null, position, params.loadSize)
-            val next = computeNextKey(position, params.loadSize, archiveCount)
-            LoadResult.Page(archives, prev, next, position, next?.let { archiveCount - it } ?: 0)
-        } else {
-            val endIndex = if (totalSize >= 0) min(position + params.loadSize, totalSize) else position + params.loadSize
-            var next = if (totalSize in 0..endIndex) null else endIndex
-            if (endIndex <= totalResults.size) {
-                val archives = getArchives(totalResults, position, params.loadSize)
-                LoadResult.Page(archives, prev, next, prev?.plus(1) ?: 0, next?.let { totalSize - it } ?: 0)
-            } else {
-                WebHandler.updateRefreshing(true)
-
-                loadResults(endIndex)
-                next = if (totalSize in 0..endIndex) null else endIndex
-                val archives = getArchives(totalResults, position, params.loadSize)
-                WebHandler.updateRefreshing(false)
-                LoadResult.Page(archives, prev, next, prev?.plus(1) ?: 0, next?.let { totalSize - it } ?: 0)
-            }
-        }
+        loadResults()
+        return roomSource.load(params)
     }
 }
 
-class ArchiveListRandomPagingSource(filter: CharSequence, private val count: UInt, private val categoryId: String?, database: ArchiveDatabase)
+class ArchiveListRandomPagingSource(filter: String, private val count: UInt, private val categoryId: String?, database: ArchiveDatabase)
     : ArchiveListServerPagingSource(false, false, SortMethod.Alpha, false, filter, database) {
     private suspend fun loadResults() {
         val result = WebHandler.getRandomArchives(count, filter, categoryId)

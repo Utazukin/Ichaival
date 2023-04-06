@@ -88,12 +88,12 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
 
     private fun getPagingSource() : PagingSource<Int, Archive> {
         val source = when {
-            randomCount > 0u -> ArchiveListRandomPagingSource(filter ?: "", randomCount, categoryId, database)
+            randomCount > 0u -> ArchiveListRandomPagingSource(filter?.toString() ?: "", randomCount, categoryId, database)
             categoryId != null -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew) ?: EmptySource()
-            !isLocal && filter?.isNotEmpty() == true -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
+            !isLocal && filter?.isNotEmpty() == true -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter?.toString() ?: "", database)
             isSearch && searchResults?.isEmpty() != false -> EmptySource()
             filter.isNullOrEmpty() || isLocal || searchResults != null -> database.getArchiveSource(searchResults, sortMethod, descending, onlyNew)
-            else -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
+            else -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter?.toString() ?: "", database)
         }
         archivePagingSource = source
         return source
