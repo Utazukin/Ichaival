@@ -316,11 +316,11 @@ object DatabaseReader {
 
     suspend fun getArchives(offset: Int, limit: Int) = database.archiveDao().getArchives(offset, limit)
 
-    fun getRandomCategorySource(categoryId: String, count: Int) = database.archiveDao().getRandomCategorySource(categoryId, count)
-
-    fun getSearchResultsRandom(filter: String, count: Int) = database.archiveDao().getSearchResultsRandom(filter, count)
-
-    fun getRandomSource(count: Int) = database.archiveDao().getRandomSource(count)
+    fun getRandomSource(filter: String, categoryId: String, count: Int) = when {
+        categoryId.isNotEmpty() -> database.archiveDao().getRandomCategorySource(categoryId, count)
+        filter.isNotEmpty() -> database.archiveDao().getSearchResultsRandom(filter, count)
+        else -> database.archiveDao().getRandomSource(count)
+    }
 
     suspend fun getRandom(excludeBookmarked: Boolean = false) = if (excludeBookmarked) database.archiveDao().getRandomExcludeBookmarked() else database.archiveDao().getRandom()
 
@@ -401,7 +401,7 @@ object DatabaseReader {
         return isDirty || !jsonCache.exists() || Calendar.getInstance().timeInMillis - jsonCache.lastModified() >  dayInMill
     }
 
-    suspend fun getArchive(id: String) = withContext(Dispatchers.IO) { database.archiveDao().getArchive(id) }
+    suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
     suspend fun getRandomArchive() = database.archiveDao().getRandom()
 
