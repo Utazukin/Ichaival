@@ -112,8 +112,8 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
         resetDisabled = false
     }
 
-    fun updateSort(method: SortMethod, desc: Boolean, force: Boolean = false) {
-        if (force || method != sortMethod || desc != descending) {
+    fun updateSort(method: SortMethod, desc: Boolean) {
+        if (method != sortMethod || desc != descending) {
             sortMethod = method
             descending = desc
             reset()
@@ -126,13 +126,15 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
     }
 
     fun filter(search: CharSequence?) {
-        filter = search?.toString() ?: ""
-        categoryId = ""
-        reset()
+        if (filter != search || categoryId.isNotEmpty()) {
+            filter = search?.toString() ?: ""
+            categoryId = ""
+            reset()
+        }
     }
 
-    fun init(method: SortMethod, desc: Boolean, filter: CharSequence?, onlyNew: Boolean, force: Boolean = false, isSearch: Boolean = false) {
-        if (!initiated || force) {
+    fun init(method: SortMethod, desc: Boolean, filter: CharSequence?, onlyNew: Boolean, isSearch: Boolean = false) {
+        if (!initiated) {
             sortMethod = method
             descending = desc
             this.isSearch = isSearch
