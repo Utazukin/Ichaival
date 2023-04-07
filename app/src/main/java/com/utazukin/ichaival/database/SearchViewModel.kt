@@ -23,7 +23,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.*
 import com.utazukin.ichaival.*
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -34,7 +33,7 @@ class ReaderTabViewModel : ViewModel() {
     }
 }
 
-class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
+class SearchViewModel : ViewModel(), CategoryListener {
     var onlyNew = false
         set(value) {
             if (field != value) {
@@ -70,20 +69,19 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     private var descending = false
     private var isSearch = false
     private var filter = ""
-    private var archivePagingSource: PagingSource<Int, Archive>? = null
-    private val archiveDao by lazy { database.archiveDao() }
-    private val database get() = DatabaseReader.database
-    private lateinit var archiveList: Flow<PagingData<Archive>>
+    private var archivePagingSource: PagingSource<Int, Archive> = EmptySource()
+    private val database = DatabaseReader.database
+    private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
     private var categoryId = ""
     private var initiated = false
 
     init {
-        DatabaseReader.registerDeleteListener(this)
         CategoryManager.addUpdateListener(this)
     }
 
     private fun getPagingSource() : PagingSource<Int, Archive> {
-        val source = when {
+        archivePagingSource = when {
+            !initiated -> EmptySource()
             randomCount > 0u -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, database)
             categoryId.isNotEmpty() -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
             isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, database)
@@ -91,15 +89,14 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             isSearch -> EmptySource()
             else -> database.getArchiveSource(sortMethod, descending, onlyNew)
         }
-        archivePagingSource = source
-        return source
+        return archivePagingSource
     }
 
     suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? {
         return if (excludeBookmarked)
-            archiveDao.getRandomExcludeBookmarked()
+            database.archiveDao().getRandomExcludeBookmarked()
         else
-            archiveDao.getRandom()
+            database.archiveDao().getRandom()
     }
 
     fun deferReset(block: SearchViewModel.() -> Unit) {
@@ -129,8 +126,6 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
 
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence?, onlyNew: Boolean, force: Boolean = false, isSearch: Boolean = false) {
         if (!initiated || force) {
-            if (!initiated)
-                archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
             sortMethod = method
             descending = desc
             this.isSearch = isSearch
@@ -143,7 +138,6 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
 
     override fun onCleared() {
         super.onCleared()
-        DatabaseReader.unregisterDeleteListener(this)
         CategoryManager.removeUpdateListener(this)
     }
 
@@ -151,7 +145,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         if (resetDisabled)
             return
 
-        archivePagingSource?.let {
+        archivePagingSource.let {
             when (it) {
                 is ArchiveListPagingSourceBase -> it.reset()
                 else -> it.invalidate()
@@ -163,15 +157,9 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         scope.launch { archiveList.collectLatest(action) }
     }
 
-    override fun onDelete() {
-        categoryId = ""
-        reset()
-    }
-
     override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
-        if (categoryId.isNotEmpty()) {
-            if (categories?.any { it.id  == categoryId } != true)
-                categoryId = ""
+        if (categoryId.isNotEmpty() && categories?.any { it.id  == categoryId } != true) {
+            categoryId = ""
             reset()
         }
     }
