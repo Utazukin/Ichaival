@@ -40,7 +40,7 @@ import java.io.File
 import java.lang.reflect.Type
 import java.util.*
 
-private class ArchiveDeserializer(val updateTime: Long) : JsonDeserializer<ArchiveJson> {
+private class ArchiveDeserializer(private val updateTime: Long) : JsonDeserializer<ArchiveJson> {
     private var index = 0
 
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ArchiveJson {
