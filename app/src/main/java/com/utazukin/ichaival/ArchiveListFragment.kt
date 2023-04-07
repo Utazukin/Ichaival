@@ -33,8 +33,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
@@ -51,10 +51,7 @@ import kotlin.math.ceil
 import kotlin.math.min
 
 const val STATIC_CATEGORY_SEARCH = "\b"
-private const val RESULTS_KEY = "search_results"
-private const val RESULTS_SIZE_KEY = "search_size"
 private const val DEFAULT_SEARCH_DELAY = 750L
-private const val RANDOM_COUNT_KEY = "random_count"
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
     private var sortMethod = SortMethod.Alpha
@@ -67,15 +64,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private lateinit var randomButton: Button
     private lateinit var listAdapter: ArchiveRecyclerViewAdapter
     private var menu: Menu? = null
-    private lateinit var viewModel: SearchViewModel
+    private val viewModel: SearchViewModel by activityViewModels()
     lateinit var searchView: SearchView
         private set
     private var searchDelay: Long = DEFAULT_SEARCH_DELAY
     private var isLocalSearch: Boolean = false
     private var creatingView = false
-    private var savedState: Bundle? = null
     private var canSwipeRefresh = false
-    private var randomCount: UInt? = null
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -139,7 +134,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
 
-        savedState = savedInstanceState
         creatingView = true
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
@@ -318,36 +312,23 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         WebHandler.unregisterRefreshListener(this)
     }
 
-    fun refreshRandom() = viewModel.reset()
-
-    fun setupRandomList(count: Int = -1) {
+    fun setupRandomList() {
         lifecycleScope.launch {
             with(requireActivity().intent) {
                 val filter = getStringExtra(RANDOM_SEARCH)
                 val category = getStringExtra(RANDOM_CAT)
-                val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-                val count = when {
-                    count > 0 -> count.toUInt()
-                    randomCount != null -> randomCount!!
-                    else -> prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5).toUInt()
-                }
-                randomCount = count
-
                 viewModel.deferReset {
                     isLocal = isLocalSearch
                     init(sortMethod, descending, filter, newCheckBox.isChecked)
                     updateResults(category)
                     monitor(lifecycleScope) { listAdapter.submitData(it) }
-                    randomCount = count
+                    if (viewModel.randomCount == 0) {
+                        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+                        viewModel.randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5)
+                    }
                 }
-                if (savedState == null) {
-                    jumpToTop = true
-                    if (listView.adapter == null)
-                        listView.adapter = listAdapter
-                } else if (category == null) {
+                if (listView.adapter == null)
                     listView.adapter = listAdapter
-                    savedState = null
-                }
                 creatingView = false
             }
         }
@@ -365,29 +346,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 isLocal = isLocalSearch
                 init(method, desc, searchView.query, newCheckBox.isChecked, isSearch = activity is ArchiveSearch)
                 monitor(lifecycleScope) { listAdapter.submitData(it) }
-                randomCount = 0u
-            }
-            when {
-                isLocalSearch -> viewModel.filter(searchView.query)
-                searchView.query == STATIC_CATEGORY_SEARCH -> {
-                    val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-                    categoryFragment?.selectedCategory?.let {
-                        if (it.isStatic)
-                            handleCategoryChange(it)
-                    }
-                }
-                !searchView.query.isNullOrEmpty() -> searchView.query?.let { viewModel.filter(it) }
+                randomCount = 0
             }
 
             listView.adapter = listAdapter
-            if (savedState == null)
-                updateSortMethod(method, desc, prefs)
-            else {
-                sortMethod = method
-                descending = desc
-            }
+            sortMethod = method
+            descending = desc
 
-            savedState = null
             creatingView = false
         }
     }
@@ -535,22 +500,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         super.onAttach(context)
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         prefs.registerOnSharedPreferenceChangeListener(this)
-        viewModel = ViewModelProviders.of(this)[SearchViewModel::class.java]
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        if (activity is ArchiveRandomActivity)
-            randomCount?.let { outState.putInt(RANDOM_COUNT_KEY, it.toInt()) }
-    }
-
-    override fun onViewStateRestored(savedInstanceState: Bundle?) {
-        super.onViewStateRestored(savedInstanceState)
-        savedInstanceState?.run {
-            val count = getInt(RANDOM_COUNT_KEY, -1)
-            if (count > 0)
-                randomCount = count.toUInt()
-        }
     }
 
     override fun onDetach() {

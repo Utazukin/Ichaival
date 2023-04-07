@@ -69,7 +69,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
         lifecycleScope.launch {
-            onCategoriesUpdated(CategoryManager.getAllCategories())
+            onCategoriesUpdated(CategoryManager.getAllCategories(), true)
 
             with(view) {
                 val dirGroup: RadioGroup = findViewById(R.id.direction_group)
@@ -117,7 +117,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         }
     }
 
-    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
+    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
         currentCategories = categories
 
         val label = categoryLabel ?: return
@@ -134,6 +134,9 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
                 categoryGroup.addView(categoryButton, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 categoryButtons.add(categoryButton)
             }
+
+            if (firstUpdate)
+                savedCategory?.run { categoryButtons.firstOrNull { it.text == name }?.isChecked = true }
 
             categoryGroup.setOnCheckedChangeListener { _, i ->
                 if (i >= 0 && categoryButtons[i].isChecked) //Check if really checked due to a bug in clearCheck().

@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival.database
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
@@ -25,6 +26,7 @@ import com.utazukin.ichaival.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlin.reflect.KProperty
 
 class ReaderTabViewModel : ViewModel() {
     private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
@@ -33,30 +35,36 @@ class ReaderTabViewModel : ViewModel() {
     }
 }
 
-class SearchViewModel : ViewModel(), CategoryListener {
-    var onlyNew = false
-        set(value) {
-            if (field != value) {
-                field = value
-                reset()
-            }
-        }
-    var isLocal = false
-        set(value){
-            if (field != value) {
-                field = value
-                reset()
-            }
-        }
-    var randomCount = 0u
-        set(value) {
-            if (field != value) {
-                field = value
-                reset()
-            }
-        }
+private class StateDelegate<T>(private val key: String,
+                               private val state: SavedStateHandle,
+                               private val default: T,
+                               private val setter: ((T, T) -> Unit)? = null) {
+    operator fun getValue(thisRef: Any?, property: KProperty<*>) : T {
+        return state.get<T>(key) ?: default
+    }
 
-    private var resetDisabled = true
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        val old = state.get<T>(key) ?: default
+        state[key] = value
+        setter?.invoke(value, old)
+    }
+}
+
+class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
+    var onlyNew by StateDelegate("new", state, false) { new, old ->
+        if (old != new)
+            reset()
+    }
+    var isLocal by StateDelegate("local", state, false) { new, old ->
+        if (old != new)
+            reset()
+    }
+    var randomCount by StateDelegate("randCount", state, 0) { new, old ->
+        if (old != new)
+            reset()
+    }
+    private var initiated by StateDelegate("init", state, false)
+    private var resetDisabled = !initiated
         set(value) {
             if (field != value) {
                 field = value
@@ -65,15 +73,14 @@ class SearchViewModel : ViewModel(), CategoryListener {
             }
         }
 
-    private var sortMethod = SortMethod.Alpha
-    private var descending = false
-    private var isSearch = false
-    private var filter = ""
+    private var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
+    private var descending by StateDelegate("desc", state, false)
+    private var isSearch by StateDelegate("search", state, false)
+    private var filter by StateDelegate("filter", state, "")
     private var archivePagingSource: PagingSource<Int, Archive> = EmptySource()
     private val database = DatabaseReader.database
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
-    private var categoryId = ""
-    private var initiated = false
+    private var categoryId by StateDelegate("category", state, "")
 
     init {
         CategoryManager.addUpdateListener(this)
@@ -82,7 +89,7 @@ class SearchViewModel : ViewModel(), CategoryListener {
     private fun getPagingSource() : PagingSource<Int, Archive> {
         archivePagingSource = when {
             !initiated -> EmptySource()
-            randomCount > 0u -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, database)
+            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, database)
             categoryId.isNotEmpty() -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
             isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, database)
             filter.isNotEmpty() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, database)
@@ -157,8 +164,8 @@ class SearchViewModel : ViewModel(), CategoryListener {
         scope.launch { archiveList.collectLatest(action) }
     }
 
-    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
-        if (categoryId.isNotEmpty() && categories?.any { it.id  == categoryId } != true) {
+    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
+        if (!firstUpdate && categoryId.isNotEmpty() && categories?.any { it.id  == categoryId } != true) {
             categoryId = ""
             reset()
         }

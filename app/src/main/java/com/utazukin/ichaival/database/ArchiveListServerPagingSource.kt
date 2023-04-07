@@ -141,12 +141,12 @@ class ArchiveListLocalPagingSource(filter: String,
     }
 }
 
-class ArchiveListRandomPagingSource(filter: String, private val count: UInt, private val categoryId: String, database: ArchiveDatabase)
+class ArchiveListRandomPagingSource(filter: String, count: Int, private val categoryId: String, database: ArchiveDatabase)
     : ArchiveListServerPagingSource(false, SortMethod.Alpha, false, filter, database) {
     override val roomSource =  when {
-        categoryId.isNotEmpty() -> database.archiveDao().getRandomCategorySource(categoryId, count.toInt())
-        filter.isNotEmpty() -> database.archiveDao().getSearchResultsRandom(filter, count.toInt())
-        else -> database.archiveDao().getRandomSource(count.toInt())
+        categoryId.isNotEmpty() -> database.archiveDao().getRandomCategorySource(categoryId, count)
+        filter.isNotEmpty() -> database.archiveDao().getSearchResultsRandom(filter, count)
+        else -> database.archiveDao().getRandomSource(count)
     }
 
     override suspend fun loadResults() {

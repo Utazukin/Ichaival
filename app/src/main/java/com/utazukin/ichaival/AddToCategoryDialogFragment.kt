@@ -133,7 +133,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
         return view
     }
 
-    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
+    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
         this.categories = categories
         categories?.let {
             catGroup.removeAllViews()

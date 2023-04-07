@@ -34,7 +34,7 @@ import java.io.InputStream
 import java.util.*
 
 interface CategoryListener {
-    fun onCategoriesUpdated(categories: List<ArchiveCategory>?)
+    fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean)
 }
 
 @Entity(tableName = "archiveCategory")
@@ -67,7 +67,7 @@ object CategoryManager {
     fun addUpdateListener(listener: CategoryListener) {
         listeners.add(listener)
         scope.launch {
-            listener.onCategoriesUpdated(getAllCategories())
+            listener.onCategoriesUpdated(getAllCategories(), true)
         }
     }
 
@@ -95,7 +95,7 @@ object CategoryManager {
         scope.launch {
             val categories = getAllCategories()
             for (listener in listeners)
-                listener.onCategoriesUpdated(categories)
+                listener.onCategoriesUpdated(categories, false)
         }
     }
 
