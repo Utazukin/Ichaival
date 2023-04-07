@@ -18,14 +18,15 @@
 
 package com.utazukin.ichaival.database
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
 import com.utazukin.ichaival.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.math.min
+import kotlinx.coroutines.launch
+import kotlin.reflect.KProperty
 
 class ReaderTabViewModel : ViewModel() {
     private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
@@ -34,33 +35,36 @@ class ReaderTabViewModel : ViewModel() {
     }
 }
 
-class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
-    val totalSize get() = (archivePagingSource as? ArchiveListServerPagingSource)?.totalSize ?: searchResults?.size ?: 0
-    var searchResults: List<String>? = null
-        private set
-    var onlyNew = false
-        set(value) {
-            if (field != value) {
-                field = value
-                reset()
-            }
-        }
-    var isLocal = false
-        set(value){
-            if (field != value) {
-                field = value
-                reset()
-            }
-        }
-    var randomCount = 0u
-        set(value) {
-            if (field != value) {
-                field = value
-                reset()
-            }
-        }
+private class StateDelegate<T>(private val key: String,
+                               private val state: SavedStateHandle,
+                               private val default: T,
+                               private val setter: ((T, T) -> Unit)? = null) {
+    operator fun getValue(thisRef: Any?, property: KProperty<*>) : T {
+        return state.get<T>(key) ?: default
+    }
 
-    private var resetDisabled = true
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        val old = state.get<T>(key) ?: default
+        state[key] = value
+        setter?.invoke(value, old)
+    }
+}
+
+class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
+    var onlyNew by StateDelegate("new", state, false) { new, old ->
+        if (old != new)
+            reset()
+    }
+    var isLocal by StateDelegate("local", state, false) { new, old ->
+        if (old != new)
+            reset()
+    }
+    var randomCount by StateDelegate("randCount", state, 0) { new, old ->
+        if (old != new)
+            reset()
+    }
+    private var initiated by StateDelegate("init", state, false)
+    private var resetDisabled = !initiated
         set(value) {
             if (field != value) {
                 field = value
@@ -69,41 +73,37 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             }
         }
 
-    private var sortMethod = SortMethod.Alpha
-    private var descending = false
-    private var isSearch = false
-    private var filter: CharSequence? = null
-    private var archivePagingSource: PagingSource<Int, Archive>? = null
-    private val archiveDao by lazy { database.archiveDao() }
-    private val database get() = DatabaseReader.database
-    private var filterJob: Job? = null
-    private lateinit var archiveList: Flow<PagingData<Archive>>
-    private var categoryId: String? = null
-    private var initiated = false
+    private var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
+    private var descending by StateDelegate("desc", state, false)
+    private var isSearch by StateDelegate("search", state, false)
+    private var filter by StateDelegate("filter", state, "")
+    private var archivePagingSource: PagingSource<Int, Archive> = EmptySource()
+    private val database = DatabaseReader.database
+    private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
+    private var categoryId by StateDelegate("category", state, "")
 
     init {
-        DatabaseReader.registerDeleteListener(this)
         CategoryManager.addUpdateListener(this)
     }
 
     private fun getPagingSource() : PagingSource<Int, Archive> {
-        val source = when {
-            randomCount > 0u -> ArchiveListRandomPagingSource(filter ?: "", randomCount, categoryId, database)
-            categoryId != null -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew) ?: EmptySource()
-            !isLocal && filter?.isNotEmpty() == true -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
-            isSearch && searchResults?.isEmpty() != false -> EmptySource()
-            filter.isNullOrEmpty() || isLocal || searchResults != null -> database.getArchiveSource(searchResults, sortMethod, descending, onlyNew)
-            else -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter ?: "", database)
+        archivePagingSource = when {
+            !initiated -> EmptySource()
+            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, database)
+            categoryId.isNotEmpty() -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
+            isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, database)
+            filter.isNotEmpty() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, database)
+            isSearch -> EmptySource()
+            else -> database.getArchiveSource(sortMethod, descending, onlyNew)
         }
-        archivePagingSource = source
-        return source
+        return archivePagingSource
     }
 
     suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? {
         return if (excludeBookmarked)
-            archiveDao.getRandomExcludeBookmarked()
+            database.archiveDao().getRandomExcludeBookmarked()
         else
-            archiveDao.getRandom()
+            database.archiveDao().getRandom()
     }
 
     fun deferReset(block: SearchViewModel.() -> Unit) {
@@ -121,69 +121,18 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     }
 
     fun updateResults(categoryId: String?){
-        this.categoryId = categoryId
-        searchResults = null
-        reset()
-    }
-
-    fun updateResults(results: List<String>) {
-        searchResults = results
-        categoryId = null
+        this.categoryId = categoryId ?: ""
         reset()
     }
 
     fun filter(search: CharSequence?) {
-        filter = search
-        categoryId = null
-        searchResults = null
-        if (isLocal) {
-            filterJob?.cancel()
-            if (search == null) {
-                searchResults = emptyList()
-                reset()
-            } else if (search.isEmpty()) {
-                searchResults = null
-                reset()
-            } else {
-                filterJob = viewModelScope.launch(Dispatchers.IO) {
-                    searchResults = internalFilter(search)
-                    yield()
-                    reset()
-                }
-            }
-        } else reset()
-    }
-
-    private suspend fun internalFilter(filter: CharSequence) : List<String> {
-        val totalCount = archiveDao.getArchiveCount()
-        val mValues = ArrayList<String>(min(totalCount, DatabaseReader.MAX_WORKING_ARCHIVES))
-        val terms = parseTermsInfo(filter)
-        val titleSearch = filter.removeSurrounding("\"")
-        WebHandler.updateRefreshing(true)
-        for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
-            val allArchives = archiveDao.getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
-            for (archive in allArchives) {
-                if (archive.title.contains(titleSearch, ignoreCase = true))
-                    mValues.add(archive.id)
-                else {
-                    for (termInfo in terms) {
-                        if (archive.containsTag(termInfo.term, termInfo.exact) != termInfo.negative) {
-                            mValues.add(archive.id)
-                            break
-                        }
-                    }
-                }
-            }
-        }
-        WebHandler.updateRefreshing(false)
-
-        return mValues
+        filter = search?.toString() ?: ""
+        categoryId = ""
+        reset()
     }
 
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence?, onlyNew: Boolean, force: Boolean = false, isSearch: Boolean = false) {
         if (!initiated || force) {
-            if (!initiated)
-                archiveList = Pager(PagingConfig(ServerManager.pageSize), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
             sortMethod = method
             descending = desc
             this.isSearch = isSearch
@@ -196,7 +145,6 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
 
     override fun onCleared() {
         super.onCleared()
-        DatabaseReader.unregisterDeleteListener(this)
         CategoryManager.removeUpdateListener(this)
     }
 
@@ -204,24 +152,21 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         if (resetDisabled)
             return
 
-        filterJob?.cancel()
-        filterJob = null
-        archivePagingSource?.invalidate()
+        archivePagingSource.let {
+            when (it) {
+                is ArchiveListPagingSourceBase -> it.reset()
+                else -> it.invalidate()
+            }
+        }
     }
 
     fun monitor(scope: CoroutineScope, action: suspend (PagingData<Archive>) -> Unit) {
         scope.launch { archiveList.collectLatest(action) }
     }
 
-    override fun onDelete() {
-        categoryId = null
-        reset()
-    }
-
-    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
-        if (categoryId != null) {
-            categoryId = null
-            searchResults = null
+    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
+        if (!firstUpdate && categoryId.isNotEmpty() && categories?.any { it.id  == categoryId } != true) {
+            categoryId = ""
             reset()
         }
     }

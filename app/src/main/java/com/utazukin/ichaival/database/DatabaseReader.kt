@@ -20,6 +20,7 @@ package com.utazukin.ichaival.database
 
 import android.content.Context
 import android.database.DatabaseUtils
+import androidx.room.Entity
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
@@ -33,6 +34,7 @@ import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.*
 import com.utazukin.ichaival.reader.ScaleType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -47,6 +49,9 @@ private class ArchiveDeserializer(private val updateTime: Long) : JsonDeserializ
         return ArchiveJson(json.asJsonObject, updateTime, index++)
     }
 }
+
+@Entity(tableName = "search", primaryKeys = ["searchText", "archiveId"])
+data class SearchArchiveRef(val searchText: String, val archiveId: String)
 
 private class DatabaseHelper {
     private val MIGRATION_1_2 = object: Migration(1, 2) {
@@ -95,7 +100,14 @@ private class DatabaseHelper {
         }
 
     }
-    val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+
+    private val MIGRATION_7_8 = object: Migration(7, 8) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("drop table if exists search")
+            database.execSQL("create table search (searchText text not null, archiveId text not null, primary key (searchText, archiveId))")
+        }
+    }
+    val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 
     val callbacks = object: RoomDatabase.Callback() {
         override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
@@ -132,6 +144,7 @@ object DatabaseReader {
         val cacheDir = context.noBackupFilesDir
         if (forceUpdate || checkDirty(cacheDir)) {
             WebHandler.updateRefreshing(true)
+            launch { database.archiveDao().clearSearchCache() }
             val archiveStream = WebHandler.searchServerRaw("", false, SortMethod.Alpha, false, -1)
             val jsonFile = File(cacheDir, jsonLocation)
             archiveStream?.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
