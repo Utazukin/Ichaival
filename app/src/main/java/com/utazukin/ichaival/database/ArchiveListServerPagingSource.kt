@@ -42,16 +42,14 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
                                            protected val descending: Boolean,
                                            onlyNew: Boolean,
                                            protected val database: ArchiveDatabase) : PagingSource<Int, Archive>() {
-   var totalSize = -1
-       protected set
     protected open val roomSource = database.getArchiveSearchSource(filter, sortMethod, descending, onlyNew)
     override val jumpingSupported get() = roomSource.jumpingSupported
 
-    init {
-        registerInvalidatedCallback { roomSource.invalidate() }
-    }
-
     override fun getRefreshKey(state: PagingState<Int, Archive>) = roomSource.getRefreshKey(state)
+    fun reset() {
+        invalidate()
+        roomSource.invalidate()
+    }
 }
 
 open class ArchiveListServerPagingSource(
@@ -67,13 +65,11 @@ open class ArchiveListServerPagingSource(
         if (cacheCount == 0) {
             WebHandler.updateRefreshing(true)
             val resultsStream = WebHandler.searchServerRaw(filter, false, sortMethod, descending, -1)
-            totalSize = 0
             resultsStream?.use {
                 JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                     reader.beginObject()
                     while (reader.hasNext()) {
                         when (reader.nextName()) {
-                            "resultsFiltered" -> totalSize = reader.nextInt()
                             "data" -> {
                                 database.withTransaction {
                                     reader.beginArray()
@@ -96,7 +92,7 @@ open class ArchiveListServerPagingSource(
                 }
             }
             WebHandler.updateRefreshing(false)
-        } else totalSize = cacheCount
+        }
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
@@ -121,14 +117,12 @@ class ArchiveListLocalPagingSource(filter: String,
             for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
                 val allArchives = database.archiveDao().getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
                 for (archive in allArchives) {
-                    if (archive.title.contains(titleSearch, ignoreCase = true)) {
+                    if (archive.title.contains(titleSearch, ignoreCase = true))
                         database.archiveDao().insertSearch(SearchArchiveRef(filter, archive.id))
-                        ++totalSize
-                    } else {
+                    else {
                         for (termInfo in terms) {
                             if (archive.containsTag(termInfo.term, termInfo.exact) != termInfo.negative) {
                                 database.archiveDao().insertSearch(SearchArchiveRef(filter, archive.id))
-                                ++totalSize
                                 break
                             }
                         }
@@ -158,7 +152,5 @@ class ArchiveListRandomPagingSource(filter: String, private val count: UInt, pri
     override suspend fun loadResults() {
         if (filter.isNotEmpty() && categoryId.isEmpty())
             super.loadResults()
-        else
-            totalSize = count.toInt()
     }
 }

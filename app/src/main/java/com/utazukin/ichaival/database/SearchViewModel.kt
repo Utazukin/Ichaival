@@ -35,9 +35,6 @@ class ReaderTabViewModel : ViewModel() {
 }
 
 class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
-    val totalSize get() = (archivePagingSource as? ArchiveListPagingSourceBase)?.totalSize ?: 0
-    var searchResults: List<String>? = null
-        private set
     var onlyNew = false
         set(value) {
             if (field != value) {
@@ -92,7 +89,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
             isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, database)
             filter.isNotEmpty() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, database)
             isSearch -> EmptySource()
-            else -> database.getArchiveSource(searchResults, sortMethod, descending, onlyNew)
+            else -> database.getArchiveSource(sortMethod, descending, onlyNew)
         }
         archivePagingSource = source
         return source
@@ -121,20 +118,12 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
 
     fun updateResults(categoryId: String?){
         this.categoryId = categoryId ?: ""
-        searchResults = null
-        reset()
-    }
-
-    fun updateResults(results: List<String>) {
-        searchResults = results
-        categoryId = ""
         reset()
     }
 
     fun filter(search: CharSequence?) {
         filter = search?.toString() ?: ""
         categoryId = ""
-        searchResults = null
         reset()
     }
 
@@ -162,7 +151,12 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         if (resetDisabled)
             return
 
-        archivePagingSource?.invalidate()
+        archivePagingSource?.let {
+            when (it) {
+                is ArchiveListPagingSourceBase -> it.reset()
+                else -> it.invalidate()
+            }
+        }
     }
 
     fun monitor(scope: CoroutineScope, action: suspend (PagingData<Archive>) -> Unit) {
@@ -178,7 +172,6 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         if (categoryId.isNotEmpty()) {
             if (categories?.any { it.id  == categoryId } != true)
                 categoryId = ""
-            searchResults = null
             reset()
         }
     }

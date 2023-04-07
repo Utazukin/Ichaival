@@ -345,11 +345,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     if (listView.adapter == null)
                         listView.adapter = listAdapter
                 } else if (category == null) {
-                    savedState?.run {
-                        getStringArray(RESULTS_KEY)?.let {
-                            viewModel.updateResults(it.asList())
-                        }
-                    }
                     listView.adapter = listAdapter
                     savedState = null
                 }
@@ -374,13 +369,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
             when {
                 isLocalSearch -> viewModel.filter(searchView.query)
-                savedState?.getInt(RESULTS_SIZE_KEY, -1) ?: -1 > 0 -> {
-                    savedState?.run {
-                        getStringArray(RESULTS_KEY)?.let {
-                            viewModel.updateResults(it.asList())
-                        }
-                    }
-                }
                 searchView.query == STATIC_CATEGORY_SEARCH -> {
                     val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                     categoryFragment?.selectedCategory?.let {
@@ -552,13 +540,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        with(viewModel) {
-            searchResults?.let { outState.putStringArray(RESULTS_KEY, it.toTypedArray()) }
-            val total = totalSize
-            if (total > 0)
-                outState.putInt(RESULTS_SIZE_KEY, total)
-        }
-
         if (activity is ArchiveRandomActivity)
             randomCount?.let { outState.putInt(RANDOM_COUNT_KEY, it.toInt()) }
     }
