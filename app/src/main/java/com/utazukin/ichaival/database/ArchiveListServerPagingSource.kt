@@ -45,10 +45,13 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
    var totalSize = -1
        protected set
     protected open val roomSource = database.getArchiveSearchSource(filter, sortMethod, descending, onlyNew)
+    override val jumpingSupported get() = roomSource.jumpingSupported
 
     init {
         registerInvalidatedCallback { roomSource.invalidate() }
     }
+
+    override fun getRefreshKey(state: PagingState<Int, Archive>) = roomSource.getRefreshKey(state)
 }
 
 open class ArchiveListServerPagingSource(
@@ -58,7 +61,6 @@ open class ArchiveListServerPagingSource(
     filter: String,
     database: ArchiveDatabase
 ) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew, database) {
-    override fun getRefreshKey(state: PagingState<Int, Archive>) = state.anchorPosition
 
     protected open suspend fun loadResults() {
         val cacheCount = database.archiveDao().getCachedSearchCount(filter)
@@ -76,9 +78,13 @@ open class ArchiveListServerPagingSource(
                                 database.withTransaction {
                                     reader.beginArray()
                                     while (reader.hasNext()) {
-                                        if (reader.nextName() == "arcid")
-                                            database.archiveDao().insertSearch(SearchArchiveRef(filter, reader.nextString()))
-                                        else reader.skipValue()
+                                        reader.beginObject()
+                                        while (reader.hasNext()) {
+                                            if (reader.nextName() == "arcid")
+                                                database.archiveDao().insertSearch(SearchArchiveRef(filter, reader.nextString()))
+                                            else reader.skipValue()
+                                        }
+                                        reader.endObject()
                                     }
                                     reader.endArray()
                                 }

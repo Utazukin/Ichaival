@@ -141,7 +141,7 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence?, onlyNew: Boolean, force: Boolean = false, isSearch: Boolean = false) {
         if (!initiated || force) {
             if (!initiated)
-                archiveList = Pager(PagingConfig(ServerManager.pageSize), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
+                archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
             sortMethod = method
             descending = desc
             this.isSearch = isSearch
