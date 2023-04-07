@@ -65,8 +65,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private lateinit var listAdapter: ArchiveRecyclerViewAdapter
     private var menu: Menu? = null
     private val viewModel: SearchViewModel by activityViewModels()
-    lateinit var searchView: SearchView
-        private set
+    private lateinit var searchView: SearchView
     private var searchDelay: Long = DEFAULT_SEARCH_DELAY
     private var isLocalSearch: Boolean = false
     private var creatingView = false

@@ -26,6 +26,7 @@ import android.os.Bundle
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.SearchView
 import android.widget.TextView
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
@@ -163,18 +164,17 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
 
     override fun onLongPressTab(tab: ReaderTab): Boolean {
         val tagFragment = TagDialogFragment.newInstance(tab.id)
+        tagFragment.setTagPressListener { tag ->
+            val searchView: SearchView = findViewById(R.id.archive_search)
+            searchView.setQuery(tag, true)
+            drawerLayout.closeDrawers()
+        }
 
-        val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-        listFragment?.run {
-            tagFragment.setTagPressListener { tag ->
-                searchView.setQuery(tag, true)
-                drawerLayout.closeDrawers()
-            }
-            tagFragment.setTagLongPressListener { tag ->
-                searchView.setQuery("${searchView.query} $tag", true)
-                drawerLayout.closeDrawers()
-                true
-            }
+        tagFragment.setTagLongPressListener { tag ->
+            val searchView: SearchView = findViewById(R.id.archive_search)
+            searchView.setQuery("${searchView.query} $tag", true)
+            drawerLayout.closeDrawers()
+            true
         }
 
         tagFragment.show(supportFragmentManager, "tag_popup")
