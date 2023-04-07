@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 import kotlin.reflect.KProperty
 
 class ReaderTabViewModel : ViewModel() {
-    private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
+    private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.getDataBookmarks() }.flow.cachedIn(viewModelScope)
     fun monitor(scope: CoroutineScope, action: suspend (PagingData<ReaderTab>) -> Unit) {
         scope.launch { bookmarks.collectLatest(action) }
     }
@@ -71,7 +71,6 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
     private var filter by StateDelegate("filter", state, "")
     private var categoryId by StateDelegate("category", state, "")
     private var archivePagingSource: PagingSource<Int, Archive> = EmptySource()
-    private val database = DatabaseReader.database
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
 
     init {
@@ -81,21 +80,14 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
     private fun getPagingSource() : PagingSource<Int, Archive> {
         archivePagingSource = when {
             !initiated -> EmptySource()
-            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, database)
-            categoryId.isNotEmpty() -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
-            isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, database)
-            filter.isNotEmpty() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, database)
+            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId)
+            categoryId.isNotEmpty() -> DatabaseReader.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
+            isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew)
+            filter.isNotEmpty() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter)
             isSearch -> EmptySource()
-            else -> database.getArchiveSource(sortMethod, descending, onlyNew)
+            else -> DatabaseReader.getArchiveSource(sortMethod, descending, onlyNew)
         }
         return archivePagingSource
-    }
-
-    suspend fun getRandom(excludeBookmarked: Boolean = true): Archive? {
-        return if (excludeBookmarked)
-            database.archiveDao().getRandomExcludeBookmarked()
-        else
-            database.archiveDao().getRandom()
     }
 
     fun deferReset(block: SearchViewModel.() -> Unit) {

@@ -260,7 +260,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 startActivity(intent)
             } else {
                 lifecycleScope.launch {
-                    val archive = viewModel.getRandom(false)
+                    val archive = DatabaseReader.getRandom(false)
                     if (archive != null)
                         startDetailsActivity(archive.id, requireContext())
                 }
@@ -270,7 +270,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         randomButton.setOnLongClickListener {
             listAdapter.disableMultiSelect()
             lifecycleScope.launch {
-                val archive = viewModel.getRandom()
+                val archive = DatabaseReader.getRandom()
                 if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
                     ReaderTabHolder.addTab(archive, 0)
             }

@@ -20,6 +20,7 @@ package com.utazukin.ichaival.database
 
 import android.content.Context
 import android.database.DatabaseUtils
+import androidx.paging.PagingSource
 import androidx.room.Entity
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -126,10 +127,7 @@ object DatabaseReader {
     private val extractingArchives = mutableMapOf<String, Mutex>()
     private val extractingMutex = Mutex()
     private val extractListeners = mutableListOf<DatabaseExtractListener>()
-    private val deleteListeners = mutableListOf<DatabaseDeleteListener>()
-
-    lateinit var database: ArchiveDatabase
-        private set
+    private lateinit var database: ArchiveDatabase
 
     fun init(context: Context) {
         val dbHelper = DatabaseHelper()
@@ -161,8 +159,8 @@ object DatabaseReader {
         val serverArchives = ArrayList<ArchiveJson>(MAX_WORKING_ARCHIVES)
         val currentTime = Calendar.getInstance().timeInMillis
         val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
-        database.withTransaction {
-            val bookmarks = if (ServerManager.serverTracksProgress) database.getBookmarks() else null
+        withTransaction {
+            val bookmarks = if (ServerManager.serverTracksProgress) getBookmarkMap() else null
             JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                 reader.beginObject()
                 while (reader.hasNext()) {
@@ -173,7 +171,7 @@ object DatabaseReader {
                             serverArchives.add(archive)
 
                             if (serverArchives.size == MAX_WORKING_ARCHIVES) {
-                                database.updateArchives(serverArchives, bookmarks)
+                                updateArchives(serverArchives, bookmarks)
                                 serverArchives.clear()
                             }
                         }
@@ -184,11 +182,185 @@ object DatabaseReader {
             }
 
             if (serverArchives.isNotEmpty())
-                database.updateArchives(serverArchives, bookmarks)
-            database.removeOldArchives(currentTime)
+                updateArchives(serverArchives, bookmarks)
+            removeOldArchives(currentTime)
         }
     }
 
+    private suspend fun updateArchives(archives: List<ArchiveJson>, bookmarks: Map<String, ReaderTab>?) {
+        database.archiveDao().insertAllJson(archives)
+
+        if (bookmarks != null) {
+            var bookmarkCount = bookmarks.size
+            val toUpdate = buildList {
+                for (archive in archives) {
+                    val bookmark = bookmarks[archive.id]
+                    if (bookmark != null) {
+                        bookmark.page = archive.currentPage
+                        add(bookmark)
+                    } else if (archive.currentPage > 0)
+                        add(ReaderTab(archive.id, archive.title, bookmarkCount++, archive.currentPage))
+                }
+            }
+
+            if (toUpdate.isNotEmpty())
+                database.archiveDao().upsertBookmarks(toUpdate)
+        }
+    }
+
+    suspend fun <R> withTransaction(block: suspend () -> R) = database.withTransaction { block() }
+
+    private suspend fun removeOldArchives(updateTime: Long) = withTransaction {
+        with(database.archiveDao()) {
+            removeNotUpdatedBookmarks(updateTime)
+            removeOldCategoryReferences(updateTime)
+            removeNotUpdated(updateTime)
+        }
+    }
+
+    suspend fun removeOutdatedCategories(updateTime: Long) = withTransaction {
+        with(database.archiveDao()) {
+            removeOutdatedStaticCategories(updateTime)
+            removeOutdatedCategories(updateTime)
+        }
+    }
+
+    suspend fun getAllCategories() = database.archiveDao().getAllCategories()
+
+    suspend fun getCategoryArchives(id: String) = database.archiveDao().getCategoryArchives(id)
+
+    suspend fun insertCategories(categories: Collection<ArchiveCategoryFull>) = database.archiveDao().insertCategories(categories)
+
+    suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>) = database.archiveDao().insertStaticCategories(references)
+
+    private suspend fun getBookmarkMap() = database.archiveDao().getBookmarks().associateBy { it.id }
+
+    suspend fun getBookmarks() = database.archiveDao().getBookmarks()
+
+    fun getDataBookmarks() = database.archiveDao().getDataBookmarks()
+
+    suspend fun getBookmarkCount() = database.archiveDao().getBookmarkCount()
+
+    suspend fun getBookmark(id: String) = database.archiveDao().getBookmark(id)
+
+    suspend fun addBookmark(tab: ReaderTab) = withTransaction {
+        with(database.archiveDao()) {
+            addBookmark(tab)
+            updateBookmark(tab.id, tab.page)
+        }
+    }
+
+    suspend fun updateBookmark(id: String, page: Int) : Boolean = withTransaction {
+        with(database.archiveDao()) {
+            val tab = getBookmark(id)
+            tab?.let {
+                it.page = page
+                updateBookmark(it)
+                updateBookmark(it.id, page)
+                true
+            } ?: false
+        }
+    }
+
+    suspend fun removeBookmark(id: String) : Boolean = withTransaction {
+        val tab = database.archiveDao().getBookmark(id)
+        if (tab != null) {
+            removeBookmark(tab)
+            return@withTransaction true
+        }
+
+        false
+    }
+
+    suspend fun deleteArchives(ids: Collection<String>) {
+        withTransaction {
+            with(database.archiveDao()) {
+                removeArchives(ids)
+                removeBookmarks(ids)
+            }
+        }
+    }
+
+    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
+        return when {
+            sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getTitleDescendingSource(onlyNew)
+            sortMethod == SortMethod.Alpha -> database.archiveDao().getTitleAscendingSource(onlyNew)
+            sortMethod == SortMethod.Date && descending -> database.archiveDao().getDateDescendingSource(onlyNew)
+            else -> database.archiveDao().getDateAscendingSource(onlyNew)
+        }
+    }
+
+    fun getArchiveSearchSource(search: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean) : PagingSource<Int, Archive> {
+        return when {
+            sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getSearchResultsTitleDescending(search, onlyNew)
+            sortMethod == SortMethod.Alpha -> database.archiveDao().getSearchResultsTitleAscending(search, onlyNew)
+            sortMethod == SortMethod.Date && descending -> database.archiveDao().getSearchResultsDateDescending(search, onlyNew)
+            else -> database.archiveDao().getSearchResultsDateAscending(search, onlyNew)
+        }
+    }
+
+    fun getStaticCategorySource(categoryId: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
+        return when {
+            sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getStaticCategoryArchiveTitleDesc(categoryId, onlyNew)
+            sortMethod == SortMethod.Alpha -> database.archiveDao().getStaticCategoryArchiveTitleAsc(categoryId, onlyNew)
+            sortMethod == SortMethod.Date && descending -> database.archiveDao().getStaticCategoryArchiveDateDesc(categoryId, onlyNew)
+            else -> database.archiveDao().getStaticCategoryArchiveDateAsc(categoryId, onlyNew)
+        }
+    }
+
+    suspend fun insertSearch(reference: SearchArchiveRef) = database.archiveDao().insertSearch(reference)
+
+    suspend fun getCachedSearchCount(search: String) = database.archiveDao().getCachedSearchCount(search)
+
+    suspend fun getArchiveCount() = database.archiveDao().getArchiveCount()
+
+    suspend fun getArchives(offset: Int, limit: Int) = database.archiveDao().getArchives(offset, limit)
+
+    fun getRandomCategorySource(categoryId: String, count: Int) = database.archiveDao().getRandomCategorySource(categoryId, count)
+
+    fun getSearchResultsRandom(filter: String, count: Int) = database.archiveDao().getSearchResultsRandom(filter, count)
+
+    fun getRandomSource(count: Int) = database.archiveDao().getRandomSource(count)
+
+    suspend fun getRandom(excludeBookmarked: Boolean = false) = if (excludeBookmarked) database.archiveDao().getRandomExcludeBookmarked() else database.archiveDao().getRandom()
+
+    private suspend fun removeBookmark(tab: ReaderTab) = withTransaction {
+        with(database.archiveDao()) {
+            val tabs = getBookmarks()
+            val adjustedTabs = tabs.filter { it.index > tab.index }
+            for (adjustedTab in adjustedTabs)
+                --adjustedTab.index
+
+            removeBookmark(tab.id)
+            removeBookmark(tab)
+            updateBookmarks(adjustedTabs)
+        }
+    }
+
+    suspend fun insertBookmark(tab: ReaderTab) = withTransaction {
+        with(database.archiveDao()) {
+            val tabs = getBookmarks()
+            val adjustedTabs = tabs.filter { it.index >= tab.index }
+            for (adjustedTab in adjustedTabs)
+                ++adjustedTab.index
+
+            addBookmark(tab)
+            updateBookmark(tab.id, tab.page)
+            updateBookmarks(adjustedTabs)
+        }
+    }
+
+    suspend fun clearBookmarks() : List<String> = withTransaction {
+        with(database.archiveDao()) {
+            val tabs = getBookmarkedIds()
+            if (tabs.isNotEmpty()) {
+                removeAllBookmarks(tabs)
+                clearBookmarks()
+            }
+
+            tabs
+        }
+    }
     fun setDatabaseDirty() {
         isDirty = true
     }
@@ -197,18 +369,9 @@ object DatabaseReader {
 
     fun unregisterExtractListener(listener: DatabaseExtractListener) = extractListeners.remove(listener)
 
-    fun registerDeleteListener(listener: DatabaseDeleteListener) = deleteListeners.add(listener)
-
-    fun unregisterDeleteListener(listener: DatabaseDeleteListener) = deleteListeners.remove(listener)
-
     private fun notifyExtractListeners(id: String, pageCount: Int) {
         for (listener in extractListeners)
             listener.onExtract(id, pageCount)
-    }
-
-    private fun notifyDeleteListeners() {
-        for (listener in deleteListeners)
-            listener.onDelete()
     }
 
     suspend fun getPageList(context: Context, id: String, forceFull: Boolean = false) : List<String> = withContext(Dispatchers.IO) {
@@ -244,24 +407,14 @@ object DatabaseReader {
 
     suspend fun deleteArchive(id: String) = deleteArchives(listOf(id))
 
-    suspend fun deleteArchives(ids: Collection<String>) {
-        database.deleteArchives(ids)
-        notifyDeleteListeners()
+    suspend fun updateBookmark(id: String, scaleType: ScaleType) : Boolean {
+        val tab = database.archiveDao().getBookmark(id)
+        return tab?.let {
+            it.scaleType = scaleType
+            database.archiveDao().updateBookmark(tab)
+            true
+        } ?: false
     }
-
-    suspend fun getBookmarks() = withContext(Dispatchers.IO) { database.archiveDao().getBookmarks() }
-
-    suspend fun updateBookmark(id: String, page: Int) : Boolean = database.updateBookmark(id, page)
-
-    suspend fun updateBookmark(id: String, scaleType: ScaleType) = withContext(Dispatchers.IO) { database.updateBookmarkScaleType(id, scaleType) }
-
-    suspend fun addBookmark(tab: ReaderTab) = withContext(Dispatchers.IO) { database.addBookmark(tab) }
-
-    suspend fun removeBookmark(id: String) = withContext(Dispatchers.IO) { database.removeBookmark(id) }
-
-    suspend fun clearBookmarks() : List<String> = withContext(Dispatchers.IO) { database.clearBookmarks() }
-
-    suspend fun insertBookmark(tab: ReaderTab) = withContext(Dispatchers.IO) { database.insertBookmark(tab) }
 
     suspend fun setArchiveNewFlag(id: String) = withContext(Dispatchers.IO) {
         database.archiveDao().updateNewFlag(id, false)

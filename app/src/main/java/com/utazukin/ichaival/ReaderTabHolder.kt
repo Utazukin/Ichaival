@@ -18,8 +18,8 @@
 
 package com.utazukin.ichaival
 
+import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.ViewModelProviders
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -105,15 +105,15 @@ object ReaderTabHolder {
 
     fun initialize(context: FragmentActivity) {
         if (!initialized) {
-            val viewModel = ViewModelProviders.of(context)[ReaderTabViewModel::class.java]
-            viewModel.monitor(scope) { tabCount = DatabaseReader.database.archiveDao().getBookmarkCount() }
+            val viewModel: ReaderTabViewModel by context.viewModels()
+            viewModel.monitor(scope) { tabCount = DatabaseReader.getBookmarkCount() }
             initialized = true
         }
     }
 
     suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)
 
-    suspend fun getTab(id: String) = withContext(Dispatchers.IO) { DatabaseReader.database.archiveDao().getBookmark(id) }
+    suspend fun getTab(id: String) = withContext(Dispatchers.IO) { DatabaseReader.getBookmark(id) }
 
     fun removeTab(id: String) {
         scope.launch {
@@ -128,12 +128,12 @@ object ReaderTabHolder {
     }
 
     fun removeAll() {
-        scope.launch(Dispatchers.IO) { DatabaseReader.clearBookmarks() }
+        scope.launch { DatabaseReader.clearBookmarks() }
         updateClearListeners()
     }
 
     fun resetServerProgress(tabs: List<ReaderTab>) {
-        scope.launch(Dispatchers.IO) {
+        scope.launch {
             for (tab in tabs)
                 launch { WebHandler.updateProgress(tab.id, 0) }
         }

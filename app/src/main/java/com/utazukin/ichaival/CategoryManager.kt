@@ -22,7 +22,6 @@ import android.content.Context
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import androidx.room.withTransaction
 import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.Dispatchers
@@ -71,7 +70,7 @@ object CategoryManager {
         }
     }
 
-    suspend inline fun getAllCategories() = DatabaseReader.database.archiveDao().getAllCategories()
+    suspend inline fun getAllCategories() = DatabaseReader.getAllCategories()
 
     fun removeUpdateListener(listener: CategoryListener) = listeners.remove(listener)
 
@@ -84,7 +83,7 @@ object CategoryManager {
         }
     }
 
-    suspend inline fun getStaticCategories(id: String) = DatabaseReader.database.archiveDao().getCategoryArchives(id)
+    suspend inline fun getStaticCategories(id: String) = DatabaseReader.getCategoryArchives(id)
 
     suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false): ArchiveCategory? {
         val json = WebHandler.createCategory(context, name, search, pinned)
@@ -100,7 +99,7 @@ object CategoryManager {
     }
 
     private suspend fun parseCategories(categoriesFile: File) = withContext(Dispatchers.IO) {
-        DatabaseReader.database.withTransaction {
+        DatabaseReader.withTransaction {
             val categories = ArrayList<ArchiveCategoryFull>(DatabaseReader.MAX_WORKING_ARCHIVES)
             val staticRefs = ArrayList<StaticCategoryRef>(DatabaseReader.MAX_WORKING_ARCHIVES)
             var insertedCategories = false
@@ -138,7 +137,7 @@ object CategoryManager {
 
                             if (staticRefs.size == DatabaseReader.MAX_WORKING_ARCHIVES) {
                                 insertedCategories = true
-                                DatabaseReader.database.archiveDao().insertStaticCategories(staticRefs)
+                                DatabaseReader.insertStaticCategories(staticRefs)
                                 staticRefs.clear()
                             }
                         }
@@ -147,7 +146,7 @@ object CategoryManager {
 
                     categories.add(ArchiveCategoryFull(name, id, search, pinned, currentTime))
                     if (categories.size == DatabaseReader.MAX_WORKING_ARCHIVES) {
-                        DatabaseReader.database.archiveDao().insertCategories(categories)
+                        DatabaseReader.insertCategories(categories)
                         categories.clear()
                     }
                 }
@@ -157,11 +156,11 @@ object CategoryManager {
 
             hasCategories = insertedCategories || categories.isNotEmpty()
             if (categories.isNotEmpty())
-                DatabaseReader.database.archiveDao().insertCategories(categories)
+                DatabaseReader.insertCategories(categories)
             if (staticRefs.isNotEmpty())
-                DatabaseReader.database.archiveDao().insertStaticCategories(staticRefs)
+                DatabaseReader.insertStaticCategories(staticRefs)
             
-            DatabaseReader.database.removeOutdatedCategories(currentTime)
+            DatabaseReader.removeOutdatedCategories(currentTime)
         }
     }
 }
