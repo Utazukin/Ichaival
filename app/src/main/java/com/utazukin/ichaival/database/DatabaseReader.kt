@@ -103,7 +103,8 @@ private class DatabaseHelper {
 
     private val MIGRATION_7_8 = object: Migration(7, 8) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("create table search (searchText text not null, archiveId text not null, primary key (searchText, archiveId)")
+            database.execSQL("drop table if exists search")
+            database.execSQL("create table search (searchText text not null, archiveId text not null, primary key (searchText, archiveId))")
         }
     }
     val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
