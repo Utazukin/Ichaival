@@ -38,49 +38,41 @@ class ReaderTabViewModel : ViewModel() {
 private class StateDelegate<T>(private val key: String,
                                private val state: SavedStateHandle,
                                private val default: T,
-                               private val setter: ((T, T) -> Unit)? = null) {
-    operator fun getValue(thisRef: Any?, property: KProperty<*>) : T {
-        return state.get<T>(key) ?: default
-    }
+                               private val onChange: (() -> Unit)? = null) {
+    operator fun getValue(thisRef: Any?, property: KProperty<*>) = state.get<T>(key) ?: default
 
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
         val old = state.get<T>(key) ?: default
         state[key] = value
-        setter?.invoke(value, old)
+        if (old != value)
+            onChange?.invoke()
+    }
+}
+
+private class ChangeDelegate<T>(private var field: T, private val onChange: () -> Unit) {
+    operator fun getValue(thisRef: Any?, property: KProperty<*>) = field
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        if (field != value) {
+            field = value
+            onChange()
+        }
     }
 }
 
 class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
-    var onlyNew by StateDelegate("new", state, false) { new, old ->
-        if (old != new)
-            reset()
-    }
-    var isLocal by StateDelegate("local", state, false) { new, old ->
-        if (old != new)
-            reset()
-    }
-    var randomCount by StateDelegate("randCount", state, 0) { new, old ->
-        if (old != new)
-            reset()
-    }
+    var onlyNew by StateDelegate("new", state, false) { reset() }
+    var isLocal by StateDelegate("local", state, false) { reset() }
+    var randomCount by StateDelegate("randCount", state, 0) { reset() }
     private var initiated by StateDelegate("init", state, false)
-    private var resetDisabled = !initiated
-        set(value) {
-            if (field != value) {
-                field = value
-                if (!field)
-                    reset()
-            }
-        }
-
+    private var resetDisabled by ChangeDelegate(!initiated) { reset() }
     private var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
     private var descending by StateDelegate("desc", state, false)
     private var isSearch by StateDelegate("search", state, false)
     private var filter by StateDelegate("filter", state, "")
+    private var categoryId by StateDelegate("category", state, "")
     private var archivePagingSource: PagingSource<Int, Archive> = EmptySource()
     private val database = DatabaseReader.database
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
-    private var categoryId by StateDelegate("category", state, "")
 
     init {
         CategoryManager.addUpdateListener(this)
