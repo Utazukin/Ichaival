@@ -18,16 +18,14 @@
 
 package com.utazukin.ichaival.database
 
+import android.util.JsonReader
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.room.withTransaction
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.WebHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlin.math.min
+import com.utazukin.ichaival.parseTermsInfo
 
 data class ServerSearchResult(val results: List<String>?,
                          val totalSize: Int = 0,
@@ -39,46 +37,56 @@ class EmptySource<Key : Any, Value : Any> : PagingSource<Key, Value>() {
     override suspend fun load(params: LoadParams<Key>): LoadResult<Key, Value> = LoadResult.Page(emptyList(), null, null)
 }
 
-open class ArchiveListServerPagingSource(
-    private val isSearch: Boolean,
-    private val onlyNew: Boolean,
-    private val sortMethod: SortMethod,
-    private val descending: Boolean,
-    protected val filter: String,
-    protected val database: ArchiveDatabase
-) : PagingSource<Int, Archive>() {
-    protected val totalResults = mutableListOf<String>()
-    var totalSize = -1
-        protected set
-    private val coroutineContext = Dispatchers.IO + SupervisorJob()
-    private val roomSource = database.getArchiveSearchSource(filter, sortMethod, descending, onlyNew)
+abstract class ArchiveListPagingSourceBase(protected val filter: String,
+                                           protected val sortMethod: SortMethod,
+                                           protected val descending: Boolean,
+                                           onlyNew: Boolean,
+                                           protected val database: ArchiveDatabase) : PagingSource<Int, Archive>() {
+   var totalSize = -1
+       protected set
+    protected open val roomSource = database.getArchiveSearchSource(filter, sortMethod, descending, onlyNew)
 
     init {
-        registerInvalidatedCallback {
-            coroutineContext.cancel()
-            roomSource.invalidate()
-        }
+        registerInvalidatedCallback { roomSource.invalidate() }
     }
+}
 
-    protected suspend fun getArchives(ids: List<String>?, offset: Int = 0, limit: Int = Int.MAX_VALUE): List<Archive> {
-        if (isSearch && ids == null)
-            return emptyList()
-
-        return database.getArchives(ids, sortMethod, descending, offset, limit, onlyNew)
-    }
-
+open class ArchiveListServerPagingSource(
+    onlyNew: Boolean,
+    sortMethod: SortMethod,
+    descending: Boolean,
+    filter: String,
+    database: ArchiveDatabase
+) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew, database) {
     override fun getRefreshKey(state: PagingState<Int, Archive>) = state.anchorPosition
 
-    private suspend fun loadResults() {
+    protected open suspend fun loadResults() {
         val cacheCount = database.archiveDao().getCachedSearchCount(filter)
         if (cacheCount == 0) {
             WebHandler.updateRefreshing(true)
-            val results = WebHandler.searchServer(filter, false, sortMethod, descending, -1, false)
-            totalSize = results.totalSize
-            results.results?.let {
-                database.withTransaction {
-                    for (result in it)
-                        database.archiveDao().insertSearch(SearchArchiveRef(filter, result))
+            val resultsStream = WebHandler.searchServerRaw(filter, false, sortMethod, descending, -1)
+            totalSize = 0
+            resultsStream?.use {
+                JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
+                    reader.beginObject()
+                    while (reader.hasNext()) {
+                        when (reader.nextName()) {
+                            "resultsFiltered" -> totalSize = reader.nextInt()
+                            "data" -> {
+                                database.withTransaction {
+                                    reader.beginArray()
+                                    while (reader.hasNext()) {
+                                        if (reader.nextName() == "arcid")
+                                            database.archiveDao().insertSearch(SearchArchiveRef(filter, reader.nextString()))
+                                        else reader.skipValue()
+                                    }
+                                    reader.endArray()
+                                }
+                            }
+                            else -> reader.skipValue()
+                        }
+                    }
+                    reader.endObject()
                 }
             }
             WebHandler.updateRefreshing(false)
@@ -91,23 +99,60 @@ open class ArchiveListServerPagingSource(
     }
 }
 
-class ArchiveListRandomPagingSource(filter: String, private val count: UInt, private val categoryId: String?, database: ArchiveDatabase)
-    : ArchiveListServerPagingSource(false, false, SortMethod.Alpha, false, filter, database) {
-    private suspend fun loadResults() {
-        val result = WebHandler.getRandomArchives(count, filter, categoryId)
-        totalSize = result.totalSize
-        result.results?.let { totalResults.addAll(it) }
+class ArchiveListLocalPagingSource(filter: String,
+                                   sortMethod: SortMethod,
+                                   descending: Boolean,
+                                   onlyNew: Boolean,
+                                   database: ArchiveDatabase) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew, database) {
+    override fun getRefreshKey(state: PagingState<Int, Archive>) = state.anchorPosition
+
+    private suspend fun internalFilter() {
+        WebHandler.updateRefreshing(true)
+        database.withTransaction {
+            val totalCount = database.archiveDao().getArchiveCount()
+            val terms = parseTermsInfo(filter)
+            val titleSearch = filter.removeSurrounding("\"")
+            for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
+                val allArchives = database.archiveDao().getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
+                for (archive in allArchives) {
+                    if (archive.title.contains(titleSearch, ignoreCase = true)) {
+                        database.archiveDao().insertSearch(SearchArchiveRef(filter, archive.id))
+                        ++totalSize
+                    } else {
+                        for (termInfo in terms) {
+                            if (archive.containsTag(termInfo.term, termInfo.exact) != termInfo.negative) {
+                                database.archiveDao().insertSearch(SearchArchiveRef(filter, archive.id))
+                                ++totalSize
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        WebHandler.updateRefreshing(false)
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
-        val position = if (params is LoadParams.Refresh) 0 else params.key ?: 0
-        val prev = if (position > 0) position - 1 else null
-        if (totalResults.isEmpty())
-            loadResults()
+        val cacheCount = database.archiveDao().getCachedSearchCount(filter)
+        if (cacheCount == 0)
+            internalFilter()
+        return roomSource.load(params)
+    }
+}
 
-        val endIndex = min(position + params.loadSize, totalSize)
-        val next = if (endIndex >= totalSize) null else endIndex
-        val archives = if (totalResults.isEmpty()) emptyList() else getArchives(totalResults, position, params.loadSize)
-        return LoadResult.Page(archives, prev, next, prev?.plus(1) ?: 0, next?.let { totalSize - it } ?: 0)
+class ArchiveListRandomPagingSource(filter: String, private val count: UInt, private val categoryId: String, database: ArchiveDatabase)
+    : ArchiveListServerPagingSource(false, SortMethod.Alpha, false, filter, database) {
+    override val roomSource =  when {
+        categoryId.isNotEmpty() -> database.archiveDao().getRandomCategorySource(categoryId, count.toInt())
+        filter.isNotEmpty() -> database.archiveDao().getSearchResultsRandom(filter, count.toInt())
+        else -> database.archiveDao().getRandomSource(count.toInt())
+    }
+
+    override suspend fun loadResults() {
+        if (filter.isNotEmpty() && categoryId.isEmpty())
+            super.loadResults()
+        else
+            totalSize = count.toInt()
     }
 }

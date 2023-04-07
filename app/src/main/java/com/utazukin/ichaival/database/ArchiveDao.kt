@@ -256,6 +256,15 @@ interface ArchiveDao {
 
     @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by dateAdded desc")
     fun getSearchResultsDateDescending(search: String, onlyNew: Boolean) : PagingSource<Int, Archive>
+
+    @Query("Select * from archive where id in (select id from archive join search on searchText = :search and archive.id = archiveId order by random() limit :count)")
+    fun getSearchResultsRandom(search: String, count: Int) : PagingSource<Int, Archive>
+
+    @Query("Select * from archive where id in (select id from archive order by random() limit :count)")
+    fun getRandomSource(count: Int) : PagingSource<Int, Archive>
+
+    @Query("Select archive.* from archive where archive.id in (select archive.id from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId order by random() limit :count)")
+    fun getRandomCategorySource(categoryId: String, count: Int) : PagingSource<Int, Archive>
 }
 
 class DatabaseTypeConverters {
@@ -459,9 +468,8 @@ abstract class ArchiveDatabase : RoomDatabase() {
         }
     }
 
-    fun getStaticCategorySource(categoryId: String?, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive>? {
+    fun getStaticCategorySource(categoryId: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
         return when {
-            categoryId == null -> null
             sortMethod == SortMethod.Alpha && descending -> archiveDao().getStaticCategoryArchiveTitleDesc(categoryId, onlyNew)
             sortMethod == SortMethod.Alpha -> archiveDao().getStaticCategoryArchiveTitleAsc(categoryId, onlyNew)
             sortMethod == SortMethod.Date && descending -> archiveDao().getStaticCategoryArchiveDateDesc(categoryId, onlyNew)

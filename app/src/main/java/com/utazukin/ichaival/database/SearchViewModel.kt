@@ -22,10 +22,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
 import com.utazukin.ichaival.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.math.min
+import kotlinx.coroutines.launch
 
 class ReaderTabViewModel : ViewModel() {
     private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.database.archiveDao().getDataBookmarks() }.flow.cachedIn(viewModelScope)
@@ -35,7 +35,7 @@ class ReaderTabViewModel : ViewModel() {
 }
 
 class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
-    val totalSize get() = (archivePagingSource as? ArchiveListServerPagingSource)?.totalSize ?: searchResults?.size ?: 0
+    val totalSize get() = (archivePagingSource as? ArchiveListPagingSourceBase)?.totalSize ?: 0
     var searchResults: List<String>? = null
         private set
     var onlyNew = false
@@ -72,13 +72,12 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     private var sortMethod = SortMethod.Alpha
     private var descending = false
     private var isSearch = false
-    private var filter: CharSequence? = null
+    private var filter = ""
     private var archivePagingSource: PagingSource<Int, Archive>? = null
     private val archiveDao by lazy { database.archiveDao() }
     private val database get() = DatabaseReader.database
-    private var filterJob: Job? = null
     private lateinit var archiveList: Flow<PagingData<Archive>>
-    private var categoryId: String? = null
+    private var categoryId = ""
     private var initiated = false
 
     init {
@@ -88,12 +87,12 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
 
     private fun getPagingSource() : PagingSource<Int, Archive> {
         val source = when {
-            randomCount > 0u -> ArchiveListRandomPagingSource(filter?.toString() ?: "", randomCount, categoryId, database)
-            categoryId != null -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew) ?: EmptySource()
-            !isLocal && filter?.isNotEmpty() == true -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter?.toString() ?: "", database)
-            isSearch && searchResults?.isEmpty() != false -> EmptySource()
-            filter.isNullOrEmpty() || isLocal || searchResults != null -> database.getArchiveSource(searchResults, sortMethod, descending, onlyNew)
-            else -> ArchiveListServerPagingSource(isSearch, onlyNew, sortMethod, descending, filter?.toString() ?: "", database)
+            randomCount > 0u -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, database)
+            categoryId.isNotEmpty() -> database.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
+            isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, database)
+            filter.isNotEmpty() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, database)
+            isSearch -> EmptySource()
+            else -> database.getArchiveSource(searchResults, sortMethod, descending, onlyNew)
         }
         archivePagingSource = source
         return source
@@ -121,63 +120,22 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     }
 
     fun updateResults(categoryId: String?){
-        this.categoryId = categoryId
+        this.categoryId = categoryId ?: ""
         searchResults = null
         reset()
     }
 
     fun updateResults(results: List<String>) {
         searchResults = results
-        categoryId = null
+        categoryId = ""
         reset()
     }
 
     fun filter(search: CharSequence?) {
-        filter = search
-        categoryId = null
+        filter = search?.toString() ?: ""
+        categoryId = ""
         searchResults = null
-        if (isLocal) {
-            filterJob?.cancel()
-            if (search == null) {
-                searchResults = emptyList()
-                reset()
-            } else if (search.isEmpty()) {
-                searchResults = null
-                reset()
-            } else {
-                filterJob = viewModelScope.launch(Dispatchers.IO) {
-                    searchResults = internalFilter(search)
-                    yield()
-                    reset()
-                }
-            }
-        } else reset()
-    }
-
-    private suspend fun internalFilter(filter: CharSequence) : List<String> {
-        val totalCount = archiveDao.getArchiveCount()
-        val mValues = ArrayList<String>(min(totalCount, DatabaseReader.MAX_WORKING_ARCHIVES))
-        val terms = parseTermsInfo(filter)
-        val titleSearch = filter.removeSurrounding("\"")
-        WebHandler.updateRefreshing(true)
-        for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
-            val allArchives = archiveDao.getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
-            for (archive in allArchives) {
-                if (archive.title.contains(titleSearch, ignoreCase = true))
-                    mValues.add(archive.id)
-                else {
-                    for (termInfo in terms) {
-                        if (archive.containsTag(termInfo.term, termInfo.exact) != termInfo.negative) {
-                            mValues.add(archive.id)
-                            break
-                        }
-                    }
-                }
-            }
-        }
-        WebHandler.updateRefreshing(false)
-
-        return mValues
+        reset()
     }
 
     fun init(method: SortMethod, desc: Boolean, filter: CharSequence?, onlyNew: Boolean, force: Boolean = false, isSearch: Boolean = false) {
@@ -204,8 +162,6 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
         if (resetDisabled)
             return
 
-        filterJob?.cancel()
-        filterJob = null
         archivePagingSource?.invalidate()
     }
 
@@ -214,13 +170,14 @@ class SearchViewModel : ViewModel(), DatabaseDeleteListener, CategoryListener {
     }
 
     override fun onDelete() {
-        categoryId = null
+        categoryId = ""
         reset()
     }
 
     override fun onCategoriesUpdated(categories: List<ArchiveCategory>?) {
-        if (categoryId != null) {
-            categoryId = null
+        if (categoryId.isNotEmpty()) {
+            if (categories?.any { it.id  == categoryId } != true)
+                categoryId = ""
             searchResults = null
             reset()
         }
