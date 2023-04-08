@@ -308,23 +308,21 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     fun setupRandomList() {
-        lifecycleScope.launch {
-            with(requireActivity().intent) {
-                val filter = getStringExtra(RANDOM_SEARCH)
-                val category = getStringExtra(RANDOM_CAT)
-                viewModel.deferReset {
-                    init(filter, newCheckBox.isChecked)
-                    updateResults(category)
-                    monitor(lifecycleScope) { listAdapter.submitData(it) }
-                    if (viewModel.randomCount == 0) {
-                        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-                        viewModel.randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5)
-                    }
+        with(requireActivity().intent) {
+            val filter = getStringExtra(RANDOM_SEARCH)
+            val category = getStringExtra(RANDOM_CAT)
+            viewModel.deferReset {
+                init(filter, newCheckBox.isChecked)
+                updateResults(category)
+                monitor(lifecycleScope) { listAdapter.submitData(it) }
+                if (viewModel.randomCount == 0) {
+                    val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+                    viewModel.randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5)
                 }
-                if (listView.adapter == null)
-                    listView.adapter = listAdapter
-                creatingView = false
             }
+            if (listView.adapter == null)
+                listView.adapter = listAdapter
+            creatingView = false
         }
     }
 
