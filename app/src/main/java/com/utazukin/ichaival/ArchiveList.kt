@@ -36,6 +36,7 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
+import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
 import com.utazukin.ichaival.settings.SettingsActivity
 import kotlinx.coroutines.Dispatchers
@@ -199,7 +200,10 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         ServerManager.serverName?.let { supportActionBar?.title = it }
         if (serverSupported) {
             val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-            listFragment?.setupArchiveList()
+            launch {
+                DatabaseReader.updateArchiveList(this@ArchiveList)
+                listFragment?.setupArchiveList()
+            }
         } else {
             setupText.text = getString(R.string.unsupported_server_message)
             handleSetupText(true)

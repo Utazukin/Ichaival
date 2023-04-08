@@ -288,7 +288,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             with(requireActivity().intent) {
                 val tag = getStringExtra(TAG_SEARCH)
 
-                showOnlySearch(true)
+                randomButton.visibility = View.GONE
+                newCheckBox.visibility = View.GONE
+                swipeRefreshLayout.isEnabled = false
                 if (activity is ArchiveSearch)
                     searchView.setQuery(tag, false)
                 else
@@ -327,22 +329,18 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     fun setupArchiveList() {
-        lifecycleScope.launch {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-            DatabaseReader.updateArchiveList(requireContext())
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
+        val desc = prefs.getBoolean(getString(R.string.desc_pref), false)
 
-            val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
-            val desc = prefs.getBoolean(getString(R.string.desc_pref), false)
-
-            with(viewModel) {
-                init(method, desc, searchView.query, newCheckBox.isChecked, isSearch = activity is ArchiveSearch)
-                monitor(lifecycleScope) { listAdapter.submitData(it) }
-                randomCount = 0
-            }
-
-            listView.adapter = listAdapter
-            creatingView = false
+        with(viewModel) {
+            init(method, desc, searchView.query, newCheckBox.isChecked, isSearch = activity is ArchiveSearch)
+            monitor(lifecycleScope) { listAdapter.submitData(it) }
+            randomCount = 0
         }
+
+        listView.adapter = listAdapter
+        creatingView = false
     }
 
     private fun setupTagSuggestions() {
@@ -422,18 +420,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             tagFragment.show(it, "tag_popup")
         }
         return true
-    }
-
-    private fun showOnlySearch(show: Boolean){
-        if (show) {
-            randomButton.visibility = View.GONE
-            newCheckBox.visibility = View.GONE
-            swipeRefreshLayout.isEnabled = false
-        } else {
-            randomButton.visibility = View.VISIBLE
-            newCheckBox.visibility = View.VISIBLE
-            swipeRefreshLayout.isEnabled = true
-        }
     }
 
     private fun startDetailsActivity(id: String, context: Context) {
