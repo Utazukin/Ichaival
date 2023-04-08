@@ -60,11 +60,11 @@ private class ChangeDelegate<T>(private var field: T, private val onChange: () -
 }
 
 class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
-    var onlyNew by StateDelegate("new", state, false) { reset() }
-    var isLocal by StateDelegate("local", state, false) { reset() }
+    var onlyNew by StateDelegate("new", state, false) { reset(false) }
+    var isLocal by StateDelegate("local", state, false) { reset(false) }
     var randomCount by StateDelegate("randCount", state, 0) { reset() }
     private var initiated by StateDelegate("init", state, false)
-    private var resetDisabled by ChangeDelegate(!initiated) { reset() }
+    private var resetDisabled by ChangeDelegate(!initiated) { reset(false) }
     private var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
     private var descending by StateDelegate("desc", state, false)
     private var isSearch by StateDelegate("search", state, false)
@@ -134,8 +134,10 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
         CategoryManager.removeUpdateListener(this)
     }
 
-    fun reset() {
-        if (resetDisabled)
+    fun reset() = reset(true)
+
+    private fun reset(force: Boolean) {
+        if (resetDisabled || (randomCount > 0 && !force))
             return
 
         archivePagingSource.let {
