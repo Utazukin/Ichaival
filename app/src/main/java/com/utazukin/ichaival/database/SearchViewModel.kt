@@ -30,8 +30,12 @@ import kotlin.reflect.KProperty
 
 class ReaderTabViewModel : ViewModel() {
     private val bookmarks = Pager(PagingConfig(5)) { DatabaseReader.getDataBookmarks() }.flow.cachedIn(viewModelScope)
-    fun monitor(scope: CoroutineScope, action: suspend (PagingData<ReaderTab>) -> Unit) {
-        scope.launch { bookmarks.collectLatest(action) }
+    init {
+        ReaderTabHolder.initialize(this)
+    }
+
+    fun monitor(action: suspend (PagingData<ReaderTab>) -> Unit) {
+        viewModelScope.launch { bookmarks.collectLatest(action) }
     }
 }
 

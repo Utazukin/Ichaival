@@ -18,8 +18,6 @@
 
 package com.utazukin.ichaival
 
-import androidx.activity.viewModels
-import androidx.fragment.app.FragmentActivity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -32,7 +30,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
-    private var initialized = false
     private var tabCount = 0
     private val scope by lazy { MainScope() }
 
@@ -92,7 +89,7 @@ object ReaderTabHolder {
     }
 
     fun addReaderTabs(tabs: List<ReaderTab>) {
-        scope.launch(Dispatchers.IO) {
+        scope.launch {
             for (tab in tabs)
                 DatabaseReader.addBookmark(tab)
         }
@@ -103,12 +100,8 @@ object ReaderTabHolder {
         DatabaseReader.getArchive(id)?.let { addTab(it, page) }
     }
 
-    fun initialize(context: FragmentActivity) {
-        if (!initialized) {
-            val viewModel: ReaderTabViewModel by context.viewModels()
-            viewModel.monitor(scope) { tabCount = DatabaseReader.getBookmarkCount() }
-            initialized = true
-        }
+    fun initialize(viewModel: ReaderTabViewModel) {
+        viewModel.monitor { tabCount = DatabaseReader.getBookmarkCount() }
     }
 
     suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)

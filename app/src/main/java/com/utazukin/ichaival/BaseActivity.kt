@@ -25,13 +25,12 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.drawerlayout.widget.DrawerLayout.DrawerListener
-import androidx.lifecycle.ViewModelProviders
-import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -76,7 +75,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        ReaderTabHolder.initialize(this)
         setTheme()
 
         super.onCreate(savedInstanceState)
@@ -185,8 +183,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
             }
         })
 
-        val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
-        viewModel.monitor(lifecycleScope) { adapter.submitData(it) }
+        val viewModel: ReaderTabViewModel by viewModels()
+        viewModel.monitor { adapter.submitData(it) }
     }
 
     protected open fun handleBackPressed() {

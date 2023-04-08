@@ -29,12 +29,11 @@ import android.content.res.Resources
 import android.os.Bundle
 import android.view.*
 import android.widget.*
+import androidx.activity.viewModels
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
-import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -381,8 +380,8 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun setupReaderTabAdapter(adapter: ReaderTabViewAdapter) {
-        val viewModel = ViewModelProviders.of(this)[ReaderTabViewModel::class.java]
-        viewModel.monitor(lifecycleScope) { adapter.submitData(it) }
+        val viewModel: ReaderTabViewModel by viewModels()
+        viewModel.monitor { adapter.submitData(it) }
     }
 
     override fun onStart() {
