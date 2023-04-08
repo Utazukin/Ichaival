@@ -54,8 +54,6 @@ const val STATIC_CATEGORY_SEARCH = "\b"
 private const val DEFAULT_SEARCH_DELAY = 750L
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
-    private var sortMethod = SortMethod.Alpha
-    private var descending = false
     private var jumpToTop = false
     private var searchJob: Job? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
@@ -67,7 +65,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private val viewModel: SearchViewModel by activityViewModels()
     private lateinit var searchView: SearchView
     private var searchDelay: Long = DEFAULT_SEARCH_DELAY
-    private var isLocalSearch: Boolean = false
     private var creatingView = false
     private var canSwipeRefresh = false
 
@@ -136,7 +133,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         creatingView = true
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
-        isLocalSearch = prefs.getBoolean(getString(R.string.local_search_key), false)
+        viewModel.isLocal = prefs.getBoolean(getString(R.string.local_search_key), false)
 
         val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
 
@@ -224,7 +221,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 if (searchDelay <= 0 && !query.isNullOrBlank())
                     return true
 
-                if (isLocalSearch)
+                if (viewModel.isLocal)
                     viewModel.filter(query)
                 else {
                     searchJob?.cancel()
@@ -317,8 +314,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 val filter = getStringExtra(RANDOM_SEARCH)
                 val category = getStringExtra(RANDOM_CAT)
                 viewModel.deferReset {
-                    isLocal = isLocalSearch
-                    init(sortMethod, descending, filter, newCheckBox.isChecked)
+                    init(filter, newCheckBox.isChecked)
                     updateResults(category)
                     monitor(lifecycleScope) { listAdapter.submitData(it) }
                     if (viewModel.randomCount == 0) {
@@ -342,16 +338,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             val desc = prefs.getBoolean(getString(R.string.desc_pref), false)
 
             with(viewModel) {
-                isLocal = isLocalSearch
                 init(method, desc, searchView.query, newCheckBox.isChecked, isSearch = activity is ArchiveSearch)
                 monitor(lifecycleScope) { listAdapter.submitData(it) }
                 randomCount = 0
             }
 
             listView.adapter = listAdapter
-            sortMethod = method
-            descending = desc
-
             creatingView = false
         }
     }
@@ -384,7 +376,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 override fun onSuggestionClick(index: Int): Boolean {
                     val cursor = suggestionsAdapter.getItem(index) as Cursor
                     var selection = cursor.getString(cursor.getColumnIndexOrThrow(SearchManager.SUGGEST_COLUMN_TEXT_1))
-                    if (!isLocalSearch)
+                    if (!viewModel.isLocal)
                         selection = "\"$selection\"\$"
                     else if (selection.split(' ').size > 1)
                         selection = "\"$selection\""
@@ -456,21 +448,18 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     private fun updateSortMethod(method: SortMethod, desc: Boolean, prefs: SharedPreferences) {
         var updated = false
-        if (sortMethod != method) {
-            sortMethod = method
-
-            prefs.edit().putInt(getString(R.string.sort_pref), sortMethod.value).apply()
+        if (viewModel.sortMethod != method) {
+            prefs.edit().putInt(getString(R.string.sort_pref), method.value).apply()
             updated = true
         }
 
-        if (desc != descending) {
-            descending = desc
-            prefs.edit().putBoolean(getString(R.string.desc_pref), descending).apply()
+        if (desc != viewModel.descending) {
+            prefs.edit().putBoolean(getString(R.string.desc_pref), desc).apply()
             updated = true
         }
 
         if (updated) {
-            viewModel.updateSort(method, descending)
+            viewModel.updateSort(method, desc)
             jumpToTop = true
         }
     }
@@ -522,7 +511,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView.setQuery("", true)
         searchJob?.cancel()
         searchView.clearFocus()
-        isLocalSearch = local
         viewModel.deferReset {
             isLocal = local
             onlyNew = false
@@ -539,7 +527,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             getString(R.string.local_search_key) -> {
                 val local = prefs?.getBoolean(prefName, false) ?: false
                 //Reset filter when changing search type.
-                if (local != isLocalSearch)
+                if (local != viewModel.isLocal)
                     resetSearch(local)
             }
             getString(R.string.search_delay_key) -> { searchDelay = prefs.castStringPrefToLong(prefName, DEFAULT_SEARCH_DELAY) }
