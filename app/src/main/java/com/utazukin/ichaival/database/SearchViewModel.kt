@@ -67,16 +67,15 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
     var onlyNew by StateDelegate("new", state, false) { reset(false) }
     var isLocal by StateDelegate("local", state, false) { reset(false) }
     var randomCount by StateDelegate("randCount", state, 0) { reset() }
-    var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
-        private set
-    var descending by StateDelegate("desc", state, false)
+    var categoryId by StateDelegate("category", state, "")
         private set
     var jumpToTop = false
     private var initiated by StateDelegate("init", state, false)
     private var resetDisabled by ChangeDelegate(!initiated) { reset(false) }
     private var isSearch by StateDelegate("search", state, false)
     private var filter by StateDelegate("filter", state, "")
-    private var categoryId by StateDelegate("category", state, "")
+    private var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
+    private var descending by StateDelegate("desc", state, false)
     private var archivePagingSource: PagingSource<Int, Archive> = EmptySource()
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
 

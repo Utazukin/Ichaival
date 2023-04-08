@@ -226,7 +226,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     searchJob?.cancel()
                     swipeRefreshLayout.isRefreshing = false
                     searchJob = lifecycleScope.launch {
-                        if (!query.isNullOrBlank() || newCheckBox.isChecked)
+                        if (!query.isNullOrBlank())
                             delay(searchDelay)
 
                         if (query != null) {
@@ -247,10 +247,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             if (randomCount > 1) {
                 val intent = Intent(context, ArchiveRandomActivity::class.java)
                 val bundle = Bundle().apply {
-                    if (searchView.query.isNotBlank() && searchView.query?.startsWith(STATIC_CATEGORY_SEARCH) != true)
+                    if (viewModel.categoryId.isNotEmpty())
+                        putString(RANDOM_CAT, viewModel.categoryId)
+                    else if (searchView.query.isNotBlank())
                         putString(RANDOM_SEARCH, searchView.query.toString())
-                    val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-                    categoryFragment?.selectedCategory?.run { putString(RANDOM_CAT, id) }
                 }
                 intent.putExtras(bundle)
                 startActivity(intent)
@@ -267,7 +267,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             listAdapter.disableMultiSelect()
             lifecycleScope.launch {
                 val archive = DatabaseReader.getRandom()
-                if (archive != null && !ReaderTabHolder.isTabbed(archive.id))
+                if (archive != null)
                     ReaderTabHolder.addTab(archive, 0)
             }
             true
