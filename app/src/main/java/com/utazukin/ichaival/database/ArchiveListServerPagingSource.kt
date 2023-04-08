@@ -27,11 +27,12 @@ import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.parseTermsInfo
 
 data class ServerSearchResult(val results: List<String>?,
-                         val totalSize: Int = 0,
-                         val filter: CharSequence = "",
-                         val onlyNew: Boolean = false)
+                              val totalSize: Int = 0,
+                              val filter: CharSequence = "",
+                              val onlyNew: Boolean = false)
 
 class EmptySource<Key : Any, Value : Any> : PagingSource<Key, Value>() {
+    override val jumpingSupported = true
     override fun getRefreshKey(state: PagingState<Key, Value>) = null
     override suspend fun load(params: LoadParams<Key>): LoadResult<Key, Value> = LoadResult.Page(emptyList(), null, null)
 }
