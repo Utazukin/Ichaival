@@ -27,8 +27,10 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.launch
 
 enum class SortMethod(val value: Int) {
@@ -46,6 +48,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     private var currentCategories: List<ArchiveCategory>? = null
     private var categoryLabel: TextView? = null
     private var listener: FilterListener? = null
+    private val viewModel: SearchViewModel by activityViewModels()
     private var sortMethod = SortMethod.Alpha
     private var descending = false
     private val categoryButtons = mutableListOf<AppCompatRadioButton>()
@@ -83,12 +86,14 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 
                 sortGroup.setOnCheckedChangeListener { _, id ->
                     sortMethod = getMethodFromId(id)
-                    listener?.onSortChanged(sortMethod, descending)
+                    prefs.edit().putInt(getString(R.string.sort_pref), sortMethod.value).apply()
+                    viewModel.updateSort(sortMethod, descending)
                 }
 
                 dirGroup.setOnCheckedChangeListener { _, id ->
                     descending = getDirectionFromId(id)
-                    listener?.onSortChanged(sortMethod, descending)
+                    prefs.edit().putBoolean(getString(R.string.desc_pref), descending).apply()
+                    viewModel.updateSort(sortMethod, descending)
                 }
             }
         }
@@ -177,5 +182,4 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 
 interface FilterListener {
     fun onCategoryChanged(category: ArchiveCategory)
-    fun onSortChanged(sort: SortMethod, desc: Boolean)
 }

@@ -28,6 +28,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.SearchView
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
 import androidx.core.view.isVisible
@@ -35,6 +36,7 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
+import com.utazukin.ichaival.database.SearchViewModel
 import com.utazukin.ichaival.settings.SettingsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -196,7 +198,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         super.onServerInitialized(serverSupported)
         ServerManager.serverName?.let { supportActionBar?.title = it }
         if (serverSupported) {
-            val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
+            val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
             listFragment?.setupArchiveList()
         } else {
             setupText.text = getString(R.string.unsupported_server_message)
@@ -205,13 +207,17 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     }
 
     override fun onCategoryChanged(category: ArchiveCategory) {
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-        listFragment?.handleCategoryChange(category)
-    }
+        val searchView: SearchView = findViewById(R.id.archive_search)
+        if (category.isStatic) {
+            searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
+            searchView.clearFocus()
 
-    override fun onSortChanged(sort: SortMethod, desc: Boolean) {
-        val listFragment: ArchiveListFragment? = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-        listFragment?.updateSortMethod(sort, desc)
+            val viewModel: SearchViewModel by viewModels()
+            viewModel.updateResults(category.id)
+        } else {
+            searchView.setQuery(category.search, true)
+            searchView.clearFocus()
+        }
     }
 
     private fun handleSetupText(setup: Boolean) {

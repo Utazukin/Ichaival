@@ -54,7 +54,6 @@ const val STATIC_CATEGORY_SEARCH = "\b"
 private const val DEFAULT_SEARCH_DELAY = 750L
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
-    private var jumpToTop = false
     private var searchJob: Job? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
@@ -147,9 +146,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     object : GridLayoutManager(context, columns) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
                             super.onLayoutCompleted(state)
-                            if (jumpToTop) {
+                            if (viewModel.jumpToTop) {
                                 scrollToPosition(0)
-                                jumpToTop = false
+                                viewModel.jumpToTop = false
                             }
                         }
                     }
@@ -157,9 +156,9 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     object : LinearLayoutManager(context) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
                             super.onLayoutCompleted(state)
-                            if (jumpToTop) {
+                            if (viewModel.jumpToTop) {
                                 scrollToPosition(0)
-                                jumpToTop = false
+                                viewModel.jumpToTop = false
                             }
                         }
                     }
@@ -203,7 +202,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 if (creatingView)
                     return true
 
-                val categoryFragment: CategoryFilterFragment? = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
+                enableRefresh(query.isNullOrEmpty())
+                val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                 categoryFragment?.selectedCategory?.let {
                     if (it.isStatic && query == STATIC_CATEGORY_SEARCH)
                         return true
@@ -217,7 +217,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     return false
                 }
 
-                enableRefresh(query.isNullOrEmpty())
                 if (searchDelay <= 0 && !query.isNullOrBlank())
                     return true
 
@@ -348,20 +347,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
     }
 
-    fun handleCategoryChange(category: ArchiveCategory) {
-        if (category.isStatic) {
-            searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
-            searchView.clearFocus()
-            enableRefresh(false)
-
-            viewModel.updateResults(category.id)
-        } else {
-            searchView.setQuery(category.search, true)
-            searchView.clearFocus()
-            enableRefresh(false)
-        }
-    }
-
     private fun setupTagSuggestions() {
         val from = arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1)
         val to = intArrayOf(R.id.search_suggestion)
@@ -428,11 +413,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         swipeRefreshLayout.isEnabled = canSwipeRefresh && enable && !isSearch
     }
 
-    fun updateSortMethod(method: SortMethod, desc: Boolean) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireActivity())
-        updateSortMethod(method, desc, prefs)
-    }
-
     private fun handleArchiveLongPress(archive: Archive) : Boolean {
         parentFragmentManager.let {
             val tagFragment = TagDialogFragment.newInstance(archive.id)
@@ -444,24 +424,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             tagFragment.show(it, "tag_popup")
         }
         return true
-    }
-
-    private fun updateSortMethod(method: SortMethod, desc: Boolean, prefs: SharedPreferences) {
-        var updated = false
-        if (viewModel.sortMethod != method) {
-            prefs.edit().putInt(getString(R.string.sort_pref), method.value).apply()
-            updated = true
-        }
-
-        if (desc != viewModel.descending) {
-            prefs.edit().putBoolean(getString(R.string.desc_pref), desc).apply()
-            updated = true
-        }
-
-        if (updated) {
-            viewModel.updateSort(method, desc)
-            jumpToTop = true
-        }
     }
 
     private fun showOnlySearch(show: Boolean){

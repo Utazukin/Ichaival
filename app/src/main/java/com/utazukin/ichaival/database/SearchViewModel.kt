@@ -67,6 +67,7 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
         private set
     var descending by StateDelegate("desc", state, false)
         private set
+    var jumpToTop = false
     private var initiated by StateDelegate("init", state, false)
     private var resetDisabled by ChangeDelegate(!initiated) { reset(false) }
     private var isSearch by StateDelegate("search", state, false)
@@ -102,6 +103,7 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
         if (method != sortMethod || desc != descending) {
             sortMethod = method
             descending = desc
+            jumpToTop = true
             reset()
         }
     }
