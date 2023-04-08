@@ -45,6 +45,7 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
     override val jumpingSupported get() = roomSource.jumpingSupported
 
     override fun getRefreshKey(state: PagingState<Int, Archive>) = roomSource.getRefreshKey(state)
+    protected suspend fun insertSearch(arcId: String) = DatabaseReader.insertSearch(SearchArchiveRef(filter, arcId))
     fun reset() {
         invalidate()
         roomSource.invalidate()
@@ -73,7 +74,7 @@ open class ArchiveListServerPagingSource(
                                         reader.beginObject()
                                         while (reader.hasNext()) {
                                             if (reader.nextName() == "arcid")
-                                                DatabaseReader.insertSearch(SearchArchiveRef(filter, reader.nextString()))
+                                                insertSearch(reader.nextString())
                                             else reader.skipValue()
                                         }
                                         reader.endObject()
@@ -113,11 +114,11 @@ class ArchiveListLocalPagingSource(filter: String,
                 val allArchives = DatabaseReader.getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
                 for (archive in allArchives) {
                     if (archive.title.contains(titleSearch, ignoreCase = true))
-                        DatabaseReader.insertSearch(SearchArchiveRef(filter, archive.id))
+                        insertSearch(archive.id)
                     else {
                         for (termInfo in terms) {
                             if (archive.containsTag(termInfo.term, termInfo.exact) != termInfo.negative) {
-                                DatabaseReader.insertSearch(SearchArchiveRef(filter, archive.id))
+                                insertSearch(archive.id)
                                 break
                             }
                         }

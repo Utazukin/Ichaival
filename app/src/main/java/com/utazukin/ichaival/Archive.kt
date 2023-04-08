@@ -41,14 +41,33 @@ data class ArchiveFull(
     @ColumnInfo val titleSortIndex: Int
 )
 
-data class Archive (
-    val id: String,
-    val title: String,
+open class ArchiveBase(val id: String, val title: String, val tags: Map<String, List<String>>) {
+    fun containsTag(tag: String, exact: Boolean) : Boolean {
+        val colonIndex = tag.indexOf(':')
+        if (colonIndex > 0) {
+            val namespace = tag.substring(0, colonIndex)
+            val normalized = tag.substring(colonIndex + 1)
+            val nTags = tags[namespace] ?: return false
+            return if (exact) nTags.any { it.equals(normalized, ignoreCase = true) } else nTags.any { it.contains(normalized, ignoreCase = true) }
+        }
+        else {
+            for (t in tags.values) {
+                if (t.any { it.contains(tag, ignoreCase = true)})
+                    return true
+            }
+        }
+        return false
+    }
+}
+
+class Archive (
+    id: String,
+    title: String,
     val dateAdded: Long,
     var isNew: Boolean,
-    val tags: Map<String, List<String>>,
+    tags: Map<String, List<String>>,
     var currentPage: Int,
-    @ColumnInfo(name = "pageCount") var numPages: Int) {
+    @ColumnInfo(name = "pageCount") var numPages: Int) : ArchiveBase(id, title, tags) {
 
     @delegate:Ignore
     val isWebtoon by lazy { containsTag("webtoon", false) }
@@ -77,23 +96,6 @@ data class Archive (
     private suspend fun downloadPage(context: Context, page: Int) : String? {
         val pages = DatabaseReader.getPageList(context.applicationContext, id)
         return if (page < pages.size) WebHandler.getRawImageUrl(pages[page]) else null
-    }
-
-    fun containsTag(tag: String, exact: Boolean) : Boolean {
-        val colonIndex = tag.indexOf(':')
-        if (colonIndex > 0) {
-            val namespace = tag.substring(0, colonIndex)
-            val normalized = tag.substring(colonIndex + 1)
-            val nTags = tags[namespace] ?: return false
-            return if (exact) nTags.any { it.equals(normalized, ignoreCase = true) } else nTags.any { it.contains(normalized, ignoreCase = true) }
-        }
-        else {
-            for (t in tags.values) {
-                if (t.any { it.contains(tag, ignoreCase = true)})
-                    return true
-            }
-        }
-        return false
     }
 }
 

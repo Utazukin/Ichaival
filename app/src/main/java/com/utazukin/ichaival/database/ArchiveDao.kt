@@ -26,10 +26,7 @@ import org.json.JSONObject
 @Dao
 interface ArchiveDao {
     @Query("Select * from archive limit :limit offset :offset")
-    suspend fun getArchives(offset: Int, limit: Int): List<Archive>
-
-    @Query("Select * from archive where id in (:ids) limit :limit offset :offset")
-    suspend fun getArchives(ids: List<String>, offset: Int, limit: Int): MutableList<Archive>
+    suspend fun getArchives(offset: Int, limit: Int): List<ArchiveBase>
 
     @Query("Select count(id) from archive")
     suspend fun getArchiveCount() : Int
