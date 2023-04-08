@@ -22,7 +22,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.utazukin.ichaival.database.DatabaseReader
-import com.utazukin.ichaival.database.ReaderTabViewModel
 import com.utazukin.ichaival.reader.ScaleType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -30,13 +29,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
-    private var tabCount = 0
     private val scope by lazy { MainScope() }
-
     private val removeListeners = mutableSetOf<TabRemovedListener>()
-
     private val addListeners = mutableSetOf<TabAddedListener>()
-
     private val clearListeners = mutableSetOf<TabsClearedListener>()
 
     suspend fun updatePageIfTabbed(id: String, page: Int) : Boolean = DatabaseReader.updateBookmark(id, page)
@@ -57,6 +52,7 @@ object ReaderTabHolder {
 
     suspend fun addTab(archive: Archive, page: Int, scaleType: ScaleType? = null) {
         if (!isTabbed(archive.id)) {
+            val tabCount = DatabaseReader.getBookmarkCount()
             val tab = ReaderTab(archive.id, archive.title, tabCount, page, scaleType)
             archive.currentPage = page
             if (page > 0)
@@ -73,10 +69,11 @@ object ReaderTabHolder {
 
     fun addTabs(archives: List<Archive>) {
         scope.launch {
+            var tabCount = DatabaseReader.getBookmarkCount()
             val ids = buildList(archives.size) {
                 for (archive in archives) {
                     if (!isTabbed(archive.id)) {
-                        val tab = ReaderTab(archive.id, archive.title, tabCount, 0)
+                        val tab = ReaderTab(archive.id, archive.title, tabCount++, 0)
                         archive.currentPage = 0
                         DatabaseReader.addBookmark(tab)
                         add(archive.id)
@@ -98,10 +95,6 @@ object ReaderTabHolder {
 
     suspend fun addTab(id: String, page: Int) {
         DatabaseReader.getArchive(id)?.let { addTab(it, page) }
-    }
-
-    fun initialize(viewModel: ReaderTabViewModel) {
-        viewModel.monitor { tabCount = DatabaseReader.getBookmarkCount() }
     }
 
     suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)
