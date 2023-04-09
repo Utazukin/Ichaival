@@ -29,7 +29,6 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import coil.ImageLoader
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.load
@@ -43,7 +42,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 
 class WebtoonReaderViewHolder(private val context: Context,
                               private val view: View,
@@ -57,6 +55,7 @@ class WebtoonReaderViewHolder(private val context: Context,
     private val topLayout: TouchToggleLayout = view.findViewById(R.id.reader_layout)
     private val failedMessage: TextView
     private val jobs = mutableListOf<Job>()
+    private val loader = activity.imageLoader
 
     init {
         progressBar.isIndeterminate = true
@@ -82,7 +81,6 @@ class WebtoonReaderViewHolder(private val context: Context,
 
         progressBar.isIndeterminate = false
         val job = activity.lifecycleScope.launch {
-            val loader = ImageLoader.Builder(activity).okHttpClient(OkHttpClient.Builder().addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener())).build()).build()
             val imageFile = withContext(Dispatchers.IO) {
                 val request = downloadCoilImageWithProgress(activity, image) {
                     progressBar.progress = it

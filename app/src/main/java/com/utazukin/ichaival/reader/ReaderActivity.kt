@@ -39,8 +39,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
-import coil.imageLoader
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.*
 import com.utazukin.ichaival.database.DatabaseExtractListener
@@ -50,6 +50,7 @@ import com.utazukin.ichaival.reader.ReaderFragment.OnFragmentInteractionListener
 import com.utazukin.ichaival.reader.webtoon.WebtoonReaderViewHolder
 import com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
 import kotlinx.coroutines.*
+import okhttp3.OkHttpClient
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -71,6 +72,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private set
     var archive: Archive? = null
         private set
+    val imageLoader by lazy {
+        val client = OkHttpClient.Builder()
+            .addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener()))
+            .build()
+        ImageLoader.Builder(this)
+            .okHttpClient(client)
+            .build()
+    }
     private var currentPage = 0
     private var jumpPage = -1
     private var rtol = false

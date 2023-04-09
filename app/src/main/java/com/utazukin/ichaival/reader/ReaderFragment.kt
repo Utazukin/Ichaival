@@ -44,7 +44,6 @@ import com.utazukin.ichaival.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 
 enum class TouchZone {
     Left,
@@ -67,6 +66,7 @@ class ReaderFragment : Fragment(), PageFragment {
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
     private lateinit var failedMessage: TextView
+    private lateinit var loader: ImageLoader
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
@@ -139,7 +139,6 @@ class ReaderFragment : Fragment(), PageFragment {
 
         progressBar.isIndeterminate = false
         lifecycleScope.launch {
-            val loader = ImageLoader.Builder(requireContext()).okHttpClient(OkHttpClient.Builder().addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener())).build()).build()
             val imageFile = withContext(Dispatchers.IO) {
                 val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
                 request.cacheOrGet(loader)
@@ -308,6 +307,7 @@ class ReaderFragment : Fragment(), PageFragment {
         super.onAttach(context)
         val activity = context as ReaderActivity
         listener = activity
+        loader = activity.imageLoader
 
         activity.registerPage(this)
         activity.archive?.let { onArchiveLoad(it) }

@@ -80,6 +80,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
     private lateinit var failedMessageText: TextView
+    private lateinit var loader: ImageLoader
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
@@ -87,7 +88,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private var rtol: Boolean = false
     private var failedMessage: String? = null
     private var mergeJob: Job? = null
-    private var verboseFailMessages = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -222,7 +222,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
         progressBar.isIndeterminate = false
         lifecycleScope.launch {
-            val loader = ImageLoader.Builder(requireContext()).okHttpClient(OkHttpClient.Builder().addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener())).build()).build()
             val imageFile = withContext(Dispatchers.IO) {
                 val request = downloadCoilImageWithProgress(requireContext(), image) {
                     progressBar.progress = it
@@ -545,6 +544,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         super.onAttach(context)
         (context as ReaderActivity).let {
             listener = it
+            loader = it.imageLoader
 
             it.registerPage(this)
             it.archive?.let { a -> onArchiveLoad(a) }
