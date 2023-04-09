@@ -25,12 +25,9 @@ import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.util.Size
 import androidx.preference.PreferenceManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.FutureTarget
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
+import coil.ImageLoader
+import coil.annotation.ExperimentalCoilApi
+import coil.request.ImageRequest
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.ImageInfo
 import java.io.File
@@ -141,43 +138,32 @@ fun getImageFormat(imageFile: File) : ImageFormat? {
     }
 }
 
-fun downloadImageWithProgress(context: Context, imagePath: String, uiProgressListener: (Int) -> Unit) : FutureTarget<File> {
-    return downloadImageWithProgress(context, imagePath, object: UIProgressListener {
+@OptIn(ExperimentalCoilApi::class)
+suspend fun ImageRequest.cacheOrGet(loader: ImageLoader) : File? {
+    val cache = loader.diskCache?.get(data as String)?.use { it.data.toFile() }
+    if (cache != null)
+        return cache
+    loader.execute(this)
+    return loader.diskCache?.get(data as String)?.use { it.data.toFile() }
+}
+
+fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgressListener: (Int) -> Unit) : ImageRequest {
+    return downloadCoilImageWithProgress(context, imagePath, object: UIProgressListener {
         override fun update(progress: Int) {
             uiProgressListener(progress)
         }
     })
 }
 
-private fun downloadImageWithProgress(context: Context, imagePath: String, uiProgressListener: UIProgressListener) : FutureTarget<File> {
-    ResponseProgressListener.expect(imagePath, uiProgressListener)
-    return Glide.with(context)
-        .downloadOnly()
-        .load(imagePath)
-        .listener(object: RequestListener<File> {
-            override fun onLoadFailed(
-                e: GlideException?,
-                model: Any?,
-                target: Target<File>?,
-                isFirstResource: Boolean
-            ): Boolean {
-                ResponseProgressListener.forget(imagePath)
-                return false
-            }
-
-            override fun onResourceReady(
-                resource: File?,
-                model: Any?,
-                target: Target<File>?,
-                dataSource: DataSource?,
-                isFirstResource: Boolean
-            ): Boolean {
-                ResponseProgressListener.forget(imagePath)
-                return false
-            }
-
-        })
-        .submit()
+private fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgressListener: UIProgressListener) : ImageRequest {
+    return ImageRequest.Builder(context)
+        .data(imagePath)
+        .listener(
+                onStart = { ResponseProgressListener.expect(imagePath, uiProgressListener) },
+                onCancel = { ResponseProgressListener.forget(imagePath) },
+                onError = { _, _ -> ResponseProgressListener.forget(imagePath) }
+        )
+        .build()
 }
 
 fun Size.toRect() = Rect(0, 0, width, height)

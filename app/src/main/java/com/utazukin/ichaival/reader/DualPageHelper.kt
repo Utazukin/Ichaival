@@ -21,7 +21,6 @@ package com.utazukin.ichaival.reader
 import android.graphics.*
 import android.os.Build
 import android.util.Size
-import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.utazukin.ichaival.reader.PageCompressFormat.Companion.toBitmapFormat
 import com.utazukin.ichaival.toRect
 import kotlinx.coroutines.Dispatchers
@@ -83,12 +82,12 @@ object DualPageHelper {
         return file.path
     }
 
-    suspend fun mergeBitmaps(mergeInfo: MergeInfo, cacheDir: File, pool: BitmapPool, updateProgress: (Int) -> Unit) : String {
-        return mergeSemaphore.withPermit { mergeBitmapsInternal(mergeInfo, cacheDir, pool, updateProgress) }
+    suspend fun mergeBitmaps(mergeInfo: MergeInfo, cacheDir: File, updateProgress: (Int) -> Unit) : String {
+        return mergeSemaphore.withPermit { mergeBitmapsInternal(mergeInfo, cacheDir, updateProgress) }
     }
 
     //Mostly from TachiyomiJ2K
-    private suspend fun mergeBitmapsInternal(mergeInfo: MergeInfo, cacheDir: File, pool: BitmapPool, updateProgress: (Int) -> Unit): String {
+    private suspend fun mergeBitmapsInternal(mergeInfo: MergeInfo, cacheDir: File, updateProgress: (Int) -> Unit): String {
         val (imgSize, otherImgSize, imgFile, otherImgFile, page, otherPage, compressType, archiveId, isLTR) = mergeInfo
         val height = imgSize.height
         val width = imgSize.width
@@ -96,7 +95,7 @@ object DualPageHelper {
         val height2 = otherImgSize.height
         val width2 = otherImgSize.width
         val maxHeight = max(height, height2)
-        val result = pool.get(width + width2, maxHeight, Bitmap.Config.ARGB_8888)
+        val result = Bitmap.createBitmap(width + width2, maxHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
         canvas.drawColor(Color.WHITE)
         val upperPart = Rect(
@@ -109,7 +108,7 @@ object DualPageHelper {
         try {
             var bitmap = decodeBitmap(imgFile, imgSize)
             canvas.drawBitmap(bitmap, imgSize.toRect(), upperPart, null)
-            pool.put(bitmap)
+            bitmap.recycle()
             yield()
             withContext(Dispatchers.Main) { updateProgress(95) }
             val bottomPart = Rect(
@@ -120,13 +119,13 @@ object DualPageHelper {
             )
             bitmap = decodeBitmap(otherImgFile, otherImgSize)
             canvas.drawBitmap(bitmap, otherImgSize.toRect(), bottomPart, null)
-            pool.put(bitmap)
+            bitmap.recycle()
             yield()
             withContext(Dispatchers.Main) { updateProgress(99) }
 
             return saveMergedPath(cacheDir, result, archiveId, page, otherPage, !isLTR, compressType)
         } finally {
-            pool.put(result)
+            result.recycle()
         }
     }
 

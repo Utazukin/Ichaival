@@ -21,6 +21,7 @@ package com.utazukin.ichaival.reader.webtoon
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PointF
+import android.os.Build
 import android.view.*
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
@@ -28,12 +29,12 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
+import coil.ImageLoader
+import coil.annotation.ExperimentalCoilApi
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.request.ImageRequest
+import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
@@ -43,7 +44,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
+import okhttp3.OkHttpClient
 
 class WebtoonReaderViewHolder(private val context: Context,
                               private val view: View,
@@ -77,23 +78,23 @@ class WebtoonReaderViewHolder(private val context: Context,
         view.setOnLongClickListener { activity.onFragmentLongPress() }
     }
 
+    @OptIn(ExperimentalCoilApi::class)
     private fun displayImage(image: String) {
         imagePath = image
 
         progressBar.isIndeterminate = false
         val job = activity.lifecycleScope.launch {
+            val loader = ImageLoader.Builder(activity).okHttpClient(OkHttpClient.Builder().addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener())).build()).build()
             val imageFile = withContext(Dispatchers.IO) {
-                var target: Target<File>? = null
-                try {
-                    target = downloadImageWithProgress(activity, image) {
-                        progressBar.progress = it
-                    }
-                    target.get()
-                } catch (e: Exception) {
-                    null
-                } finally {
-                    activity.let { Glide.with(it).clear(target) }
+                val cache = loader.diskCache?.get(image)?.use { it.data.toFile() }
+                if (cache != null)
+                    return@withContext cache
+
+                val request = downloadCoilImageWithProgress(activity, image) {
+                    progressBar.progress = it
                 }
+                loader.execute(request)
+                loader.diskCache?.get(image)?.use { it.data.toFile() }
             }
 
             if (imageFile == null) {
@@ -105,11 +106,30 @@ class WebtoonReaderViewHolder(private val context: Context,
             mainImage?.let {
                 when (it) {
                     is PhotoView -> {
-                        Glide.with(activity)
-                            .load(imageFile)
-                            .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                            .addListener(getListener())
-                            .into(it)
+                        val request = ImageRequest.Builder(activity)
+                            .data(image)
+                            .size(Dimension.Undefined, Dimension.Undefined)
+                            .listener(
+                                    onSuccess = { _, _ ->
+                                        pageNum.visibility = View.GONE
+                                        view.run {
+                                            setOnClickListener(null)
+                                            setOnLongClickListener(null)
+                                        }
+                                        progressBar.visibility = View.GONE
+                                    },
+                                    onError = { _, _ -> showErrorMessage() }
+                            )
+                            .build()
+                        loader.newBuilder()
+                            .components {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                                    add(ImageDecoderDecoder.Factory())
+                                else
+                                    add(GifDecoder.Factory())
+                            }
+                            .build()
+                            .execute(request)
                         return@launch
                     }
                     is SubsamplingScaleImageView -> {
@@ -123,11 +143,30 @@ class WebtoonReaderViewHolder(private val context: Context,
             mainImage = if (format == ImageFormat.GIF) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    Glide.with(activity)
-                        .load(imageFile)
-                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                        .addListener(getListener())
-                        .into(it)
+                    val request = ImageRequest.Builder(activity)
+                        .data(image)
+                        .size(Dimension.Undefined, Dimension.Undefined)
+                        .listener(
+                                onSuccess = { _, _ ->
+                                    pageNum.visibility = View.GONE
+                                    view.run {
+                                        setOnClickListener(null)
+                                        setOnLongClickListener(null)
+                                    }
+                                    progressBar.visibility = View.GONE
+                                },
+                                onError = { _, _ -> showErrorMessage() }
+                        )
+                        .build()
+                    loader.newBuilder()
+                        .components {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                                add(ImageDecoderDecoder.Factory())
+                            else
+                                add(GifDecoder.Factory())
+                        }
+                        .build()
+                        .execute(request)
                 }
             } else {
                 WebtoonSubsamplingImageView(activity).also {
@@ -175,38 +214,6 @@ class WebtoonReaderViewHolder(private val context: Context,
         topLayout.addView(view)
         pageNum.bringToFront()
         progressBar.bringToFront()
-    }
-
-    private fun <T> getListener(clearOnReady: Boolean = true) : RequestListener<T> {
-        return object: RequestListener<T> {
-            override fun onLoadFailed(
-                e: GlideException?,
-                model: Any?,
-                target: Target<T>?,
-                isFirstResource: Boolean
-            ): Boolean {
-                showErrorMessage()
-                return false
-            }
-
-            override fun onResourceReady(
-                resource: T?,
-                model: Any?,
-                target: Target<T>?,
-                dataSource: DataSource?,
-                isFirstResource: Boolean
-            ): Boolean {
-                if (clearOnReady) {
-                    pageNum.visibility = View.GONE
-                    view.run {
-                        setOnClickListener(null)
-                        setOnLongClickListener(null)
-                    }
-                }
-                progressBar.visibility = View.GONE
-                return false
-            }
-        }
     }
 
     override fun reloadImage() {

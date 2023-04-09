@@ -19,47 +19,38 @@
 package com.utazukin.ichaival
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
-import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
-import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
-import com.bumptech.glide.load.resource.bitmap.TransformationUtils
-import java.security.MessageDigest
-import kotlin.concurrent.withLock
+import androidx.core.graphics.applyCanvas
+import androidx.core.graphics.createBitmap
+import coil.size.Size
+import coil.size.pxOrElse
+import coil.transform.Transformation
 
-class StartCrop : BitmapTransformation() {
-    override fun updateDiskCacheKey(messageDigest: MessageDigest) = messageDigest.update(ID_BYTES)
+class StartCropCoil : Transformation {
+    override val cacheKey: String = javaClass.name
 
-    override fun transform(pool: BitmapPool, toTransform: Bitmap, outWidth: Int, outHeight: Int): Bitmap {
-        if (toTransform.width == outWidth && toTransform.height == outHeight)
-            return toTransform
+    override suspend fun transform(input: Bitmap, size: Size): Bitmap {
+        val outWidth = size.width.pxOrElse { 0 }
+        val outHeight = size.height.pxOrElse { 0 }
+        if (input.width == outWidth && input.height == outHeight)
+            return input
 
-        val scale = if (toTransform.width * outHeight > outWidth * toTransform.height) {
-            outHeight.toFloat() / toTransform.height
+        val scale = if (input.width * outHeight > outWidth * input.height) {
+            outHeight.toFloat() / input.height
         } else {
-            outWidth.toFloat() / toTransform.width
+            outWidth.toFloat() / input.width
         }
 
-        val result = pool.get(outWidth, outHeight, toTransform.config ?: Bitmap.Config.ARGB_8888).apply {
-            setHasAlpha(toTransform.hasAlpha())
+        val result = createBitmap(outWidth, outHeight, input.config ?: Bitmap.Config.ARGB_8888).apply {
+            setHasAlpha(input.hasAlpha())
         }
 
         val matrix = Matrix().apply { setScale(scale, scale) }
-        TransformationUtils.getBitmapDrawableLock().withLock {
-            with(Canvas(result)) {
-                drawBitmap(toTransform, matrix, Paint(Paint.DITHER_FLAG or Paint.FILTER_BITMAP_FLAG))
-                setBitmap(null)
-            }
-        }
+        result.applyCanvas { drawBitmap(input, matrix, Paint(Paint.DITHER_FLAG or Paint.FILTER_BITMAP_FLAG)) }
         return result
     }
 
-    override fun equals(other: Any?) = other is StartCrop
-    override fun hashCode() = ID.hashCode()
-
-    companion object {
-        private const val ID = "com.utazukin.ichaival.StartCrop"
-        private val ID_BYTES = ID.toByteArray()
-    }
+    override fun equals(other: Any?) = other is StartCropCoil
+    override fun hashCode() = javaClass.hashCode()
 }

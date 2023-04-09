@@ -31,7 +31,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
+import coil.imageLoader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.launch
 import kotlin.math.floor
@@ -111,7 +111,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
 
     override fun onDetach() {
         super.onDetach()
-        Glide.get(requireActivity()).clearMemory()
+        requireActivity().imageLoader.memoryCache?.clear()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

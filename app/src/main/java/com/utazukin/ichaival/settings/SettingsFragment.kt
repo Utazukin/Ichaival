@@ -34,8 +34,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
 import androidx.preference.EditTextPreference.OnBindEditTextListener
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.cache.DiskCache
+import coil.annotation.ExperimentalCoilApi
+import coil.imageLoader
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.WebHandler
@@ -57,6 +57,7 @@ class LongClickPreference
     }
 }
 
+@OptIn(ExperimentalCoilApi::class)
 class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -170,9 +171,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     lifecycleScope.launch {
                         launch { WebHandler.clearTempFolder(requireContext()) }
                         DatabaseReader.invalidateImageCache()
-                        with(Glide.get(requireContext())) {
-                            clearMemory()
-                            withContext(Dispatchers.IO) { clearDiskCache()}
+                        with(requireContext().imageLoader) {
+                            memoryCache?.clear()
+                            diskCache?.clear()
                         }
                         DualPageHelper.clearMergedPages(requireContext().cacheDir)
                     }
@@ -213,9 +214,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         cachePref.setOnPreferenceClickListener {
             lifecycleScope.launch(Dispatchers.IO) {
                 DualPageHelper.clearMergedPages(requireContext().cacheDir)
-                with(Glide.get(requireContext())) {
-                    clearDiskCache()
-                    withContext(Dispatchers.Main) { clearMemory() }
+                with(requireContext().imageLoader) {
+                    diskCache?.clear()
+                    memoryCache?.clear()
                 }
             }
             cachePref.summary = "0 MB"
@@ -224,18 +225,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             var size = DualPageHelper.getCacheSize(requireContext().cacheDir)
-            val glideCache = File(requireContext().cacheDir, DiskCache.Factory.DEFAULT_DISK_CACHE_DIR)
-            size += calculateCacheSize(glideCache)
+            size += requireContext().imageLoader.diskCache?.size ?: 0
             size = size / 1024 / 1024
             withContext(Dispatchers.Main) { cachePref.summary = "$size MB" }
-        }
-    }
-
-    private fun calculateCacheSize(file: File?) : Long {
-        return when {
-            file == null -> 0
-            !file.isDirectory -> file.length()
-            else -> file.listFiles()?.sumOf { calculateCacheSize(it) } ?: 0
         }
     }
 

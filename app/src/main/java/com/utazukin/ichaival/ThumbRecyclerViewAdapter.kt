@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,13 +28,8 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.DecodeFormat
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
+import coil.dispose
+import coil.load
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -45,7 +39,6 @@ class ThumbRecyclerViewAdapter(
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
-    private val glide = Glide.with(fragment.requireActivity())
     private val scope = fragment.lifecycleScope
     private val context = fragment.requireContext()
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
@@ -92,32 +85,16 @@ class ThumbRecyclerViewAdapter(
 
         imageLoadingJobs[holder] = scope.launch {
             val image = archive.getThumb(context, page)
-
-            glide.load(image)
-                .format(DecodeFormat.PREFER_RGB_565)
-                .transition(DrawableTransitionOptions.withCrossFade())
-                .addListener(object: RequestListener<Drawable>{
-                    override fun onLoadFailed(e: GlideException?,
-                                              model: Any?,
-                                              target: Target<Drawable>?,
-                                              isFirstResource: Boolean): Boolean {
-                        return false
+            holder.thumbView.load(image) {
+                allowRgb565(true)
+                crossfade(true)
+                listener { _, _ ->
+                    with(holder.thumbView) {
+                        updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
+                        adjustViewBounds = true
                     }
-
-                    override fun onResourceReady(resource: Drawable?,
-                                                 model: Any?,
-                                                 target: Target<Drawable>?,
-                                                 dataSource: DataSource?,
-                                                 isFirstResource: Boolean): Boolean {
-                        with(holder.thumbView) {
-                            updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
-                            adjustViewBounds = true
-                        }
-                        return false
-                    }
-
-                })
-                .into(holder.thumbView)
+                }
+            }
         }
     }
 
@@ -126,7 +103,7 @@ class ThumbRecyclerViewAdapter(
 
         with(holder.thumbView) {
             setImageDrawable(null)
-            glide.clear(this)
+            dispose()
             adjustViewBounds = false
             updateLayoutParams { height = defaultHeight }
         }
