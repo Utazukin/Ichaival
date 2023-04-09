@@ -28,23 +28,20 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import kotlin.math.floor
 
-class ProgressGlideModule {
-    companion object {
-        fun createInterceptor(listener: ResponseProgressListener): Interceptor {
-            return Interceptor { chain ->
-                val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
-                val response = chain.proceed(request)
-                response.newBuilder()
-                    .body(OkHttpProgressResponseBody(request.url, response.body!!, listener))
-                    .build()
-            }
-        }
+class ProgressInterceptor(private val listener: ResponseProgressListener) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
+        val response = chain.proceed(request)
+        return response.newBuilder()
+            .body(OkHttpProgressResponseBody(request.url, response.body!!, listener))
+            .build()
     }
 }
 
 class ThumbHttpInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val response = chain.proceed(chain.request())
+        val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
+        val response = chain.proceed(request)
         if (response.code != HttpURLConnection.HTTP_ACCEPTED)
             return response
 

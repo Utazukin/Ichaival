@@ -39,8 +39,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
+import coil.imageLoader
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.*
 import com.utazukin.ichaival.database.DatabaseExtractListener
@@ -72,12 +72,13 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private set
     var archive: Archive? = null
         private set
-    val imageLoader by lazy {
-        val client = OkHttpClient.Builder()
-            .addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener()))
-            .build()
-        ImageLoader.Builder(this)
-            .okHttpClient(client)
+    val loader by lazy {
+        imageLoader.newBuilder()
+            .okHttpClient {
+                OkHttpClient.Builder()
+                    .addInterceptor(ProgressInterceptor(ResponseProgressListener()))
+                    .build()
+            }
             .build()
     }
     private var currentPage = 0
@@ -472,7 +473,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onStop() {
         super.onStop()
-        imageLoader.memoryCache?.clear()
+        loader.memoryCache?.clear()
         ReaderTabHolder.unregisterRemoveListener(this)
         ReaderTabHolder.unregisterAddListener(this)
         DatabaseReader.unregisterExtractListener(this)
@@ -541,7 +542,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     it.invalidateCache()
                     launch {
-                        with(imageLoader) {
+                        with(loader) {
                             memoryCache?.clear()
                             diskCache?.clear()
                         }

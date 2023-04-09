@@ -307,7 +307,7 @@ class ReaderFragment : Fragment(), PageFragment {
         super.onAttach(context)
         val activity = context as ReaderActivity
         listener = activity
-        loader = activity.imageLoader
+        loader = activity.loader
 
         activity.registerPage(this)
         activity.archive?.let { onArchiveLoad(it) }

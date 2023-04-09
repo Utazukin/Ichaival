@@ -48,7 +48,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.utazukin.ichaival.*
 import kotlinx.coroutines.*
-import okhttp3.OkHttpClient
 import kotlin.math.ceil
 
 enum class PageCompressFormat {
@@ -368,7 +367,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
             }
 
-            val loader = ImageLoader.Builder(requireContext()).okHttpClient(OkHttpClient.Builder().addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener())).build()).build()
             try {
                 val dtarget = async { tryOrNull { target.cacheOrGet(loader) } }
                 val dotherTarget = async { tryOrNull { otherTarget.cacheOrGet(loader) } }
@@ -544,7 +542,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         super.onAttach(context)
         (context as ReaderActivity).let {
             listener = it
-            loader = it.imageLoader
+            loader = it.loader
 
             it.registerPage(this)
             it.archive?.let { a -> onArchiveLoad(a) }

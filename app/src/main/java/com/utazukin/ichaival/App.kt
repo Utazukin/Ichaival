@@ -21,15 +21,33 @@ package com.utazukin.ichaival
 import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.google.android.material.color.DynamicColors
 import com.utazukin.ichaival.database.DatabaseReader
+import okhttp3.OkHttpClient
 
-class App : Application() {
+class App : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         CrashLogger.createCrashLogger(this)
         DatabaseReader.init(this)
         WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         DynamicColors.applyToActivitiesIfAvailable(this)
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(applicationContext)
+            .okHttpClient {
+                OkHttpClient.Builder()
+                    .addInterceptor { chain ->
+                        val request = if (WebHandler.apiKey.isEmpty())
+                            chain.request()
+                        else
+                            chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
+                        chain.proceed(request)
+                    }.build()
+            }
+            .build()
     }
 }

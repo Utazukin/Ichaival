@@ -55,7 +55,7 @@ class WebtoonReaderViewHolder(private val context: Context,
     private val topLayout: TouchToggleLayout = view.findViewById(R.id.reader_layout)
     private val failedMessage: TextView
     private val jobs = mutableListOf<Job>()
-    private val loader = activity.imageLoader
+    private val loader = activity.loader
 
     init {
         progressBar.isIndeterminate = true
