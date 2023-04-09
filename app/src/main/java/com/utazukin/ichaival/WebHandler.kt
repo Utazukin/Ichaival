@@ -364,10 +364,18 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun downloadThumb(id: String, page: Int): String? = withContext(Dispatchers.IO) {
+    suspend fun getThumbUrl(id: String, page: Int): String? {
         if (!canConnect() || !ServerManager.checkVersionAtLeast(0, 8, 4))
-            return@withContext null
+            return null
 
+        return when {
+            //The minion api is protected before v0.8.5, so fallback to the old logic since we can't check in the interceptor.
+            !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> downloadThumb(id, page)
+            else -> "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
+        }
+    }
+
+    private suspend fun downloadThumb(id: String, page: Int): String? = withContext(Dispatchers.IO) {
         val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
@@ -376,18 +384,20 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             when {
                 it == null || !isActive -> null
                 it.code == HttpURLConnection.HTTP_OK -> url
-                //The minion api is protected before v0.8.5, so return null if the thumbnail hasn't been generated yet
-                it.code == HttpURLConnection.HTTP_ACCEPTED && !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> null
-                it.code == HttpURLConnection.HTTP_ACCEPTED -> {
-                    it.body?.run {
-                        val json = JSONObject(suspendString())
-                        val job = json.getInt("job")
-                        if (waitForJob(job)) url else null
-                    }
-                }
+                it.code == HttpURLConnection.HTTP_ACCEPTED -> null
                 else -> null
             }
         }
+    }
+
+    suspend fun waitForJob(jobId: Int, call: Call): Boolean? {
+        var jobComplete: Boolean?
+        do {
+            delay(100)
+            jobComplete = checkJobStatus(jobId)
+        } while (jobComplete == null && !call.isCanceled())
+
+        return jobComplete
     }
 
     private suspend fun waitForJob(jobId: Int): Boolean {

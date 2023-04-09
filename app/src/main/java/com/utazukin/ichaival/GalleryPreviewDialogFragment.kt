@@ -34,6 +34,7 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.imageLoader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import kotlin.math.floor
 
 private const val ARCHIVE_ID = "arcid"
@@ -178,7 +179,11 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
                     }
                 }
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, archive!!)
+            val loader = if (ServerManager.canEdit || ServerManager.checkVersionAtLeast(0, 8, 5))
+                context.imageLoader
+            else
+                context.imageLoader.newBuilder().okHttpClient { OkHttpClient.Builder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
+            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, archive!!, loader)
             archive?.let { thumbAdapter.maxThumbnails = it.numPages }
             adapter = thumbAdapter
             addOnScrollListener(object: RecyclerView.OnScrollListener() {

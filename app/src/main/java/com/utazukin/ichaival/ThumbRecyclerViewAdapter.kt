@@ -28,14 +28,17 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import coil.ImageLoader
 import coil.dispose
 import coil.load
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
-    private val archive: Archive)
+    private val archive: Archive,
+    private val loader: ImageLoader)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
@@ -85,9 +88,10 @@ class ThumbRecyclerViewAdapter(
 
         imageLoadingJobs[holder] = scope.launch {
             val image = archive.getThumb(context, page)
-            holder.thumbView.load(image) {
+            holder.thumbView.load(image, loader) {
                 allowRgb565(true)
                 crossfade(true)
+                dispatcher(Dispatchers.IO)
                 listener { _, _ ->
                     with(holder.thumbView) {
                         updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }

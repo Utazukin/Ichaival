@@ -94,7 +94,7 @@ data class Archive (
         return downloadPage(context, page)
     }
 
-    suspend fun getThumb(context: Context, page: Int) = WebHandler.downloadThumb(id, page) ?: downloadPage(context, page)
+    suspend fun getThumb(context: Context, page: Int) = WebHandler.getThumbUrl(id, page) ?: downloadPage(context, page)
 
     private suspend fun downloadPage(context: Context, page: Int) : String? {
         val pages = DatabaseReader.getPageList(context.applicationContext, id)

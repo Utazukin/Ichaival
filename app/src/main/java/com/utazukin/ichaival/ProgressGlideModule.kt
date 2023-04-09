@@ -18,10 +18,14 @@
 
 package com.utazukin.ichaival
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
+import okhttp3.Response
 import okhttp3.ResponseBody
 import okio.*
+import org.json.JSONObject
+import java.net.HttpURLConnection
 import kotlin.math.floor
 
 class ProgressGlideModule {
@@ -35,6 +39,22 @@ class ProgressGlideModule {
                     .build()
             }
         }
+    }
+}
+
+class ThumbHttpInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val response = chain.proceed(chain.request())
+        if (response.code != HttpURLConnection.HTTP_ACCEPTED)
+            return response
+
+        return response.body?.use {
+            val json = JSONObject(it.string())
+            val job = json.getInt("job")
+            val call = chain.call()
+            runBlocking { WebHandler.waitForJob(job, call) } ?: return@use response
+            call.clone().execute()
+        } ?: response
     }
 }
 

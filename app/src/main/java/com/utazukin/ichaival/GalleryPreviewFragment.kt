@@ -34,6 +34,7 @@ import coil.imageLoader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
@@ -138,7 +139,11 @@ class GalleryPreviewFragment : Fragment() {
                     }
                 }
             }
-            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, archive!!)
+            val loader = if (ServerManager.canEdit || ServerManager.checkVersionAtLeast(0, 8, 5))
+                context.imageLoader
+            else
+                context.imageLoader.newBuilder().okHttpClient { OkHttpClient.Builder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
+            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, archive!!, loader)
             if (savedPageCount > 0)
                 thumbAdapter.maxThumbnails = savedPageCount
             adapter = thumbAdapter
