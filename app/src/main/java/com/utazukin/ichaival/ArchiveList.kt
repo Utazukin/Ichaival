@@ -49,7 +49,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     private lateinit var categoryView: NavigationView
     private var currentTheme = ""
 
-    override fun onListFragmentInteraction(archive: Archive?, view: View) {
+    override fun onListFragmentInteraction(archive: ArchiveBase?, view: View) {
         if (archive != null)
             startDetailsActivity(archive.id, view)
     }

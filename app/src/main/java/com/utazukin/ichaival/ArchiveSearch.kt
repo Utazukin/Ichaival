@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 
 class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
 
-    override fun onListFragmentInteraction(archive: Archive?, view: View) {
+    override fun onListFragmentInteraction(archive: ArchiveBase?, view: View) {
         if (archive != null) {
             setResult(Activity.RESULT_OK)
             startDetailsActivity(archive.id, view)

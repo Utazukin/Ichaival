@@ -409,7 +409,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         swipeRefreshLayout.isEnabled = canSwipeRefresh && enable && !isSearch
     }
 
-    private fun handleArchiveLongPress(archive: Archive) : Boolean {
+    private fun handleArchiveLongPress(archive: ArchiveBase) : Boolean {
         parentFragmentManager.let {
             val tagFragment = TagDialogFragment.newInstance(archive.id)
             tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
@@ -495,6 +495,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     interface OnListFragmentInteractionListener {
-        fun onListFragmentInteraction(archive: Archive?, view: View)
+        fun onListFragmentInteraction(archive: ArchiveBase?, view: View)
     }
 }

@@ -42,7 +42,7 @@ const val RANDOM_CAT = "category"
 
 class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener {
 
-    override fun onListFragmentInteraction(archive: Archive?, view: View) {
+    override fun onListFragmentInteraction(archive: ArchiveBase?, view: View) {
         if (archive != null) {
             setResult(Activity.RESULT_OK)
             startDetailsActivity(archive.id, view)

@@ -72,14 +72,14 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
     private var filter by StateDelegate("filter", state, "")
     private var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
     private var descending by StateDelegate("desc", state, false)
-    private var archivePagingSource: PagingSource<Int, Archive> = EmptySource()
+    private var archivePagingSource: PagingSource<Int, ArchiveBase> = EmptySource()
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
 
     init {
         CategoryManager.addUpdateListener(this)
     }
 
-    private fun getPagingSource() : PagingSource<Int, Archive> {
+    private fun getPagingSource() : PagingSource<Int, ArchiveBase> {
         archivePagingSource = when {
             !initiated -> EmptySource()
             randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId)
@@ -153,7 +153,7 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
         }
     }
 
-    fun monitor(scope: CoroutineScope, action: suspend (PagingData<Archive>) -> Unit) {
+    fun monitor(scope: CoroutineScope, action: suspend (PagingData<ArchiveBase>) -> Unit) {
         scope.launch { archiveList.collectLatest(action) }
     }
 
