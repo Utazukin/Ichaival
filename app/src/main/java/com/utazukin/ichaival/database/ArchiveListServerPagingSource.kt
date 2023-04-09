@@ -21,10 +21,7 @@ package com.utazukin.ichaival.database
 import android.util.JsonReader
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.utazukin.ichaival.ArchiveBase
-import com.utazukin.ichaival.SortMethod
-import com.utazukin.ichaival.WebHandler
-import com.utazukin.ichaival.parseTermsInfo
+import com.utazukin.ichaival.*
 
 data class ServerSearchResult(val results: List<String>?,
                               val totalSize: Int = 0,

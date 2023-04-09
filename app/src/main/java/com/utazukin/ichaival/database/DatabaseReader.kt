@@ -20,7 +20,6 @@ package com.utazukin.ichaival.database
 
 import android.content.Context
 import android.database.DatabaseUtils
-import androidx.paging.PagingSource
 import androidx.room.Entity
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -444,6 +443,7 @@ object DatabaseReader {
     }
 
     suspend fun getArchiveImage(archive: ArchiveBase, context: Context) = getArchiveImage(archive.id, context)
+    suspend fun getArchiveImage(archive: Archive, context: Context) = getArchiveImage(archive.id, context)
 
     suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : Pair<String?, Long> {
         return withContext(Dispatchers.IO) {
