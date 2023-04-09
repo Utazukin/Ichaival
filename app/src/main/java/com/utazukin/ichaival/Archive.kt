@@ -41,33 +41,36 @@ data class ArchiveFull(
     @ColumnInfo val titleSortIndex: Int
 )
 
-open class ArchiveBase(val id: String, val title: String, val tags: Map<String, List<String>>) {
-    fun containsTag(tag: String, exact: Boolean) : Boolean {
-        val colonIndex = tag.indexOf(':')
-        if (colonIndex > 0) {
-            val namespace = tag.substring(0, colonIndex)
-            val normalized = tag.substring(colonIndex + 1)
-            val nTags = tags[namespace] ?: return false
-            return if (exact) nTags.any { it.equals(normalized, ignoreCase = true) } else nTags.any { it.contains(normalized, ignoreCase = true) }
-        }
-        else {
-            for (t in tags.values) {
-                if (t.any { it.contains(tag, ignoreCase = true)})
-                    return true
-            }
-        }
-        return false
+private fun containsTag(tag: String, exact: Boolean, tags: Map<String, List<String>>) : Boolean {
+    val colonIndex = tag.indexOf(':')
+    if (colonIndex > 0) {
+        val namespace = tag.substring(0, colonIndex)
+        val normalized = tag.substring(colonIndex + 1)
+        val nTags = tags[namespace] ?: return false
+        return if (exact) nTags.any { it.equals(normalized, ignoreCase = true) } else nTags.any { it.contains(normalized, ignoreCase = true) }
     }
+    else {
+        for (t in tags.values) {
+            if (t.any { it.contains(tag, ignoreCase = true)})
+                return true
+        }
+    }
+    return false
 }
 
-class Archive (
-    id: String,
-    title: String,
+fun Archive.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
+fun ArchiveBase.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
+
+data class ArchiveBase(val id: String, val title: String, val tags: Map<String, List<String>>)
+
+data class Archive (
+    val id: String,
+    val title: String,
     val dateAdded: Long,
     var isNew: Boolean,
-    tags: Map<String, List<String>>,
+    val tags: Map<String, List<String>>,
     var currentPage: Int,
-    @ColumnInfo(name = "pageCount") var numPages: Int) : ArchiveBase(id, title, tags) {
+    @ColumnInfo(name = "pageCount") var numPages: Int) {
 
     @delegate:Ignore
     val isWebtoon by lazy { containsTag("webtoon", false) }

@@ -67,14 +67,13 @@ object ReaderTabHolder {
         updateAddListeners(tab.id)
     }
 
-    fun addTabs(archives: List<Archive>) {
+    fun addTabs(archives: List<ArchiveBase>) {
         scope.launch {
             var tabCount = DatabaseReader.getBookmarkCount()
             val ids = buildList(archives.size) {
                 for (archive in archives) {
                     if (!isTabbed(archive.id)) {
                         val tab = ReaderTab(archive.id, archive.title, tabCount++, 0)
-                        archive.currentPage = 0
                         DatabaseReader.addBookmark(tab)
                         add(archive.id)
                     }

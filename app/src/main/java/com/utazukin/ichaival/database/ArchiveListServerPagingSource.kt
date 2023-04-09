@@ -21,10 +21,7 @@ package com.utazukin.ichaival.database
 import android.util.JsonReader
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.utazukin.ichaival.Archive
-import com.utazukin.ichaival.SortMethod
-import com.utazukin.ichaival.WebHandler
-import com.utazukin.ichaival.parseTermsInfo
+import com.utazukin.ichaival.*
 
 data class ServerSearchResult(val results: List<String>?,
                               val totalSize: Int = 0,
@@ -40,11 +37,11 @@ class EmptySource<Key : Any, Value : Any> : PagingSource<Key, Value>() {
 abstract class ArchiveListPagingSourceBase(protected val filter: String,
                                            protected val sortMethod: SortMethod,
                                            protected val descending: Boolean,
-                                           onlyNew: Boolean) : PagingSource<Int, Archive>() {
+                                           onlyNew: Boolean) : PagingSource<Int, ArchiveBase>() {
     protected open val roomSource = DatabaseReader.getArchiveSearchSource(filter, sortMethod, descending, onlyNew)
     override val jumpingSupported get() = roomSource.jumpingSupported
 
-    override fun getRefreshKey(state: PagingState<Int, Archive>) = roomSource.getRefreshKey(state)
+    override fun getRefreshKey(state: PagingState<Int, ArchiveBase>) = roomSource.getRefreshKey(state)
     protected suspend fun insertSearch(arcId: String) = DatabaseReader.insertSearch(SearchArchiveRef(filter, arcId))
     fun reset() {
         invalidate()
@@ -92,7 +89,7 @@ open class ArchiveListServerPagingSource(
         }
     }
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ArchiveBase> {
         loadResults()
         return roomSource.load(params)
     }
@@ -102,8 +99,6 @@ class ArchiveListLocalPagingSource(filter: String,
                                    sortMethod: SortMethod,
                                    descending: Boolean,
                                    onlyNew: Boolean) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew) {
-    override fun getRefreshKey(state: PagingState<Int, Archive>) = state.anchorPosition
-
     private suspend fun internalFilter() {
         WebHandler.updateRefreshing(true)
         DatabaseReader.withTransaction {
@@ -123,7 +118,7 @@ class ArchiveListLocalPagingSource(filter: String,
         WebHandler.updateRefreshing(false)
     }
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Archive> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ArchiveBase> {
         val cacheCount = DatabaseReader.getCachedSearchCount(filter)
         if (cacheCount == 0)
             internalFilter()

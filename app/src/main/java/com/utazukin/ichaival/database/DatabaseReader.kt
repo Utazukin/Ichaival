@@ -20,7 +20,6 @@ package com.utazukin.ichaival.database
 
 import android.content.Context
 import android.database.DatabaseUtils
-import androidx.paging.PagingSource
 import androidx.room.Entity
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -281,31 +280,25 @@ object DatabaseReader {
         }
     }
 
-    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
-        return when {
-            sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getTitleDescendingSource(onlyNew)
-            sortMethod == SortMethod.Alpha -> database.archiveDao().getTitleAscendingSource(onlyNew)
-            sortMethod == SortMethod.Date && descending -> database.archiveDao().getDateDescendingSource(onlyNew)
-            else -> database.archiveDao().getDateAscendingSource(onlyNew)
-        }
+    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) = when {
+        sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getTitleDescendingSource(onlyNew)
+        sortMethod == SortMethod.Alpha -> database.archiveDao().getTitleAscendingSource(onlyNew)
+        sortMethod == SortMethod.Date && descending -> database.archiveDao().getDateDescendingSource(onlyNew)
+        else -> database.archiveDao().getDateAscendingSource(onlyNew)
     }
 
-    fun getArchiveSearchSource(search: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean) : PagingSource<Int, Archive> {
-        return when {
-            sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getSearchResultsTitleDescending(search, onlyNew)
-            sortMethod == SortMethod.Alpha -> database.archiveDao().getSearchResultsTitleAscending(search, onlyNew)
-            sortMethod == SortMethod.Date && descending -> database.archiveDao().getSearchResultsDateDescending(search, onlyNew)
-            else -> database.archiveDao().getSearchResultsDateAscending(search, onlyNew)
-        }
+    fun getArchiveSearchSource(search: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean) = when {
+        sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getSearchResultsTitleDescending(search, onlyNew)
+        sortMethod == SortMethod.Alpha -> database.archiveDao().getSearchResultsTitleAscending(search, onlyNew)
+        sortMethod == SortMethod.Date && descending -> database.archiveDao().getSearchResultsDateDescending(search, onlyNew)
+        else -> database.archiveDao().getSearchResultsDateAscending(search, onlyNew)
     }
 
-    fun getStaticCategorySource(categoryId: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) : PagingSource<Int, Archive> {
-        return when {
-            sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getStaticCategoryArchiveTitleDesc(categoryId, onlyNew)
-            sortMethod == SortMethod.Alpha -> database.archiveDao().getStaticCategoryArchiveTitleAsc(categoryId, onlyNew)
-            sortMethod == SortMethod.Date && descending -> database.archiveDao().getStaticCategoryArchiveDateDesc(categoryId, onlyNew)
-            else -> database.archiveDao().getStaticCategoryArchiveDateAsc(categoryId, onlyNew)
-        }
+    fun getStaticCategorySource(categoryId: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) = when {
+        sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getStaticCategoryArchiveTitleDesc(categoryId, onlyNew)
+        sortMethod == SortMethod.Alpha -> database.archiveDao().getStaticCategoryArchiveTitleAsc(categoryId, onlyNew)
+        sortMethod == SortMethod.Date && descending -> database.archiveDao().getStaticCategoryArchiveDateDesc(categoryId, onlyNew)
+        else -> database.archiveDao().getStaticCategoryArchiveDateAsc(categoryId, onlyNew)
     }
 
     suspend fun insertSearch(reference: SearchArchiveRef) = database.archiveDao().insertSearch(reference)
@@ -449,6 +442,7 @@ object DatabaseReader {
         }
     }
 
+    suspend fun getArchiveImage(archive: ArchiveBase, context: Context) = getArchiveImage(archive.id, context)
     suspend fun getArchiveImage(archive: Archive, context: Context) = getArchiveImage(archive.id, context)
 
     suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : Pair<String?, Long> {

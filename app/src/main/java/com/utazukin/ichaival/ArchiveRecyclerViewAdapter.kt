@@ -60,11 +60,11 @@ enum class ListViewType {
 
 class ArchiveRecyclerViewAdapter(
     fragment: Fragment,
-    private val longListener: ((a: Archive) -> Boolean)?
-) : PagingDataAdapter<Archive, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
+    private val longListener: ((a: ArchiveBase) -> Boolean)?
+) : PagingDataAdapter<ArchiveBase, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
 
     private var multiSelect = false
-    private val selectedArchives = mutableMapOf<Archive, Int>()
+    private val selectedArchives = mutableMapOf<ArchiveBase, Int>()
     private var actionMode: ActionMode? = null
     private val scope = fragment.lifecycleScope
     private val context = fragment.requireContext()
@@ -73,14 +73,14 @@ class ArchiveRecyclerViewAdapter(
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
-        val item = v.tag as Archive
+        val item = v.tag as ArchiveBase
         // Notify the active callbacks interface (the activity, if the fragment is attached to
         // one) that an item has been selected.
         listener?.onListFragmentInteraction(item, v)
     }
 
     private val onLongClickListener: View.OnLongClickListener = View.OnLongClickListener { v ->
-        val item = v.tag as Archive
+        val item = v.tag as ArchiveBase
         longListener?.invoke(item) == true
     }
 
@@ -94,7 +94,7 @@ class ArchiveRecyclerViewAdapter(
 
     fun disableMultiSelect() = actionMode?.finish()
 
-    private fun selectArchive(holder: ViewHolder, archive: Archive, position: Int) {
+    private fun selectArchive(holder: ViewHolder, archive: ArchiveBase, position: Int) {
         if (!selectedArchives.contains(archive)) {
             holder.mContentView?.let { it.setCardBackgroundColor(MaterialColors.getColor(it, R.attr.select_color)) }
             if (listViewType == ListViewType.Cover)
@@ -249,9 +249,9 @@ class ArchiveRecyclerViewAdapter(
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Archive>() {
-            override fun areItemsTheSame(oldItem: Archive, newItem: Archive) = oldItem.id == newItem.id
-            override fun areContentsTheSame(oldItem: Archive, newItem: Archive) = oldItem == newItem
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ArchiveBase>() {
+            override fun areItemsTheSame(oldItem: ArchiveBase, newItem: ArchiveBase) = oldItem.id == newItem.id
+            override fun areContentsTheSame(oldItem: ArchiveBase, newItem: ArchiveBase) = oldItem == newItem
         }
     }
 }
