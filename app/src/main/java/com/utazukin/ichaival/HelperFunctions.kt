@@ -30,6 +30,7 @@ import coil.annotation.ExperimentalCoilApi
 import coil.request.ImageRequest
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.ImageInfo
+import kotlinx.coroutines.Dispatchers
 import java.io.File
 import java.util.*
 import javax.microedition.khronos.egl.EGL10
@@ -158,6 +159,7 @@ fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgres
 private fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgressListener: UIProgressListener) : ImageRequest {
     return ImageRequest.Builder(context)
         .data(imagePath)
+        .dispatcher(Dispatchers.IO)
         .listener(
                 onStart = { ResponseProgressListener.expect(imagePath, uiProgressListener) },
                 onCancel = { ResponseProgressListener.forget(imagePath) },
