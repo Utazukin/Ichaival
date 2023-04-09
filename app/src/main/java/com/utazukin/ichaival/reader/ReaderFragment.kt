@@ -33,10 +33,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
-import coil.request.ImageRequest
+import coil.load
 import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
@@ -135,7 +134,6 @@ class ReaderFragment : Fragment(), PageFragment {
         view.setOnLongClickListener { listener?.onFragmentLongPress() == true }
     }
 
-    @OptIn(ExperimentalCoilApi::class)
     private fun displayImage(image: String) {
         imagePath = image
 
@@ -143,15 +141,8 @@ class ReaderFragment : Fragment(), PageFragment {
         lifecycleScope.launch {
             val loader = ImageLoader.Builder(requireContext()).okHttpClient(OkHttpClient.Builder().addInterceptor(ProgressGlideModule.createInterceptor(ResponseProgressListener())).build()).build()
             val imageFile = withContext(Dispatchers.IO) {
-                val cache = loader.diskCache?.get(image)?.use { it.data.toFile() }
-                if (cache != null)
-                    return@withContext cache
-
-                val request = downloadCoilImageWithProgress(requireContext(), image) {
-                    progressBar.progress = it
-                }
-                loader.execute(request)
-                loader.diskCache?.get(image)?.use { it.data.toFile() }
+                val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
+                request.cacheOrGet(loader)
             }
 
             if (imageFile == null) {
@@ -163,10 +154,18 @@ class ReaderFragment : Fragment(), PageFragment {
             mainImage = if (format == ImageFormat.GIF) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    val request = ImageRequest.Builder(requireContext())
-                        .data(image)
-                        .size(Dimension.Undefined, Dimension.Undefined)
-                        .listener(
+                    val gifLoader = loader.newBuilder()
+                        .components {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                                add(ImageDecoderDecoder.Factory())
+                            else
+                                add(GifDecoder.Factory())
+                        }
+                        .build()
+                    it.load(imageFile, gifLoader) {
+                        diskCacheKey(image)
+                        size(Dimension.Undefined, Dimension.Undefined)
+                        listener(
                                 onSuccess = { _, _ ->
                                     pageNum.visibility = View.GONE
                                     view?.run {
@@ -177,16 +176,7 @@ class ReaderFragment : Fragment(), PageFragment {
                                 },
                                 onError = { _, _ -> showErrorMessage() }
                         )
-                        .build()
-                    loader.newBuilder()
-                        .components {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                                add(ImageDecoderDecoder.Factory())
-                            else
-                                add(GifDecoder.Factory())
-                        }
-                        .build()
-                        .execute(request)
+                    }
                 }
             } else {
                 SubsamplingScaleImageView(activity).also {
