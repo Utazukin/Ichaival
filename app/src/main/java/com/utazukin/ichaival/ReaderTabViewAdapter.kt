@@ -54,12 +54,11 @@ class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdap
             holder.titleView.text = item.title
             holder.pageView.text = (item.page + 1).toString()
             jobs[holder] = activityScope.launch {
-                val (thumbPath, modifiedTime) = DatabaseReader.getArchiveImage(item.id, activity)
-                thumbPath?.let {
+                val thumbFile = DatabaseReader.getArchiveImage(item.id, activity)
+                thumbFile?.let {
                     holder.thumbView.load(it) {
                         allowRgb565(true)
                         crossfade(true)
-                        diskCacheKey(it + modifiedTime)
                     }
                 }
             }

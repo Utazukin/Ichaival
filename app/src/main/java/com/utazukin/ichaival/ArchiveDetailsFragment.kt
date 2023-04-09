@@ -86,11 +86,10 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                                 thumbLoadJob?.cancel()
                                 thumbView.setImageDrawable(null)
                                 lifecycleScope.launch {
-                                    val (thumbPath, modifiedTime) = DatabaseReader.refreshThumbnail(archiveId, requireContext())
-                                    thumbPath?.let { path ->
-                                        thumbView.load(path) {
+                                    val thumbFile = DatabaseReader.refreshThumbnail(archiveId, requireContext())
+                                    thumbFile?.let { file ->
+                                        thumbView.load(file) {
                                             allowRgb565(true)
-                                            diskCacheKey(path + modifiedTime)
                                         }
                                     }
                                 }
@@ -315,8 +314,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         titleView.text = archive.title
 
         thumbLoadJob = lifecycleScope.launch {
-            val (thumbPath, modifiedTime) = DatabaseReader.getArchiveImage(archive, requireContext())
-            thumbPath?.let {
+            val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())
+            thumbFile?.let {
                 thumbView.load(it) {
                     allowRgb565(true)
                     listener(
@@ -324,7 +323,6 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                             onError = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
                             onCancel = { requireActivity().supportStartPostponedEnterTransition() }
                     )
-                    diskCacheKey(it + modifiedTime)
                 }
             }
         }
