@@ -115,14 +115,8 @@ class ArchiveListLocalPagingSource(filter: String,
                 for (archive in allArchives) {
                     if (archive.title.contains(titleSearch, ignoreCase = true))
                         insertSearch(archive.id)
-                    else {
-                        for (termInfo in terms) {
-                            if (archive.containsTag(termInfo.term, termInfo.exact) != termInfo.negative) {
-                                insertSearch(archive.id)
-                                break
-                            }
-                        }
-                    }
+                    else if (terms.all { archive.containsTag(it.term, it.exact) != it.negative })
+                        insertSearch(archive.id)
                 }
             }
         }
