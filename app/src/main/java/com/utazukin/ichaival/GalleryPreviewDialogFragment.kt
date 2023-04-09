@@ -179,7 +179,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
                     }
                 }
             }
-            val loader = if (ServerManager.canEdit || ServerManager.checkVersionAtLeast(0, 8, 5))
+            val loader = if (!ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5))
                 context.imageLoader
             else
                 context.imageLoader.newBuilder().okHttpClient { OkHttpClient.Builder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
