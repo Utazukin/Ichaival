@@ -27,8 +27,8 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import coil.ImageLoader
 import coil.dispose
+import coil.imageLoader
 import coil.load
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,14 +36,17 @@ import kotlinx.coroutines.launch
 
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
-    private val archive: Archive,
-    private val loader: ImageLoader)
+    private val archive: Archive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
     private val scope = fragment.lifecycleScope
     private val context = fragment.requireContext()
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
+    private val loader = if (!ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5))
+        context.imageLoader
+    else
+        context.imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
 
     private val onClickListener = View.OnClickListener { v ->
         val item = v.getTag(R.id.small_thumb) as Int

@@ -138,11 +138,7 @@ class GalleryPreviewFragment : Fragment() {
                     }
                 }
             }
-            val loader = if (!ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5))
-                context.imageLoader
-            else
-                context.imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
-            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, archive!!, loader)
+            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, archive!!)
             if (savedPageCount > 0)
                 thumbAdapter.maxThumbnails = savedPageCount
             adapter = thumbAdapter

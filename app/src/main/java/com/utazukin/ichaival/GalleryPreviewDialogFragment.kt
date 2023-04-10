@@ -178,11 +178,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
                     }
                 }
             }
-            val loader = if (!ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5))
-                context.imageLoader
-            else
-                context.imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
-            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, archive!!, loader)
+            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, archive!!)
             archive?.let { thumbAdapter.maxThumbnails = it.numPages }
             adapter = thumbAdapter
             addOnScrollListener(object: RecyclerView.OnScrollListener() {
