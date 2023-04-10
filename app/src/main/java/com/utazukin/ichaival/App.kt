@@ -25,7 +25,6 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.google.android.material.color.DynamicColors
 import com.utazukin.ichaival.database.DatabaseReader
-import okhttp3.OkHttpClient
 
 class App : Application(), ImageLoaderFactory {
     override fun onCreate() {
@@ -39,8 +38,8 @@ class App : Application(), ImageLoaderFactory {
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(applicationContext)
             .okHttpClient {
-                OkHttpClient.Builder()
-                    .addInterceptor { chain ->
+                WebHandler.httpClient.newBuilder()
+                    .addNetworkInterceptor { chain ->
                         val request = if (WebHandler.apiKey.isEmpty())
                             chain.request()
                         else

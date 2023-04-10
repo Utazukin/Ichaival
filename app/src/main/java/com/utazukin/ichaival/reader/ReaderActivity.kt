@@ -50,7 +50,6 @@ import com.utazukin.ichaival.reader.ReaderFragment.OnFragmentInteractionListener
 import com.utazukin.ichaival.reader.webtoon.WebtoonReaderViewHolder
 import com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
 import kotlinx.coroutines.*
-import okhttp3.OkHttpClient
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -75,7 +74,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     val loader by lazy {
         imageLoader.newBuilder()
             .okHttpClient {
-                OkHttpClient.Builder()
+                WebHandler.httpClient.newBuilder()
                     .addInterceptor(ProgressInterceptor(ResponseProgressListener()))
                     .build()
             }

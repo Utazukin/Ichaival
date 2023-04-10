@@ -122,11 +122,13 @@ class ArchiveRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let {
             holder.archiveName.text = it.title
-            thumbLoadingJobs[holder] = scope.launch(Dispatchers.Default) {
+            thumbLoadingJobs[holder] = scope.launch {
                 val imageFile = DatabaseReader.getArchiveImage(it, holder.mView.context)
                 imageFile?.let { file ->
                     holder.archiveImage.load(file) {
                         allowRgb565(true)
+                        allowHardware(false)
+                        dispatcher(Dispatchers.Default)
                         crossfade(true)
                         if (listViewType == ListViewType.Cover)
                             transformations(StartCropCoil())

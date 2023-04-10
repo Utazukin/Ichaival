@@ -27,6 +27,7 @@ import android.util.Size
 import androidx.preference.PreferenceManager
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.ImageInfo
@@ -160,6 +161,7 @@ private fun downloadCoilImageWithProgress(context: Context, imagePath: String, u
     return ImageRequest.Builder(context)
         .data(imagePath)
         .dispatcher(Dispatchers.IO)
+        .memoryCachePolicy(CachePolicy.DISABLED)
         .listener(
                 onStart = { ResponseProgressListener.expect(imagePath, uiProgressListener) },
                 onCancel = { ResponseProgressListener.forget(imagePath) },

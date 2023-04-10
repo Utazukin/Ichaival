@@ -84,7 +84,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             field = if (value.isNotEmpty()) "Bearer ${Base64.encodeToString(value.toByteArray(), Base64.NO_WRAP)}" else ""
         }
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
-    private val httpClient = OkHttpClient.Builder()
+    val httpClient = OkHttpClient.Builder()
         .connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS)
         .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
         .dispatcher(Dispatcher().apply { maxRequests = 20 })

@@ -90,6 +90,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                                     thumbFile?.let { file ->
                                         thumbView.load(file) {
                                             allowRgb565(true)
+                                            allowHardware(false)
                                         }
                                     }
                                 }
@@ -318,6 +319,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             thumbFile?.let {
                 thumbView.load(it) {
                     allowRgb565(true)
+                    allowHardware(false)
                     listener(
                             onSuccess = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
                             onError = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
