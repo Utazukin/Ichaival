@@ -75,7 +75,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         imageLoader.newBuilder()
             .okHttpClient {
                 WebHandler.httpClient.newBuilder()
-                    .addInterceptor(ProgressInterceptor(ResponseProgressListener()))
+                    .addNetworkInterceptor(ProgressInterceptor(ResponseProgressListener()))
                     .build()
             }
             .build()
