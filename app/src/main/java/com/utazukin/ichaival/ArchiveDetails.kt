@@ -150,7 +150,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                 it.extract(this@ArchiveDetails)
             pageCount = it.numPages
             if (pager.currentItem == 1)
-                supportActionBar?.subtitle = resources.getQuantityString(R.plurals.page_count, pageCount)
+                supportActionBar?.subtitle = resources.getQuantityString(R.plurals.page_count, pageCount, pageCount)
         }
     }
 
