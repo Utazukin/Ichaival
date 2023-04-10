@@ -390,15 +390,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun waitForJob(jobId: Int, call: Call): Boolean? {
-        var jobComplete: Boolean?
-        do {
-            delay(100)
-            jobComplete = checkJobStatus(jobId)
-        } while (jobComplete == null && !call.isCanceled())
-
-        return jobComplete
-    }
+    fun getUrlForJob(jobId: Int) = "$serverLocation${minionStatusPath.format(jobId)}"
 
     private suspend fun waitForJob(jobId: Int): Boolean {
         var jobComplete: Boolean?

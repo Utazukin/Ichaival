@@ -18,11 +18,7 @@
 
 package com.utazukin.ichaival
 
-import kotlinx.coroutines.runBlocking
-import okhttp3.HttpUrl
-import okhttp3.Interceptor
-import okhttp3.Response
-import okhttp3.ResponseBody
+import okhttp3.*
 import okio.*
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -45,13 +41,47 @@ class ThumbHttpInterceptor : Interceptor {
         if (response.code != HttpURLConnection.HTTP_ACCEPTED)
             return response
 
+        val clone = chain.call().clone()
         return response.body?.use {
             val json = JSONObject(it.string())
             val job = json.getInt("job")
-            val call = chain.call()
-            runBlocking { WebHandler.waitForJob(job, call) } ?: return@use response
-            call.clone().execute()
+            waitForJob(job, chain) ?: return@use response
+            clone.execute()
         } ?: response
+    }
+
+    private fun waitForJob(jobId: Int, chain: Interceptor.Chain): Boolean? {
+        var jobComplete: Boolean?
+        do {
+            Thread.sleep(100)
+            jobComplete = checkJobStatus(jobId, chain)
+        } while (jobComplete == null && !chain.call().isCanceled())
+
+        return jobComplete
+    }
+
+    private fun checkJobStatus(jobId: Int, chain: Interceptor.Chain): Boolean? {
+        val url = WebHandler.getUrlForJob(jobId)
+        val response = chain.proceed(Request.Builder().apply {
+                addHeader("Authorization", WebHandler.apiKey)
+            url(url)
+        }.build())
+
+        response.use {
+            if (!it.isSuccessful)
+                return false
+
+            it.body?.run {
+                val json = JSONObject(string())
+                return when(json.optString("state")) {
+                    "finished" -> true
+                    "failed" -> false
+                    else -> null
+                }
+            }
+        }
+
+        return false
     }
 }
 
