@@ -159,6 +159,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
         archiveId?.let {
             pager.adapter = DetailsPagerAdapter(it)
+            pager.offscreenPageLimit = 1
             pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageScrollStateChanged(state: Int) {}
                 override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
