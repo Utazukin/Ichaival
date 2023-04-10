@@ -22,6 +22,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -94,9 +95,9 @@ class ThumbRecyclerViewAdapter(
                 allowRgb565(true)
                 crossfade(true)
                 dispatcher(Dispatchers.IO)
-                listener { _, result ->
+                listener { _, _ ->
                     with(holder.thumbView) {
-                        updateLayoutParams { height = result.drawable.intrinsicHeight }
+                        updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
                         adjustViewBounds = true
                     }
                 }
