@@ -29,7 +29,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import coil.ImageLoader
-import coil.dispose
 import coil.load
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -92,26 +91,27 @@ class ThumbRecyclerViewAdapter(
                 allowRgb565(true)
                 crossfade(true)
                 dispatcher(Dispatchers.IO)
-                listener { _, _ ->
-                    with(holder.thumbView) {
-                        updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
-                        adjustViewBounds = true
-                    }
-                }
+                listener(
+                        onSuccess = { _, _ ->
+                            with(holder.thumbView) {
+                                updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
+                                adjustViewBounds = true
+                            }
+                        },
+                        onCancel = {
+                            with(holder.thumbView) {
+                                setImageDrawable(null)
+                                adjustViewBounds = false
+                                updateLayoutParams { height = defaultHeight }
+                            }
+                        }
+                )
             }
         }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
         imageLoadingJobs.remove(holder)?.cancel()
-
-        with(holder.thumbView) {
-            setImageDrawable(null)
-            dispose()
-            adjustViewBounds = false
-            updateLayoutParams { height = defaultHeight }
-        }
-
         super.onViewRecycled(holder)
     }
 
