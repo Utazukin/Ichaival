@@ -27,7 +27,7 @@ import coil.size.Size
 import coil.size.pxOrElse
 import coil.transform.Transformation
 
-class StartCropCoil : Transformation {
+class StartCrop : Transformation {
     override val cacheKey: String = javaClass.name
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
@@ -51,6 +51,6 @@ class StartCropCoil : Transformation {
         return result
     }
 
-    override fun equals(other: Any?) = other is StartCropCoil
+    override fun equals(other: Any?) = other is StartCrop
     override fun hashCode() = javaClass.hashCode()
 }

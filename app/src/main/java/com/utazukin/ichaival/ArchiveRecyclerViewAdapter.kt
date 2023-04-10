@@ -131,7 +131,7 @@ class ArchiveRecyclerViewAdapter(
                         dispatcher(Dispatchers.Default)
                         crossfade(true)
                         if (listViewType == ListViewType.Cover)
-                            transformations(StartCropCoil())
+                            transformations(StartCrop())
                     }
                 }
             }
