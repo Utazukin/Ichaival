@@ -31,6 +31,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.drawerlayout.widget.DrawerLayout.DrawerListener
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -46,14 +47,13 @@ import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.ReaderTabViewModel
 import com.utazukin.ichaival.reader.ReaderActivity
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 const val TAG_SEARCH = "tag"
 const val REFRESH_KEY = "refresh"
 
-abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener, CoroutineScope by MainScope() {
+abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTabInteractionListener, TabAddedListener, CoroutineScope {
+    override val coroutineContext = lifecycleScope.coroutineContext
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
     private lateinit var tabView: RecyclerView
@@ -205,11 +205,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override fun onStop() {
         super.onStop()
         drawerLayout.closeDrawers()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        cancel()
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
