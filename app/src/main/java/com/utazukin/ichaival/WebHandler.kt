@@ -451,6 +451,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     private suspend inline fun Call.awaitWithFail(errorMessage: String? = null) : Response {
         return suspendCancellableCoroutine {
+            it.invokeOnCancellation { cancel() }
             enqueue(object: Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     if (!it.isCancelled) {
@@ -464,13 +465,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                     it.resume(response)
                 }
             })
-
-            it.invokeOnCancellation { cancel() }
         }
     }
 
     private suspend inline fun Call.await(errorMessage: String? = null, autoClose: Boolean = false) : Response {
         return suspendCancellableCoroutine {
+            it.invokeOnCancellation { tryOrNull { cancel() } }
             enqueue(object: Callback{
                 override fun onFailure(call: Call, e: IOException) {
                     it.cancel()
@@ -485,8 +485,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                         it.resume(response)
                 }
             })
-
-            it.invokeOnCancellation { tryOrNull { cancel() } }
         }
     }
 
