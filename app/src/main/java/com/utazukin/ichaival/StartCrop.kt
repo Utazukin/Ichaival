@@ -31,8 +31,8 @@ class StartCrop : Transformation {
     override val cacheKey: String = javaClass.name
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
-        val outWidth = size.width.pxOrElse { 0 }
-        val outHeight = size.height.pxOrElse { 0 }
+        val outWidth = size.width.pxOrElse { input.width }
+        val outHeight = size.height.pxOrElse { input.height }
         if (input.width == outWidth && input.height == outHeight)
             return input
 
