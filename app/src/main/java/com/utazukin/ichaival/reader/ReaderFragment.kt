@@ -23,6 +23,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PointF
+import android.os.Build
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
@@ -31,12 +32,11 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.load
+import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
@@ -44,7 +44,6 @@ import com.utazukin.ichaival.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 enum class TouchZone {
     Left,
@@ -67,6 +66,7 @@ class ReaderFragment : Fragment(), PageFragment {
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
     private lateinit var failedMessage: TextView
+    private lateinit var loader: ImageLoader
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
@@ -140,17 +140,8 @@ class ReaderFragment : Fragment(), PageFragment {
         progressBar.isIndeterminate = false
         lifecycleScope.launch {
             val imageFile = withContext(Dispatchers.IO) {
-                var target: Target<File>? = null
-                try {
-                    target = downloadImageWithProgress(requireActivity(), image) {
-                        progressBar.progress = it
-                    }
-                    target.get()
-                } catch (e: Exception) {
-                    null
-                } finally {
-                    activity?.let { Glide.with(it).clear(target) }
-                }
+                val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
+                request.cacheOrGet(loader)
             }
 
             if (imageFile == null) {
@@ -162,11 +153,29 @@ class ReaderFragment : Fragment(), PageFragment {
             mainImage = if (format == ImageFormat.GIF) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    Glide.with(requireActivity())
-                        .load(imageFile)
-                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                        .addListener(getListener())
-                        .into(it)
+                    val gifLoader = loader.newBuilder()
+                        .components {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                                add(ImageDecoderDecoder.Factory())
+                            else
+                                add(GifDecoder.Factory())
+                        }
+                        .build()
+                    it.load(imageFile, gifLoader) {
+                        diskCacheKey(image)
+                        size(Dimension.Undefined, Dimension.Undefined)
+                        listener(
+                                onSuccess = { _, _ ->
+                                    pageNum.visibility = View.GONE
+                                    view?.run {
+                                        setOnClickListener(null)
+                                        setOnLongClickListener(null)
+                                    }
+                                    progressBar.visibility = View.GONE
+                                },
+                                onError = { _, _ -> showErrorMessage() }
+                        )
+                    }
                 }
             } else {
                 SubsamplingScaleImageView(activity).also {
@@ -211,38 +220,6 @@ class ReaderFragment : Fragment(), PageFragment {
         topLayout.addView(view)
         pageNum.bringToFront()
         progressBar.bringToFront()
-    }
-
-    private fun <T> getListener(clearOnReady: Boolean = true) : RequestListener<T> {
-        return object: RequestListener<T> {
-            override fun onLoadFailed(
-                e: GlideException?,
-                model: Any?,
-                target: Target<T>?,
-                isFirstResource: Boolean
-            ): Boolean {
-                showErrorMessage()
-                return false
-            }
-
-            override fun onResourceReady(
-                resource: T?,
-                model: Any?,
-                target: Target<T>?,
-                dataSource: DataSource?,
-                isFirstResource: Boolean
-            ): Boolean {
-                if (clearOnReady) {
-                    pageNum.visibility = View.GONE
-                    view?.run {
-                        setOnClickListener(null)
-                        setOnLongClickListener(null)
-                    }
-                }
-                progressBar.visibility = View.GONE
-                return false
-            }
-        }
     }
 
     override fun reloadImage() {
@@ -330,6 +307,7 @@ class ReaderFragment : Fragment(), PageFragment {
         super.onAttach(context)
         val activity = context as ReaderActivity
         listener = activity
+        loader = activity.loader
 
         activity.registerPage(this)
         activity.archive?.let { onArchiveLoad(it) }

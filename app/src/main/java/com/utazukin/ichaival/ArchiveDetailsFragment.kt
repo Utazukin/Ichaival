@@ -21,7 +21,6 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
@@ -33,13 +32,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.DecodeFormat
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
-import com.bumptech.glide.signature.ObjectKey
+import coil.load
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
@@ -93,9 +86,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                                 thumbLoadJob?.cancel()
                                 thumbView.setImageDrawable(null)
                                 lifecycleScope.launch {
-                                    val (thumbPath, modifiedTime) = DatabaseReader.refreshThumbnail(archiveId, requireContext())
-                                    thumbPath?.let { path ->
-                                        Glide.with(thumbView).load(path).format(DecodeFormat.PREFER_RGB_565).signature(ObjectKey(modifiedTime)).into(thumbView)
+                                    val thumbFile = DatabaseReader.refreshThumbnail(archiveId, requireContext())
+                                    thumbFile?.let { file ->
+                                        thumbView.load(file) {
+                                            allowRgb565(true)
+                                            allowHardware(false)
+                                        }
                                     }
                                 }
                             }
@@ -319,22 +315,17 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         titleView.text = archive.title
 
         thumbLoadJob = lifecycleScope.launch {
-            val (thumbPath, modifiedTime) = DatabaseReader.getArchiveImage(archive, requireContext())
-            thumbPath?.let {
-                Glide.with(thumbView).load(it).format(DecodeFormat.PREFER_RGB_565).
-                    addListener(object: RequestListener<Drawable> {
-                        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
-                            requireActivity().supportStartPostponedEnterTransition()
-                            return false
-                        }
-
-                        override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                            requireActivity().supportStartPostponedEnterTransition()
-                            return false
-                        }
-
-                    })
-                    .signature(ObjectKey(modifiedTime)).into(thumbView)
+            val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())
+            thumbFile?.let {
+                thumbView.load(it) {
+                    allowRgb565(true)
+                    allowHardware(false)
+                    listener(
+                            onSuccess = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
+                            onError = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
+                            onCancel = { requireActivity().supportStartPostponedEnterTransition() }
+                    )
+                }
             }
         }
     }

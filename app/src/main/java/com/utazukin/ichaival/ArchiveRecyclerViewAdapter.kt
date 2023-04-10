@@ -35,11 +35,8 @@ import androidx.paging.PagingDataAdapter
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DecodeFormat
-import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.signature.ObjectKey
+import coil.dispose
+import coil.load
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
@@ -73,7 +70,6 @@ class ArchiveRecyclerViewAdapter(
     private val context = fragment.requireContext()
     private val fragmentManager = fragment.childFragmentManager
     private val listener = fragment.activity as? OnListFragmentInteractionListener
-    private val glideManager = Glide.with(fragment.requireActivity())
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
@@ -126,13 +122,17 @@ class ArchiveRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let {
             holder.archiveName.text = it.title
-            thumbLoadingJobs[holder] = scope.launch(Dispatchers.Main) {
-                val (imagePath, modifiedTime) = DatabaseReader.getArchiveImage(it, holder.mView.context)
-                imagePath?.let { path ->
-                    var builder = glideManager.load(path).format(DecodeFormat.PREFER_RGB_565).transition(DrawableTransitionOptions.withCrossFade()).signature(ObjectKey(modifiedTime))
-                    if (listViewType == ListViewType.Cover)
-                        builder = builder.downsample(DownsampleStrategy.CENTER_OUTSIDE).transform(StartCrop())
-                    builder.into(holder.archiveImage)
+            thumbLoadingJobs[holder] = scope.launch {
+                val imageFile = DatabaseReader.getArchiveImage(it, holder.mView.context)
+                imageFile?.let { file ->
+                    holder.archiveImage.load(file) {
+                        allowRgb565(true)
+                        allowHardware(false)
+                        dispatcher(Dispatchers.Default)
+                        crossfade(true)
+                        if (listViewType == ListViewType.Cover)
+                            transformations(StartCrop())
+                    }
                 }
             }
 
@@ -163,8 +163,10 @@ class ArchiveRecyclerViewAdapter(
 
     override fun onViewRecycled(holder: ViewHolder) {
         thumbLoadingJobs.remove(holder)?.cancel()
-        glideManager.clear(holder.archiveImage)
-        holder.archiveImage.setImageBitmap(null)
+        with(holder.archiveImage) {
+            dispose()
+            setImageBitmap(null)
+        }
         holder.archiveName.text = ""
         super.onViewRecycled(holder)
     }

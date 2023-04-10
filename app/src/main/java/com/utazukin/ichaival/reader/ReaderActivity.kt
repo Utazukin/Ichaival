@@ -39,7 +39,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.bumptech.glide.Glide
+import coil.annotation.ExperimentalCoilApi
+import coil.imageLoader
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.*
 import com.utazukin.ichaival.database.DatabaseExtractListener
@@ -70,6 +71,15 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private set
     var archive: Archive? = null
         private set
+    val loader by lazy {
+        imageLoader.newBuilder()
+            .okHttpClient {
+                WebHandler.httpClient.newBuilder()
+                    .addInterceptor(ProgressInterceptor(ResponseProgressListener()))
+                    .build()
+            }
+            .build()
+    }
     private var currentPage = 0
     private var jumpPage = -1
     private var rtol = false
@@ -462,7 +472,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onStop() {
         super.onStop()
-        Glide.get(this).clearMemory()
+        loader.memoryCache?.clear()
         ReaderTabHolder.unregisterRemoveListener(this)
         ReaderTabHolder.unregisterAddListener(this)
         DatabaseReader.unregisterExtractListener(this)
@@ -494,6 +504,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         startActivity(intent)
     }
 
+    @OptIn(ExperimentalCoilApi::class)
     override fun handleButton(buttonId: Int) {
         when (buttonId) {
             R.id.detail_button -> {
@@ -530,9 +541,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 archive?.let {
                     it.invalidateCache()
                     launch {
-                        with(Glide.get(this@ReaderActivity)) {
-                            clearMemory()
-                            withContext(Dispatchers.IO) { clearDiskCache() }
+                        with(loader) {
+                            memoryCache?.clear()
+                            diskCache?.clear()
                         }
                         DualPageHelper.clearMergedPages(cacheDir)
                         intent.putExtra(FORCE_REFRESH, true)

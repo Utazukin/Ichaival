@@ -23,6 +23,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.PointF
+import android.os.Build
 import android.os.Bundle
 import android.util.Size
 import android.view.*
@@ -37,18 +38,16 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.load
+import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.utazukin.ichaival.*
 import kotlinx.coroutines.*
-import java.io.File
 import kotlin.math.ceil
 
 enum class PageCompressFormat {
@@ -80,6 +79,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private lateinit var progressBar: ProgressBar
     private lateinit var topLayout: RelativeLayout
     private lateinit var failedMessageText: TextView
+    private lateinit var loader: ImageLoader
     private var createViewCalled = false
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
@@ -87,7 +87,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private var rtol: Boolean = false
     private var failedMessage: String? = null
     private var mergeJob: Job? = null
-    private var verboseFailMessages = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -223,17 +222,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         progressBar.isIndeterminate = false
         lifecycleScope.launch {
             val imageFile = withContext(Dispatchers.IO) {
-                var target: Target<File>? = null
-                try {
-                    target = downloadImageWithProgress(requireActivity(), image) {
-                        progressBar.progress = it
-                    }
-                    target.get()
-                } catch (e: Exception) {
-                    null
-                } finally {
-                    activity?.let { Glide.with(it).clear(target) }
+                val request = downloadCoilImageWithProgress(requireContext(), image) {
+                    progressBar.progress = it
                 }
+                request.cacheOrGet(loader)
             }
 
             if (imageFile == null) {
@@ -245,11 +237,28 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             mainImage = if (format == ImageFormat.GIF) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    Glide.with(requireActivity())
-                        .load(imageFile)
-                        .apply(RequestOptions().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL))
-                        .addListener(getListener())
-                        .into(it)
+                    val gifLoader = loader.newBuilder()
+                        .components {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                                add(ImageDecoderDecoder.Factory())
+                            else
+                                add(GifDecoder.Factory())
+                        }
+                        .build()
+                    it.load(imageFile, gifLoader) {
+                        size(Dimension.Undefined, Dimension.Undefined)
+                        listener(
+                                onSuccess = { _, _ ->
+                                    pageNum.visibility = View.GONE
+                                    view?.run {
+                                        setOnClickListener(null)
+                                        setOnLongClickListener(null)
+                                    }
+                                    progressBar.visibility = View.GONE
+                                },
+                                onError = { _, _ -> showErrorMessage() }
+                        )
+                    }
                 }
             } else {
                 SubsamplingScaleImageView(activity).also {
@@ -349,18 +358,18 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
             var targetProgess = 0
             var otherProgress = 0
-            val target = downloadImageWithProgress(requireActivity(), image) {
+            val target = downloadCoilImageWithProgress(requireActivity(), image) {
                 targetProgess = it / 2
                 progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
             }
-            val otherTarget = downloadImageWithProgress(requireActivity(), otherImage) {
+            val otherTarget = downloadCoilImageWithProgress(requireActivity(), otherImage) {
                 otherProgress = it / 2
                 progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
             }
 
             try {
-                val dtarget = async { tryOrNull { target.get() } }
-                val dotherTarget = async { tryOrNull { otherTarget.get() } }
+                val dtarget = async { tryOrNull { target.cacheOrGet(loader) } }
+                val dotherTarget = async { tryOrNull { otherTarget.cacheOrGet(loader) } }
 
                 val imgFile = dtarget.await()
                 if (imgFile == null) {
@@ -415,11 +424,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
                     val merged = try {
                         val mergeInfo = MergeInfo(firstImg, secondImg, imgFile, otherImgFile, page, otherPage, compressType, archiveId!!, !rtol)
-                        DualPageHelper.mergeBitmaps(
-                            mergeInfo,
-                            requireContext().cacheDir,
-                            Glide.get(requireContext()).bitmapPool
-                        ) { progressBar.progress = it }
+                        DualPageHelper.mergeBitmaps(mergeInfo, requireContext().cacheDir) { progressBar.progress = it }
                     } catch (e: Exception) { null }
                     catch (e: OutOfMemoryError) {
                         failedMessage = "Failed to merge pages: Out of Memory"
@@ -437,14 +442,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                     }
                 }
             } finally {
-                target.cancel(false)
-                otherTarget.cancel(false)
-                activity?.let {
-                    with(Glide.with(it)) {
-                        clear(target)
-                        clear(otherTarget)
-                    }
-                }
+                loader.shutdown()
             }
         }
     }
@@ -459,35 +457,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         topLayout.addView(view)
         pageNum.bringToFront()
         progressBar.bringToFront()
-    }
-
-    private fun <T> getListener(clearOnReady: Boolean = true) : RequestListener<T> {
-        return object: RequestListener<T> {
-            override fun onLoadFailed(
-                e: GlideException?,
-                model: Any?,
-                target: Target<T>?,
-                isFirstResource: Boolean
-            ): Boolean {
-                return false
-            }
-
-            override fun onResourceReady(
-                resource: T?,
-                model: Any?,
-                target: Target<T>?,
-                dataSource: DataSource?,
-                isFirstResource: Boolean
-            ): Boolean {
-                if (clearOnReady) {
-                    pageNum.visibility = View.GONE
-                    view?.setOnClickListener(null)
-                    view?.setOnLongClickListener(null)
-                }
-                progressBar.visibility = View.GONE
-                return false
-            }
-        }
     }
 
     override fun reloadImage() {
@@ -573,6 +542,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         super.onAttach(context)
         (context as ReaderActivity).let {
             listener = it
+            loader = it.loader
 
             it.registerPage(this)
             it.archive?.let { a -> onArchiveLoad(a) }

@@ -26,9 +26,8 @@ import android.widget.TextView
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.signature.ObjectKey
+import coil.dispose
+import coil.load
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -38,7 +37,6 @@ class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdap
 
     private val listener = activity as? OnTabInteractionListener
     private val activityScope = activity as CoroutineScope
-    private val glideManager = Glide.with(activity)
 
     private val onClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as ReaderTab
@@ -56,13 +54,12 @@ class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdap
             holder.titleView.text = item.title
             holder.pageView.text = (item.page + 1).toString()
             jobs[holder] = activityScope.launch {
-                val (thumbPath, modifiedTime) = DatabaseReader.getArchiveImage(item.id, activity)
-                thumbPath?.let {
-                    glideManager
-                        .load(it)
-                        .signature(ObjectKey(modifiedTime))
-                        .transition(DrawableTransitionOptions.withCrossFade())
-                        .into(holder.thumbView)
+                val thumbFile = DatabaseReader.getArchiveImage(item.id, activity)
+                thumbFile?.let {
+                    holder.thumbView.load(it) {
+                        allowRgb565(true)
+                        crossfade(true)
+                    }
                 }
             }
 
@@ -78,6 +75,7 @@ class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdap
         super.onViewRecycled(holder)
         jobs[holder]?.cancel()
         jobs.remove(holder)
+        holder.thumbView.dispose()
         holder.thumbView.setImageBitmap(null)
     }
 

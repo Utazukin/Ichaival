@@ -18,38 +18,70 @@
 
 package com.utazukin.ichaival
 
-import android.content.Context
-import com.bumptech.glide.Glide
-import com.bumptech.glide.Registry
-import com.bumptech.glide.annotation.GlideModule
-import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
-import com.bumptech.glide.load.model.GlideUrl
-import com.bumptech.glide.module.AppGlideModule
-import okhttp3.HttpUrl
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
+import okhttp3.*
 import okio.*
-import java.io.InputStream
+import org.json.JSONObject
+import java.net.HttpURLConnection
 import kotlin.math.floor
 
-@GlideModule
-class ProgressGlideModule : AppGlideModule() {
-    override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
-        val client = OkHttpClient.Builder().addInterceptor(createInterceptor(ResponseProgressListener())).build()
-        registry.replace(GlideUrl::class.java, InputStream::class.java, OkHttpUrlLoader.Factory(client))
+class ProgressInterceptor(private val listener: ResponseProgressListener) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
+        val response = chain.proceed(request)
+        return response.newBuilder()
+            .body(OkHttpProgressResponseBody(request.url, response.body!!, listener))
+            .build()
+    }
+}
+
+class ThumbHttpInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
+        val response = chain.proceed(request)
+        if (response.code != HttpURLConnection.HTTP_ACCEPTED)
+            return response
+
+        val clone = chain.call().clone()
+        return response.body?.use {
+            val json = JSONObject(it.string())
+            val job = json.getInt("job")
+            waitForJob(job, chain) ?: return@use response
+            clone.execute()
+        } ?: response
     }
 
-    companion object {
-        private fun createInterceptor(listener: ResponseProgressListener): Interceptor {
-            return Interceptor { chain ->
-                val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
-                val response = chain.proceed(request)
-                response.newBuilder()
-                    .body(OkHttpProgressResponseBody(request.url, response.body!!, listener))
-                    .build()
+    private fun waitForJob(jobId: Int, chain: Interceptor.Chain): Boolean? {
+        var jobComplete: Boolean?
+        do {
+            Thread.sleep(100)
+            jobComplete = checkJobStatus(jobId, chain)
+        } while (jobComplete == null && !chain.call().isCanceled())
+
+        return jobComplete
+    }
+
+    private fun checkJobStatus(jobId: Int, chain: Interceptor.Chain): Boolean? {
+        val url = WebHandler.getUrlForJob(jobId)
+        val response = chain.proceed(Request.Builder().apply {
+                addHeader("Authorization", WebHandler.apiKey)
+            url(url)
+        }.build())
+
+        response.use {
+            if (!it.isSuccessful)
+                return false
+
+            it.body?.run {
+                val json = JSONObject(string())
+                return when(json.optString("state")) {
+                    "finished" -> true
+                    "failed" -> false
+                    else -> null
+                }
             }
         }
+
+        return false
     }
 }
 
