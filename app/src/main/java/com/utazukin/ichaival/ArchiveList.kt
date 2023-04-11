@@ -201,8 +201,8 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         if (serverSupported) {
             launch {
                 DatabaseReader.updateArchiveList(this@ArchiveList)
-                val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
-                listFragment?.setupArchiveList()
+                val viewModel: SearchViewModel by viewModels()
+                viewModel.init()
             }
         } else {
             setupText.text = getString(R.string.unsupported_server_message)
@@ -217,7 +217,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             searchView.clearFocus()
 
             val viewModel: SearchViewModel by viewModels()
-            viewModel.updateResults(category.id)
+            viewModel.categoryId = category.id
         } else {
             searchView.setQuery(category.search, true)
             searchView.clearFocus()

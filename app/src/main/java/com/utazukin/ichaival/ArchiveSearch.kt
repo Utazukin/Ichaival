@@ -28,9 +28,11 @@ import android.view.View
 import android.view.Window
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import androidx.activity.viewModels
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
+import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -60,6 +62,13 @@ class ArchiveSearch : BaseActivity(), OnListFragmentInteractionListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_archive_search)
         setSupportActionBar(findViewById(R.id.toolbar))
+        val tag = intent.getStringExtra(TAG_SEARCH)
+        val viewModel: SearchViewModel by viewModels()
+        with(viewModel) {
+            isSearch = true
+            filter(tag)
+            init()
+        }
     }
 
     override fun onTabInteraction(tab: ReaderTab) {

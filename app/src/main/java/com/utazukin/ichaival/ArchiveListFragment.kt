@@ -54,17 +54,15 @@ const val STATIC_CATEGORY_SEARCH = "\b"
 private const val DEFAULT_SEARCH_DELAY = 750L
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
-    private var searchJob: Job? = null
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var newCheckBox: CheckBox
-    private lateinit var randomButton: Button
     private lateinit var listAdapter: ArchiveRecyclerViewAdapter
+    private lateinit var searchView: SearchView
+    private var searchJob: Job? = null
     private var menu: Menu? = null
     private val viewModel: SearchViewModel by activityViewModels()
-    private lateinit var searchView: SearchView
     private var searchDelay: Long = DEFAULT_SEARCH_DELAY
-    private var creatingView = false
     private var canSwipeRefresh = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -128,17 +126,14 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
 
-        creatingView = true
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
-        viewModel.isLocal = prefs.getBoolean(getString(R.string.local_search_key), false)
-
-        val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
 
         // Set the adapter
         with(listView) {
             post {
                 val dpWidth = getDpWidth(width)
+                val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
                 val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
                 val columns = dpWidth.floorDiv(itemWidth)
                 layoutManager = if (columns > 1) {
@@ -177,6 +172,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
             })
+            viewModel.monitor(lifecycleScope) { listAdapter.submitData(it) }
+            adapter = listAdapter
         }
 
         searchView = view.findViewById(R.id.archive_search)
@@ -198,9 +195,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
             override fun onQueryTextChange(query: String?): Boolean {
                 handleSearchSuggestion(query)
-                if (creatingView)
-                    return true
-
                 enableRefresh(query.isNullOrEmpty())
                 val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                 categoryFragment?.selectedCategory?.let {
@@ -239,7 +233,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         })
         searchView.clearFocus()
 
-        randomButton = view.findViewById(R.id.random_button)
+        val randomButton: Button = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener {
             listAdapter.disableMultiSelect()
             val randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 1)
@@ -284,15 +278,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             swipeRefreshLayout.isEnabled = false
 
             when (activity) {
-                is ArchiveSearch ->{
-                    val tag = requireActivity().intent.getStringExtra(TAG_SEARCH)
-                    searchView.setQuery(tag, false)
-                    setupArchiveList()
-                }
-                is ArchiveRandomActivity -> {
-                    searchView.visibility = View.GONE
-                    setupRandomList()
-                }
+                is ArchiveSearch -> searchView.setQuery(viewModel.filter, false)
+                is ArchiveRandomActivity -> searchView.visibility = View.GONE
             }
         }
 
@@ -307,40 +294,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     override fun onPause() {
         super.onPause()
         WebHandler.unregisterRefreshListener(this)
-    }
-
-    private fun setupRandomList() {
-        with(requireActivity().intent) {
-            val filter = getStringExtra(RANDOM_SEARCH)
-            val category = getStringExtra(RANDOM_CAT)
-            viewModel.deferReset {
-                init(filter, newCheckBox.isChecked)
-                updateResults(category)
-                monitor(lifecycleScope) { listAdapter.submitData(it) }
-                if (viewModel.randomCount == 0) {
-                    val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-                    viewModel.randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5)
-                }
-            }
-            if (listView.adapter == null)
-                listView.adapter = listAdapter
-            creatingView = false
-        }
-    }
-
-    fun setupArchiveList() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        val method = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
-        val desc = prefs.getBoolean(getString(R.string.desc_pref), false)
-
-        with(viewModel) {
-            init(method, desc, searchView.query, newCheckBox.isChecked, isSearch = activity is ArchiveSearch)
-            monitor(lifecycleScope) { listAdapter.submitData(it) }
-            randomCount = 0
-        }
-
-        listView.adapter = listAdapter
-        creatingView = false
     }
 
     private fun setupTagSuggestions() {
@@ -444,7 +397,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun forceArchiveListUpdate() {
-        with(listView.adapter as ArchiveRecyclerViewAdapter) { disableMultiSelect() }
+        listAdapter.disableMultiSelect()
         searchJob?.cancel()
         lifecycleScope.launch {
             DatabaseReader.updateArchiveList(requireContext(), true)

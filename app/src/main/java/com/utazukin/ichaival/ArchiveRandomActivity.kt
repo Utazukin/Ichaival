@@ -71,6 +71,19 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
             setDisplayHomeAsUpEnabled(true)
             setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24dp)
         }
+
+        with(intent) {
+            val viewModel: SearchViewModel by viewModels()
+            viewModel.deferReset {
+                val filter = getStringExtra(RANDOM_SEARCH)
+                val category = getStringExtra(RANDOM_CAT) ?: ""
+                filter(filter)
+                categoryId = category
+                val prefs = PreferenceManager.getDefaultSharedPreferences(this@ArchiveRandomActivity)
+                randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5)
+                init()
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

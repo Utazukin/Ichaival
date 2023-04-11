@@ -18,10 +18,13 @@
 
 package com.utazukin.ichaival.database
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
+import androidx.preference.PreferenceManager
 import com.utazukin.ichaival.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
@@ -35,15 +38,14 @@ class ReaderTabViewModel : ViewModel() {
     }
 }
 
-private class StateDelegate<T>(private val key: String,
-                               private val state: SavedStateHandle,
+private class StateDelegate<T>(private val state: SavedStateHandle,
                                private val default: T,
                                private val onChange: (() -> Unit)? = null) {
-    operator fun getValue(thisRef: Any?, property: KProperty<*>) = state.get<T>(key) ?: default
+    operator fun getValue(thisRef: Any?, property: KProperty<*>) = state[property.name] ?: default
 
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
-        val old = state.get<T>(key) ?: default
-        state[key] = value
+        val old = state[property.name] ?: default
+        state[property.name] = value
         if (old != value)
             onChange?.invoke()
     }
@@ -59,19 +61,20 @@ private class ChangeDelegate<T>(private var field: T, private val onChange: () -
     }
 }
 
-class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
-    var onlyNew by StateDelegate("new", state, false) { reset(false) }
-    var isLocal by StateDelegate("local", state, false) { reset(false) }
-    var randomCount by StateDelegate("randCount", state, 0) { reset() }
-    var categoryId by StateDelegate("category", state, "")
+class SearchViewModel(app: Application, state: SavedStateHandle) : AndroidViewModel(app), CategoryListener {
+    private val prefs = PreferenceManager.getDefaultSharedPreferences(app.applicationContext)
+    var onlyNew by StateDelegate(state, false) { reset(false) }
+    var isLocal by StateDelegate(state, prefs.getBoolean(app.resources.getString(R.string.local_search_key), false)) { reset(false) }
+    var randomCount by StateDelegate(state, 0) { reset() }
+    var categoryId by StateDelegate(state, "") { reset() }
+    var isSearch by StateDelegate(state, false) { reset() }
+    var sortMethod by StateDelegate(state, SortMethod.fromInt(prefs.getInt(app.resources.getString(R.string.sort_pref), 1))) { jumpToTop = true; reset() }
+    var descending by StateDelegate(state, prefs.getBoolean(app.resources.getString(R.string.desc_pref), false)) { jumpToTop = true; reset() }
+    var filter by StateDelegate(state, "")
         private set
     var jumpToTop = false
-    private var initiated by StateDelegate("init", state, false)
+    private var initiated by StateDelegate(state, false) { reset() }
     private var resetDisabled by ChangeDelegate(!initiated) { reset(false) }
-    private var isSearch by StateDelegate("search", state, false)
-    private var filter by StateDelegate("filter", state, "")
-    private var sortMethod by StateDelegate("sort", state, SortMethod.Alpha)
-    private var descending by StateDelegate("desc", state, false)
     private var archivePagingSource: PagingSource<Int, ArchiveBase> = EmptySource()
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
 
@@ -92,44 +95,24 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
         return archivePagingSource
     }
 
+    fun init() {
+        if (!initiated) {
+            initiated = true
+            resetDisabled = false
+        }
+    }
+
     fun deferReset(block: SearchViewModel.() -> Unit) {
         resetDisabled = true
         block()
         resetDisabled = false
     }
 
-    fun updateSort(method: SortMethod, desc: Boolean) {
-        if (method != sortMethod || desc != descending) {
-            sortMethod = method
-            descending = desc
-            jumpToTop = true
-            reset()
-        }
-    }
-
-    fun updateResults(categoryId: String?){
-        this.categoryId = categoryId ?: ""
-        reset()
-    }
-
     fun filter(search: CharSequence?) {
         if (filter != search || categoryId.isNotEmpty()) {
+            resetDisabled = true
             filter = search?.toString() ?: ""
             categoryId = ""
-            reset()
-        }
-    }
-
-    fun init(filter: CharSequence?, onlyNew: Boolean, isSearch: Boolean = false) = init(SortMethod.Alpha, false, filter, onlyNew, isSearch)
-
-    fun init(method: SortMethod, desc: Boolean, filter: CharSequence?, onlyNew: Boolean, isSearch: Boolean = false) {
-        if (!initiated) {
-            sortMethod = method
-            descending = desc
-            this.isSearch = isSearch
-            this.onlyNew = onlyNew
-            initiated = true
-            filter(filter)
             resetDisabled = false
         }
     }
@@ -158,9 +141,7 @@ class SearchViewModel(state: SavedStateHandle) : ViewModel(), CategoryListener {
     }
 
     override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
-        if (!firstUpdate && categoryId.isNotEmpty() && categories?.any { it.id  == categoryId } != true) {
+        if (!firstUpdate && categoryId.isNotEmpty() && categories?.any { it.id  == categoryId } != true)
             categoryId = ""
-            reset()
-        }
     }
 }

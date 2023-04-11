@@ -87,13 +87,13 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
                 sortGroup.setOnCheckedChangeListener { _, id ->
                     sortMethod = getMethodFromId(id)
                     prefs.edit().putInt(getString(R.string.sort_pref), sortMethod.value).apply()
-                    viewModel.updateSort(sortMethod, descending)
+                    viewModel.sortMethod = sortMethod
                 }
 
                 dirGroup.setOnCheckedChangeListener { _, id ->
                     descending = getDirectionFromId(id)
                     prefs.edit().putBoolean(getString(R.string.desc_pref), descending).apply()
-                    viewModel.updateSort(sortMethod, descending)
+                    viewModel.descending = descending
                 }
             }
         }
