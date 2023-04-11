@@ -25,11 +25,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioGroup
 import android.widget.TextView
-import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.launch
 
@@ -44,20 +45,20 @@ enum class SortMethod(val value: Int) {
 }
 
 class CategoryFilterFragment : Fragment(), CategoryListener {
-    private lateinit var categoryGroup: RadioGroup
+    private lateinit var categoryGroup: ChipGroup
     private var currentCategories: List<ArchiveCategory>? = null
     private var categoryLabel: TextView? = null
     private var listener: FilterListener? = null
     private val viewModel: SearchViewModel by activityViewModels()
     private var sortMethod = SortMethod.Alpha
     private var descending = false
-    private val categoryButtons = mutableListOf<AppCompatRadioButton>()
+    private val categoryButtons = mutableListOf<Chip>()
     private var savedCategory: ArchiveCategory? = null
     val selectedCategory: ArchiveCategory?
         get() {
             return when {
                 currentCategories == null -> savedCategory
-                categoryGroup.checkedRadioButtonId >= 0 -> currentCategories?.get(categoryGroup.checkedRadioButtonId)
+                categoryGroup.checkedChipId >= 0 -> currentCategories?.get(categoryGroup.checkedChipId)
                 else -> null
             }
         }
@@ -132,21 +133,19 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         if (!categories.isNullOrEmpty()) {
             label.visibility = View.VISIBLE
             for ((i, category) in categories.withIndex()) {
-                val categoryButton = AppCompatRadioButton(context).apply {
+                val categoryButton = Chip(context).apply {
                     text = category.name
                     id = i
+                    isCheckable = true
+                    setOnClickListener { listener?.onCategoryChanged(selectedCategory) }
                 }
                 categoryGroup.addView(categoryButton, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                categoryGroup.chipSpacingHorizontal = categoryButton.chipIconSize.toInt()
                 categoryButtons.add(categoryButton)
             }
 
             if (firstUpdate)
                 savedCategory?.run { categoryButtons.firstOrNull { it.text == name }?.isChecked = true }
-
-            categoryGroup.setOnCheckedChangeListener { _, i ->
-                if (i >= 0 && categoryButtons[i].isChecked) //Check if really checked due to a bug in clearCheck().
-                    listener?.onCategoryChanged(currentCategories!![i])
-            }
         }
     }
 
@@ -181,5 +180,5 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 }
 
 interface FilterListener {
-    fun onCategoryChanged(category: ArchiveCategory)
+    fun onCategoryChanged(category: ArchiveCategory?)
 }

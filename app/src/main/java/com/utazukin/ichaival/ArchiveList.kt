@@ -33,6 +33,7 @@ import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
 import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
@@ -210,10 +211,26 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         }
     }
 
-    override fun onCategoryChanged(category: ArchiveCategory) {
+    override fun onCategoryChanged(category: ArchiveCategory?) {
+        val listView: RecyclerView = findViewById(R.id.list)
+        (listView.adapter as? ArchiveRecyclerViewAdapter)?.disableMultiSelect()
+
         val searchView: SearchView = findViewById(R.id.archive_search)
-        if (category.isStatic) {
-            searchView.setQuery(STATIC_CATEGORY_SEARCH, false)
+        if (category == null) {
+            val viewModel: SearchViewModel by viewModels()
+
+            if (searchView.query == viewModel.filter) {
+                searchView.setQuery("", false)
+                searchView.clearFocus()
+            }
+
+            viewModel.deferReset {
+                filter("")
+                categoryId = ""
+            }
+        }
+        else if (category.isStatic) {
+            searchView.setQuery("", false)
             searchView.clearFocus()
 
             val viewModel: SearchViewModel by viewModels()

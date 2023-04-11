@@ -50,7 +50,6 @@ import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import kotlin.math.min
 
-const val STATIC_CATEGORY_SEARCH = "\b"
 private const val DEFAULT_SEARCH_DELAY = 750L
 
 class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
@@ -67,7 +66,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
-        listView = view.findViewById(R.id.list)
 
         with(requireActivity() as MenuHost) {
             addMenuProvider(object: MenuProvider {
@@ -129,7 +127,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         searchDelay = prefs.castStringPrefToLong(getString(R.string.search_delay_key), DEFAULT_SEARCH_DELAY)
 
-        // Set the adapter
+        listView = view.findViewById(R.id.list)
         with(listView) {
             post {
                 val dpWidth = getDpWidth(width)
@@ -198,16 +196,10 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 enableRefresh(query.isNullOrEmpty())
                 val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
                 categoryFragment?.selectedCategory?.let {
-                    if (it.isStatic && query == STATIC_CATEGORY_SEARCH)
-                        return true
-                    if (it.isStatic || it.search != query)
+                    if ((it.isStatic && query != "") || it.search != query) {
                         categoryFragment.clearCategory()
-                }
-
-                if (query?.startsWith(STATIC_CATEGORY_SEARCH) == true) {
-                    listAdapter.disableMultiSelect()
-                    searchView.setQuery(query.removePrefix(STATIC_CATEGORY_SEARCH), false)
-                    return false
+                        viewModel.categoryId = ""
+                    }
                 }
 
                 if (searchDelay <= 0 && !query.isNullOrBlank())
