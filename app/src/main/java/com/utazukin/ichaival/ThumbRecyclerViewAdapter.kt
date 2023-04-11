@@ -28,7 +28,6 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import coil.dispose
 import coil.imageLoader
 import coil.load
 import kotlinx.coroutines.Dispatchers
@@ -107,15 +106,12 @@ class ThumbRecyclerViewAdapter(
 
     override fun onViewRecycled(holder: ViewHolder) {
         imageLoadingJobs.remove(holder)?.cancel()
+        super.onViewRecycled(holder)
 
         with(holder.thumbView) {
-            dispose()
-            setImageDrawable(null)
             adjustViewBounds = false
             updateLayoutParams { height = defaultHeight }
         }
-
-        super.onViewRecycled(holder)
     }
 
     interface ThumbInteractionListener {
