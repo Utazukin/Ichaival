@@ -31,28 +31,28 @@ interface ArchiveDao {
     @Query("Select count(id) from archive")
     suspend fun getArchiveCount() : Int
 
-    @Query("Select * from archive where not :onlyNew or isNew = true order by titleSortIndex desc")
+    @Query("Select * from archive where not :onlyNew or isNew order by titleSortIndex desc")
     fun getTitleDescendingSource(onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew = true) order by titleSortIndex desc")
+    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew) order by titleSortIndex desc")
     fun getTitleDescendingSource(ids: List<String>, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive where not :onlyNew or isNew = true order by titleSortIndex asc")
+    @Query("Select * from archive where not :onlyNew or isNew order by titleSortIndex asc")
     fun getTitleAscendingSource(onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew = true) order by titleSortIndex asc")
+    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew) order by titleSortIndex asc")
     fun getTitleAscendingSource(ids: List<String>, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive where not :onlyNew or isNew = true order by dateAdded desc")
+    @Query("Select * from archive where not :onlyNew or isNew order by dateAdded desc")
     fun getDateDescendingSource(onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew = true) order by dateAdded desc")
+    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew) order by dateAdded desc")
     fun getDateDescendingSource(ids: List<String>, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive where not :onlyNew or isNew = true order by dateAdded asc")
+    @Query("Select * from archive where not :onlyNew or isNew order by dateAdded asc")
     fun getDateAscendingSource(onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew = true) order by dateAdded asc")
+    @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew) order by dateAdded asc")
     fun getDateAscendingSource(ids: List<String>, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
     @Query("Select * from archive order by random() limit 1")
@@ -154,16 +154,16 @@ interface ArchiveDao {
     @Query("Select * from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
     suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
 
-    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.titleSortIndex asc")
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew order by archive.titleSortIndex asc")
     fun getStaticCategoryArchiveTitleAsc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.titleSortIndex desc")
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew order by archive.titleSortIndex desc")
     fun getStaticCategoryArchiveTitleDesc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.dateAdded asc")
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew order by archive.dateAdded asc")
     fun getStaticCategoryArchiveDateAsc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew = :onlyNew order by archive.dateAdded desc")
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew order by archive.dateAdded desc")
     fun getStaticCategoryArchiveDateDesc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -175,16 +175,16 @@ interface ArchiveDao {
     @Query("Select count(archiveId) from search where searchText = :search")
     suspend fun getCachedSearchCount(search: String) : Int
 
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by titleSortIndex asc")
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by titleSortIndex asc")
     fun getSearchResultsTitleAscending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by titleSortIndex desc")
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by titleSortIndex desc")
     fun getSearchResultsTitleDescending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by dateAdded asc")
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by dateAdded asc")
     fun getSearchResultsDateAscending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew = true order by dateAdded desc")
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by dateAdded desc")
     fun getSearchResultsDateDescending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
     @Query("Select * from archive where id in (select id from archive join search on searchText = :search and archive.id = archiveId order by random() limit :count)")
