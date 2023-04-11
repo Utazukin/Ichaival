@@ -581,7 +581,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                }
            } ?: false
         } else
-            connectivityManager?.activeNetworkInfo?.isConnected != true
+            connectivityManager?.activeNetworkInfo?.isConnected == true
 
         if (!connected && !silent) {
             context?.run { notifyError(getString(R.string.no_net_connection)) }
