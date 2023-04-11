@@ -199,9 +199,9 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         super.onServerInitialized(serverSupported)
         ServerManager.serverName?.let { supportActionBar?.title = it }
         if (serverSupported) {
-            val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
             launch {
                 DatabaseReader.updateArchiveList(this@ArchiveList)
+                val listFragment = supportFragmentManager.findFragmentById(R.id.list_fragment) as? ArchiveListFragment
                 listFragment?.setupArchiveList()
             }
         } else {

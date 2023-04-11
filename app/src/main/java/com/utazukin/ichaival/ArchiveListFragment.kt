@@ -67,7 +67,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private var creatingView = false
     private var canSwipeRefresh = false
 
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
         listView = view.findViewById(R.id.list)
@@ -279,24 +278,25 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
         swipeRefreshLayout.isEnabled = canSwipeRefresh
 
-        return view
-    }
-
-    override fun onStart() {
-        super.onStart()
         if (activity is ArchiveSearch || activity is ArchiveRandomActivity) {
-            with(requireActivity().intent) {
-                val tag = getStringExtra(TAG_SEARCH)
+            randomButton.visibility = View.GONE
+            newCheckBox.visibility = View.GONE
+            swipeRefreshLayout.isEnabled = false
 
-                randomButton.visibility = View.GONE
-                newCheckBox.visibility = View.GONE
-                swipeRefreshLayout.isEnabled = false
-                if (activity is ArchiveSearch)
+            when (activity) {
+                is ArchiveSearch ->{
+                    val tag = requireActivity().intent.getStringExtra(TAG_SEARCH)
                     searchView.setQuery(tag, false)
-                else
+                    setupArchiveList()
+                }
+                is ArchiveRandomActivity -> {
                     searchView.visibility = View.GONE
+                    setupRandomList()
+                }
             }
         }
+
+        return view
     }
 
     override fun onResume() {
@@ -309,7 +309,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         WebHandler.unregisterRefreshListener(this)
     }
 
-    fun setupRandomList() {
+    private fun setupRandomList() {
         with(requireActivity().intent) {
             val filter = getStringExtra(RANDOM_SEARCH)
             val category = getStringExtra(RANDOM_CAT)
