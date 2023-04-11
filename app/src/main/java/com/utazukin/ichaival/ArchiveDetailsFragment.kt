@@ -36,6 +36,7 @@ import coil.load
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.database.DatabaseReader
@@ -238,26 +239,22 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    private fun createCatView(category: ArchiveCategory, archiveId: String): TextView {
-        val catView = TextView(context).apply {
+    private fun createCatView(category: ArchiveCategory, archiveId: String): Chip {
+        val catView = Chip(context).apply {
             text = category.name
-            background = ContextCompat.getDrawable(requireContext(), R.drawable.tag_background)
-            setTextColor(Color.WHITE)
+            textSize = 16f
             val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            params.setMargins(10)
             layoutParams = params
-            gravity = Gravity.CENTER_VERTICAL
-            if (ServerManager.canEdit)
-                setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear_black_24dp), null)
+            isCloseIconVisible = ServerManager.canEdit
         }
 
         if (!ServerManager.canEdit)
             return catView
 
-        catView.setOnClickListener {
+        catView.setOnCloseIconClickListener {
             val builder = MaterialAlertDialogBuilder(requireContext()).apply {
                 setTitle(getString(R.string.category_remove_title))
                 setMessage(getString(R.string.category_remove_message, category.name))
