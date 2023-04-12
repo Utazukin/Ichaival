@@ -182,47 +182,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
 
         setupTagSuggestions()
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                listAdapter.disableMultiSelect()
-                viewModel.filter(query)
-                enableRefresh(query.isNullOrEmpty())
-                searchView.clearFocus()
-                return true
-            }
-
-            override fun onQueryTextChange(query: String?): Boolean {
-                handleSearchSuggestion(query)
-                enableRefresh(query.isNullOrEmpty())
-                val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-                categoryFragment?.selectedCategory?.let {
-                    if ((it.isStatic && query != "") || it.search != query) {
-                        categoryFragment.clearCategory()
-                        viewModel.categoryId = ""
-                    }
-                }
-
-                if (searchDelay <= 0 && !query.isNullOrBlank())
-                    return true
-
-                if (viewModel.isLocal)
-                    viewModel.filter(query)
-                else {
-                    searchJob?.cancel()
-                    swipeRefreshLayout.isRefreshing = false
-                    searchJob = lifecycleScope.launch {
-                        if (!query.isNullOrBlank())
-                            delay(searchDelay)
-
-                        if (query != null) {
-                            listAdapter.disableMultiSelect()
-                            viewModel.filter(query)
-                        }
-                    }
-                }
-                return true
-            }
-        })
         searchView.clearFocus()
 
         val randomButton: Button = view.findViewById(R.id.random_button)
@@ -286,6 +245,56 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     override fun onPause() {
         super.onPause()
         WebHandler.unregisterRefreshListener(this)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                listAdapter.disableMultiSelect()
+                viewModel.filter(query)
+                enableRefresh(query.isNullOrEmpty())
+                searchView.clearFocus()
+                return true
+            }
+
+            override fun onQueryTextChange(query: String?): Boolean {
+                handleSearchSuggestion(query)
+                enableRefresh(query.isNullOrEmpty())
+                val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
+                categoryFragment?.selectedCategory?.let {
+                    if ((it.isStatic && query != "") || it.search != query) {
+                        categoryFragment.clearCategory()
+                        viewModel.categoryId = ""
+                    }
+                }
+
+                if (searchDelay <= 0 && !query.isNullOrBlank())
+                    return true
+
+                if (viewModel.isLocal)
+                    viewModel.filter(query)
+                else {
+                    searchJob?.cancel()
+                    swipeRefreshLayout.isRefreshing = false
+                    searchJob = lifecycleScope.launch {
+                        if (!query.isNullOrBlank())
+                            delay(searchDelay)
+
+                        if (query != null) {
+                            listAdapter.disableMultiSelect()
+                            viewModel.filter(query)
+                        }
+                    }
+                }
+                return true
+            }
+        })
+    }
+
+    override fun onStop() {
+        super.onStop()
+        searchView.setOnQueryTextListener(null)
     }
 
     private fun setupTagSuggestions() {
