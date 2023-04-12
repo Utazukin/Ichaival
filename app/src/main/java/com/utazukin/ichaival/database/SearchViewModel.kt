@@ -19,6 +19,7 @@
 package com.utazukin.ichaival.database
 
 import android.app.Application
+import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -61,8 +62,8 @@ private class ChangeDelegate<T>(private var field: T, private val onChange: () -
     }
 }
 
-class SearchViewModel(app: Application, state: SavedStateHandle) : AndroidViewModel(app), CategoryListener {
-    private val prefs = PreferenceManager.getDefaultSharedPreferences(app.applicationContext)
+class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPreferences) : AndroidViewModel(app), CategoryListener {
+    constructor(app: Application, state: SavedStateHandle) : this(app, state, PreferenceManager.getDefaultSharedPreferences(app.applicationContext))
     var onlyNew by StateDelegate(state, false) { reset(false) }
     var isLocal by StateDelegate(state, prefs.getBoolean(app.resources.getString(R.string.local_search_key), false)) { reset(false) }
     var randomCount by StateDelegate(state, 0) { reset() }
