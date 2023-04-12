@@ -155,6 +155,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         }
                     }
                 }
+                viewModel.monitor(lifecycleScope) { listAdapter.submitData(it) }
             }
             listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, ::handleArchiveLongPress)
             listAdapter.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
@@ -170,7 +171,6 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                     (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
                 }
             })
-            viewModel.monitor(lifecycleScope) { listAdapter.submitData(it) }
             adapter = listAdapter
         }
 
