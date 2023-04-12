@@ -25,8 +25,6 @@ import androidx.room.PrimaryKey
 import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
@@ -59,15 +57,11 @@ data class StaticCategoryRef(val categoryId: String, val archiveId: String, val 
 object CategoryManager {
     private const val categoriesFilename = "categories.json"
     private val listeners = mutableListOf<CategoryListener>()
-    private val scope = MainScope()
     var hasCategories = false
         private set
 
     fun addUpdateListener(listener: CategoryListener) {
         listeners.add(listener)
-        scope.launch {
-            listener.onCategoriesUpdated(getAllCategories(), true)
-        }
     }
 
     suspend inline fun getAllCategories() = DatabaseReader.getAllCategories()
@@ -90,13 +84,11 @@ object CategoryManager {
         return json?.run { ArchiveCategory(name, getString("category_id"), search) }
     }
 
-    private fun updateListeners() {
-        scope.launch {
-            val categories = getAllCategories()
-            for (listener in listeners)
-                listener.onCategoriesUpdated(categories, false)
-        }
-    }
+    private suspend fun updateListeners() {
+        val categories = getAllCategories()
+        for (listener in listeners)
+            listener.onCategoriesUpdated(categories, false)
+}
 
     private suspend fun parseCategories(categoriesFile: File) = withContext(Dispatchers.IO) {
         DatabaseReader.withTransaction {

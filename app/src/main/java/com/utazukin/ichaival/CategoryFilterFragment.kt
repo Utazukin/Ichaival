@@ -106,10 +106,9 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         super.onSaveInstanceState(outState)
         with(outState){
             selectedCategory?.let {
-                if (it.isStatic) {
-                    putString("name", it.name)
-                    putString("id", it.id)
-                }
+                putString("name", it.name)
+                putString("id", it.id)
+                putString("search", it.search)
             }
         }
     }
@@ -119,7 +118,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         savedInstanceState?.run {
             val name = getString("name")
             if (name != null)
-                savedCategory = ArchiveCategory(name, getString("id")!!)
+                savedCategory = ArchiveCategory(name, getString("id")!!, getString("search"))
         }
     }
 
