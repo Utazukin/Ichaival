@@ -219,7 +219,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         if (category == null) {
             val viewModel: SearchViewModel by viewModels()
 
-            if (searchView.query == viewModel.filter) {
+            if (viewModel.filter.contentEquals(searchView.query)) {
                 searchView.setQuery("", false)
                 searchView.clearFocus()
             }
