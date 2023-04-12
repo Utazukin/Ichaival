@@ -79,8 +79,10 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
                 val category = getStringExtra(RANDOM_CAT) ?: ""
                 filter(filter)
                 categoryId = category
-                val prefs = PreferenceManager.getDefaultSharedPreferences(this@ArchiveRandomActivity)
-                randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5)
+                if (randomCount == 0) {
+                    val prefs = PreferenceManager.getDefaultSharedPreferences(this@ArchiveRandomActivity)
+                    randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 5)
+                }
                 init()
             }
         }
