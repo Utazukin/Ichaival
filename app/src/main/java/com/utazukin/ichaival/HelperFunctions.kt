@@ -117,18 +117,18 @@ fun parseTerms(query: CharSequence) = parseTermsInfo(query).map { it.term }
 
 private fun <T> Stack<T>.peekOrNull() = if (empty()) null else peek()
 
-fun SharedPreferences?.castStringPrefToInt(pref: String, defaultValue: Int = 0) : Int {
-    val stringPref = this?.getString(pref, null)
+fun SharedPreferences.castStringPrefToInt(pref: String, defaultValue: Int = 0) : Int {
+    val stringPref = getString(pref, null)
     return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toInt()
 }
 
-fun SharedPreferences?.castStringPrefToLong(pref: String, defaultValue: Long = 0) : Long {
-    val stringPref = this?.getString(pref, null)
+fun SharedPreferences.castStringPrefToLong(pref: String, defaultValue: Long = 0) : Long {
+    val stringPref = getString(pref, null)
     return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toLong()
 }
 
-fun SharedPreferences?.castStringPrefToFloat(pref: String, defaultValue: Float = 0f) : Float {
-    val stringPref = this?.getString(pref, null)
+fun SharedPreferences.castStringPrefToFloat(pref: String, defaultValue: Float = 0f) : Float {
+    val stringPref = getString(pref, null)
     return if (stringPref.isNullOrBlank()) defaultValue else stringPref.toFloat()
 }
 

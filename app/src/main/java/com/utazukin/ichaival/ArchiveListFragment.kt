@@ -44,6 +44,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.DatabaseRefreshListener
 import com.utazukin.ichaival.database.SearchViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -52,7 +53,10 @@ import kotlin.math.min
 
 private const val DEFAULT_SEARCH_DELAY = 750L
 
-class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener {
+class ArchiveListFragment : Fragment(),
+    DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener, CoroutineScope, MenuProvider,
+    SearchView.OnQueryTextListener, SearchView.OnSuggestionListener {
+    override val coroutineContext = lifecycleScope.coroutineContext
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var newCheckBox: CheckBox
@@ -68,60 +72,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         val view = inflater.inflate(R.layout.fragment_archive_list, container, false)
 
         with(requireActivity() as MenuHost) {
-            addMenuProvider(object: MenuProvider {
-                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                    menuInflater.inflate(R.menu.archive_list_menu, menu)
-                    (this@ArchiveListFragment).menu = menu
-                    when (activity) {
-                        is ArchiveSearch, is ArchiveRandomActivity -> {
-                            with (menu) {
-                                findItem(R.id.refresh_archives)?.isVisible = false
-                                findItem(R.id.filter_menu)?.isVisible = false
-                            }
-                        }
-                    }
-                }
-
-                override fun onMenuItemSelected(item: MenuItem): Boolean {
-                    return when (item.itemId) {
-                        R.id.refresh_archives -> {
-                            forceArchiveListUpdate()
-                            true
-                        }
-                        R.id.select_archives -> (listView.adapter as? ArchiveRecyclerViewAdapter)?.run { enableMultiSelect(requireActivity() as AppCompatActivity) } ?: false
-                        R.id.scroll_top -> {
-                            listView.layoutManager?.scrollToPosition(0)
-                            true
-                        }
-                        R.id.scroll_bottom -> {
-                            listView.layoutManager?.scrollToPosition((listView.layoutManager?.itemCount ?: 1) - 1)
-                            true
-                        }
-                        R.id.go_to_page -> {
-                            val archiveCount = listView.adapter?.itemCount ?: 0
-                            val dialog = AlertDialog.Builder(requireContext()).apply {
-                                val pageCount = ceil(archiveCount.toFloat() / ServerManager.pageSize).toInt()
-                                val pages = Array(pageCount) { (it + 1).toString() }
-                                val current = when (val layoutManager = listView.layoutManager) {
-                                    is LinearLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
-                                    else -> -1
-                                }
-
-                                setSingleChoiceItems(pages, current) { dialog, id ->
-                                    val position = min(id * ServerManager.pageSize, archiveCount)
-                                    val layoutManager = listView.layoutManager
-                                    if (layoutManager is LinearLayoutManager)
-                                        layoutManager.scrollToPositionWithOffset(position, 0)
-                                    dialog.dismiss()
-                                }
-                            }.create()
-                            dialog.show()
-                            true
-                        }
-                        else -> false
-                    }
-                }
-            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+            addMenuProvider(this@ArchiveListFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -159,21 +110,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
             }
             listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, viewModel, ::handleArchiveLongPress).apply {
                 registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
-                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                        super.onItemRangeInserted(positionStart, itemCount)
-                        val size = listAdapter?.itemCount ?: 0
-                        (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
-                    }
-
-                    override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-                        super.onItemRangeRemoved(positionStart, itemCount)
-                        val size = listAdapter?.itemCount ?: 0
-                        (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
-                    }
+                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = setSubtitle()
+                    override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) = setSubtitle()
                 })
 
                 if (itemCount > 0)
-                    (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, itemCount, itemCount) }
+                    setSubtitle()
             }
             adapter = listAdapter
         }
@@ -203,7 +145,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                 intent.putExtras(bundle)
                 startActivity(intent)
             } else {
-                lifecycleScope.launch {
+                launch {
                     val archive = DatabaseReader.getRandom(false)
                     if (archive != null)
                         startDetailsActivity(archive.id, requireContext())
@@ -213,7 +155,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         randomButton.setOnLongClickListener {
             listAdapter?.disableMultiSelect()
-            lifecycleScope.launch {
+            launch {
                 val archive = DatabaseReader.getRandom()
                 if (archive != null)
                     ReaderTabHolder.addTab(archive, 0)
@@ -241,6 +183,64 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         return view
     }
 
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.archive_list_menu, menu)
+        this.menu = menu
+        when (activity) {
+            is ArchiveSearch, is ArchiveRandomActivity -> {
+                with (menu) {
+                    findItem(R.id.refresh_archives)?.isVisible = false
+                    findItem(R.id.filter_menu)?.isVisible = false
+                }
+            }
+        }
+    }
+
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.refresh_archives -> {
+                forceArchiveListUpdate()
+                true
+            }
+            R.id.select_archives -> listAdapter?.run { enableMultiSelect(requireActivity() as AppCompatActivity) } ?: false
+            R.id.scroll_top -> {
+                listView.layoutManager?.scrollToPosition(0)
+                true
+            }
+            R.id.scroll_bottom -> {
+                listView.layoutManager?.scrollToPosition((listView.layoutManager?.itemCount ?: 1) - 1)
+                true
+            }
+            R.id.go_to_page -> {
+                val archiveCount = listView.adapter?.itemCount ?: 0
+                val dialog = AlertDialog.Builder(requireContext()).apply {
+                    val pageCount = ceil(archiveCount.toFloat() / ServerManager.pageSize).toInt()
+                    val pages = Array(pageCount) { (it + 1).toString() }
+                    val current = when (val layoutManager = listView.layoutManager) {
+                        is LinearLayoutManager -> layoutManager.findFirstCompletelyVisibleItemPosition() / ServerManager.pageSize
+                        else -> -1
+                    }
+
+                    setSingleChoiceItems(pages, current) { dialog, id ->
+                        val position = min(id * ServerManager.pageSize, archiveCount)
+                        when (val layoutManager = listView.layoutManager) {
+                            is LinearLayoutManager -> layoutManager.scrollToPositionWithOffset(position, 0)
+                        }
+                        dialog.dismiss()
+                    }
+                }.create()
+                dialog.show()
+                true
+            }
+            else -> false
+        }
+    }
+
+    private fun setSubtitle() {
+        val size = listAdapter?.itemCount ?: 0
+        (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
+    }
+
     override fun onResume() {
         super.onResume()
         WebHandler.registerRefreshListener(this)
@@ -253,47 +253,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
     override fun onStart() {
         super.onStart()
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                listAdapter?.disableMultiSelect()
-                viewModel.filter(query)
-                enableRefresh(query.isNullOrEmpty())
-                searchView.clearFocus()
-                return true
-            }
-
-            override fun onQueryTextChange(query: String?): Boolean {
-                handleSearchSuggestion(query)
-                enableRefresh(query.isNullOrEmpty())
-                val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-                categoryFragment?.selectedCategory?.let {
-                    if ((it.isStatic && query != "") || it.search != query) {
-                        categoryFragment.clearCategory()
-                        viewModel.categoryId = ""
-                    }
-                }
-
-                if (searchDelay <= 0 && !query.isNullOrBlank())
-                    return true
-
-                if (viewModel.isLocal)
-                    viewModel.filter(query)
-                else {
-                    searchJob?.cancel()
-                    swipeRefreshLayout.isRefreshing = false
-                    searchJob = lifecycleScope.launch {
-                        if (!query.isNullOrBlank())
-                            delay(searchDelay)
-
-                        if (query != null) {
-                            listAdapter?.disableMultiSelect()
-                            viewModel.filter(query)
-                        }
-                    }
-                }
-                return true
-            }
-        })
+        searchView.setOnQueryTextListener(this)
     }
 
     override fun onStop() {
@@ -301,6 +261,81 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         searchView.setOnQueryTextListener(null)
     }
 
+    override fun onQueryTextSubmit(query: String?): Boolean {
+        listAdapter?.disableMultiSelect()
+        viewModel.filter(query)
+        enableRefresh(query.isNullOrEmpty())
+        searchView.clearFocus()
+        return true
+    }
+
+    override fun onQueryTextChange(query: String?): Boolean {
+        handleSearchSuggestion(query)
+        enableRefresh(query.isNullOrEmpty())
+        val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
+        categoryFragment?.selectedCategory?.let {
+            if ((it.isStatic && query != "") || it.search != query) {
+                categoryFragment.clearCategory()
+                viewModel.categoryId = ""
+            }
+        }
+
+        if (searchDelay <= 0 && !query.isNullOrBlank())
+            return true
+
+        if (viewModel.isLocal)
+            viewModel.filter(query)
+        else {
+            searchJob?.cancel()
+            swipeRefreshLayout.isRefreshing = false
+            searchJob = launch {
+                if (!query.isNullOrBlank())
+                    delay(searchDelay)
+
+                if (query != null) {
+                    listAdapter?.disableMultiSelect()
+                    viewModel.filter(query)
+                }
+            }
+        }
+        return true
+    }
+
+    override fun onSuggestionSelect(index: Int) = false
+    override fun onSuggestionClick(index: Int): Boolean {
+        val cursor = searchView.suggestionsAdapter.getItem(index) as Cursor
+        var selection = cursor.getString(cursor.getColumnIndexOrThrow(SearchManager.SUGGEST_COLUMN_TEXT_1))
+        if (!viewModel.isLocal)
+            selection = "\"$selection\"\$"
+        else if (selection.contains(' '))
+            selection = "\"$selection\""
+
+        val query = searchView.query?.let {
+            val terms = parseTermsInfo(it)
+            val builder = StringBuilder()
+            for (info in terms.dropLast(1)) {
+                if (info.negative)
+                    builder.append('-')
+
+                if (info.term.endsWith('$') && info.exact) {
+                    builder.append('"')
+                    builder.append(info.term, 0, info.term.length - 1)
+                    builder.append('"')
+                    builder.append('$')
+                } else if (info.exact) {
+                    builder.append('"')
+                    builder.append(info.term)
+                    builder.append('"')
+                } else builder.append(info.term)
+
+                builder.append(" ")
+            }
+            builder.append(selection)
+            builder.toString()
+        }
+        searchView.setQuery(query, true)
+        return true
+    }
     private fun setupTagSuggestions() {
         val from = arrayOf(SearchManager.SUGGEST_COLUMN_TEXT_1)
         val to = intArrayOf(R.id.search_suggestion)
@@ -308,57 +343,24 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         with(searchView) {
             suggestionsAdapter = adapter
-
-            setOnSuggestionListener(object: SearchView.OnSuggestionListener {
-                override fun onSuggestionSelect(index: Int) = false
-
-                override fun onSuggestionClick(index: Int): Boolean {
-                    val cursor = suggestionsAdapter.getItem(index) as Cursor
-                    var selection = cursor.getString(cursor.getColumnIndexOrThrow(SearchManager.SUGGEST_COLUMN_TEXT_1))
-                    if (!viewModel.isLocal)
-                        selection = "\"$selection\"\$"
-                    else if (selection.split(' ').size > 1)
-                        selection = "\"$selection\""
-
-                    val query = searchView.query?.let {
-                        val terms = parseTermsInfo(it)
-                        val builder = StringBuilder()
-                        for (info in terms.dropLast(1)) {
-                            if (info.negative)
-                                builder.append('-')
-
-                            builder.append(
-                                when {
-                                    info.term.endsWith('$') && info.exact -> "\"${info.term.removeSuffix("$")}\"$"
-                                    info.exact -> "\"${info.term}\""
-                                    else -> info.term
-                                }
-                            )
-                            builder.append(" ")
-                        }
-                        builder.append(selection)
-                        builder.toString()
-                    }
-                    searchView.setQuery(query, true)
-                    return true
-                }
-            })
+            setOnSuggestionListener(this@ArchiveListFragment)
         }
     }
 
     private fun handleSearchSuggestion(query: String?) {
-        query?.let {
-            val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
-            val lastWord = parseTerms(it).lastOrNull()?.trimStart('-')
-            if (!lastWord.isNullOrBlank()) {
-                for ((i, suggestion) in ServerManager.tagSuggestions.withIndex()) {
-                    if (suggestion.contains(lastWord))
-                        cursor.addRow(arrayOf(i, suggestion.displayTag))
-                }
-            }
+        if (query == null)
+            return
 
-            searchView.suggestionsAdapter?.changeCursor(cursor)
+        val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
+        val lastWord = parseTerms(query).lastOrNull()?.trimStart('-')
+        if (!lastWord.isNullOrBlank()) {
+            for ((i, suggestion) in ServerManager.tagSuggestions.withIndex()) {
+                if (suggestion.contains(lastWord))
+                    cursor.addRow(arrayOf(i, suggestion.displayTag))
+            }
         }
+
+        searchView.suggestionsAdapter?.changeCursor(cursor)
     }
 
     private fun enableRefresh(enable: Boolean) {
@@ -368,15 +370,13 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun handleArchiveLongPress(archive: ArchiveBase) : Boolean {
-        parentFragmentManager.let {
-            val tagFragment = TagDialogFragment.newInstance(archive.id)
-            tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
-            tagFragment.setTagLongPressListener { tag ->
-                searchView.setQuery("${searchView.query} $tag", true)
-                true
-            }
-            tagFragment.show(it, "tag_popup")
+        val tagFragment = TagDialogFragment.newInstance(archive.id)
+        tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
+        tagFragment.setTagLongPressListener { tag ->
+            searchView.setQuery("${searchView.query} $tag", true)
+            true
         }
+        tagFragment.show(parentFragmentManager, "tag_popup")
         return true
     }
 
@@ -404,7 +404,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private fun forceArchiveListUpdate() {
         listAdapter?.disableMultiSelect()
         searchJob?.cancel()
-        lifecycleScope.launch {
+        launch {
             DatabaseReader.updateArchiveList(requireContext(), true)
             viewModel.reset()
         }
@@ -423,27 +423,27 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     override fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>) {
-        with(listView.adapter as ArchiveRecyclerViewAdapter) { onAddedToCategory(category) }
+        listAdapter?.onAddedToCategory(category)
     }
 
-    override fun onSharedPreferenceChanged(prefs: SharedPreferences?, prefName: String?) {
+    override fun onSharedPreferenceChanged(prefs: SharedPreferences, prefName: String?) {
         when (prefName) {
             getString(R.string.local_search_key) -> {
-                val local = prefs?.getBoolean(prefName, false) ?: false
+                val local = prefs.getBoolean(prefName, false)
                 //Reset filter when changing search type.
                 if (local != viewModel.isLocal)
                     resetSearch(local)
             }
             getString(R.string.search_delay_key) -> { searchDelay = prefs.castStringPrefToLong(prefName, DEFAULT_SEARCH_DELAY) }
             getString(R.string.swipe_refresh_key) -> {
-                canSwipeRefresh = prefs?.getBoolean(prefName, true) ?: true
+                canSwipeRefresh = prefs.getBoolean(prefName, true)
                 swipeRefreshLayout.isEnabled = canSwipeRefresh
             }
         }
     }
 
     override fun isRefreshing(refreshing: Boolean) {
-        lifecycleScope.launch {
+        launch {
             if (refreshing)
                 swipeRefreshLayout.isEnabled = true
             swipeRefreshLayout.isRefreshing = refreshing
