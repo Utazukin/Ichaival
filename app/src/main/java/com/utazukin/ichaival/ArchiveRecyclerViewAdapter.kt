@@ -40,6 +40,7 @@ import coil.load
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -60,6 +61,7 @@ enum class ListViewType {
 
 class ArchiveRecyclerViewAdapter(
     fragment: Fragment,
+    viewModel: SearchViewModel,
     private val longListener: ((a: ArchiveBase) -> Boolean)?
 ) : PagingDataAdapter<ArchiveBase, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
 
@@ -85,6 +87,10 @@ class ArchiveRecyclerViewAdapter(
     }
 
     private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
+
+    init {
+        viewModel.monitor(scope) { submitData(it) }
+    }
 
     fun enableMultiSelect(activity: AppCompatActivity) : Boolean {
         multiSelect = true

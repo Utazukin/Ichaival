@@ -29,7 +29,6 @@ import android.content.res.Resources
 import android.os.Bundle
 import android.view.*
 import android.widget.*
-import androidx.activity.viewModels
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.view.*
@@ -45,7 +44,6 @@ import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.*
 import com.utazukin.ichaival.database.DatabaseExtractListener
 import com.utazukin.ichaival.database.DatabaseReader
-import com.utazukin.ichaival.database.ReaderTabViewModel
 import com.utazukin.ichaival.reader.ReaderFragment.OnFragmentInteractionListener
 import com.utazukin.ichaival.reader.webtoon.WebtoonReaderViewHolder
 import com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
@@ -389,10 +387,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         finish()
     }
 
-    override fun setupReaderTabAdapter(adapter: ReaderTabViewAdapter) {
-        val viewModel: ReaderTabViewModel by viewModels()
-        viewModel.monitor { adapter.submitData(it) }
-    }
+    override fun setupReaderTabAdapter(adapter: ReaderTabViewAdapter) {}
 
     override fun onStart() {
         super.onStart()

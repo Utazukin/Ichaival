@@ -23,17 +23,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import coil.dispose
 import coil.load
 import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.database.ReaderTabViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
+class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     private val listener = activity as? OnTabInteractionListener
     private val activityScope = activity as CoroutineScope
@@ -49,12 +51,17 @@ class ReaderTabViewAdapter (private val activity: BaseActivity) : PagingDataAdap
 
     private val jobs: MutableMap<ViewHolder, Job> = mutableMapOf()
 
+    init {
+        val viewModel: ReaderTabViewModel by activity.viewModels()
+        viewModel.monitor { submitData(it) }
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let { item ->
             holder.titleView.text = item.title
             holder.pageView.text = (item.page + 1).toString()
             jobs[holder] = activityScope.launch {
-                val thumbFile = DatabaseReader.getArchiveImage(item.id, activity)
+                val thumbFile = DatabaseReader.getArchiveImage(item.id, holder.view.context)
                 thumbFile?.let {
                     holder.thumbView.load(it) {
                         allowRgb565(true)

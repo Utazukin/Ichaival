@@ -25,7 +25,6 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
@@ -44,7 +43,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import com.utazukin.ichaival.database.DatabaseMessageListener
 import com.utazukin.ichaival.database.DatabaseReader
-import com.utazukin.ichaival.database.ReaderTabViewModel
 import com.utazukin.ichaival.reader.ReaderActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -182,9 +180,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                     tabView.scrollToPosition(positionStart)
             }
         })
-
-        val viewModel: ReaderTabViewModel by viewModels()
-        viewModel.monitor { adapter.submitData(it) }
     }
 
     protected open fun handleBackPressed() {

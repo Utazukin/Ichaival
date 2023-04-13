@@ -56,7 +56,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var newCheckBox: CheckBox
-    private lateinit var listAdapter: ArchiveRecyclerViewAdapter
+    private var listAdapter: ArchiveRecyclerViewAdapter? = null
     private lateinit var searchView: SearchView
     private var searchJob: Job? = null
     private var menu: Menu? = null
@@ -155,29 +155,42 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         }
                     }
                 }
-                viewModel.monitor(lifecycleScope) { listAdapter.submitData(it) }
-            }
-            listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, ::handleArchiveLongPress)
-            listAdapter.registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
-                override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                    super.onItemRangeInserted(positionStart, itemCount)
-                    val size = listAdapter.itemCount
-                    (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
-                }
+                listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, viewModel, ::handleArchiveLongPress).apply {
+                    registerAdapterDataObserver(object :
+                        RecyclerView.AdapterDataObserver() {
+                        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                            super.onItemRangeInserted(positionStart, itemCount)
+                            val size = listAdapter?.itemCount ?: 0
+                            (activity as? AppCompatActivity)?.run {
+                                supportActionBar?.subtitle =
+                                    resources.getQuantityString(R.plurals.archive_count, size, size)
+                            }
+                        }
 
-                override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-                    super.onItemRangeRemoved(positionStart, itemCount)
-                    val size = listAdapter.itemCount
-                    (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
+                        override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                            super.onItemRangeRemoved(positionStart, itemCount)
+                            val size = listAdapter?.itemCount ?: 0
+                            (activity as? AppCompatActivity)?.run {
+                                supportActionBar?.subtitle =
+                                    resources.getQuantityString(R.plurals.archive_count, size, size)
+                            }
+                        }
+                    })
+                    if (itemCount > 0) {
+                        (activity as? AppCompatActivity)?.run {
+                            supportActionBar?.subtitle =
+                                resources.getQuantityString(R.plurals.archive_count, itemCount, itemCount)
+                        }
+                    }
                 }
-            })
-            adapter = listAdapter
+                adapter = listAdapter
+            }
         }
 
         searchView = view.findViewById(R.id.archive_search)
         newCheckBox = view.findViewById(R.id.new_checkbox)
         newCheckBox.setOnCheckedChangeListener { _, checked ->
-            listAdapter.disableMultiSelect()
+            listAdapter?.disableMultiSelect()
             viewModel.onlyNew = checked
         }
 
@@ -186,7 +199,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         val randomButton: Button = view.findViewById(R.id.random_button)
         randomButton.setOnClickListener {
-            listAdapter.disableMultiSelect()
+            listAdapter?.disableMultiSelect()
             val randomCount = prefs.castStringPrefToInt(getString(R.string.random_count_pref), 1)
             if (randomCount > 1) {
                 val intent = Intent(context, ArchiveRandomActivity::class.java)
@@ -208,7 +221,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         }
 
         randomButton.setOnLongClickListener {
-            listAdapter.disableMultiSelect()
+            listAdapter?.disableMultiSelect()
             lifecycleScope.launch {
                 val archive = DatabaseReader.getRandom()
                 if (archive != null)
@@ -251,7 +264,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
         super.onStart()
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                listAdapter.disableMultiSelect()
+                listAdapter?.disableMultiSelect()
                 viewModel.filter(query)
                 enableRefresh(query.isNullOrEmpty())
                 searchView.clearFocus()
@@ -282,7 +295,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                             delay(searchDelay)
 
                         if (query != null) {
-                            listAdapter.disableMultiSelect()
+                            listAdapter?.disableMultiSelect()
                             viewModel.filter(query)
                         }
                     }
@@ -398,7 +411,7 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     }
 
     private fun forceArchiveListUpdate() {
-        listAdapter.disableMultiSelect()
+        listAdapter?.disableMultiSelect()
         searchJob?.cancel()
         lifecycleScope.launch {
             DatabaseReader.updateArchiveList(requireContext(), true)
