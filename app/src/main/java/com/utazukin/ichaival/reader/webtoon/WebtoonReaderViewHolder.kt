@@ -23,6 +23,7 @@ import android.content.Context
 import android.graphics.PointF
 import android.os.Build
 import android.view.*
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
@@ -222,7 +223,16 @@ class WebtoonReaderViewHolder(private val context: Context,
                 imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
             }
             is PhotoView -> {
-                //TODO
+                val vPadding = imageView.paddingBottom - imageView.paddingTop
+                val viewHeight = imageView.width
+                val minScale = (viewHeight - vPadding) / imageView.drawable.intrinsicWidth.toFloat()
+                with(imageView) {
+                    maximumScale = minScale * 3
+                    mediumScale = minScale * 1.75f
+                    minimumScale = minScale
+                    this.scaleType = ImageView.ScaleType.CENTER
+                    setScale(minScale, 0.5f, 0.5f, false)
+                }
             }
         }
     }

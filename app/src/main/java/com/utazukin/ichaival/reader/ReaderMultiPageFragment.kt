@@ -27,10 +27,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Size
 import android.view.*
-import android.widget.ProgressBar
-import android.widget.RelativeLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -492,7 +489,43 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
             }
             is PhotoView -> {
-                //TODO
+                if (imageView.drawable != null) {
+                    when (scaleType) {
+                        ScaleType.FitPage, null -> {
+                            with(imageView) {
+                                minimumScale = 1f
+                                mediumScale = 1.75f
+                                maximumScale = 3f
+                                this.scaleType = ImageView.ScaleType.FIT_CENTER
+                                setScale(1f, 0.5f, 0.5f, false)
+                            }
+                        }
+                        ScaleType.FitHeight -> {
+                            val vPadding = imageView.paddingBottom - imageView.paddingTop
+                            val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height
+                            val minScale = (viewHeight - vPadding) / imageView.drawable.intrinsicHeight.toFloat()
+                            with(imageView) {
+                                maximumScale = minScale * 3
+                                mediumScale = minScale * 1.75f
+                                minimumScale = minScale
+                                this.scaleType = ImageView.ScaleType.CENTER
+                                setScale(minScale, 0.5f, 0.5f, false)
+                            }
+                        }
+                        ScaleType.FitWidth, ScaleType.Webtoon -> {
+                            val vPadding = imageView.paddingBottom - imageView.paddingTop
+                            val viewHeight = if (useOppositeOrientation) imageView.height else imageView.width
+                            val minScale = (viewHeight - vPadding) / imageView.drawable.intrinsicWidth.toFloat()
+                            with(imageView) {
+                                maximumScale = minScale * 3
+                                mediumScale = minScale * 1.75f
+                                minimumScale = minScale
+                                this.scaleType = ImageView.ScaleType.CENTER
+                                setScale(minScale, 0.5f, 0.5f, false)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
