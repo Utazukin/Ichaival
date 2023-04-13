@@ -23,7 +23,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PointF
-import android.os.Build
 import android.os.Bundle
 import android.view.*
 import android.widget.ImageView
@@ -34,8 +33,6 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import coil.ImageLoader
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
 import coil.load
 import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
@@ -69,6 +66,7 @@ class ReaderFragment : Fragment(), PageFragment {
     private lateinit var failedMessage: TextView
     private lateinit var loader: ImageLoader
     private var createViewCalled = false
+    private val gifLoader by lazy { loader.createGifLoader() }
     private val currentScaleType
         get() = (activity as? ReaderActivity)?.currentScaleType
 
@@ -142,7 +140,7 @@ class ReaderFragment : Fragment(), PageFragment {
         lifecycleScope.launch {
             val imageFile = withContext(Dispatchers.IO) {
                 val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
-                request.cacheOrGet(loader)
+                loader.cacheOrGet(request)
             }
 
             if (imageFile == null) {
@@ -154,14 +152,6 @@ class ReaderFragment : Fragment(), PageFragment {
             mainImage = if (format == ImageFormat.GIF) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    val gifLoader = loader.newBuilder()
-                        .components {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                                add(ImageDecoderDecoder.Factory())
-                            else
-                                add(GifDecoder.Factory())
-                        }
-                        .build()
                     it.load(imageFile, gifLoader) {
                         diskCacheKey(image)
                         size(Dimension.Undefined, Dimension.Undefined)

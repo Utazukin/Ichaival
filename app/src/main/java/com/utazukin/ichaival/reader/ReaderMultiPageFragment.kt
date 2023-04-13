@@ -23,7 +23,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.PointF
-import android.os.Build
 import android.os.Bundle
 import android.util.Size
 import android.view.*
@@ -36,8 +35,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import coil.ImageLoader
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
 import coil.load
 import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
@@ -84,6 +81,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     private var rtol: Boolean = false
     private var failedMessage: String? = null
     private var mergeJob: Job? = null
+    private val gifLoader by lazy { loader.createGifLoader() }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -222,7 +220,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 val request = downloadCoilImageWithProgress(requireContext(), image) {
                     progressBar.progress = it
                 }
-                request.cacheOrGet(loader)
+                loader.cacheOrGet(request)
             }
 
             if (imageFile == null) {
@@ -234,14 +232,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             mainImage = if (format == ImageFormat.GIF) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    val gifLoader = loader.newBuilder()
-                        .components {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                                add(ImageDecoderDecoder.Factory())
-                            else
-                                add(GifDecoder.Factory())
-                        }
-                        .build()
                     it.load(imageFile, gifLoader) {
                         size(Dimension.Undefined, Dimension.Undefined)
                         listener(
@@ -365,8 +355,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             }
 
             try {
-                val dtarget = async { tryOrNull { target.cacheOrGet(loader) } }
-                val dotherTarget = async { tryOrNull { otherTarget.cacheOrGet(loader) } }
+                val dtarget = async { tryOrNull { loader.cacheOrGet(target) } }
+                val dotherTarget = async { tryOrNull { loader.cacheOrGet(otherTarget) } }
 
                 val imgFile = dtarget.await()
                 if (imgFile == null) {

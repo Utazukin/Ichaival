@@ -23,10 +23,13 @@ import android.content.SharedPreferences
 import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.graphics.Rect
+import android.os.Build
 import android.util.Size
 import androidx.preference.PreferenceManager
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.hippo.image.BitmapDecoder
@@ -140,13 +143,22 @@ fun getImageFormat(imageFile: File) : ImageFormat? {
     }
 }
 
+fun ImageLoader.createGifLoader() : ImageLoader {
+    return newBuilder().components {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            add(ImageDecoderDecoder.Factory())
+        else
+            add(GifDecoder.Factory())
+    }.build()
+}
+
 @OptIn(ExperimentalCoilApi::class)
-suspend fun ImageRequest.cacheOrGet(loader: ImageLoader) : File? {
-    val cache = loader.diskCache?.get(data as String)?.use { it.data.toFile() }
+suspend fun ImageLoader.cacheOrGet(request: ImageRequest) : File? {
+    val cache = diskCache?.get(request.data as String)?.use { it.data.toFile() }
     if (cache != null)
         return cache
-    loader.execute(this)
-    return loader.diskCache?.get(data as String)?.use { it.data.toFile() }
+    execute(request)
+    return diskCache?.get(request.data as String)?.use { it.data.toFile() }
 }
 
 fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgressListener: (Int) -> Unit) : ImageRequest {
