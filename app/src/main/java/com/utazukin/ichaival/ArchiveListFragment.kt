@@ -56,8 +56,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
     private lateinit var newCheckBox: CheckBox
-    private var listAdapter: ArchiveRecyclerViewAdapter? = null
     private lateinit var searchView: SearchView
+    private var listAdapter: ArchiveRecyclerViewAdapter? = null
     private var searchJob: Job? = null
     private var menu: Menu? = null
     private val viewModel: SearchViewModel by activityViewModels()
@@ -129,12 +129,12 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
 
         listView = view.findViewById(R.id.list)
         with(listView) {
-            post {
-                val dpWidth = getDpWidth(width)
-                val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
-                val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
-                val columns = dpWidth.floorDiv(itemWidth)
-                layoutManager = if (columns > 1) {
+            val dpWidth = getDpWidth(requireActivity().getWindowWidth())
+            val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
+            val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
+            val columns = dpWidth.floorDiv(itemWidth)
+            layoutManager = when {
+                columns > 1 -> {
                     object : GridLayoutManager(context, columns) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
                             super.onLayoutCompleted(state)
@@ -144,7 +144,8 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                             }
                         }
                     }
-                } else {
+                }
+                else -> {
                     object : LinearLayoutManager(context) {
                         override fun onLayoutCompleted(state: RecyclerView.State?) {
                             super.onLayoutCompleted(state)
@@ -155,36 +156,26 @@ class ArchiveListFragment : Fragment(), DatabaseRefreshListener, SharedPreferenc
                         }
                     }
                 }
-                listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, viewModel, ::handleArchiveLongPress).apply {
-                    registerAdapterDataObserver(object :
-                        RecyclerView.AdapterDataObserver() {
-                        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                            super.onItemRangeInserted(positionStart, itemCount)
-                            val size = listAdapter?.itemCount ?: 0
-                            (activity as? AppCompatActivity)?.run {
-                                supportActionBar?.subtitle =
-                                    resources.getQuantityString(R.plurals.archive_count, size, size)
-                            }
-                        }
-
-                        override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-                            super.onItemRangeRemoved(positionStart, itemCount)
-                            val size = listAdapter?.itemCount ?: 0
-                            (activity as? AppCompatActivity)?.run {
-                                supportActionBar?.subtitle =
-                                    resources.getQuantityString(R.plurals.archive_count, size, size)
-                            }
-                        }
-                    })
-                    if (itemCount > 0) {
-                        (activity as? AppCompatActivity)?.run {
-                            supportActionBar?.subtitle =
-                                resources.getQuantityString(R.plurals.archive_count, itemCount, itemCount)
-                        }
-                    }
-                }
-                adapter = listAdapter
             }
+            listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, viewModel, ::handleArchiveLongPress).apply {
+                registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
+                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                        super.onItemRangeInserted(positionStart, itemCount)
+                        val size = listAdapter?.itemCount ?: 0
+                        (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
+                    }
+
+                    override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                        super.onItemRangeRemoved(positionStart, itemCount)
+                        val size = listAdapter?.itemCount ?: 0
+                        (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
+                    }
+                })
+
+                if (itemCount > 0)
+                    (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, itemCount, itemCount) }
+            }
+            adapter = listAdapter
         }
 
         searchView = view.findViewById(R.id.archive_search)

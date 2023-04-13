@@ -18,12 +18,14 @@
 
 package com.utazukin.ichaival
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.os.Build
+import android.util.DisplayMetrics
 import android.util.Size
 import androidx.preference.PreferenceManager
 import coil.ImageLoader
@@ -51,6 +53,17 @@ fun getDpWidth(pxWidth: Int) : Int {
 fun getDpAdjusted(pxSize: Int) : Int {
     val metrics = Resources.getSystem().displayMetrics
     return (pxSize * metrics.density).toInt()
+}
+
+@Suppress("DEPRECATION")
+fun Activity.getWindowWidth() : Int {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        windowManager.currentWindowMetrics.bounds.width()
+    else {
+        val metrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(metrics)
+        metrics.widthPixels
+    }
 }
 
 data class TermInfo(val term: String, val exact: Boolean, val negative: Boolean)
