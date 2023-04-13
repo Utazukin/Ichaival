@@ -86,8 +86,10 @@ object CategoryManager {
 
     private suspend fun updateListeners() {
         val categories = getAllCategories()
-        for (listener in listeners)
-            listener.onCategoriesUpdated(categories, false)
+        withContext(Dispatchers.Main.immediate) {
+            for (listener in listeners)
+                listener.onCategoriesUpdated(categories, false)
+        }
 }
 
     private suspend fun parseCategories(categoriesFile: File) = withContext(Dispatchers.IO) {
