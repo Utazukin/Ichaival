@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.*
 import android.widget.ProgressBar
@@ -32,6 +33,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.imageLoader
 import com.utazukin.ichaival.database.DatabaseReader
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
@@ -40,7 +42,8 @@ import kotlin.math.min
 private const val ARCHIVE_ID = "arcid"
 private const val MAX_PAGES = "max pages"
 
-class GalleryPreviewFragment : Fragment() {
+class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
+    override val coroutineContext = lifecycleScope.coroutineContext
     private var archiveId: String? = null
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
@@ -67,34 +70,35 @@ class GalleryPreviewFragment : Fragment() {
         listView = view.findViewById(R.id.thumb_list)
 
         with(requireActivity() as MenuHost) {
-            addMenuProvider(object: MenuProvider {
-                override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
-                    inflater.inflate(R.menu.gallery_preview_menu, menu)
-                }
-
-                override fun onMenuItemSelected(item: MenuItem): Boolean {
-                    when (item.itemId) {
-                        R.id.refresh_item -> {
-                            archiveId?.let {
-                                DatabaseReader.invalidateImageCache(it)
-                                lifecycleScope.launch {
-                                    (activity as ArchiveDetails).extractArchive(it)
-                                    thumbAdapter.notifyDataSetChanged()
-                                }
-                            }
-                        }
-                    }
-                    return false
-                }
-            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+            addMenuProvider(this@GalleryPreviewFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
 
-        lifecycleScope.launch {
+        launch {
             archive = DatabaseReader.getArchive(archiveId!!)
             setGalleryView()
         }
 
         return view
+    }
+
+    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.gallery_preview_menu, menu)
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh_item -> {
+                archiveId?.let {
+                    DatabaseReader.invalidateImageCache(it)
+                    launch {
+                        (activity as ArchiveDetails).extractArchive(it)
+                        thumbAdapter.notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+        return false
     }
 
     override fun onDetach() {
@@ -119,28 +123,26 @@ class GalleryPreviewFragment : Fragment() {
         with(listView) {
             val dpWidth = getDpWidth(requireActivity().getWindowWidth())
             val columns = dpWidth.floorDiv(150)
-            layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
-
-            if (savedPageCount <= 0) {
-                archive?.let {
-                    val page = if (readerPage > -1) readerPage else it.currentPage
-                    if (page > 0) {
-                        thumbAdapter.maxThumbnails =
-                            min((ceil(page / 10f) * 10).toInt(), it.numPages)
-                        layoutManager?.scrollToPosition(page)
-                    }
-                }
-            }
             thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, archive!!)
-            if (savedPageCount > 0)
-                thumbAdapter.maxThumbnails = savedPageCount
+            layoutManager = (if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)).apply {
+                if (savedPageCount <= 0) {
+                    archive?.let {
+                        val page = if (readerPage > -1) readerPage else it.currentPage
+                        if (page > 0) {
+                            thumbAdapter.maxThumbnails = min((ceil(page / 10f) * 10).toInt(), it.numPages)
+                            scrollToPosition(page)
+                        }
+                    }
+                } else thumbAdapter.maxThumbnails = savedPageCount
+            }
+
             adapter = thumbAdapter
             addOnScrollListener(object: RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     super.onScrollStateChanged(recyclerView, newState)
                     if (!listView.canScrollVertically(1) && thumbAdapter.hasMorePreviews) {
                         thumbAdapter.increasePreviewCount()
-                        lifecycleScope.launch {
+                        launch {
                             progress.visibility = View.VISIBLE
                             delay(1000)
                             progress.visibility = View.GONE

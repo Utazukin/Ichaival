@@ -33,13 +33,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.imageLoader
 import com.utazukin.ichaival.database.DatabaseReader
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.math.floor
 
 private const val ARCHIVE_ID = "arcid"
 private const val MAX_PAGES = "max pages"
 
-class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.ThumbInteractionListener {
+class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.ThumbInteractionListener, CoroutineScope {
+    override val coroutineContext = lifecycleScope.coroutineContext
     private var archiveId: String? = null
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
@@ -64,14 +65,13 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_gallery_preview_dialog, container, false)
         listView = view.findViewById(R.id.thumb_list)
         pagePicker = view.findViewById(R.id.page_picker_preview)
 
-        lifecycleScope.launch {
+        launch {
             archive = DatabaseReader.getArchive(archiveId!!)
-            pagePicker.run {
+            with(pagePicker) {
                 minValue = 1
                 maxValue = archive?.numPages ?: 1
                 value = readerPage + 1
@@ -96,7 +96,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         when (newConfig.orientation) {
             Configuration.ORIENTATION_LANDSCAPE, Configuration.ORIENTATION_PORTRAIT -> {
                 val ft = parentFragmentManager.beginTransaction()
-                if (Build.VERSION.SDK_INT >= 26)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                     ft.setReorderingAllowed(false)
                 readerPage = pagePicker.value - 1
                 ft.detach(this).attach(this).commit()
@@ -133,55 +133,39 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         dismiss()
     }
 
-    override fun onThumbLongPress(page: Int) = (activity as? ThumbRecyclerViewAdapter.ThumbInteractionListener)?.onThumbLongPress(page) ?: false
+    override fun onThumbLongPress(page: Int) = (activity as? ThumbRecyclerViewAdapter.ThumbInteractionListener)?.onThumbLongPress(page) == true
 
     private fun jumpToPage(page: Int) = listView.layoutManager?.scrollToPosition(page)
 
     private fun findFirstItem(layoutManager: RecyclerView.LayoutManager?) : Int {
-        return if (layoutManager is LinearLayoutManager) {
-            val first = layoutManager.findFirstCompletelyVisibleItemPosition()
-            if (first < 0)
-                layoutManager.findFirstVisibleItemPosition()
-            else
-                first
+        return when (layoutManager) {
+            is LinearLayoutManager -> {
+                val first = layoutManager.findFirstCompletelyVisibleItemPosition()
+                if (first < 0)
+                    layoutManager.findFirstVisibleItemPosition()
+                else
+                    first
+            }
+            else -> -1
         }
-        else if (layoutManager is GridLayoutManager) {
-            val first = layoutManager.findFirstCompletelyVisibleItemPosition()
-            if (first < 0)
-                layoutManager.findFirstVisibleItemPosition()
-            else
-                first
-        }
-        else -1
     }
 
     private fun RecyclerView.isPageVisible(page: Int) : Boolean {
-        val viewHolder = this.findViewHolderForLayoutPosition(page - 1) ?: return false
-        return this.layoutManager?.isViewPartiallyVisible(viewHolder.itemView, true, true) ?: false
+        val viewHolder = findViewHolderForLayoutPosition(page - 1) ?: return false
+        return layoutManager?.isViewPartiallyVisible(viewHolder.itemView, true, true) == true
     }
 
     private fun setGalleryView(view: View) {
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
         with(listView) {
-            post {
-                val dpWidth = getDpWidth(width)
-                val columns = floor(dpWidth / 150.0).toInt()
-                layoutManager = if (columns > 1) GridLayoutManager(
-                    context,
-                    columns
-                ) else LinearLayoutManager(context)
-
-                if (savedPageCount <= 0) {
-                    archive?.let {
-                        if (readerPage > 0)
-                            jumpToPage(readerPage)
-                    }
-                }
-            }
+            val dpWidth = getDpWidth(requireActivity().getWindowWidth())
+            val columns = dpWidth.floorDiv(150)
             thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, archive!!)
             archive?.let { thumbAdapter.maxThumbnails = it.numPages }
+            layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
+
             adapter = thumbAdapter
-            addOnScrollListener(object: RecyclerView.OnScrollListener() {
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     super.onScrollStateChanged(recyclerView, newState)
                     if (newState == RecyclerView.SCROLL_STATE_IDLE) {
@@ -191,6 +175,13 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
                     }
                 }
             })
+
+            if (savedPageCount <= 0) {
+                archive?.let {
+                    if (readerPage > 0)
+                        jumpToPage(readerPage)
+                }
+            }
         }
     }
 
