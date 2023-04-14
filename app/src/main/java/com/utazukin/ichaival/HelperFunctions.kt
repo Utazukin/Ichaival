@@ -166,6 +166,12 @@ fun ImageLoader.createGifLoader() : ImageLoader {
 }
 
 @OptIn(ExperimentalCoilApi::class)
+val ImageLoader.diskCacheSize get() = diskCache?.size ?: 0
+
+@OptIn(ExperimentalCoilApi::class)
+fun ImageLoader.clearDiskCache() = diskCache?.clear()
+
+@OptIn(ExperimentalCoilApi::class)
 suspend fun ImageLoader.cacheOrGet(request: ImageRequest) : File? {
     val cache = diskCache?.get(request.data as String)?.use { it.data.toFile() }
     if (cache != null)

@@ -34,11 +34,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
 import androidx.preference.EditTextPreference.OnBindEditTextListener
-import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
+import com.utazukin.ichaival.*
 import com.utazukin.ichaival.R
-import com.utazukin.ichaival.ServerManager
-import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.reader.DualPageHelper
 import kotlinx.coroutines.CoroutineScope
@@ -58,7 +56,6 @@ class LongClickPreference
     }
 }
 
-@OptIn(ExperimentalCoilApi::class)
 class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScope {
     override val coroutineContext = lifecycleScope.coroutineContext
 
@@ -175,7 +172,7 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
                         DatabaseReader.invalidateImageCache()
                         with(requireContext().imageLoader) {
                             memoryCache?.clear()
-                            diskCache?.clear()
+                            clearDiskCache()
                         }
                         DualPageHelper.clearMergedPages(requireContext().cacheDir)
                         cachePref?.summary = "0 MB"
@@ -218,7 +215,7 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
             launch(Dispatchers.IO) {
                 DualPageHelper.clearMergedPages(requireContext().cacheDir)
                 with(requireContext().imageLoader) {
-                    diskCache?.clear()
+                    clearDiskCache()
                     memoryCache?.clear()
                 }
             }
@@ -228,7 +225,7 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
 
         launch(Dispatchers.IO) {
             var size = DualPageHelper.getCacheSize(requireContext().cacheDir)
-            size += requireContext().imageLoader.diskCache?.size ?: 0
+            size += requireContext().imageLoader.diskCacheSize
             size = size / 1024 / 1024
             withContext(Dispatchers.Main) { cachePref.summary = "$size MB" }
         }

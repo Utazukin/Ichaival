@@ -38,7 +38,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import coil.annotation.ExperimentalCoilApi
 import coil.imageLoader
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.*
@@ -497,7 +496,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         startActivity(intent)
     }
 
-    @OptIn(ExperimentalCoilApi::class)
     override fun handleButton(buttonId: Int) {
         when (buttonId) {
             R.id.detail_button -> {
@@ -536,7 +534,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     launch {
                         with(loader) {
                             memoryCache?.clear()
-                            diskCache?.clear()
+                            clearDiskCache()
                         }
                         DualPageHelper.clearMergedPages(cacheDir)
                         intent.putExtra(FORCE_REFRESH, true)
