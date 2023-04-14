@@ -155,11 +155,12 @@ object DatabaseReader {
     }
 
     private suspend fun readArchiveJson(jsonFile: File) = jsonFile.inputStream().use {
-        val serverArchives = ArrayList<ArchiveJson>(MAX_WORKING_ARCHIVES)
-        val currentTime = Calendar.getInstance().timeInMillis
-        val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
         withTransaction {
+            val serverArchives = ArrayList<ArchiveJson>(MAX_WORKING_ARCHIVES)
+            val currentTime = Calendar.getInstance().timeInMillis
+            val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
             val bookmarks = if (ServerManager.serverTracksProgress) getBookmarkMap() else null
+
             JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                 reader.beginObject()
                 while (reader.hasNext()) {

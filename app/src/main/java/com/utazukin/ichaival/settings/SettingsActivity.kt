@@ -23,16 +23,16 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NavUtils
+import androidx.lifecycle.lifecycleScope
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.database.DatabaseMessageListener
 import com.utazukin.ichaival.getCustomTheme
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, CoroutineScope by MainScope() {
+class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, CoroutineScope {
+    override val coroutineContext = lifecycleScope.coroutineContext
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme()
@@ -71,11 +71,6 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
     override fun onPause() {
         super.onPause()
         WebHandler.listener = null
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        cancel()
     }
 
     override fun onError(error: String) {

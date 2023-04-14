@@ -203,11 +203,21 @@ class DatabaseTypeConverters {
         val builder = StringBuilder()
         for ((namespace, tags) in value) {
             if (namespace != "global") {
-                for (tag in tags)
-                    builder.append("$namespace:$tag, ")
+                for (tag in tags) {
+                    with(builder) {
+                        append(namespace)
+                        append(':')
+                        append(tag)
+                        append(", ")
+                    }
+                }
             } else {
-                for (tag in tags)
-                    builder.append("$tag, ")
+                for (tag in tags) {
+                    with(builder) {
+                        append(tag)
+                        append(", ")
+                    }
+                }
             }
         }
 

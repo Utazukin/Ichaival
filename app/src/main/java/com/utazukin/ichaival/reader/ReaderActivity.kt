@@ -179,9 +179,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mVisible = true
 
         pageSeekBar = findViewById(R.id.page_seek_bar)
-        pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout,
-            R.attr.cardBackgroundColor
-        ))
+        pageSeekLayout.setBackgroundColor(MaterialColors.getColor(pageSeekLayout, R.attr.cardBackgroundColor))
         progressStartText = findViewById(R.id.txt_progress_start)
         imagePager = findViewById(R.id.image_pager)
 
@@ -891,12 +889,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         fun getItemCount(): Int
     }
 
-    private inner class WebtoonAdapter : RecyclerView.Adapter<WebtoonReaderViewHolder>(),
-        IReaderAdapter {
+    private inner class WebtoonAdapter : RecyclerView.Adapter<WebtoonReaderViewHolder>(), IReaderAdapter {
         private val loadedPages = mutableListOf<Boolean>()
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WebtoonReaderViewHolder {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.fragment_reader, parent, false)
-            return WebtoonReaderViewHolder(parent.context, view, this@ReaderActivity)
+            return WebtoonReaderViewHolder(view, this@ReaderActivity)
         }
 
         override fun onBindViewHolder(holder: WebtoonReaderViewHolder, position: Int) {

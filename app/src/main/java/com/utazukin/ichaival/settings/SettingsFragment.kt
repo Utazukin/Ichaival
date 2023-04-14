@@ -41,6 +41,7 @@ import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.reader.DualPageHelper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,7 +59,8 @@ class LongClickPreference
 }
 
 @OptIn(ExperimentalCoilApi::class)
-class SettingsFragment : PreferenceFragmentCompat() {
+class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScope {
+    override val coroutineContext = lifecycleScope.coroutineContext
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.pref_general, rootKey)
@@ -66,19 +68,19 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         with(requireActivity() as MenuHost) {
-            addMenuProvider(object: MenuProvider {
-                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
-                override fun onMenuItemSelected(item: MenuItem): Boolean {
-                    val id = item.itemId
-                    if (id == android.R.id.home) {
-                        startActivity(Intent(activity, SettingsActivity::class.java))
-                        return true
-                    }
-                    return false
-                }
-            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+            addMenuProvider(this@SettingsFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
         return super.onCreateView(inflater, container, savedInstanceState)
+    }
+
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
+        if (id == android.R.id.home) {
+            startActivity(Intent(activity, SettingsActivity::class.java))
+            return true
+        }
+        return false
     }
 
     private fun onBindEditText(inputType: Int): OnBindEditTextListener {
@@ -168,7 +170,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         findPreference<Preference>(getString(R.string.temp_folder_pref))?.run {
             if (ServerManager.canEdit) {
                 setOnPreferenceClickListener {
-                    lifecycleScope.launch {
+                    launch {
                         launch { WebHandler.clearTempFolder(requireContext()) }
                         DatabaseReader.invalidateImageCache()
                         with(requireContext().imageLoader) {
@@ -176,6 +178,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                             diskCache?.clear()
                         }
                         DualPageHelper.clearMergedPages(requireContext().cacheDir)
+                        cachePref?.summary = "0 MB"
                     }
                     true
                 }
@@ -212,7 +215,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun setupCachePref(cachePref: Preference) {
         cachePref.setOnPreferenceClickListener {
-            lifecycleScope.launch(Dispatchers.IO) {
+            launch(Dispatchers.IO) {
                 DualPageHelper.clearMergedPages(requireContext().cacheDir)
                 with(requireContext().imageLoader) {
                     diskCache?.clear()
@@ -223,7 +226,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        launch(Dispatchers.IO) {
             var size = DualPageHelper.getCacheSize(requireContext().cacheDir)
             size += requireContext().imageLoader.diskCache?.size ?: 0
             size = size / 1024 / 1024
@@ -233,7 +236,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun startWebActivity(url: String) {
         val intent = Intent(activity, WebViewActivity::class.java)
-        val bundle = Bundle().apply { putString(WebViewActivity.URL_KEY, url) }
+        val bundle = Bundle().apply { putString(URL_KEY, url) }
         intent.putExtras(bundle)
         startActivity(intent)
     }

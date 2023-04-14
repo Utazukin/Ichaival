@@ -19,7 +19,6 @@
 package com.utazukin.ichaival.reader.webtoon
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.PointF
 import android.view.*
 import android.widget.ImageView
@@ -42,10 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class WebtoonReaderViewHolder(private val context: Context,
-                              private val view: View,
-                              private val activity: ReaderActivity
-) : RecyclerView.ViewHolder(view), PageFragment {
+class WebtoonReaderViewHolder(private val view: View, private val activity: ReaderActivity) : RecyclerView.ViewHolder(view), PageFragment {
     private var page = 0
     private var imagePath: String? = null
     private var mainImage: View? = null
@@ -83,7 +79,7 @@ class WebtoonReaderViewHolder(private val context: Context,
             listener(
                     onSuccess = { _, _ ->
                         pageNum.visibility = View.GONE
-                        view.run {
+                        with(view) {
                             setOnClickListener(null)
                             setOnLongClickListener(null)
                         }
@@ -191,9 +187,11 @@ class WebtoonReaderViewHolder(private val context: Context,
                 val hPadding = imageView.paddingLeft - imageView.paddingRight
                 val viewWidth = imageView.width
                 val minScale = (viewWidth - hPadding) / imageView.sWidth.toFloat()
-                imageView.minScale = minScale
-                imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
-                imageView.setScaleAndCenter(minScale, PointF(0f, 0f))
+                with(imageView) {
+                    this.minScale = minScale
+                    setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+                    setScaleAndCenter(minScale, PointF(0f, 0f))
+                }
             }
             is PhotoView -> {
                 val vPadding = imageView.paddingBottom - imageView.paddingTop
@@ -224,8 +222,8 @@ class WebtoonReaderViewHolder(private val context: Context,
     }
 
     override fun onArchiveLoad(archive: Archive) {
-        val job = activity.lifecycleScope.launch {
-            val image = archive.getPageImage(context, page)
+        val job = activity.launch {
+            val image = archive.getPageImage(view.context, page)
             if (image != null) {
                 displayImage(image)
             } else

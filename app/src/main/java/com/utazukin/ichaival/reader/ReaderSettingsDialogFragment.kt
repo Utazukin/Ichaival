@@ -83,14 +83,7 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun setupSpinner(view: View) {
-        val currentScale = arguments?.run {
-            ScaleType.fromInt(
-                getInt(
-                    SCALE_PARAM,
-                    0
-                )
-            )
-        } ?: ScaleType.FitPage
+        val currentScale = arguments?.run { ScaleType.fromInt(getInt(SCALE_PARAM, 0)) } ?: ScaleType.FitPage
 
         val spinner: Spinner = view.findViewById(R.id.scale_type_spinner)
         spinner.setSelection(currentScale.value)

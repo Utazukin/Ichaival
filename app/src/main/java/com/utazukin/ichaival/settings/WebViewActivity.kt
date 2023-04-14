@@ -24,15 +24,14 @@ import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
 import com.utazukin.ichaival.R
 
-class WebViewActivity : AppCompatActivity() {
+const val URL_KEY = "url"
 
+class WebViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setTheme(R.style.AppTheme)
-        val url = intent?.getStringExtra(URL_KEY)
         val webView = WebView(this)
-        if (url != null)
-            webView.loadUrl(url)
+        intent?.getStringExtra(URL_KEY)?.let { webView.loadUrl(it) }
         setContentView(webView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
@@ -40,14 +39,10 @@ class WebViewActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when(item.itemId) {
             android.R.id.home -> {
-                onBackPressed()
+                onBackPressedDispatcher.onBackPressed()
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
-    }
-
-    companion object {
-        const val URL_KEY = "url"
     }
 }
