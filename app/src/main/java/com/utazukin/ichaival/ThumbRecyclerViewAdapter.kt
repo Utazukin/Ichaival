@@ -41,12 +41,11 @@ class ThumbRecyclerViewAdapter(
 
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
     private val scope = fragment.lifecycleScope
-    private val context = fragment.requireContext()
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
     private val loader = if (!ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5))
-        context.imageLoader
+        fragment.requireContext().imageLoader
     else
-        context.imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
+        fragment.requireContext().imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
 
     private val onClickListener = View.OnClickListener { v ->
         val item = v.getTag(R.id.small_thumb) as Int
@@ -63,6 +62,10 @@ class ThumbRecyclerViewAdapter(
         get() = maxThumbnails < archive.numPages
     private val imageLoadingJobs: MutableMap<ViewHolder, Job> = mutableMapOf()
 
+    init {
+        setHasStableIds(true)
+    }
+
     fun increasePreviewCount() {
         if (maxThumbnails < archive.numPages) {
             val currentCount = itemCount
@@ -72,12 +75,12 @@ class ThumbRecyclerViewAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.thumb_layout, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.thumb_layout, parent, false)
         return ViewHolder(view)
     }
 
     override fun getItemCount(): Int = if (archive.numPages > maxThumbnails) maxThumbnails else archive.numPages
+    override fun getItemId(position: Int) = position.toLong()
 
     override fun onBindViewHolder(holder: ViewHolder, page: Int) {
         holder.pageNumView.text = (page + 1).toString()
@@ -89,10 +92,11 @@ class ThumbRecyclerViewAdapter(
         }
 
         imageLoadingJobs[holder] = scope.launch {
-            val image = archive.getThumb(context, page)
+            val image = archive.getThumb(holder.thumbView.context, page)
             holder.thumbView.load(image, loader) {
                 allowRgb565(true)
                 crossfade(true)
+                size(defaultHeight)
                 dispatcher(Dispatchers.IO)
                 listener { _, _ ->
                     with(holder.thumbView) {
