@@ -66,13 +66,14 @@ class ArchiveRecyclerViewAdapter(
 ) : PagingDataAdapter<ArchiveBase, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
 
     private var multiSelect = false
-    private val selectedArchives = mutableMapOf<ArchiveBase, Int>()
+    private val selectedArchives = mutableSetOf<Int>()
     private var actionMode: ActionMode? = null
     private val scope = fragment.lifecycleScope
     private val context = fragment.requireContext()
     private val fragmentManager = fragment.childFragmentManager
     private val listener = fragment.activity as? OnListFragmentInteractionListener
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
+    private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as ArchiveBase
@@ -86,8 +87,6 @@ class ArchiveRecyclerViewAdapter(
         longListener?.invoke(item) == true
     }
 
-    private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
-
     init {
         viewModel.monitor(scope) { submitData(it) }
     }
@@ -100,20 +99,12 @@ class ArchiveRecyclerViewAdapter(
 
     fun disableMultiSelect() = actionMode?.finish()
 
-    private fun selectArchive(holder: ViewHolder, archive: ArchiveBase, position: Int) {
-        if (!selectedArchives.contains(archive)) {
-            holder.mContentView?.let { it.setCardBackgroundColor(MaterialColors.getColor(it, R.attr.select_color)) }
-            if (listViewType == ListViewType.Cover)
-                holder.archiveName.setBackgroundColor(MaterialColors.getColor(holder.archiveName, R.attr.select_color))
-            selectedArchives[archive] = position
-        } else {
-            holder.mContentView?.let { it.setCardBackgroundColor(MaterialColors.getColor(it, R.attr.cardBackgroundColor)) }
-            if (listViewType == ListViewType.Cover)
-                holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.archive_cover_label))
-            selectedArchives.remove(archive)
-        }
+    private fun selectArchive(position: Int) {
+        if (!selectedArchives.remove(position))
+            selectedArchives.add(position)
 
         actionMode?.title = context.getString(R.string.selected_archives, selectedArchives.size)
+        notifyItemChanged(position)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -143,12 +134,12 @@ class ArchiveRecyclerViewAdapter(
             }
 
             if (listViewType == ListViewType.Card && holder.mContentView != null) {
-                if (selectedArchives.contains(it))
+                if (selectedArchives.contains(position))
                     holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.select_color))
                 else
                     holder.mContentView.setCardBackgroundColor(MaterialColors.getColor(holder.mContentView, R.attr.cardBackgroundColor))
             } else if (listViewType == ListViewType.Cover) {
-                if (selectedArchives.contains(it))
+                if (selectedArchives.contains(position))
                     holder.archiveName.setBackgroundColor(MaterialColors.getColor(holder.archiveName, R.attr.select_color))
                 else
                     holder.archiveName.setBackgroundColor(ContextCompat.getColor(holder.archiveName.context, R.color.archive_cover_label))
@@ -160,7 +151,7 @@ class ArchiveRecyclerViewAdapter(
                     if (!multiSelect)
                         mOnClickListener.onClick(view)
                     else
-                        selectArchive(holder, it, position)
+                        selectArchive(position)
                 }
                 setOnLongClickListener(onLongClickListener)
             }
@@ -212,7 +203,7 @@ class ArchiveRecyclerViewAdapter(
                     setMessage(context.resources.getQuantityString(R.plurals.delete_archive_count, selectedArchives.size, selectedArchives.size))
                     setPositiveButton(R.string.yes) { dialog, _ ->
                         dialog.dismiss()
-                        val ids = selectedArchives.keys.map { it.id }
+                        val ids = selectedArchives.mapNotNull { getItem(it)?.id }
                         scope.launch(Dispatchers.IO) {
                             val deleted = WebHandler.deleteArchives(ids)
                             if (deleted.isNotEmpty())
@@ -225,12 +216,12 @@ class ArchiveRecyclerViewAdapter(
                 builder.create().show()
             }
             R.id.bookmark_select_item -> {
-                val archives = selectedArchives.keys.toList()
+                val archives = selectedArchives.mapNotNull { getItem(it) }
                 scope.launch { ReaderTabHolder.addTabs(archives) }
                 mode?.finish()
             }
             R.id.category_select_item -> {
-                val dialog = AddToCategoryDialogFragment.newInstance(selectedArchives.keys.map { it.id })
+                val dialog = AddToCategoryDialogFragment.newInstance(selectedArchives.mapNotNull { getItem(it)?.id })
                 dialog.show(fragmentManager, "add_category")
             }
         }
@@ -248,7 +239,7 @@ class ArchiveRecyclerViewAdapter(
     override fun onDestroyActionMode(mode: ActionMode?) {
         multiSelect = false
 
-        for (index in selectedArchives.values)
+        for (index in selectedArchives)
             notifyItemChanged(index)
 
         selectedArchives.clear()

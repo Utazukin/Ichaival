@@ -428,10 +428,7 @@ object DatabaseReader {
             thumbDir.deleteRecursively()
     }
 
-    suspend fun refreshThumbnail(id: String?, context: Context, page: Int? = null) : File? {
-        if (id == null)
-            return null
-
+    suspend fun refreshThumbnail(id: String, context: Context, page: Int? = null) : File? {
         return withContext(Dispatchers.IO) {
             val thumbDir = getThumbDir(context.noBackupFilesDir, id)
             val image = File(thumbDir, "$id.jpg")
@@ -446,14 +443,12 @@ object DatabaseReader {
     suspend fun getArchiveImage(archive: Archive, context: Context) = getArchiveImage(archive.id, context)
 
     suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : File? {
-        return withContext(Dispatchers.IO) {
-            val thumbDir = getThumbDir(context.noBackupFilesDir, id)
+        val thumbDir = getThumbDir(context.noBackupFilesDir, id)
 
-            val image = File(thumbDir, "$id.jpg")
-            if (!image.exists())
-                WebHandler.downloadThumb(context, id, page)?.use { image.outputStream().use { f -> it.copyTo(f) } } ?: return@withContext null
+        val image = File(thumbDir, "$id.jpg")
+        if (!image.exists())
+            withContext(Dispatchers.IO) { WebHandler.downloadThumb(context, id, page)?.use { image.outputStream().use { f -> it.copyTo(f) } } } ?: return null
 
-            image
-        }
+        return image
     }
 }

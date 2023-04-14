@@ -27,8 +27,8 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
@@ -46,8 +46,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     private var pageCount = -1
     private var readerPage = -1
     private lateinit var pager: ViewPager2
-    private lateinit var toolbar: androidx.appcompat.widget.Toolbar
-    private var menu: Menu? = null
+    private lateinit var toolbar: Toolbar
     private val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK)
             finish()
@@ -76,12 +75,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.archive_details_menu, menu)
-        this.menu = menu
 
         archiveId?.let {
             launch {
                 val archive = DatabaseReader.getArchive(it)
-                menu.findItem(R.id.mark_read_item)?.isVisible = archive?.isNew ?: false
+                toolbar.menu.findItem(R.id.mark_read_item)?.isVisible = archive?.isNew == true
             }
         }
 
@@ -117,7 +115,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                                 setMessage(getString(R.string.delete_archive_prompt, arc.title))
                                 setPositiveButton(R.string.yes) { dialog, _ ->
                                     dialog.dismiss()
-                                    lifecycleScope.launch {
+                                    launch {
                                         val success = WebHandler.deleteArchive(it)
                                         if (success) {
                                             Toast.makeText(applicationContext, getString(R.string.deleted_archive, arc.title), Toast.LENGTH_SHORT).show()
@@ -145,7 +143,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     suspend fun extractArchive(id: String) {
         DatabaseReader.getArchive(id)?.let {
-            menu?.findItem(R.id.mark_read_item)?.isVisible = it.isNew
+            toolbar.menu.findItem(R.id.mark_read_item)?.isVisible = it.isNew
             if (it.numPages <= 0)
                 it.extract(this@ArchiveDetails)
             pageCount = it.numPages
@@ -159,7 +157,6 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
         archiveId?.let {
             pager.adapter = DetailsPagerAdapter(it)
-            pager.offscreenPageLimit = 1
             pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageScrollStateChanged(state: Int) {}
                 override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}

@@ -34,19 +34,16 @@ import androidx.core.util.Pair
 import androidx.preference.PreferenceManager
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.SearchViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 const val RANDOM_SEARCH = "random"
 const val RANDOM_CAT = "category"
 
 class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener {
+    private val viewModel: SearchViewModel by viewModels()
 
-    override fun onListFragmentInteraction(archive: ArchiveBase?, view: View) {
-        if (archive != null) {
-            setResult(Activity.RESULT_OK)
-            startDetailsActivity(archive.id, view)
-        }
+    override fun onListFragmentInteraction(archive: ArchiveBase, view: View) {
+        setResult(Activity.RESULT_OK)
+        startDetailsActivity(archive.id, view)
     }
 
     private fun startDetailsActivity(id: String, view: View) {
@@ -73,7 +70,6 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
         }
 
         with(intent) {
-            val viewModel: SearchViewModel by viewModels()
             viewModel.deferReset {
                 val filter = getStringExtra(RANDOM_SEARCH)
                 val category = getStringExtra(RANDOM_CAT) ?: ""
@@ -95,20 +91,17 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.random_archive_refresh ->  {
-                val viewModel: SearchViewModel by viewModels()
-                viewModel.reset()
-            }
+            R.id.random_archive_refresh -> viewModel.reset()
             R.id.change_random_count -> {
                 val prefs = PreferenceManager.getDefaultSharedPreferences(this)
                 val builder = AlertDialog.Builder(this).apply {
                     setTitle(getString(R.string.random_count_dialog_title))
                     val textField = EditText(this@ArchiveRandomActivity)
                     textField.inputType = InputType.TYPE_CLASS_NUMBER
-                    textField.setText(prefs.getString(getString(R.string.random_count_pref), "5"))
+                    val count = if (viewModel.randomCount == 0) prefs.getString(getString(R.string.random_count_pref), "5") else viewModel.randomCount.toString()
+                    textField.setText(count)
                     setView(textField)
                     setPositiveButton(android.R.string.ok) { dialog, _ ->
-                        val viewModel: SearchViewModel by viewModels()
                         viewModel.randomCount = textField.text.toString().toInt()
                         dialog.dismiss()
                     }
@@ -135,7 +128,6 @@ class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener 
     override fun onStart() {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
-        launch(Dispatchers.IO) { ServerManager.generateTagSuggestions() }
     }
 
     override fun onStop() {

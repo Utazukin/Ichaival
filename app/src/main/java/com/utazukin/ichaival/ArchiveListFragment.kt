@@ -113,10 +113,8 @@ class ArchiveListFragment : Fragment(),
                     override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = setSubtitle()
                     override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) = setSubtitle()
                 })
-
-                if (itemCount > 0)
-                    setSubtitle()
             }
+            setSubtitle()
             adapter = listAdapter
         }
 
@@ -202,7 +200,7 @@ class ArchiveListFragment : Fragment(),
                 forceArchiveListUpdate()
                 true
             }
-            R.id.select_archives -> listAdapter?.run { enableMultiSelect(requireActivity() as AppCompatActivity) } ?: false
+            R.id.select_archives -> listAdapter?.enableMultiSelect(requireActivity() as AppCompatActivity) ?: false
             R.id.scroll_top -> {
                 listView.layoutManager?.scrollToPosition(0)
                 true
@@ -238,7 +236,8 @@ class ArchiveListFragment : Fragment(),
 
     private fun setSubtitle() {
         val size = listAdapter?.itemCount ?: 0
-        (activity as? AppCompatActivity)?.run { supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size) }
+        if (size > 0)
+            (activity as? AppCompatActivity)?.supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
     }
 
     override fun onResume() {
@@ -453,6 +452,6 @@ class ArchiveListFragment : Fragment(),
     }
 
     interface OnListFragmentInteractionListener {
-        fun onListFragmentInteraction(archive: ArchiveBase?, view: View)
+        fun onListFragmentInteraction(archive: ArchiveBase, view: View)
     }
 }

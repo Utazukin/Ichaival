@@ -40,18 +40,19 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.database.DatabaseReader
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 
 private const val ARCHIVE_ID = "arcid"
 
-class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener, AddCategoryListener {
+class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener, AddCategoryListener, CoroutineScope, MenuProvider {
+    override val coroutineContext = lifecycleScope.coroutineContext
     private var archiveId: String? = null
     private lateinit var tagLayout: LinearLayout
     private lateinit var catLayout: LinearLayout
     private lateinit var catFlexLayout: FlexboxLayout
-    private lateinit var addToCatButton: ImageButton
     private lateinit var bookmarkButton: Button
     private lateinit var thumbView: ImageView
     private var thumbLoadJob: Job? = null
@@ -63,9 +64,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            archiveId = it.getString(ARCHIVE_ID)
-        }
+        archiveId = arguments?.getString(ARCHIVE_ID)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -73,42 +72,19 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         tagLayout = view.findViewById(R.id.tag_layout)
         catLayout = view.findViewById(R.id.cat_layout)
         catFlexLayout = view.findViewById(R.id.cat_flex)
-        addToCatButton = view.findViewById(R.id.add_to_cat_button)
         thumbView = view.findViewById(R.id.cover)
         ViewCompat.setTransitionName(thumbView, COVER_TRANSITION)
 
         with(requireActivity() as MenuHost) {
-            addMenuProvider(object: MenuProvider {
-                override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
-                override fun onMenuItemSelected(item: MenuItem): Boolean {
-                    when (item.itemId) {
-                        R.id.refresh_thumb_item -> {
-                            archiveId?.let {
-                                thumbLoadJob?.cancel()
-                                thumbView.setImageDrawable(null)
-                                lifecycleScope.launch {
-                                    val thumbFile = DatabaseReader.refreshThumbnail(archiveId, requireContext())
-                                    thumbFile?.let { file ->
-                                        thumbView.load(file) {
-                                            allowRgb565(true)
-                                            allowHardware(false)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    return false
-                }
-            }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+            addMenuProvider(this@ArchiveDetailsFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
 
-        lifecycleScope.launch {
+        launch {
             val archive = DatabaseReader.getArchive(archiveId!!)
             setUpDetailView(view, archive)
-
         }
 
+        val addToCatButton: ImageButton = view.findViewById(R.id.add_to_cat_button)
         addToCatButton.isVisible = ServerManager.canEdit
         addToCatButton.setOnClickListener {
             val dialog = AddToCategoryDialogFragment.newInstance(listOf(archiveId!!))
@@ -116,6 +92,27 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
 
         return view
+    }
+
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+    override fun onMenuItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.refresh_thumb_item -> {
+                archiveId?.let {
+                    thumbLoadJob?.cancel()
+                    launch {
+                        val thumbFile = DatabaseReader.refreshThumbnail(it, requireContext())
+                        thumbFile?.let { file ->
+                            thumbView.load(file) {
+                                allowRgb565(true)
+                                allowHardware(false)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false
     }
 
     override fun onAttach(context: Context) {
@@ -135,17 +132,17 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onTabAdded(id: String) {
         if (id == archiveId)
-            lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
+            launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 
     override fun onTabsAdded(ids: List<String>) {
         if (archiveId in ids)
-            lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
+            launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 
     override fun onTabRemoved(id: String) {
         if (id == archiveId) {
-            lifecycleScope.launch { bookmarkButton.text = getString(R.string.bookmark) }
+            launch { bookmarkButton.text = getString(R.string.bookmark) }
         }
     }
 
@@ -198,10 +195,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                 flexWrap = FlexWrap.WRAP
                 flexDirection = FlexDirection.ROW
             }
-            tagLayout.addView(
-                namespaceLayout,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT)
+            tagLayout.addView(namespaceLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             val namespaceView = createTagView(namespace, true)
             namespaceLayout.addView(namespaceView)
 
@@ -230,10 +224,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             else
                 ContextCompat.getDrawable(requireContext(), R.drawable.namespace_background)
             setTextColor(Color.WHITE)
-            val params = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             params.setMargins(10, 10, 10, 10)
             layoutParams = params
         }
@@ -243,10 +234,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val catView = Chip(context).apply {
             text = category.name
             textSize = 16f
-            val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             layoutParams = params
             isCloseIconVisible = ServerManager.canEdit
         }
@@ -283,20 +271,20 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {
-                lifecycleScope.launch {
+                launch {
                     archiveId?.let {
-                        if (ReaderTabHolder.isTabbed(it)) {
+                        text = if (ReaderTabHolder.isTabbed(it)) {
                             ReaderTabHolder.removeTab(it)
                             ReaderTabHolder.resetServerProgress(it)
-                            text = getString(R.string.bookmark)
+                            getString(R.string.bookmark)
                         } else {
                             ReaderTabHolder.addTab(it, 0)
-                            text = getString(R.string.unbookmark)
+                            getString(R.string.unbookmark)
                         }
                     }
                 }
             }
-            archiveId?.let { lifecycleScope.launch { text = getString(if (ReaderTabHolder.isTabbed(it)) R.string.unbookmark else R.string.bookmark) }
+            archiveId?.let { launch { text = getString(if (ReaderTabHolder.isTabbed(it)) R.string.unbookmark else R.string.bookmark) }
             }
         }
 
@@ -306,12 +294,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         if (archive == null) return
 
         setUpTags(archive)
-        lifecycleScope.launch { setupCategories(archive) }
+        launch { setupCategories(archive) }
 
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive.title
 
-        thumbLoadJob = lifecycleScope.launch {
+        thumbLoadJob = launch {
             val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())
             thumbFile?.let {
                 thumbView.load(it) {

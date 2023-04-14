@@ -35,7 +35,6 @@ import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.min
 
 private const val ARCHIVE_ID = "arcid"
@@ -92,7 +91,7 @@ class GalleryPreviewFragment : Fragment() {
 
         lifecycleScope.launch {
             archive = DatabaseReader.getArchive(archiveId!!)
-            setGalleryView(view)
+            setGalleryView()
         }
 
         return view
@@ -116,25 +115,19 @@ class GalleryPreviewFragment : Fragment() {
         }
     }
 
-    private fun setGalleryView(view: View) {
-        val listView: RecyclerView = view.findViewById(R.id.thumb_list)
+    private fun setGalleryView() {
         with(listView) {
-            post {
-                val dpWidth = getDpWidth(width)
-                val columns = floor(dpWidth / 150.0).toInt()
-                layoutManager = if (columns > 1) GridLayoutManager(
-                    context,
-                    columns
-                ) else LinearLayoutManager(context)
+            val dpWidth = getDpWidth(requireActivity().getWindowWidth())
+            val columns = dpWidth.floorDiv(150)
+            layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
 
-                if (savedPageCount <= 0) {
-                    archive?.let {
-                        val page = if (readerPage > -1) readerPage else it.currentPage
-                        if (page > 0) {
-                            thumbAdapter.maxThumbnails =
-                                min((ceil(page / 10f) * 10).toInt(), it.numPages)
-                            layoutManager?.scrollToPosition(page)
-                        }
+            if (savedPageCount <= 0) {
+                archive?.let {
+                    val page = if (readerPage > -1) readerPage else it.currentPage
+                    if (page > 0) {
+                        thumbAdapter.maxThumbnails =
+                            min((ceil(page / 10f) * 10).toInt(), it.numPages)
+                        layoutManager?.scrollToPosition(page)
                     }
                 }
             }

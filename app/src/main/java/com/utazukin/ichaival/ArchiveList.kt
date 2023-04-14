@@ -48,11 +48,9 @@ const val COVER_TRANSITION = "cover"
 class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, FilterListener {
     private lateinit var setupText: TextView
     private lateinit var categoryView: NavigationView
-    private var currentTheme = ""
 
-    override fun onListFragmentInteraction(archive: ArchiveBase?, view: View) {
-        if (archive != null)
-            startDetailsActivity(archive.id, view)
+    override fun onListFragmentInteraction(archive: ArchiveBase, view: View) {
+        startDetailsActivity(archive.id, view)
     }
 
     private fun startDetailsActivity(id: String, view: View) {
@@ -79,7 +77,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         setContentView(R.layout.activity_archive_list)
         setSupportActionBar(findViewById(R.id.toolbar))
 
-        currentTheme = getCustomTheme()
         setupText = findViewById(R.id.first_time_text)
         handleSetupText(serverSetting.isEmpty())
     }
@@ -115,11 +112,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     private fun updatePreferences(prefs: SharedPreferences) {
         WebHandler.apiKey = prefs.getString(getString(R.string.api_key_pref), "") as String
         WebHandler.verboseMessages = prefs.getBoolean(getString(R.string.verbose_pref), false)
-    }
-
-    override fun setTheme() {
-        super.setTheme()
-        currentTheme = getCustomTheme()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
