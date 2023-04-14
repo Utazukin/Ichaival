@@ -29,6 +29,7 @@ import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private const val ARCHIVE_PARAM = "archive"
@@ -37,7 +38,8 @@ interface AddCategoryListener {
     fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>)
 }
 
-class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
+class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, CoroutineScope {
+    override val coroutineContext = lifecycleScope.coroutineContext
     private var listener: AddCategoryListener? = null
     private val archiveIds = mutableListOf<String>()
     private var categories: List<ArchiveCategory>? = null
@@ -102,7 +104,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
         addButton.setOnClickListener {
             if (catGroup.checkedRadioButtonId == R.id.new_cat_radio) {
                 if (catText.text.isNotBlank()) {
-                    lifecycleScope.launch {
+                    launch {
                         val name = catText.text.toString()
                         val category = CategoryManager.createCategory(requireContext(), name)
                         category?.let {
@@ -114,9 +116,9 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener {
                         }
                         dismiss()
                     }
-                } else Toast.makeText(requireContext(), "Category name cannot be empty.", Toast.LENGTH_SHORT).show()
+                } else Toast.makeText(requireContext(), getString(R.string.empty_category_error), Toast.LENGTH_SHORT).show()
             } else {
-                lifecycleScope.launch {
+                launch {
                     val category = categories?.get(catGroup.checkedRadioButtonId)
                     category?.let {
                         val success = WebHandler.addToCategory(requireContext(), it.id, archiveIds)

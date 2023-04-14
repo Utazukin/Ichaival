@@ -92,10 +92,11 @@ interface UIProgressListener {
 class ResponseProgressListener {
 
     fun update(url: HttpUrl, bytesRead: Long, fullLength: Long) {
-        if (fullLength <= bytesRead)
-            forget(url.toString())
+        val urlString = url.toString()
+        progressMap[urlString]?.update(((bytesRead / fullLength.toDouble()) * 100).toInt())
 
-        progressMap[url.toString()]?.update(((bytesRead / fullLength.toDouble()) * 100).toInt())
+        if (fullLength <= bytesRead)
+            forget(urlString)
     }
 
     companion object {

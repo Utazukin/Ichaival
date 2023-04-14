@@ -216,6 +216,7 @@
     <string name="git_pref_summary">View source on GitHub</string>
     <string name="git_pref_title">View on GitHub</string>
     <string name="unsupported_server_message">Server version unsupported.</string>
+    <string name="empty_category_error">Category name cannot be empty.</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>

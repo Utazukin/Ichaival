@@ -80,15 +80,15 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
-        jobs[holder]?.cancel()
-        jobs.remove(holder)
-        holder.thumbView.dispose()
-        holder.thumbView.setImageBitmap(null)
+        jobs.remove(holder)?.cancel()
+        with(holder.thumbView) {
+            dispose()
+            setImageBitmap(null)
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.reader_tab, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.reader_tab, parent, false)
         return ViewHolder(view)
     }
 

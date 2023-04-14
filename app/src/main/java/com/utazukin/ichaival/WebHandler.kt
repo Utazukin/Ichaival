@@ -31,7 +31,6 @@ import com.utazukin.ichaival.database.ServerSearchResult
 import kotlinx.coroutines.*
 import okhttp3.*
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.IOException
@@ -156,7 +155,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (!it.isSuccessful)
                 null
             else
-                tryOrNull { it.body?.run { parseJsonArray(suspendString()) } }
+                tryOrNull { it.body?.run { JSONArray(suspendString()) } }
         }
     }
 
@@ -485,14 +484,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                         it.resume(response)
                 }
             })
-        }
-    }
-
-    private fun parseJsonArray(input: String) : JSONArray? {
-        return try {
-            JSONArray(input)
-        } catch (e: JSONException) {
-            null
         }
     }
 
