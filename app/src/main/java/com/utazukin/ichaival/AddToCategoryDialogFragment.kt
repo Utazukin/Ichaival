@@ -123,14 +123,18 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, Coroutin
                     category?.let {
                         val success = WebHandler.addToCategory(requireContext(), it.id, archiveIds)
                         if (success) {
-                            ServerManager.parseCategories(requireContext())
-                            listener?.onAddedToCategory(it, archiveIds)
+                            activity?.lifecycleScope?.launch {
+                                ServerManager.parseCategories(requireContext())
+                                listener?.onAddedToCategory(it, archiveIds)
+                            }
                         }
                     }
                     dismiss()
                 }
             }
         }
+
+        launch { onCategoriesUpdated(CategoryManager.getAllCategories(), true) }
 
         return view
     }
