@@ -237,6 +237,8 @@ object DatabaseReader {
         }
     }
 
+    suspend fun removeFromCategory(categoryId: String, archiveId: String) = database.archiveDao().removeFromCategory(categoryId, archiveId)
+
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>) = database.archiveDao().insertStaticCategories(references)
 
     private suspend fun getBookmarkMap() = database.archiveDao().getBookmarks().associateBy { it.id }

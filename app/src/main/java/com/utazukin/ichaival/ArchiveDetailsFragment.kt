@@ -252,8 +252,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                         val success = WebHandler.removeFromCategory(requireContext(), category.id, archiveId)
                         if (success) {
                             catFlexLayout.removeView(catView)
+                            DatabaseReader.removeFromCategory(category.id, archiveId)
                             Snackbar.make(requireView(), getString(R.string.category_removed_message, category.name), Snackbar.LENGTH_SHORT).show()
-                            ServerManager.parseCategories(requireContext())
                         }
                     }
                 }

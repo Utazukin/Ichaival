@@ -142,6 +142,9 @@ interface ArchiveDao {
     @Upsert
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>)
 
+    @Query("Delete from staticCategoryRef where categoryId = :categoryId and archiveId = :archiveId")
+    suspend fun removeFromCategory(categoryId: String, archiveId: String)
+
     @Query("Delete from staticcategoryref where updatedAt < :updateTime")
     suspend fun removeOutdatedStaticCategories(updateTime: Long)
 
