@@ -136,6 +136,9 @@ interface ArchiveDao {
     @Upsert
     suspend fun insertCategories(categories: Collection<ArchiveCategoryFull>)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertCategory(category: ArchiveCategoryFull)
+
     @Upsert
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>)
 

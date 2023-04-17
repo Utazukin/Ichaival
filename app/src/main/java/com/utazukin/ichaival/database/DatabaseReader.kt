@@ -231,6 +231,12 @@ object DatabaseReader {
 
     suspend fun insertCategories(categories: Collection<ArchiveCategoryFull>) = database.archiveDao().insertCategories(categories)
 
+    suspend fun insertCategory(category: ArchiveCategory) {
+        with(category) {
+            database.archiveDao().insertCategory(ArchiveCategoryFull(name, id, search, false, 0))
+        }
+    }
+
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>) = database.archiveDao().insertStaticCategories(references)
 
     private suspend fun getBookmarkMap() = database.archiveDao().getBookmarks().associateBy { it.id }

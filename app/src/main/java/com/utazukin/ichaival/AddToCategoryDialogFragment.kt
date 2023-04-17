@@ -107,28 +107,14 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, Coroutin
                     launch {
                         val name = catText.text.toString()
                         val category = CategoryManager.createCategory(requireContext(), name)
-                        category?.let {
-                            val success = WebHandler.addToCategory(requireContext(), it.id, archiveIds)
-                            if (success) {
-                                ServerManager.parseCategories(requireContext())
-                                listener?.onAddedToCategory(it, archiveIds)
-                            }
-                        }
+                        category?.let { addToCategory(it, archiveIds) }
                         dismiss()
                     }
                 } else Toast.makeText(requireContext(), getString(R.string.empty_category_error), Toast.LENGTH_SHORT).show()
             } else {
                 launch {
                     val category = categories?.get(catGroup.checkedRadioButtonId)
-                    category?.let {
-                        val success = WebHandler.addToCategory(requireContext(), it.id, archiveIds)
-                        if (success) {
-                            activity?.lifecycleScope?.launch {
-                                ServerManager.parseCategories(requireContext())
-                                listener?.onAddedToCategory(it, archiveIds)
-                            }
-                        }
-                    }
+                    category?.let { addToCategory(it, archiveIds) }
                     dismiss()
                 }
             }
@@ -137,6 +123,14 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, Coroutin
         launch { onCategoriesUpdated(CategoryManager.getAllCategories(), true) }
 
         return view
+    }
+
+    private suspend fun addToCategory(category: ArchiveCategory, ids: List<String>) {
+        val success = WebHandler.addToCategory(requireContext(), category.id, ids)
+        if (success) {
+            CategoryManager.addArchivesToCategory(category.id, ids)
+            listener?.onAddedToCategory(category, ids)
+        }
     }
 
     override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {

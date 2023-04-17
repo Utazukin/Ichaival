@@ -79,9 +79,23 @@ object CategoryManager {
 
     suspend inline fun getStaticCategories(id: String) = DatabaseReader.getCategoryArchives(id)
 
+    suspend fun addArchivesToCategory(categoryId: String, archiveIds: Collection<String>) {
+        val references = buildList {
+            for (id in archiveIds) {
+                add(StaticCategoryRef(categoryId, id, 0))
+            }
+        }
+
+        DatabaseReader.insertStaticCategories(references)
+        updateListeners()
+    }
+
     suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false): ArchiveCategory? {
         val json = WebHandler.createCategory(context, name, search, pinned)
-        return json?.run { ArchiveCategory(name, getString("category_id"), search) }
+        val category = json?.run { ArchiveCategory(name, getString("category_id"), search) }
+        if (category != null)
+            DatabaseReader.insertCategory(category)
+        return category
     }
 
     private suspend fun updateListeners() {
