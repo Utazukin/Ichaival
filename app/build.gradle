@@ -4,6 +4,8 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-kapt'
 
+apply plugin: 'kotlin-parcelize'
+
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 android {
 

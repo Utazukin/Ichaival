@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -104,21 +105,17 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        with(outState){
-            selectedCategory?.let {
-                putString("name", it.name)
-                putString("id", it.id)
-                putString("search", it.search)
-            }
-        }
+        selectedCategory?.let { outState.putParcelable("cat", it) }
     }
 
+    @Suppress("DEPRECATION")
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
         savedInstanceState?.run {
-            val name = getString("name")
-            if (name != null)
-                savedCategory = ArchiveCategory(name, getString("id")!!, getString("search"))
+            savedCategory = when {
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> getParcelable("cat")
+                else -> getParcelable("cat", ArchiveCategory::class.java)
+            }
         }
     }
 
@@ -145,7 +142,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 
             if (firstUpdate)
                 savedCategory?.run { categoryButtons.firstOrNull { it.text == name }?.isChecked = true }
-        }
+        } else label.visibility = View.GONE
     }
 
     fun clearCategory() = categoryGroup.clearCheck()

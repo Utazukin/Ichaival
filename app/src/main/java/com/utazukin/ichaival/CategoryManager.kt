@@ -19,6 +19,7 @@
 package com.utazukin.ichaival
 
 import android.content.Context
+import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
@@ -26,6 +27,8 @@ import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 import java.io.File
 import java.io.InputStream
 import java.util.*
@@ -42,11 +45,13 @@ data class ArchiveCategoryFull(
     val pinned: Boolean,
     val updatedAt: Long)
 
+@Parcelize
 data class ArchiveCategory(
     val name: String,
     val id: String,
-    val search: String? = null) {
-    @Ignore val isStatic = search.isNullOrBlank()
+    val search: String? = null) : Parcelable {
+    @Ignore @IgnoredOnParcel
+    val isStatic = search.isNullOrBlank()
 
     constructor(name: String, id: String) : this(name, id, "")
 }
@@ -57,8 +62,6 @@ data class StaticCategoryRef(val categoryId: String, val archiveId: String, val 
 object CategoryManager {
     private const val categoriesFilename = "categories.json"
     private val listeners = mutableListOf<CategoryListener>()
-    var hasCategories = false
-        private set
 
     fun addUpdateListener(listener: CategoryListener) {
         listeners.add(listener)
@@ -110,7 +113,6 @@ object CategoryManager {
         DatabaseReader.withTransaction {
             val categories = ArrayList<ArchiveCategoryFull>(DatabaseReader.MAX_WORKING_ARCHIVES)
             val staticRefs = ArrayList<StaticCategoryRef>(DatabaseReader.MAX_WORKING_ARCHIVES)
-            var insertedCategories = false
             val currentTime = Calendar.getInstance().timeInMillis
             JsonReader(categoriesFile.bufferedReader(Charsets.UTF_8)).use { reader ->
                 reader.beginArray()
@@ -144,7 +146,6 @@ object CategoryManager {
                             staticRefs.add(StaticCategoryRef(id, archive, currentTime))
 
                             if (staticRefs.size == DatabaseReader.MAX_WORKING_ARCHIVES) {
-                                insertedCategories = true
                                 DatabaseReader.insertStaticCategories(staticRefs)
                                 staticRefs.clear()
                             }
@@ -162,7 +163,6 @@ object CategoryManager {
                 reader.endArray()
             }
 
-            hasCategories = insertedCategories || categories.isNotEmpty()
             if (categories.isNotEmpty())
                 DatabaseReader.insertCategories(categories)
             if (staticRefs.isNotEmpty())

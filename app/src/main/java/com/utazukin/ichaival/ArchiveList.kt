@@ -23,7 +23,10 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Rect
 import android.os.Bundle
-import android.view.*
+import android.view.MenuItem
+import android.view.MotionEvent
+import android.view.View
+import android.view.Window
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.SearchView
@@ -86,11 +89,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             drawerLayout.closeDrawer(categoryView)
         else
             super.handleBackPressed()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menu.findItem(R.id.filter_menu)?.isVisible = CategoryManager.hasCategories
-        return super.onCreateOptionsMenu(menu)
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
