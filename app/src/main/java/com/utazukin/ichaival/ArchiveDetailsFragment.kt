@@ -40,22 +40,16 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.database.DatabaseReader
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 
 private const val ARCHIVE_ID = "arcid"
 
-class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener, AddCategoryListener, CoroutineScope, MenuProvider {
-    override val coroutineContext = lifecycleScope.coroutineContext
-    private var archiveId: String? = null
-    private lateinit var tagLayout: LinearLayout
-    private lateinit var catLayout: LinearLayout
+class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener, AddCategoryListener, MenuProvider {
+    private var archiveId = ""
     private lateinit var catFlexLayout: FlexboxLayout
     private lateinit var bookmarkButton: Button
     private lateinit var thumbView: ImageView
-    private var thumbLoadJob: Job? = null
     private var tagListener: TagInteractionListener? = null
     private val isLocalSearch by lazy {
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -64,13 +58,11 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        archiveId = arguments?.getString(ARCHIVE_ID)
+        archiveId = arguments?.getString(ARCHIVE_ID) ?: ""
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_archive_details, container, false)
-        tagLayout = view.findViewById(R.id.tag_layout)
-        catLayout = view.findViewById(R.id.cat_layout)
         catFlexLayout = view.findViewById(R.id.cat_flex)
         thumbView = view.findViewById(R.id.cover)
         ViewCompat.setTransitionName(thumbView, COVER_TRANSITION)
@@ -79,15 +71,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             addMenuProvider(this@ArchiveDetailsFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
 
-        launch {
-            val archive = DatabaseReader.getArchive(archiveId!!)
-            setUpDetailView(view, archive)
-        }
+        lifecycleScope.launch { setUpDetailView(view) }
 
         val addToCatButton: ImageButton = view.findViewById(R.id.add_to_cat_button)
         addToCatButton.isVisible = ServerManager.canEdit
         addToCatButton.setOnClickListener {
-            val dialog = AddToCategoryDialogFragment.newInstance(listOf(archiveId!!))
+            val dialog = AddToCategoryDialogFragment.newInstance(listOf(archiveId))
             dialog.show(childFragmentManager, "add_category")
         }
 
@@ -98,10 +87,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.refresh_thumb_item -> {
-                archiveId?.let {
-                    thumbLoadJob?.cancel()
-                    launch {
-                        val thumbFile = DatabaseReader.refreshThumbnail(it, requireContext())
+                if (archiveId.isNotEmpty()) {
+                    lifecycleScope.launch {
+                        val thumbFile = DatabaseReader.refreshThumbnail(archiveId, requireContext())
                         thumbFile?.let { file ->
                             thumbView.load(file) {
                                 allowRgb565(true)
@@ -132,27 +120,22 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onTabAdded(id: String) {
         if (id == archiveId)
-            launch { bookmarkButton.text = getString(R.string.unbookmark) }
+            lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 
     override fun onTabsAdded(ids: List<String>) {
         if (archiveId in ids)
-            launch { bookmarkButton.text = getString(R.string.unbookmark) }
+            lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 
     override fun onTabRemoved(id: String) {
         if (id == archiveId) {
-            launch { bookmarkButton.text = getString(R.string.bookmark) }
+            lifecycleScope.launch { bookmarkButton.text = getString(R.string.bookmark) }
         }
     }
 
     override fun onTabsCleared() {
         bookmarkButton.text = getString(R.string.bookmark)
-    }
-
-    override fun onDestroy() {
-        thumbLoadJob?.cancel()
-        super.onDestroy()
     }
 
     private fun getSearchTag(tag: String, namespace: String) : String {
@@ -163,7 +146,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    private suspend fun setupCategories(archive: Archive) {
+    private suspend fun setupCategories(view: View, archive: Archive) {
+        val catLayout: LinearLayout = view.findViewById(R.id.cat_layout)
         val categories = CategoryManager.getStaticCategories(archive.id)
         if (categories.isNotEmpty() || ServerManager.canEdit) {
             catLayout.visibility = View.VISIBLE
@@ -174,7 +158,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         } else catLayout.visibility = View.GONE
     }
 
-    private fun setUpTags(archive: Archive) {
+    private fun setUpTags(view: View, archive: Archive) {
+        val tagLayout: LinearLayout = view.findViewById(R.id.tag_layout)
         if (archive.dateAdded > 0) {
             val namespaceLayout = FlexboxLayout(context).apply {
                 flexWrap = FlexWrap.WRAP
@@ -251,7 +236,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     lifecycleScope.launch {
                         val success = WebHandler.removeFromCategory(requireContext(), category.id, archiveId)
                         if (success) {
-                            catFlexLayout.removeView(catView)
+                            catFlexLayout.removeView(it)
                             DatabaseReader.removeFromCategory(category.id, archiveId)
                             Snackbar.make(requireView(), getString(R.string.category_removed_message, category.name), Snackbar.LENGTH_SHORT).show()
                         }
@@ -267,56 +252,52 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         return catView
     }
 
-    private fun setUpDetailView(view: View, archive: Archive?) {
+    private suspend fun setUpDetailView(view: View) {
         bookmarkButton = view.findViewById(R.id.bookmark_button)
         with(bookmarkButton) {
             setOnClickListener {
-                launch {
-                    archiveId?.let {
-                        text = if (ReaderTabHolder.isTabbed(it)) {
-                            ReaderTabHolder.removeTab(it)
-                            ReaderTabHolder.resetServerProgress(it)
+                lifecycleScope.launch {
+                    if (archiveId.isNotEmpty()) {
+                        text = if (ReaderTabHolder.isTabbed(archiveId)) {
+                            ReaderTabHolder.removeTab(archiveId)
+                            ReaderTabHolder.resetServerProgress(archiveId)
                             getString(R.string.bookmark)
                         } else {
-                            ReaderTabHolder.addTab(it, 0)
+                            ReaderTabHolder.addTab(archiveId, 0)
                             getString(R.string.unbookmark)
                         }
                     }
                 }
             }
-            archiveId?.let { launch { text = getString(if (ReaderTabHolder.isTabbed(it)) R.string.unbookmark else R.string.bookmark) }
-            }
+            text = getString(if (ReaderTabHolder.isTabbed(archiveId)) R.string.unbookmark else R.string.bookmark)
         }
 
         val readButton: Button = view.findViewById(R.id.read_button)
         readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
-        if (archive == null) return
-
-        setUpTags(archive)
-        launch { setupCategories(archive) }
+        val archive = DatabaseReader.getArchive(archiveId) ?: return
+        setUpTags(view, archive)
+        setupCategories(view, archive)
 
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive.title
 
-        thumbLoadJob = launch {
-            val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())
-            thumbFile?.let {
-                thumbView.load(it) {
-                    allowRgb565(true)
-                    allowHardware(false)
-                    listener(
-                            onSuccess = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
-                            onError = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
-                            onCancel = { requireActivity().supportStartPostponedEnterTransition() }
-                    )
-                }
+        val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())
+        thumbFile?.let {
+            thumbView.load(it) {
+                allowRgb565(true)
+                allowHardware(false)
+                listener(
+                        onSuccess = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
+                        onError = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
+                        onCancel = { requireActivity().supportStartPostponedEnterTransition() }
+                )
             }
         }
     }
 
     override fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>) {
-        val id = archiveIds.firstOrNull() ?: return
+        val id = archiveIds.firstOrNull()
         if (id != archiveId || catFlexLayout.children.mapNotNull { it as? TextView }.any { it.text == category.name })
             return
 
