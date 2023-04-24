@@ -115,13 +115,13 @@ object CategoryManager {
             val staticRefs = ArrayList<StaticCategoryRef>(DatabaseReader.MAX_WORKING_ARCHIVES)
             val currentTime = Calendar.getInstance().timeInMillis
             JsonReader(categoriesFile.bufferedReader(Charsets.UTF_8)).use { reader ->
+                val archives = mutableListOf<String>()
                 reader.beginArray()
                 while (reader.hasNext()) {
                     var name = ""
                     var id = ""
                     var search = ""
                     var pinned = false
-                    val archives = mutableListOf<String>()
                     reader.beginObject()
                     while (reader.hasNext()) {
                         when (reader.nextName()) {

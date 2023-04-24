@@ -118,7 +118,7 @@ private class DatabaseHelper {
 }
 
 object DatabaseReader {
-    const val MAX_WORKING_ARCHIVES = 1000
+    const val MAX_WORKING_ARCHIVES = 3000
     private const val jsonLocation: String = "archives.json"
 
     private var isDirty = false

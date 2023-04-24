@@ -405,6 +405,7 @@ class ArchiveListFragment : Fragment(),
         searchJob?.cancel()
         launch {
             DatabaseReader.updateArchiveList(requireContext(), true)
+            viewModel.jumpToTop = true
             viewModel.reset()
         }
     }
