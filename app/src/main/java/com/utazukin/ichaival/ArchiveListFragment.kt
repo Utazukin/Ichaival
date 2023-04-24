@@ -329,6 +329,10 @@ class ArchiveListFragment : Fragment(),
 
                 builder.append(" ")
             }
+
+            if (terms.lastOrNull()?.negative == true)
+                builder.append('-')
+
             builder.append(selection)
             builder.toString()
         }
