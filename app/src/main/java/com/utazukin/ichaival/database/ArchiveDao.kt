@@ -55,11 +55,25 @@ interface ArchiveDao {
     @Query("Select * from archive where id in (:ids) and (not :onlyNew or isNew) order by dateAdded asc")
     fun getDateAscendingSource(ids: List<String>, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive order by random() limit 1")
-    suspend fun getRandom() : Archive
+    @Query("Select * from archive where not :onlyNew or isNew order by random() limit 1")
+    suspend fun getRandom(onlyNew: Boolean) : Archive
 
-    @Query("Select archive.* from archive left join readertab on archive.id = readertab.id where readertab.id is null order by random() limit 1")
-    suspend fun getRandomExcludeBookmarked() : Archive?
+    @Query("Select archive.* from archive left join readertab on archive.id = readertab.id where readertab.id is null and (not :onlyNew or isNew) order by random() limit 1")
+    suspend fun getRandomExcludeBookmarked(onlyNew: Boolean) : Archive?
+
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId and (not :onlyNew or isNew) order by random() limit 1")
+    suspend fun getRandom(search: String, onlyNew: Boolean) : Archive
+
+    @Query("Select * from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId and (not :onlyNew or isNew) order by random() limit 1")
+    suspend fun getRandomFromCategory(categoryId: String, onlyNew: Boolean) : Archive
+
+    @Query("Select archive.* from archive join search on searchText = :search and archive.id = archiveId and (not :onlyNew or isNew) " +
+            "left join readertab on archive.id = readertab.id where readertab.id is null order by random() limit 1")
+    suspend fun getRandomExcludeBookmarked(search: String, onlyNew: Boolean) : Archive?
+
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId and (not :onlyNew or isNew) " +
+            "left join readertab on archive.id = readertab.id where readertab.id is null order by random() limit 1")
+    suspend fun getRandomFromCategoryExcludeBookmarked(categoryId: String, onlyNew: Boolean) : Archive?
 
     @Query("Select * from archive where id = :id limit 1")
     suspend fun getArchive(id: String) : Archive?

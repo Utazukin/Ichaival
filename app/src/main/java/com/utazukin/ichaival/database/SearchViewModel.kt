@@ -24,9 +24,20 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.*
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.PagingSource
+import androidx.paging.cachedIn
 import androidx.preference.PreferenceManager
-import com.utazukin.ichaival.*
+import com.utazukin.ichaival.ArchiveBase
+import com.utazukin.ichaival.ArchiveCategory
+import com.utazukin.ichaival.CategoryListener
+import com.utazukin.ichaival.CategoryManager
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.ReaderTab
+import com.utazukin.ichaival.ServerManager
+import com.utazukin.ichaival.SortMethod
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -88,8 +99,8 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
             !initiated -> EmptySource()
             randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId)
             categoryId.isNotEmpty() -> DatabaseReader.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
-            isLocal && filter.isNotEmpty() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew)
-            filter.isNotEmpty() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter)
+            isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew)
+            filter.isNotBlank() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter)
             isSearch -> EmptySource()
             else -> DatabaseReader.getArchiveSource(sortMethod, descending, onlyNew)
         }

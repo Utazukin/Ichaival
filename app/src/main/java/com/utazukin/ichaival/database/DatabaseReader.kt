@@ -40,7 +40,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.lang.reflect.Type
-import java.util.*
+import java.util.Calendar
 
 private class ArchiveDeserializer(private val updateTime: Long) : JsonDeserializer<ArchiveJson> {
     private var index = 0
@@ -320,11 +320,20 @@ object DatabaseReader {
 
     fun getRandomSource(filter: String, categoryId: String, count: Int) = when {
         categoryId.isNotEmpty() -> database.archiveDao().getRandomCategorySource(categoryId, count)
-        filter.isNotEmpty() -> database.archiveDao().getSearchResultsRandom(filter, count)
+        filter.isNotBlank() -> database.archiveDao().getSearchResultsRandom(filter, count)
         else -> database.archiveDao().getRandomSource(count)
     }
 
-    suspend fun getRandom(excludeBookmarked: Boolean = false) = if (excludeBookmarked) database.archiveDao().getRandomExcludeBookmarked() else database.archiveDao().getRandom()
+    suspend fun getRandom(search: String, onlyNew: Boolean, categoryId: String, excludeBookmarked: Boolean = false): Archive? {
+        return when {
+            categoryId.isNotEmpty() && excludeBookmarked -> database.archiveDao().getRandomFromCategoryExcludeBookmarked(categoryId, onlyNew)
+            categoryId.isNotEmpty() -> database.archiveDao().getRandomFromCategory(categoryId, onlyNew)
+            search.isBlank() && excludeBookmarked -> database.archiveDao().getRandomExcludeBookmarked(onlyNew)
+            search.isBlank() -> database.archiveDao().getRandom(onlyNew)
+            excludeBookmarked -> database.archiveDao().getRandomExcludeBookmarked(search, onlyNew)
+            else -> database.archiveDao().getRandom(search, onlyNew)
+        }
+    }
 
     private suspend fun removeBookmark(tab: ReaderTab) = withTransaction {
         with(database.archiveDao()) {
@@ -405,7 +414,7 @@ object DatabaseReader {
 
     suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)
 
-    suspend fun getRandomArchive() = database.archiveDao().getRandom()
+    suspend fun getRandomArchive() = database.archiveDao().getRandom(false)
 
     suspend fun deleteArchive(id: String) = deleteArchives(listOf(id))
 

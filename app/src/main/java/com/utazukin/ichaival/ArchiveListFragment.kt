@@ -26,8 +26,17 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.os.Bundle
 import android.provider.BaseColumns
-import android.view.*
-import android.widget.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.CursorAdapter
+import android.widget.SearchView
+import android.widget.SimpleCursorAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.MenuHost
@@ -144,7 +153,7 @@ class ArchiveListFragment : Fragment(),
                 startActivity(intent)
             } else {
                 launch {
-                    val archive = DatabaseReader.getRandom(false)
+                    val archive = DatabaseReader.getRandom(viewModel.filter, viewModel.onlyNew, viewModel.categoryId)
                     if (archive != null)
                         startDetailsActivity(archive.id, requireContext())
                 }
@@ -154,7 +163,7 @@ class ArchiveListFragment : Fragment(),
         randomButton.setOnLongClickListener {
             listAdapter?.disableMultiSelect()
             launch {
-                val archive = DatabaseReader.getRandom()
+                val archive = DatabaseReader.getRandom(viewModel.filter, viewModel.onlyNew, viewModel.categoryId, true)
                 if (archive != null)
                     ReaderTabHolder.addTab(archive, 0)
             }
