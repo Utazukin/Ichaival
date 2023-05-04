@@ -24,6 +24,7 @@ import com.utazukin.ichaival.*
 import org.json.JSONObject
 
 @Dao
+@RewriteQueriesToDropUnusedColumns
 interface ArchiveDao {
     @Query("Select * from archive limit :limit offset :offset")
     suspend fun getArchives(offset: Int, limit: Int): List<ArchiveBase>
@@ -64,7 +65,7 @@ interface ArchiveDao {
     @Query("Select * from archive join search on searchText = :search and archive.id = archiveId and (not :onlyNew or isNew) order by random() limit 1")
     suspend fun getRandom(search: String, onlyNew: Boolean) : Archive
 
-    @Query("Select * from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId and (not :onlyNew or isNew) order by random() limit 1")
+    @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId and (not :onlyNew or isNew) order by random() limit 1")
     suspend fun getRandomFromCategory(categoryId: String, onlyNew: Boolean) : Archive
 
     @Query("Select archive.* from archive join search on searchText = :search and archive.id = archiveId and (not :onlyNew or isNew) " +
@@ -171,7 +172,7 @@ interface ArchiveDao {
     @Query("Select * from archivecategory order by pinned")
     suspend fun getAllCategories() : List<ArchiveCategory>
 
-    @Query("Select * from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
+    @Query("Select archivecategory.* from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
     suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
 
     @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew order by archive.titleSortIndex asc")
