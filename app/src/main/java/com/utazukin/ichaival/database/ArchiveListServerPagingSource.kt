@@ -21,7 +21,13 @@ package com.utazukin.ichaival.database
 import android.util.JsonReader
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.utazukin.ichaival.*
+import com.utazukin.ichaival.ArchiveBase
+import com.utazukin.ichaival.SortMethod
+import com.utazukin.ichaival.WebHandler
+import com.utazukin.ichaival.containsTag
+import com.utazukin.ichaival.parseTermsInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class ServerSearchResult(val results: List<String>?,
                               val totalSize: Int = 0,
@@ -90,7 +96,7 @@ open class ArchiveListServerPagingSource(
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ArchiveBase> {
-        loadResults()
+        withContext(Dispatchers.IO) { loadResults() }
         return roomSource.load(params)
     }
 }
