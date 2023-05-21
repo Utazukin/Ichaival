@@ -31,8 +31,8 @@ android {
         applicationId "com.utazukin.ichaival"
         minSdkVersion 21
         targetSdkVersion 33
-        versionCode 37
-        versionName "1.7.0"
+        versionCode 38
+        versionName "1.7.1"
     }
     buildTypes {
         release {
