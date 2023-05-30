@@ -364,7 +364,7 @@ class ArchiveListFragment : Fragment(),
             return
 
         val cursor = MatrixCursor(arrayOf(BaseColumns._ID, SearchManager.SUGGEST_COLUMN_TEXT_1))
-        val lastWord = parseTerms(query).lastOrNull()?.trimStart('-')
+        val lastWord = parseTerms(query).lastOrNull()
         if (!lastWord.isNullOrBlank()) {
             for ((i, suggestion) in ServerManager.tagSuggestions.withIndex()) {
                 if (suggestion.contains(lastWord))
@@ -383,10 +383,13 @@ class ArchiveListFragment : Fragment(),
 
     private fun handleArchiveLongPress(archive: ArchiveBase) : Boolean {
         val tagFragment = TagDialogFragment.newInstance(archive.id)
-        tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
-        tagFragment.setTagLongPressListener { tag ->
-            searchView.setQuery("${searchView.query} $tag", true)
-            true
+
+        if (activity !is ArchiveRandomActivity) {
+            tagFragment.setTagPressListener { tag -> searchView.setQuery(tag, true) }
+            tagFragment.setTagLongPressListener { tag ->
+                searchView.setQuery("${searchView.query} $tag", true)
+                true
+            }
         }
         tagFragment.show(parentFragmentManager, "tag_popup")
         return true
