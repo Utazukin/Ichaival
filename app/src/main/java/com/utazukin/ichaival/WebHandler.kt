@@ -401,7 +401,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return jobComplete
     }
 
-    suspend fun downloadThumb(context: Context, id: String, page: Int? = null) : InputStream? = withContext(Dispatchers.IO) {
+    suspend fun downloadThumb(context: Context, id: String, page: Int? = null) : Pair<String, InputStream>? = withContext(Dispatchers.IO) {
         if (!canConnect(context, page == null))
             return@withContext null
 
@@ -419,7 +419,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
             if (it?.isSuccessful != true || !isActive)
                 null
             else {
-                it.body?.byteStream()
+                val contentType = it.header("Content-Type")
+                //Get the proper extension.  Fallback to jpg if parsing fails.
+                val ext = contentType?.substringAfterLast('.')?.trimEnd('"') ?: "jpg"
+                Pair(ext, it.body!!.byteStream())
             }
         }
     }

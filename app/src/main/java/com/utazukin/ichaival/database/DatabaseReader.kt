@@ -449,9 +449,14 @@ object DatabaseReader {
     suspend fun refreshThumbnail(id: String, context: Context, page: Int? = null) : File? {
         return withContext(Dispatchers.IO) {
             val thumbDir = getThumbDir(context.noBackupFilesDir, id)
-            val image = File(thumbDir, "$id.jpg")
+            var image = File(thumbDir, "$id.jpg")
             if (image.exists())
                 image.delete()
+            else {
+                image = File(thumbDir, "$id.jxl")
+                if (image.exists())
+                    image.delete()
+            }
 
             getArchiveImage(id, context, page)
         }
@@ -463,9 +468,18 @@ object DatabaseReader {
     suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : File? {
         val thumbDir = getThumbDir(context.noBackupFilesDir, id)
 
-        val image = File(thumbDir, "$id.jpg")
-        if (!image.exists())
-            withContext(Dispatchers.IO) { WebHandler.downloadThumb(context, id, page)?.use { image.outputStream().use { f -> it.copyTo(f) } } } ?: return null
+        var image = File(thumbDir, "$id.jpg")
+        if (!image.exists()) {
+            image = File(thumbDir, "$id.jxl")
+            if (!image.exists()) {
+                withContext(Dispatchers.IO) {
+                    WebHandler.downloadThumb(context, id, page)?.let { (ext, stream) ->
+                            image = File(thumbDir, "$id.$ext")
+                            stream.use { image.outputStream().use { f -> it.copyTo(f) } }
+                        }
+                } ?: return null
+            }
+        }
 
         return image
     }
