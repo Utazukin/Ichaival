@@ -94,6 +94,9 @@ interface ArchiveDao {
     @Query("Update archive set currentPage = -1 where id in (:ids)")
     suspend fun removeAllBookmarks(ids: List<String>)
 
+    @Query("Select * from archive where currentPage > 0")
+    suspend fun getInProgressArchives() : List<Archive>
+
     @Query("Select count(id) from readertab")
     suspend fun getBookmarkCount() : Int
 

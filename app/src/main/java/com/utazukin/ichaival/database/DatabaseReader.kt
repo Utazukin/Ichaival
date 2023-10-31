@@ -159,7 +159,6 @@ object DatabaseReader {
             val serverArchives = ArrayList<ArchiveJson>(MAX_WORKING_ARCHIVES)
             val currentTime = Calendar.getInstance().timeInMillis
             val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
-            val bookmarks = if (ServerManager.serverTracksProgress) getBookmarkMap() else null
 
             JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                 reader.beginObject()
@@ -171,7 +170,7 @@ object DatabaseReader {
                             serverArchives.add(archive)
 
                             if (serverArchives.size == MAX_WORKING_ARCHIVES) {
-                                updateArchives(serverArchives, bookmarks)
+                                updateArchives(serverArchives)
                                 serverArchives.clear()
                             }
                         }
@@ -182,31 +181,36 @@ object DatabaseReader {
             }
 
             if (serverArchives.isNotEmpty())
-                updateArchives(serverArchives, bookmarks)
+                updateArchives(serverArchives)
             removeOldArchives(currentTime)
-        }
-    }
 
-    private suspend fun updateArchives(archives: List<ArchiveJson>, bookmarks: Map<String, ReaderTab>?) {
-        database.archiveDao().insertAllJson(archives)
+            if (ServerManager.serverTracksProgress) {
+                val inProgress = database.archiveDao().getInProgressArchives()
+                val bookmarks = getBookmarkMap()
+                var count = bookmarks.size
+                val toUpdate = buildList {
+                    for (archive in inProgress) {
+                        val bookmark = bookmarks.remove(archive.id)
+                        if (bookmark != null) {
+                            bookmark.page = archive.currentPage
+                            add(bookmark)
+                        } else add(ReaderTab(archive.id, archive.title, count++, archive.currentPage))
+                    }
 
-        if (bookmarks != null) {
-            var bookmarkCount = bookmarks.size
-            val toUpdate = buildList {
-                for (archive in archives) {
-                    val bookmark = bookmarks[archive.id]
-                    if (bookmark != null) {
-                        bookmark.page = archive.currentPage
+                    //Reset any remaining bookmarks, but don't remove them.
+                    for (bookmark in bookmarks.values) {
+                        bookmark.page = 0
                         add(bookmark)
-                    } else if (archive.currentPage > 0)
-                        add(ReaderTab(archive.id, archive.title, bookmarkCount++, archive.currentPage))
+                    }
                 }
-            }
 
-            if (toUpdate.isNotEmpty())
-                database.archiveDao().upsertBookmarks(toUpdate)
+                if (toUpdate.isNotEmpty())
+                    database.archiveDao().upsertBookmarks(toUpdate)
+            }
         }
     }
+
+    private suspend fun updateArchives(archives: List<ArchiveJson>) = database.archiveDao().insertAllJson(archives)
 
     suspend fun <R> withTransaction(block: suspend () -> R) = database.withTransaction { block() }
 
@@ -241,7 +245,11 @@ object DatabaseReader {
 
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>) = database.archiveDao().insertStaticCategories(references)
 
-    private suspend fun getBookmarkMap() = database.archiveDao().getBookmarks().associateBy { it.id }
+    private suspend fun getBookmarkMap(): MutableMap<String, ReaderTab> {
+        val map = mutableMapOf<String, ReaderTab>()
+        database.archiveDao().getBookmarks().associateByTo(map) { it.id }
+        return map
+    }
 
     suspend fun getBookmarks() = database.archiveDao().getBookmarks()
 
