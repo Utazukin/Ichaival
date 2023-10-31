@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2022 Utazukin
+  ~ Copyright (C) 2023 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -27,37 +27,41 @@
 
     <!-- Container for contents of drawer - use NavigationView to make configuration easier -->
 
-    <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:visibility="visible">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:animateLayoutChanges="true"
-            android:background="?actionBarBackgroundColor"
-            android:elevation="4dp"
-            android:minHeight="?attr/actionBarSize" />
-
-        <TextView
-                android:id="@+id/first_time_text"
+    <com.drakeet.drawer.FullDraggableContainer
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingTop="200dp"
-                android:text="@string/first_time_text"
-                android:textAlignment="center"
-                android:textSize="24sp" />
+                android:orientation="vertical"
+                android:visibility="visible">
 
-        <androidx.fragment.app.FragmentContainerView
-                android:id="@+id/list_fragment"
-                android:name="com.utazukin.ichaival.ArchiveListFragment"
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                tools:layout="@layout/fragment_archive_list" />
-    </LinearLayout>
+                android:layout_height="?attr/actionBarSize"
+                android:animateLayoutChanges="true"
+                android:background="?actionBarBackgroundColor"
+                android:elevation="4dp"
+                android:minHeight="?attr/actionBarSize" />
+
+            <TextView
+                    android:id="@+id/first_time_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingTop="200dp"
+                    android:text="@string/first_time_text"
+                    android:textAlignment="center"
+                    android:textSize="24sp" />
+
+            <androidx.fragment.app.FragmentContainerView
+                    android:id="@+id/list_fragment"
+                    android:name="com.utazukin.ichaival.ArchiveListFragment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:layout="@layout/fragment_archive_list" />
+        </LinearLayout>
+    </com.drakeet.drawer.FullDraggableContainer>
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/category_filter_view"

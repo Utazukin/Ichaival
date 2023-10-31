@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2022 Utazukin
+  ~ Copyright (C) 2023 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -26,32 +26,37 @@
         android:fitsSystemWindows="true"
         tools:context=".ArchiveDetails">
 
-    <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+    <com.drakeet.drawer.FullDraggableContainer
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:animateLayoutChanges="true"
-            android:elevation="4dp"
-            android:background="?actionBarBackgroundColor"
-            android:minHeight="?attr/actionBarSize"
-            app:title="@string/details_title" />
-
-        <com.google.android.material.tabs.TabLayout
-                android:id="@+id/details_tabs"
+        <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="match_parent"
+                android:orientation="vertical">
 
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/details_pager"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-    </LinearLayout>
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:animateLayoutChanges="true"
+                android:elevation="4dp"
+                android:background="?actionBarBackgroundColor"
+                android:minHeight="?attr/actionBarSize"
+                app:title="@string/details_title" />
+
+            <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/details_tabs"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/details_pager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        </LinearLayout>
+    </com.drakeet.drawer.FullDraggableContainer>
 
     <com.google.android.material.navigation.NavigationView
             android:id="@+id/nav_view"
