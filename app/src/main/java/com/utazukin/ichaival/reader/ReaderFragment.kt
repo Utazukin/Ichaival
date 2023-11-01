@@ -39,9 +39,7 @@ import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.utazukin.ichaival.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 enum class TouchZone {
     Left,
@@ -138,10 +136,8 @@ class ReaderFragment : Fragment(), PageFragment {
 
         progressBar.isIndeterminate = false
         lifecycleScope.launch {
-            val imageFile = withContext(Dispatchers.IO) {
-                val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
-                loader.cacheOrGet(request)
-            }
+            val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
+            val imageFile = loader.cacheOrGet(request)
 
             if (imageFile == null) {
                 showErrorMessage()

@@ -37,6 +37,7 @@ import coil.request.ImageRequest
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.ImageInfo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
 import javax.microedition.khronos.egl.EGL10
@@ -173,11 +174,15 @@ fun ImageLoader.clearDiskCache() = diskCache?.clear()
 
 @OptIn(ExperimentalCoilApi::class)
 suspend fun ImageLoader.cacheOrGet(request: ImageRequest) : File? {
-    val cache = diskCache?.get(request.data as String)?.use { it.data.toFile() }
-    if (cache != null)
-        return cache
-    execute(request)
-    return diskCache?.get(request.data as String)?.use { it.data.toFile() }
+    return withContext(Dispatchers.IO) {
+        val cache = diskCache?.openSnapshot(request.data as String)?.use { it.data.toFile() }
+        if (cache != null)
+            cache
+        else {
+            execute(request)
+            diskCache?.openSnapshot(request.data as String)?.use { it.data.toFile() }
+        }
+    }
 }
 
 fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgressListener: (Int) -> Unit) : ImageRequest {

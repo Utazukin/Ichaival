@@ -1,10 +1,9 @@
-apply plugin: 'com.android.application'
-
-apply plugin: 'kotlin-android'
-
-apply plugin: 'kotlin-kapt'
-
-apply plugin: 'kotlin-parcelize'
+plugins {
+    id 'kotlin-kapt'
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-parcelize'
+}
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 android {
@@ -26,7 +25,7 @@ android {
         }
     }
 
-    compileSdkVersion 33
+    compileSdk 33
     defaultConfig {
         applicationId "com.utazukin.ichaival"
         minSdkVersion 21
@@ -66,25 +65,25 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.recyclerview:recyclerview:1.3.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutine_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutine_version"
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'com.google.android.material:material:1.10.0'
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     implementation 'com.github.seven332.Image:singlelib:a7b102262a'
     implementation "androidx.room:room-runtime:$room_version"
     kapt "androidx.room:room-compiler:$room_version"
-    implementation "androidx.paging:paging-runtime-ktx:3.1.1"
+    implementation "androidx.paging:paging-runtime-ktx:3.2.1"
     implementation "android.arch.lifecycle:extensions:1.1.1"
     implementation "android.arch.lifecycle:viewmodel:1.1.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2"
     implementation "androidx.room:room-ktx:$room_version"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.1"
-    implementation "androidx.preference:preference-ktx:1.2.0"
-    implementation "androidx.fragment:fragment-ktx:1.5.7"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
+    implementation "androidx.preference:preference-ktx:1.2.1"
+    implementation "androidx.fragment:fragment-ktx:1.6.1"
     implementation "com.squareup.okhttp3:okhttp:4.11.0"
     implementation "androidx.room:room-paging:$room_version"
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
