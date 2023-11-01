@@ -273,12 +273,14 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun initializePager(appBar: Toolbar) {
         if (!isWebtoon) {
-            imagePager.adapter = if (useDoublePage) dualPageAdapter else pageAdapter
-            imagePager.offscreenPageLimit = 1
-            imagePager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(page: Int) = onPageChanged(page)
-            } )
-            imagePager.layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+            with (imagePager) {
+                adapter = if (useDoublePage) dualPageAdapter else pageAdapter
+                offscreenPageLimit = 1
+                registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(page: Int) = onPageChanged(page)
+                })
+                layoutDirection = if (rtol) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+            }
         } else {
             webtoonRecycler = findViewById(R.id.webtoon_recycler)
             val readerLayout: FrameLayout = findViewById(R.id.reader_frame_layout)
@@ -726,7 +728,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW && level != ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
             imagePager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
     }
 
