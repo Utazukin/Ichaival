@@ -121,7 +121,7 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int
                 tagEnd = tags.length
 
             val dateTag = tags.substring(tagStart, tagEnd)
-            dateTag.toLong()
+            if (dateTag.isNotBlank()) dateTag.toLong() else 0L
         }
     }
 
