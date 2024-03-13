@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,8 +18,19 @@
 
 package com.utazukin.ichaival
 
-import okhttp3.*
-import okio.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
+import okhttp3.HttpUrl
+import okhttp3.Interceptor
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
+import okio.Buffer
+import okio.BufferedSource
+import okio.ForwardingSource
+import okio.Source
+import okio.buffer
+import okio.use
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import kotlin.math.floor
@@ -34,7 +45,7 @@ class ProgressInterceptor(private val listener: ResponseProgressListener) : Inte
     }
 }
 
-class ThumbHttpInterceptor : Interceptor {
+class ThumbHttpInterceptor(private val scope: CoroutineScope) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
         val response = chain.proceed(request)
@@ -55,7 +66,7 @@ class ThumbHttpInterceptor : Interceptor {
         do {
             Thread.sleep(100)
             jobComplete = checkJobStatus(jobId, chain)
-        } while (jobComplete == null && !chain.call().isCanceled())
+        } while (jobComplete == null && !chain.call().isCanceled() && scope.isActive)
 
         return jobComplete
     }
@@ -63,7 +74,7 @@ class ThumbHttpInterceptor : Interceptor {
     private fun checkJobStatus(jobId: Int, chain: Interceptor.Chain): Boolean? {
         val url = WebHandler.getUrlForJob(jobId)
         val response = chain.proceed(Request.Builder().apply {
-                addHeader("Authorization", WebHandler.apiKey)
+            addHeader("Authorization", WebHandler.apiKey)
             url(url)
         }.build())
 

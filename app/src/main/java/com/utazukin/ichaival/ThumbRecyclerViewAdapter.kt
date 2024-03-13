@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import coil.imageLoader
 import coil.load
+import coil.request.Disposable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -45,7 +46,7 @@ class ThumbRecyclerViewAdapter(
     private val loader = if (!ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5))
         fragment.requireContext().imageLoader
     else
-        fragment.requireContext().imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor()).build() }.build()
+        fragment.requireContext().imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor(scope)).build() }.build()
 
     private val onClickListener = View.OnClickListener { v ->
         val item = v.getTag(R.id.small_thumb) as Int
@@ -61,6 +62,7 @@ class ThumbRecyclerViewAdapter(
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
     private val imageLoadingJobs: MutableMap<ViewHolder, Job> = mutableMapOf()
+    private val imageLoadRequests: MutableMap<ViewHolder, Disposable> = mutableMapOf()
 
     init {
         setHasStableIds(true)
@@ -93,7 +95,7 @@ class ThumbRecyclerViewAdapter(
 
         imageLoadingJobs[holder] = scope.launch {
             val image = archive.getThumb(holder.thumbView.context, page)
-            holder.thumbView.load(image, loader) {
+            imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
                 allowRgb565(true)
                 crossfade(true)
                 size(defaultHeight)
@@ -110,6 +112,7 @@ class ThumbRecyclerViewAdapter(
 
     override fun onViewRecycled(holder: ViewHolder) {
         imageLoadingJobs.remove(holder)?.cancel()
+        imageLoadRequests.remove(holder)?.dispose()
         super.onViewRecycled(holder)
 
         with(holder.thumbView) {
