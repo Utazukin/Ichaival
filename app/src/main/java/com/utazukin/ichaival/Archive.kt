@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -106,9 +106,9 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString
     val tags: String = json.get("tags").asString
-    val pageCount = if (json.has("pagecount")) json.get("pagecount").asInt else 0
-    val currentPage = if (json.has("progress")) json.get("progress").asInt - 1 else 0
-    val isNew = json.get("isnew").asString.let { it == "true" }
+    val pageCount = json.get("pagecount")?.asInt ?: 0
+    val currentPage = json.get("progress")?.asInt?.minus(1) ?: 0
+    val isNew = json.get("isnew").asString == "true"
     val dateAdded: Long
 
     init {
