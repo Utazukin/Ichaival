@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ enum class SortMethod(val value: Int) {
     Date(2);
 
     companion object {
-        private val map by lazy { values().associateBy(SortMethod::value)}
+        private val map by lazy { entries.associateBy(SortMethod::value)}
         fun fromInt(type: Int, default: SortMethod = Alpha) = map[type] ?: default
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -119,7 +120,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             outState.remove(REFRESH_KEY)
     }
 
-    override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String) {
+    override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String?) {
         when (key) {
             getString(R.string.server_address_preference) -> {
                 val location = pref.getString(key, "") as String
@@ -244,13 +245,20 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         startActivity(intent)
     }
 
+    @Suppress("DEPRECATION")
     override fun onResume() {
         super.onResume()
 
         if (intent.getBooleanExtra(REFRESH_KEY, false)) {
             finish()
             startActivity(intent)
-            overridePendingTransition(0, 0)
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+                overridePendingTransition(0, 0)
+            else {
+                overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, 0, 0)
+                overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, 0, 0)
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2022 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ enum class ImageFormat(private val value: Int) {
     GIF(4);
 
     companion object {
-        private val map by lazy { values().associateBy(ImageFormat::value)}
+        private val map by lazy { entries.associateBy(ImageFormat::value)}
         fun fromInt(type: Int) = map[type]
         fun fromMimeType(mime: String) : ImageFormat? {
             return when (mime) {

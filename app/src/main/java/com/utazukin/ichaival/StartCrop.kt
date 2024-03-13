@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ class StartCrop : Transformation {
             outWidth.toFloat() / input.width
         }
 
-        val result = createBitmap(outWidth, outHeight, input.config ?: Bitmap.Config.ARGB_8888).apply {
+        val result = createBitmap(outWidth, outHeight, input.config).apply {
             setHasAlpha(input.hasAlpha())
         }
 

@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2022 Utazukin
+  ~ Copyright (C) 2024 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@
         <item name="fullscreen_theme">@style/MaterialYou.FullscreenTheme</item>
         <item name="borderlessButtonStyle">@style/MaterialYou.BorderlessButton</item>
         <item name="actionBarBackgroundColor">?colorSurface</item>
+        <item name="android:windowBackground">@color/black</item>
     </style>
 
     <style name="MaterialYou.BorderlessButton" parent="Widget.Material3.Button.TextButton.Icon">
