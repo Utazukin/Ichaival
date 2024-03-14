@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2023 Utazukin
+  ~ Copyright (C) 2024 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -217,6 +217,8 @@
     <string name="git_pref_title">View on GitHub</string>
     <string name="unsupported_server_message">Server version unsupported.</string>
     <string name="empty_category_error">Category name cannot be empty.</string>
+    <string name="screen_on_pref_key">screen_on_key</string>
+    <string name="screen_on_pref_title">Keep Screen Awake</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>

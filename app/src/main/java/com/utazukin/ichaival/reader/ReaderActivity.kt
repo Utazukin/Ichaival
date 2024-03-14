@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -174,6 +174,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         autoHideDelay = truncate(prefs.castStringPrefToFloat(getString(R.string.fullscreen_timeout_key), AUTO_HIDE_DELAY_S) * 1000).toLong()
         autoHideEnabled = autoHideDelay >= 0
         dualPageEnabled = prefs.getBoolean(getString(R.string.dualpage_key), false)
+
+        if (prefs.getBoolean(getString(R.string.screen_on_pref_key), false))
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         mVisible = true
 
