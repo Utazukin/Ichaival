@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,56 +55,60 @@ data class SearchArchiveRef(val searchText: String, val archiveId: String)
 
 private class DatabaseHelper {
     private val MIGRATION_1_2 = object: Migration(1, 2) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("alter table archive add column pageCount INTEGER not null default 0")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("alter table archive add column pageCount INTEGER not null default 0")
         }
     }
 
     private val MIGRATION_2_3 = object: Migration(2, 3) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("alter table readertab add column scaleType TEXT")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("alter table readertab add column scaleType TEXT")
         }
     }
 
     private val MIGRATION_3_4 = object: Migration(3, 4) {
         val converters = DatabaseTypeConverters()
-        override fun migrate(database: SupportSQLiteDatabase) {
-            val cursor = database.query("select id, tags from archive")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val cursor = db.query("select id, tags from archive")
             while (cursor.moveToNext()) {
                 val tags = cursor.getString(cursor.getColumnIndexOrThrow("tags"))
                 val id = DatabaseUtils.sqlEscapeString(cursor.getString(cursor.getColumnIndexOrThrow("id")))
                 val tagMap = converters.fromStringv3(tags)
-                database.execSQL("update archive set tags = ${DatabaseUtils.sqlEscapeString(converters.fromMap(tagMap))} where id = $id")
+                db.execSQL("update archive set tags = ${DatabaseUtils.sqlEscapeString(converters.fromMap(tagMap))} where id = $id")
             }
         }
     }
 
     private val MIGRATION_4_5 = object: Migration(4, 5) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("alter table archive add column updatedAt INTEGER not null default 0")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("alter table archive add column updatedAt INTEGER not null default 0")
         }
     }
 
     private val MIGRATION_5_6 = object: Migration(5, 6) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("alter table archive add column titleSortIndex INTEGER not null default 0")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("alter table archive add column titleSortIndex INTEGER not null default 0")
             DatabaseReader.setDatabaseDirty()
         }
     }
 
     private val MIGRATION_6_7 = object: Migration(6, 7) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("create table if not exists archivecategory (name text not null, pinned integer not null, search text, id text not null primary key, updatedAt integer not null default 0)")
-            database.execSQL("create table if not exists staticcategoryref (archiveId text not null, categoryId text not null, updatedAt integer not null default 0, primary key (categoryId, archiveId))")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            with(db) {
+                execSQL("create table if not exists archivecategory (name text not null, pinned integer not null, search text, id text not null primary key, updatedAt integer not null default 0)")
+                execSQL("create table if not exists staticcategoryref (archiveId text not null, categoryId text not null, updatedAt integer not null default 0, primary key (categoryId, archiveId))")
+            }
             DatabaseReader.setDatabaseDirty()
         }
 
     }
 
     private val MIGRATION_7_8 = object: Migration(7, 8) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("drop table if exists search")
-            database.execSQL("create table search (searchText text not null, archiveId text not null, primary key (searchText, archiveId))")
+        override fun migrate(db: SupportSQLiteDatabase) {
+            with(db) {
+                execSQL("drop table if exists search")
+                execSQL("create table search (searchText text not null, archiveId text not null, primary key (searchText, archiveId))")
+            }
         }
     }
     val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
