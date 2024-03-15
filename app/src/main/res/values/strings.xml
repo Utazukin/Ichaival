@@ -217,7 +217,7 @@
     <string name="git_pref_title">View on GitHub</string>
     <string name="unsupported_server_message">Server version unsupported.</string>
     <string name="empty_category_error">Category name cannot be empty.</string>
-    <string name="screen_on_pref_key">screen_on_key</string>
+    <string name="screen_on_pref_key" translatable="false">screen_on_key</string>
     <string name="screen_on_pref_title">Keep Screen Awake</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
