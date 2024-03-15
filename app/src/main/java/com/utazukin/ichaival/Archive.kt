@@ -77,8 +77,7 @@ data class Archive (
 
     suspend fun extract(context: Context, forceFull: Boolean = false) {
         val pages = DatabaseReader.getPageList(context, id, forceFull)
-        if (numPages <= 0)
-            numPages = pages.size
+        numPages = pages.size
     }
 
     fun invalidateCache() = DatabaseReader.invalidateImageCache(id)

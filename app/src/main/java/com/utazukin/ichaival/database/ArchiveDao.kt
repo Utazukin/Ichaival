@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,26 @@
 package com.utazukin.ichaival.database
 
 import androidx.paging.PagingSource
-import androidx.room.*
-import com.utazukin.ichaival.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
+import androidx.room.RoomDatabase
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
+import androidx.room.Update
+import androidx.room.Upsert
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ArchiveBase
+import com.utazukin.ichaival.ArchiveCategory
+import com.utazukin.ichaival.ArchiveCategoryFull
+import com.utazukin.ichaival.ArchiveFull
+import com.utazukin.ichaival.ArchiveJson
+import com.utazukin.ichaival.ReaderTab
+import com.utazukin.ichaival.StaticCategoryRef
 import org.json.JSONObject
 
 @Dao
@@ -79,7 +97,7 @@ interface ArchiveDao {
     @Query("Select * from archive where id = :id limit 1")
     suspend fun getArchive(id: String) : Archive?
 
-    @Query("update archive set pageCount = :pageCount where id = :id and pageCount <= 0")
+    @Query("update archive set pageCount = :pageCount where id = :id and pageCount != :pageCount")
     suspend fun updatePageCount(id: String, pageCount: Int)
 
     @Query("Update archive set isNew = :isNew where id = :id")
