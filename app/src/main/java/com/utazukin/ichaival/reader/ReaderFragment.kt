@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,7 +24,11 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PointF
 import android.os.Bundle
-import android.view.*
+import android.view.GestureDetector
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
@@ -38,7 +42,16 @@ import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
-import com.utazukin.ichaival.*
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ImageDecoder
+import com.utazukin.ichaival.ImageFormat
+import com.utazukin.ichaival.ImageRegionDecoder
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.cacheOrGet
+import com.utazukin.ichaival.createGifLoader
+import com.utazukin.ichaival.downloadCoilImageWithProgress
+import com.utazukin.ichaival.getImageFormat
+import com.utazukin.ichaival.getMaxTextureSize
 import kotlinx.coroutines.launch
 
 enum class TouchZone {
@@ -170,6 +183,7 @@ class ReaderFragment : Fragment(), PageFragment {
 
                     it.setMaxTileSize(getMaxTextureSize())
                     it.setMinimumTileDpi(160)
+                    setDefaultScale(it)
 
                     if (format != null) {
                         it.setBitmapDecoderClass(ImageDecoder::class.java)
@@ -213,16 +227,21 @@ class ReaderFragment : Fragment(), PageFragment {
         imagePath?.let { displayImage(it) }
     }
 
+    private fun setDefaultScale(imageView: SubsamplingScaleImageView) {
+        with(imageView) {
+            setMinimumDpi(96)
+            setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+            resetScaleAndCenter()
+        }
+    }
+
     private fun updateScaleType(newScale: ScaleType) = updateScaleType(mainImage, newScale)
 
     private fun updateScaleType(imageView: View?, scaleType: ScaleType?, useOppositeOrientation: Boolean = false) {
         when (imageView) {
             is SubsamplingScaleImageView -> {
                 when (scaleType) {
-                    ScaleType.FitPage, null -> {
-                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
-                        imageView.resetScaleAndCenter()
-                    }
+                    ScaleType.FitPage, null -> setDefaultScale(imageView)
                     ScaleType.FitHeight -> {
                         val vPadding = imageView.paddingBottom - imageView.paddingTop
                         val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height
