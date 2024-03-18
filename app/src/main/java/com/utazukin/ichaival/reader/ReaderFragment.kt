@@ -52,6 +52,7 @@ import com.utazukin.ichaival.createGifLoader
 import com.utazukin.ichaival.downloadCoilImageWithProgress
 import com.utazukin.ichaival.getImageFormat
 import com.utazukin.ichaival.getMaxTextureSize
+import com.utazukin.ichaival.setDefaultScale
 import kotlinx.coroutines.launch
 
 enum class TouchZone {
@@ -183,7 +184,6 @@ class ReaderFragment : Fragment(), PageFragment {
 
                     it.setMaxTileSize(getMaxTextureSize())
                     it.setMinimumTileDpi(160)
-                    setDefaultScale(it)
 
                     if (format != null) {
                         it.setBitmapDecoderClass(ImageDecoder::class.java)
@@ -227,21 +227,13 @@ class ReaderFragment : Fragment(), PageFragment {
         imagePath?.let { displayImage(it) }
     }
 
-    private fun setDefaultScale(imageView: SubsamplingScaleImageView) {
-        with(imageView) {
-            setMinimumDpi(96)
-            setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
-            resetScaleAndCenter()
-        }
-    }
-
     private fun updateScaleType(newScale: ScaleType) = updateScaleType(mainImage, newScale)
 
     private fun updateScaleType(imageView: View?, scaleType: ScaleType?, useOppositeOrientation: Boolean = false) {
         when (imageView) {
             is SubsamplingScaleImageView -> {
                 when (scaleType) {
-                    ScaleType.FitPage, null -> setDefaultScale(imageView)
+                    ScaleType.FitPage, null -> imageView.setDefaultScale()
                     ScaleType.FitHeight -> {
                         val vPadding = imageView.paddingBottom - imageView.paddingTop
                         val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height

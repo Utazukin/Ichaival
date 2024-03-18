@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,8 +25,19 @@ import android.graphics.BitmapFactory
 import android.graphics.PointF
 import android.os.Bundle
 import android.util.Size
-import android.view.*
-import android.widget.*
+import android.view.GestureDetector
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -40,8 +51,25 @@ import coil.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
-import com.utazukin.ichaival.*
-import kotlinx.coroutines.*
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ImageDecoder
+import com.utazukin.ichaival.ImageFormat
+import com.utazukin.ichaival.ImageRegionDecoder
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.cacheOrGet
+import com.utazukin.ichaival.createGifLoader
+import com.utazukin.ichaival.downloadCoilImageWithProgress
+import com.utazukin.ichaival.getImageFormat
+import com.utazukin.ichaival.getMaxTextureSize
+import com.utazukin.ichaival.outSize
+import com.utazukin.ichaival.setDefaultScale
+import com.utazukin.ichaival.tryOrNull
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import kotlin.math.ceil
 
 enum class PageCompressFormat {
@@ -296,6 +324,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                         setOnClickListener(null)
                         setOnLongClickListener(null)
                     }
+
+                    updateScaleType(this@apply, currentScaleType)
                 }
                 override fun onImageLoadError(e: Exception?) {
                     topLayout.removeView(mainImage)
@@ -456,10 +486,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         when (imageView) {
             is SubsamplingScaleImageView -> {
                 when (scaleType) {
-                    ScaleType.FitPage, null -> {
-                        imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
-                        imageView.resetScaleAndCenter()
-                    }
+                    ScaleType.FitPage, null -> imageView.setDefaultScale()
                     ScaleType.FitHeight -> {
                         val vPadding = imageView.paddingBottom - imageView.paddingTop
                         val viewHeight = if (useOppositeOrientation) imageView.width else imageView.height

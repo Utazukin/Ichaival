@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,12 +34,13 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.ImageInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.*
+import java.util.Stack
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.egl.EGLContext
@@ -154,6 +155,20 @@ fun getImageFormat(imageFile: File) : ImageFormat? {
             ImageFormat.fromInt(info.format)
         else
             null
+    }
+}
+
+fun SubsamplingScaleImageView.setDefaultScale() {
+    if (!isReady)
+        return
+
+    val avgScale = (width + height) / 2f
+    val imgScale = (sWidth + sHeight) / 2f
+    val ratio = avgScale / imgScale
+    if (maxScale < ratio) {
+        maxScale = ratio
+        setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CUSTOM)
+        resetScaleAndCenter()
     }
 }
 
