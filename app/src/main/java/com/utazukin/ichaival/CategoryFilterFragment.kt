@@ -128,6 +128,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         categoryGroup.removeAllViews()
         if (!categories.isNullOrEmpty()) {
             label.visibility = View.VISIBLE
+            categoryGroup.visibility = View.VISIBLE
             for ((i, category) in categories.withIndex()) {
                 val categoryButton = Chip(context).apply {
                     text = category.name
@@ -142,7 +143,10 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 
             if (firstUpdate)
                 savedCategory?.run { categoryButtons.firstOrNull { it.text == name }?.isChecked = true }
-        } else label.visibility = View.GONE
+        } else {
+            label.visibility = View.GONE
+            categoryGroup.visibility = View.GONE
+        }
     }
 
     fun clearCategory() = categoryGroup.clearCheck()
