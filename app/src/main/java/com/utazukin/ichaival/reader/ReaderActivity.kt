@@ -27,11 +27,25 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Bundle
-import android.view.*
-import android.widget.*
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
-import androidx.core.view.*
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -40,13 +54,34 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import coil.imageLoader
 import com.google.android.material.color.MaterialColors
-import com.utazukin.ichaival.*
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ArchiveDetails
+import com.utazukin.ichaival.BaseActivity
+import com.utazukin.ichaival.FROM_READER_PAGE
+import com.utazukin.ichaival.GalleryPreviewDialogFragment
+import com.utazukin.ichaival.ProgressInterceptor
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.ReaderTab
+import com.utazukin.ichaival.ReaderTabHolder
+import com.utazukin.ichaival.ReaderTabViewAdapter
+import com.utazukin.ichaival.ResponseProgressListener
+import com.utazukin.ichaival.TabRemovedListener
+import com.utazukin.ichaival.TabsClearedListener
+import com.utazukin.ichaival.ThumbRecyclerViewAdapter
+import com.utazukin.ichaival.WebHandler
+import com.utazukin.ichaival.castStringPrefToFloat
+import com.utazukin.ichaival.clearDiskCache
 import com.utazukin.ichaival.database.DatabaseExtractListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.reader.ReaderFragment.OnFragmentInteractionListener
 import com.utazukin.ichaival.reader.webtoon.WebtoonReaderViewHolder
 import com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -519,10 +554,17 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 }
             }
             R.id.thumb_button -> archive?.let {
-                launch {
-                    DatabaseReader.refreshThumbnail(it.id, this@ReaderActivity, currentPage)
-                    Toast.makeText(this@ReaderActivity, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
-                }
+                val dialog = AlertDialog.Builder(this)
+                    .setTitle(R.string.use_thumb)
+                    .setPositiveButton(R.string.yes) { d, _ ->
+                        launch {
+                            DatabaseReader.refreshThumbnail(it.id, this@ReaderActivity, currentPage)
+                            Toast.makeText(this@ReaderActivity, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
+                        }
+                        d.dismiss()
+                    }
+                    .setNegativeButton(R.string.no) { d, _ -> d.cancel() }
+                dialog.show()
             }
             R.id.random_archive_button -> {
                 launch {
