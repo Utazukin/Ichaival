@@ -136,8 +136,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
                     isCheckable = true
                     setOnClickListener { listener?.onCategoryChanged(selectedCategory) }
                 }
-                categoryGroup.addView(categoryButton, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                categoryGroup.chipSpacingHorizontal = categoryButton.chipIconSize.toInt()
+                categoryGroup.addView(categoryButton, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 categoryButtons.add(categoryButton)
             }
 
