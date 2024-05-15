@@ -172,6 +172,8 @@ fun SubsamplingScaleImageView.setDefaultScale() {
     }
 }
 
+fun isLocalFile(path: String) = path.startsWith("/data")
+
 fun ImageLoader.createGifLoader() : ImageLoader {
     return newBuilder().components {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)

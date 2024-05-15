@@ -1,45 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-            android:name="com.utazukin.ichaival.App"
-            android:allowBackup="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="@string/app_name"
-            android:roundIcon="@mipmap/ic_launcher_round"
-            android:usesCleartextTraffic="true"
-            android:supportsRtl="true">
-        <activity android:name="com.utazukin.ichaival.ArchiveList" android:exported="true">
+        android:name=".App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true">
+        <activity
+            android:name=".DownloadsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_downloads"
+            android:theme="@style/Theme.Ichaival" />
+        <activity
+            android:name=".ArchiveList"
+            android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
+                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.utazukin.ichaival.ArchiveDetails">
-        </activity>
-        <activity android:name="com.utazukin.ichaival.ArchiveSearch"/>
-        <activity android:name="com.utazukin.ichaival.ArchiveRandomActivity"/>
-        <activity android:name="com.utazukin.ichaival.settings.WebViewActivity"
-            android:parentActivityName="com.utazukin.ichaival.settings.SettingsActivity"/>
+        <activity android:name=".ArchiveDetails"></activity>
+        <activity android:name=".ArchiveSearch" />
+        <activity android:name=".ArchiveRandomActivity" />
         <activity
-                android:name="com.utazukin.ichaival.reader.ReaderActivity"
-                android:configChanges="orientation|screenLayout|screenSize"
-                android:theme="?fullscreen_theme">
+            android:name=".settings.WebViewActivity"
+            android:parentActivityName=".settings.SettingsActivity" />
+        <activity
+            android:name=".reader.ReaderActivity"
+            android:configChanges="orientation|screenLayout|screenSize"
+            android:theme="?fullscreen_theme">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="com.utazukin.ichaival.ArchiveList"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.utazukin.ichaival.ArchiveList" />
         </activity>
         <activity
-                android:name="com.utazukin.ichaival.settings.SettingsActivity"
-                android:label="@string/title_activity_settings"
-                android:parentActivityName="com.utazukin.ichaival.ArchiveList">
+            android:name=".settings.SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".ArchiveList">
             <meta-data
-                    android:name="android.support.PARENT_ACTIVITY"
-                    android:value="com.utazukin.ichaival.ArchiveList"/>
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.utazukin.ichaival.ArchiveList" />
         </activity>
     </application>
 

@@ -61,15 +61,18 @@ import com.utazukin.ichaival.createGifLoader
 import com.utazukin.ichaival.downloadCoilImageWithProgress
 import com.utazukin.ichaival.getImageFormat
 import com.utazukin.ichaival.getMaxTextureSize
+import com.utazukin.ichaival.isLocalFile
 import com.utazukin.ichaival.outSize
 import com.utazukin.ichaival.setDefaultScale
 import com.utazukin.ichaival.tryOrNull
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
+import java.io.File
 import kotlin.math.ceil
 
 enum class PageCompressFormat {
@@ -245,10 +248,10 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         progressBar.isIndeterminate = false
         lifecycleScope.launch {
             val imageFile = withContext(Dispatchers.IO) {
-                val request = downloadCoilImageWithProgress(requireContext(), image) {
-                    progressBar.progress = it
-                }
-                loader.cacheOrGet(request)
+                if (!isLocalFile(image)) {
+                    val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
+                    loader.cacheOrGet(request)
+                } else File(image)
             }
 
             if (imageFile == null) {
@@ -375,20 +378,29 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
             var targetProgess = 0
             var otherProgress = 0
-            val target = downloadCoilImageWithProgress(requireActivity(), image) {
-                targetProgess = it / 2
-                progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
-            }
-            val otherTarget = downloadCoilImageWithProgress(requireActivity(), otherImage) {
-                otherProgress = it / 2
-                progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
-            }
 
             try {
-                val dtarget = async { tryOrNull { loader.cacheOrGet(target) } }
-                val dotherTarget = async { tryOrNull { loader.cacheOrGet(otherTarget) } }
+                val imgFile: File?
+                var otherImgFile: File? = null
+                var dotherTarget: Deferred<File?>? = null
 
-                val imgFile = dtarget.await()
+                if (!isLocalFile(image)) {
+                    val target = downloadCoilImageWithProgress(requireActivity(), image) {
+                        targetProgess = it / 2
+                        progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
+                    }
+                    val dtarget = async { tryOrNull { loader.cacheOrGet(target) } }
+                    imgFile = dtarget.await()
+                } else imgFile = File(image)
+
+                if (!isLocalFile(otherImage)) {
+                    val otherTarget = downloadCoilImageWithProgress(requireActivity(), otherImage) {
+                        otherProgress = it / 2
+                        progressBar.progress = ((targetProgess + otherProgress) * 0.9f).toInt()
+                    }
+                    dotherTarget = async { tryOrNull { loader.cacheOrGet(otherTarget) } }
+                } else otherImgFile = File(otherImage)
+
                 if (imgFile == null) {
                     displaySingleImageMain(image, page)
                     return@launch
@@ -396,12 +408,14 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeFile(imgFile.absolutePath, img)
                 if (img.outMimeType == null || ImageFormat.fromMimeType(img.outMimeType) == ImageFormat.GIF) {
-                    dotherTarget.cancel()
+                    dotherTarget?.cancel()
                     displaySingleImageMain(image, page)
                     return@launch
                 }
 
-                val otherImgFile = dotherTarget.await()
+                if (dotherTarget != null)
+                    otherImgFile = dotherTarget.await()
+
                 if (otherImgFile == null) {
                     displaySingleImageMain(image, otherPage)
                     return@launch

@@ -17,13 +17,7 @@
   ~  along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item
-            android:id="@+id/nav_settings"
-            android:icon="@android:drawable/ic_menu_manage"
-            android:title="@string/title_activity_settings"/>
-    <item
-        android:id="@+id/nav_downloads"
-        android:icon="@android:drawable/stat_sys_download"
-        android:title="Downloads" />
-</menu>
+<resources>
+
+    <style name="Theme.Ichaival" parent="AppTheme" />
+</resources>

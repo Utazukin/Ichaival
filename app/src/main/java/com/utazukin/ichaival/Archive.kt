@@ -77,7 +77,8 @@ data class Archive (
 
     suspend fun extract(context: Context, forceFull: Boolean = false) {
         val pages = DatabaseReader.getPageList(context, id, forceFull)
-        numPages = pages.size
+        if (numPages > 0)
+            numPages = pages.size
     }
 
     fun invalidateCache() = DatabaseReader.invalidateImageCache(id)
@@ -96,6 +97,10 @@ data class Archive (
     suspend fun getThumb(context: Context, page: Int) = WebHandler.getThumbUrl(id, page) ?: downloadPage(context, page)
 
     private suspend fun downloadPage(context: Context, page: Int) : String? {
+        val downloadPath = DownloadManager.getDownloadedPage(id, page)
+        if (downloadPath != null)
+            return downloadPath
+
         val pages = DatabaseReader.getPageList(context.applicationContext, id)
         return if (page < pages.size) WebHandler.getRawImageUrl(pages[page]) else null
     }

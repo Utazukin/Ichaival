@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,11 +28,27 @@ import com.utazukin.ichaival.database.DatabaseMessageListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.DatabaseRefreshListener
 import com.utazukin.ichaival.database.ServerSearchResult
-import kotlinx.coroutines.*
-import okhttp3.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Dispatcher
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -364,7 +380,14 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
     suspend fun getThumbUrl(id: String, page: Int): String? {
-        if (!canConnect() || !ServerManager.checkVersionAtLeast(0, 8, 4))
+        val localThumb = DownloadManager.getDownloadThumb(id, page)
+        if (localThumb != null)
+            return localThumb
+
+        if (!canConnect())
+            return ""
+
+        if (!ServerManager.checkVersionAtLeast(0, 8, 4))
             return null
 
         return when {
@@ -386,6 +409,20 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 it.code == HttpURLConnection.HTTP_ACCEPTED -> null
                 else -> null
             }
+        }
+    }
+
+    suspend fun downloadImage(file: File, serverPath: String) : Boolean {
+        val url = getRawImageUrl(serverPath)
+        val connection = createServerConnection(url)
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+
+        response.use {
+            if (it?.isSuccessful != true)
+                return false
+
+            it.body?.byteStream()?.use { file.outputStream().use { f -> it.copyTo(f) } } ?: return false
+            return true
         }
     }
 

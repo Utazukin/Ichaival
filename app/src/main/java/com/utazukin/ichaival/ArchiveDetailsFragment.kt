@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,10 +24,23 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
-import android.view.*
-import android.widget.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.core.content.ContextCompat
-import androidx.core.view.*
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.children
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -45,11 +58,13 @@ import java.text.DateFormat
 
 private const val ARCHIVE_ID = "arcid"
 
-class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener, AddCategoryListener, MenuProvider {
+class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListener, TabAddedListener, AddCategoryListener, MenuProvider, ImageDownloadListener {
     private var archiveId = ""
     private lateinit var catFlexLayout: FlexboxLayout
     private lateinit var bookmarkButton: Button
     private lateinit var thumbView: ImageView
+    private lateinit var downloadButton: Button
+    private var archive: Archive? = null
     private var tagListener: TagInteractionListener? = null
     private val isLocalSearch by lazy {
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -63,8 +78,11 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_archive_details, container, false)
-        catFlexLayout = view.findViewById(R.id.cat_flex)
-        thumbView = view.findViewById(R.id.cover)
+        with(view) {
+            catFlexLayout = findViewById(R.id.cat_flex)
+            thumbView = findViewById(R.id.cover)
+            downloadButton = findViewById(R.id.download_button)
+        }
         ViewCompat.setTransitionName(thumbView, COVER_TRANSITION)
 
         with(requireActivity() as MenuHost) {
@@ -108,6 +126,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         ReaderTabHolder.registerRemoveListener(this)
         ReaderTabHolder.registerClearListener(this)
         ReaderTabHolder.registerAddListener(this)
+        DownloadManager.addListener(this)
         tagListener = context as? TagInteractionListener
     }
 
@@ -116,6 +135,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         ReaderTabHolder.unregisterRemoveListener(this)
         ReaderTabHolder.unregisterClearListener(this)
         ReaderTabHolder.unregisterAddListener(this)
+        DownloadManager.removeListener(this)
     }
 
     override fun onTabAdded(id: String) {
@@ -275,12 +295,50 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val readButton: Button = view.findViewById(R.id.read_button)
         readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
-        val archive = DatabaseReader.getArchive(archiveId) ?: return
+        val archive = DatabaseReader.getArchive(archiveId)?.also { this.archive = it } ?: return
         setUpTags(view, archive)
         setupCategories(view, archive)
 
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive.title
+
+        val downloadedCount = DownloadManager.getDownloadedPageCount(archiveId)
+        if (downloadedCount == archive.numPages)
+            downloadButton.text = resources.getString(R.string.download_button_downloaded)
+        else if (DownloadManager.isDownloading(archiveId))
+            downloadButton.text = if (downloadedCount > 0) resources.getString(R.string.download_button_downloading, downloadedCount, archive.numPages) else resources.getString(R.string.archive_extract_message)
+
+        downloadButton.setOnClickListener {
+            if (!DownloadManager.isDownloading(archiveId)) {
+                val pageCount = DownloadManager.getDownloadedPageCount(archiveId)
+                if (pageCount > 0) {
+                    val builder = MaterialAlertDialogBuilder(requireContext()).apply {
+                        setTitle(R.string.delete_archive_item)
+                        setMessage("Delete downloaded files?")
+                        setPositiveButton(R.string.yes) { dialog, _ ->
+                            dialog.dismiss()
+                            DownloadManager.deleteArchive(archiveId)
+                            downloadButton.text = resources.getString(R.string.download_button)
+                        }
+                        setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
+                    }
+                    builder.show()
+                } else DownloadManager.download(archiveId)
+            }
+            else {
+                val builder = MaterialAlertDialogBuilder(requireContext()).apply {
+                    setTitle("Cancel Download")
+                    setMessage("Cancel Download?")
+                    setPositiveButton(R.string.yes) { dialog, _ ->
+                        dialog.dismiss()
+                        DownloadManager.cancelDownload(archiveId)
+                        downloadButton.text = resources.getString(R.string.download_button)
+                    }
+                    setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
+                }
+                builder.show()
+            }
+        }
 
         val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())
         thumbFile?.let {
@@ -319,5 +377,17 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     putString(ARCHIVE_ID, id)
                 }
             }
+    }
+
+    override fun onImageDownloaded(id: String, pagesDownloaded: Int) {
+        if (id == archiveId) {
+            archive?.let {
+                downloadButton.text = when {
+                    pagesDownloaded == 0 -> resources.getString(R.string.archive_extract_message)
+                    pagesDownloaded < it.numPages -> resources.getString(R.string.download_button_downloading, pagesDownloaded, it.numPages)
+                    else -> resources.getString(R.string.download_button_downloaded)
+                }
+            }
+        }
     }
 }

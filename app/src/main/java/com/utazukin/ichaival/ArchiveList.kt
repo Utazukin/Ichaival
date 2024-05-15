@@ -152,6 +152,12 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
                     drawerLayout.closeDrawers()
                     true
                 }
+                R.id.nav_downloads -> {
+                    val intent = Intent(this, DownloadsActivity::class.java)
+                    startActivity(intent)
+                    drawerLayout.closeDrawers()
+                    true
+                }
                 else -> false
             }
         }

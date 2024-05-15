@@ -52,8 +52,10 @@ import com.utazukin.ichaival.createGifLoader
 import com.utazukin.ichaival.downloadCoilImageWithProgress
 import com.utazukin.ichaival.getImageFormat
 import com.utazukin.ichaival.getMaxTextureSize
+import com.utazukin.ichaival.isLocalFile
 import com.utazukin.ichaival.setDefaultScale
 import kotlinx.coroutines.launch
+import java.io.File
 
 enum class TouchZone {
     Left,
@@ -150,8 +152,13 @@ class ReaderFragment : Fragment(), PageFragment {
 
         progressBar.isIndeterminate = false
         lifecycleScope.launch {
-            val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
-            val imageFile = loader.cacheOrGet(request)
+            val imageFile: File?
+
+            if (!isLocalFile(image)) {
+                val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
+                imageFile = loader.cacheOrGet(request)
+            } else
+                imageFile = File(image)
 
             if (imageFile == null) {
                 showErrorMessage()

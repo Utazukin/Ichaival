@@ -219,6 +219,9 @@
     <string name="empty_category_error">Category name cannot be empty.</string>
     <string name="screen_on_pref_key" translatable="false">screen_on_key</string>
     <string name="screen_on_pref_title">Keep Screen Awake</string>
+    <string name="download_button">Download</string>
+    <string name="download_button_downloaded">Downloaded</string>
+    <string name="download_button_downloading">Downloading %1$d/%2$d</string>
     <string-array name="compression_types">
         <item>@string/jpg_compress</item>
         <item>@string/png_compress</item>
@@ -231,4 +234,5 @@
         <item>@string/jpg_compress_display</item>
         <item>@string/png_compress_display</item>
     </string-array>
+    <string name="title_activity_downloads">DownloadsActivity</string>
 </resources>
