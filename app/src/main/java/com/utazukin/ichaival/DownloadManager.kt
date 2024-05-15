@@ -71,7 +71,7 @@ object DownloadManager {
                     val file = File(downloadDir, filename)
                     val thumbFile = File(thumbDir, filename)
                     val imageDownload = async { WebHandler.downloadImage(file, page) }
-                    val thumbDownload = async { WebHandler.downloadThumb(App.context, id, i) }
+                    val thumbDownload = async { WebHandler.downloadThumb(id, i) }
                     imageDownload.await()
                     thumbDownload.await()?.use { thumbFile.outputStream().use { f -> it.copyTo(f) } }
                     updateListeners(id, i + 1)

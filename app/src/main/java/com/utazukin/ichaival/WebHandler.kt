@@ -379,6 +379,23 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
+    suspend fun downloadThumb(id: String, page: Int): InputStream? = withContext(Dispatchers.IO) {
+        if (!canConnect())
+            return@withContext null
+
+        val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
+        val connection = createServerConnection(url)
+        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
+
+        response.let {
+            if (it?.isSuccessful != true || !isActive)
+                null
+            else {
+                it.body?.byteStream()
+            }
+        }
+    }
+
     suspend fun getThumbUrl(id: String, page: Int): String? {
         val localThumb = DownloadManager.getDownloadThumb(id, page)
         if (localThumb != null)
@@ -392,12 +409,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         return when {
             //The minion api is protected before v0.8.5, so fallback to the old logic since we can't check in the interceptor.
-            !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> downloadThumb(id, page)
+            !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> internalGetThumbUrl(id, page)
             else -> "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
         }
     }
 
-    private suspend fun downloadThumb(id: String, page: Int): String? = withContext(Dispatchers.IO) {
+    private suspend fun internalGetThumbUrl(id: String, page: Int): String? = withContext(Dispatchers.IO) {
         val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
