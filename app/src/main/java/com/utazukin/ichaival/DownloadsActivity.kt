@@ -36,10 +36,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -168,8 +169,10 @@ fun AppBar(activity: DownloadsActivity) {
 fun DownloadList(archives: List<DownloadedArchive>, modifier: Modifier) {
     val stateList = remember { archives }
     LazyColumn(modifier) {
-        items(stateList) {
-            DownloadItem(download = it)
+        itemsIndexed(stateList) {i, item ->
+            DownloadItem(download = item)
+            if (i < stateList.lastIndex)
+                HorizontalDivider()
         }
     }
 }
@@ -177,11 +180,12 @@ fun DownloadList(archives: List<DownloadedArchive>, modifier: Modifier) {
 @Composable
 fun DownloadItem(download: DownloadedArchive) {
     val context = LocalContext.current
-    val itemSize = 200
+    val itemSize = 150
     Row(modifier =
     Modifier
         .fillMaxWidth()
         .background(MaterialTheme.colorScheme.background)
+        .padding(vertical = 8.dp)
         .clickable { startDetailsActivity(download.archive.id, context) }) {
         val model = ImageRequest.Builder(LocalContext.current).data(download.thumb).size(getDpAdjusted(itemSize)).build()
         AsyncImage(model = model, contentDescription = null, modifier = Modifier
