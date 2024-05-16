@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
 
 package com.utazukin.ichaival
 
@@ -39,7 +39,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,10 +47,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -61,6 +63,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.ui.theme.IchaivalTheme
+import com.utazukin.ichaival.ui.theme.ThemeButton
+import com.utazukin.ichaival.ui.theme.ThemeText
 import kotlinx.coroutines.launch
 
 data class DownloadedArchive(val archive: Archive, val thumb: String?, val count: Int, val cancelled: Boolean = false)
@@ -91,9 +95,10 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
                 }
             }
             setContent {
-                IchaivalTheme {
-                    // A surface container using the 'background' color from the theme
-                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                val theme = getCustomTheme()
+                val color = if (theme == getString(R.string.dark_theme)) Color.DarkGray else Color.Black
+                IchaivalTheme(theme = theme) {
+                    Surface(modifier = Modifier.fillMaxSize(), color = color) {
                         Scaffold(topBar = { AppBar(this@DownloadsActivity) }) {
                             DownloadList(archives = downloadedArchives, Modifier.padding(it))
                         }
@@ -147,11 +152,16 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
 
 @Composable
 fun AppBar(activity: DownloadsActivity) {
+    val colors = when(activity.getCustomTheme()) {
+        activity.getString(R.string.black_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color.Black)
+        activity.getString(R.string.dark_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color(0xFF212121))
+        else -> TopAppBarDefaults.topAppBarColors()
+    }
     TopAppBar(title = { Text("Downloads") }, navigationIcon = {
         IconButton(onClick = { activity.finish() }) {
             Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
         }
-    })
+    }, colors = colors, modifier = Modifier.shadow(elevation = 5.dp))
 }
 
 @Composable
@@ -186,14 +196,15 @@ fun DownloadItem(download: DownloadedArchive) {
             .height(itemSize.dp)
             .wrapContentHeight()
             .padding(end = 8.dp))
-        Button(onClick = {
+        ThemeButton(onClick = {
             if (DownloadManager.isDownloading(download.archive.id))
                 DownloadManager.cancelDownload(download.archive.id)
             else
                 DownloadManager.deleteArchive(download.archive.id)
         }, modifier = Modifier
             .height(itemSize.dp)
-            .wrapContentHeight(), content = { Text(text = if (DownloadManager.isDownloading(download.archive.id)) "Cancel" else "Delete") })
+            .padding(end = 8.dp)
+            .wrapContentHeight(), content = { ThemeText(text = if (DownloadManager.isDownloading(download.archive.id)) "Cancel" else "Delete") })
     }
 }
 
