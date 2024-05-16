@@ -25,10 +25,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,24 +36,30 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -68,7 +71,11 @@ import com.utazukin.ichaival.ui.theme.ThemeButton
 import com.utazukin.ichaival.ui.theme.ThemeText
 import kotlinx.coroutines.launch
 
-data class DownloadedArchive(val archive: Archive, val thumb: String?, val count: Int, val cancelled: Boolean = false)
+data class DownloadedArchive(val archive: Archive, val thumb: String?, val count: Int, val cancelled: Boolean = false) {
+    val complete = count == archive.numPages
+}
+
+data class ButtonOption(val download: DownloadedArchive, val title: String, val message: String, val onConfirm: (DownloadedArchive, MutableState<ButtonOption?>) -> Unit)
 
 class DownloadsActivity : ComponentActivity(), DownloadListener {
     private val downloadedArchives = mutableStateListOf<DownloadedArchive>()
@@ -181,35 +188,75 @@ fun DownloadList(archives: List<DownloadedArchive>, modifier: Modifier) {
 fun DownloadItem(download: DownloadedArchive) {
     val context = LocalContext.current
     val itemSize = 150
-    Row(modifier =
-    Modifier
+    val openDialog = remember { mutableStateOf<ButtonOption?>(null) }
+
+    openDialog.value?.run {
+        AlertDialog(onDismissRequest = { openDialog.value = null },
+                confirmButton = { TextButton(onClick = { onConfirm(download, openDialog) }) { Text("Yes") } },
+                dismissButton = { TextButton(onClick = { openDialog.value = null }) { Text("No") } },
+                text = { Text(message) },
+                title = { Text(title) })
+    }
+
+    ConstraintLayout(modifier = Modifier
         .fillMaxWidth()
-        .background(MaterialTheme.colorScheme.background)
+        .height(itemSize.dp)
         .padding(vertical = 8.dp)
         .clickable { startDetailsActivity(download.archive.id, context) }) {
+        val (image, title, progress, button) = createRefs()
+
         val model = ImageRequest.Builder(LocalContext.current).data(download.thumb).size(getDpAdjusted(itemSize)).build()
-        AsyncImage(model = model, contentDescription = null, modifier = Modifier
-            .padding(end = 5.dp)
-            .width(itemSize.dp))
-        Text(text = download.archive.title, modifier = Modifier
+        AsyncImage(model = model, contentDescription = null, modifier =
+        Modifier
+            .width(itemSize.dp)
+            .constrainAs(image) {
+                start.linkTo(anchor = parent.start)
+            }
+        )
+        Text(text = download.archive.title, overflow = TextOverflow.Ellipsis, modifier = Modifier
             .height(itemSize.dp)
-            .wrapContentHeight())
-        Spacer(modifier = Modifier.weight(1f))
+            .wrapContentHeight()
+            .constrainAs(title) {
+                start.linkTo(image.end, margin = 5.dp)
+                width = Dimension.fillToConstraints
+                end.linkTo(progress.start)
+            }
+        )
         val text = if (download.count > 0) "${download.count}/${download.archive.numPages}" else context.getString(R.string.archive_extract_message)
         Text(text = text, modifier = Modifier
             .height(itemSize.dp)
             .wrapContentHeight()
-            .padding(end = 8.dp))
-        ThemeButton(onClick = {
-            if (DownloadManager.isDownloading(download.archive.id))
-                DownloadManager.cancelDownload(download.archive.id)
-            else
-                DownloadManager.deleteArchive(download.archive.id)
-        }, modifier = Modifier
+            .constrainAs(progress) { end.linkTo(button.start, margin = 4.dp) })
+        ThemeButton(onClick = { handleButtonClick(download, context, openDialog) }, modifier = Modifier
             .height(itemSize.dp)
-            .padding(end = 8.dp)
-            .wrapContentHeight(), content = { ThemeText(text = if (DownloadManager.isDownloading(download.archive.id)) "Cancel" else "Delete") })
+            .wrapContentHeight()
+            .constrainAs(button) { end.linkTo(parent.end, margin = 8.dp) },
+                content = {
+                    val text = when {
+                        DownloadManager.isDownloading(download.archive.id) -> "Cancel"
+                        !download.complete -> "Resume"
+                        else -> "Delete"
+                    }
+                    ThemeText(text = text)
+                })
     }
+}
+
+private fun handleButtonClick(download: DownloadedArchive, context: Context, openDialog: MutableState<ButtonOption?>) {
+    val archive = download.archive
+    if (!DownloadManager.isDownloading(archive.id)) {
+        if (download.count == archive.numPages) {
+            openDialog.value = ButtonOption(download, context.getString(R.string.delete_archive_item), "Delete downloaded files?") { dl, dialog ->
+                dialog.value = null
+                DownloadManager.deleteArchive(dl.archive.id)
+            }
+        } else if (download.count > 0) {
+            openDialog.value = ButtonOption(download, "Download", "Resume download?") { dl, dialog ->
+                dialog.value = null
+                DownloadManager.resumeDownload(dl.archive.id, dl.count)
+            }
+        }
+    } else DownloadManager.cancelDownload(archive.id)
 }
 
 private fun startDetailsActivity(id: String, context: Context) {
