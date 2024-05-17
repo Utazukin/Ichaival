@@ -27,6 +27,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import java.io.File
 
 interface ImageDownloadListener {
@@ -36,6 +37,7 @@ interface ImageDownloadListener {
 interface DownloadListener : ImageDownloadListener {
     fun onDownloadRemoved(id: String)
     fun onDownloadCanceled(id: String)
+    fun onDownloadsAdded(downloads: List<Pair<String, Int>>)
 }
 
 class DownloadJob(val job: Job) {
@@ -114,8 +116,18 @@ object DownloadManager {
 
     fun addListener(listener: ImageDownloadListener) {
         downloadListeners.add(listener)
-        for ((id, job) in runningDownloads)
-            listener.onImageDownloaded(id, job.pageCount)
+        scope.launch(Dispatchers.Main.immediate) {
+            val downloads = getDownloadedArchives()
+            for (id in downloads) {
+                val running = runningDownloads[id]
+                if (running != null)
+                    listener.onImageDownloaded(id, running.pageCount)
+                else {
+                    val pageCount = getDownloadedPageCount(id)
+                    listener.onImageDownloaded(id, pageCount)
+                }
+            }
+        }
     }
     fun removeListener(listener: ImageDownloadListener) = downloadListeners.remove(listener)
 
@@ -144,22 +156,25 @@ object DownloadManager {
         return if (file.exists()) file.path else null
     }
 
-    fun getDownloadedArchives() : List<String> {
+    private suspend fun getDownloadedArchives() : List<String> {
         val downloadDir = File(App.context.noBackupFilesDir, downloadsPath)
-        val files = downloadDir.listFiles() ?: return emptyList()
-        files.sortBy { it.lastModified() }
-        return buildList(files.size) {
-            for (file in files)
-                add(file.name)
+
+        return withContext(Dispatchers.IO) {
+            val files = downloadDir.listFiles() ?: return@withContext emptyList()
+            files.sortBy { it.lastModified() }
+            buildList(files.size) {
+                for (file in files)
+                    add(file.name)
+            }
         }
     }
 
-    fun getDownloadedPageCount(id: String) : Int {
+    suspend fun getDownloadedPageCount(id: String) : Int {
         val downloadDir = File(App.context.noBackupFilesDir, "$downloadsPath/$id")
         if (!downloadDir.exists())
             return 0
 
-        return downloadDir.listFiles(File::isFile)?.size ?: 0
+        return withContext(Dispatchers.IO)  { downloadDir.listFiles(File::isFile)?.size ?: 0 }
     }
 
     fun isDownloaded(id: String) = File(App.context.noBackupFilesDir, "$downloadsPath/$id").exists()

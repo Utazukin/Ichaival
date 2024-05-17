@@ -312,37 +312,39 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
         downloadButton.setOnClickListener {
             if (!DownloadManager.isDownloading(archiveId)) {
-                val pageCount = DownloadManager.getDownloadedPageCount(archiveId)
-                if (pageCount == archive.numPages) {
-                    val builder = MaterialAlertDialogBuilder(requireContext()).apply {
-                        setTitle(R.string.delete_archive_item)
-                        setMessage("Delete downloaded files?")
-                        setPositiveButton(R.string.yes) { dialog, _ ->
-                            dialog.dismiss()
-                            DownloadManager.deleteArchive(archiveId)
-                            downloadButton.text = resources.getString(R.string.download_button)
+                lifecycleScope.launch {
+                    val pageCount = DownloadManager.getDownloadedPageCount(archiveId)
+                    if (pageCount == archive.numPages) {
+                        val builder = MaterialAlertDialogBuilder(requireContext()).apply {
+                            setTitle(R.string.delete_archive_item)
+                            setMessage(R.string.delete_downloads_message)
+                            setPositiveButton(R.string.yes) { dialog, _ ->
+                                dialog.dismiss()
+                                DownloadManager.deleteArchive(archiveId)
+                                downloadButton.text = resources.getString(R.string.download_button)
+                            }
+                            setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
                         }
-                        setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
-                    }
-                    builder.show()
-                } else if (pageCount > 0) {
-                    val builder = MaterialAlertDialogBuilder(requireContext()).apply {
-                        setTitle("Download")
-                        setMessage("Resume download?")
-                        setPositiveButton(R.string.yes) { dialog, _ ->
-                            dialog.dismiss()
-                            DownloadManager.resumeDownload(archiveId, downloadedCount)
-                            downloadButton.text = resources.getString(R.string.download_button)
+                        builder.show()
+                    } else if (pageCount > 0) {
+                        val builder = MaterialAlertDialogBuilder(requireContext()).apply {
+                            setTitle(R.string.download_button)
+                            setMessage(R.string.resume_download_message)
+                            setPositiveButton(R.string.yes) { dialog, _ ->
+                                dialog.dismiss()
+                                DownloadManager.resumeDownload(archiveId, downloadedCount)
+                                downloadButton.text = resources.getString(R.string.download_button)
+                            }
+                            setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
                         }
-                        setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
-                    }
-                    builder.show()
-                } else DownloadManager.download(archiveId)
+                        builder.show()
+                    } else DownloadManager.download(archiveId)
+                }
             }
             else {
                 val builder = MaterialAlertDialogBuilder(requireContext()).apply {
-                    setTitle("Cancel Download")
-                    setMessage("Cancel Download?")
+                    setTitle(android.R.string.cancel)
+                    setMessage(R.string.cancel_downloads_message)
                     setPositiveButton(R.string.yes) { dialog, _ ->
                         dialog.dismiss()
                         DownloadManager.cancelDownload(archiveId)
@@ -355,21 +357,23 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
 
         downloadButton.setOnLongClickListener {
-            val pageCount = DownloadManager.getDownloadedPageCount(archiveId)
-            if (!DownloadManager.isDownloading(archiveId) && pageCount != archive.numPages) {
-                val builder = MaterialAlertDialogBuilder(requireContext()).apply {
-                    setTitle(R.string.delete_archive_item)
-                    setMessage("Delete downloaded files?")
-                    setPositiveButton(R.string.yes) { dialog, _ ->
-                        dialog.dismiss()
-                        DownloadManager.deleteArchive(archiveId)
-                        downloadButton.text = resources.getString(R.string.download_button)
+            lifecycleScope.launch {
+                val pageCount = DownloadManager.getDownloadedPageCount(archiveId)
+                if (!DownloadManager.isDownloading(archiveId) && pageCount != archive.numPages) {
+                    val builder = MaterialAlertDialogBuilder(requireContext()).apply {
+                        setTitle(R.string.delete_archive_item)
+                        setMessage(R.string.delete_downloads_message)
+                        setPositiveButton(R.string.yes) { dialog, _ ->
+                            dialog.dismiss()
+                            DownloadManager.deleteArchive(archiveId)
+                            downloadButton.text = resources.getString(R.string.download_button)
+                        }
+                        setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
                     }
-                    setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
+                    builder.show()
                 }
-                builder.show()
-                true
-            } else false
+            }
+            true
         }
 
         val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())

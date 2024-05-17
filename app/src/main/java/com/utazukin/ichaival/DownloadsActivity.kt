@@ -91,25 +91,13 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
             }
         }
 
-        lifecycleScope.launch {
-            val downloadedArchiveIds = DownloadManager.getDownloadedArchives()
-            with(downloadedArchives) {
-                for (id in downloadedArchiveIds) {
-                    val archive = DatabaseReader.getArchive(id)
-                    if (archive != null && !any { it.archive.id == id }) {
-                        val downloadCount = DownloadManager.getDownloadedPageCount(id)
-                        add(DownloadedArchive(archive, DatabaseReader.getArchiveImage(archive, this@DownloadsActivity)?.path, downloadCount))
-                    }
-                }
-            }
-            setContent {
-                val theme = getCustomTheme()
-                val color = if (theme == getString(R.string.dark_theme)) Color.DarkGray else Color.Black
-                IchaivalTheme(theme = theme) {
-                    Surface(modifier = Modifier.fillMaxSize(), color = color) {
-                        Scaffold(topBar = { AppBar(this@DownloadsActivity) }) {
-                            DownloadList(archives = downloadedArchives, Modifier.padding(it))
-                        }
+        setContent {
+            val theme = getCustomTheme()
+            val color = if (theme == getString(R.string.dark_theme)) Color.DarkGray else Color.Black
+            IchaivalTheme(theme = theme) {
+                Surface(modifier = Modifier.fillMaxSize(), color = color) {
+                    Scaffold(topBar = { AppBar(this@DownloadsActivity) }) {
+                        DownloadList(archives = downloadedArchives, Modifier.padding(it))
                     }
                 }
             }
@@ -156,6 +144,18 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
             downloadedArchives[downloadIndex] = download.copy(cancelled = true)
         }
     }
+
+    override fun onDownloadsAdded(downloads: List<Pair<String, Int>>) {
+        lifecycleScope.launch {
+            for ((id, pagesDownloaded) in downloads) {
+                DatabaseReader.getArchive(id)?.also {
+                    val thumb = DatabaseReader.getArchiveImage(it, this@DownloadsActivity)?.path
+                    if (!downloadedArchives.any { d -> d.archive.id == id })
+                        downloadedArchives.add(DownloadedArchive(it, thumb, pagesDownloaded))
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -192,8 +192,8 @@ fun DownloadItem(download: DownloadedArchive) {
 
     openDialog.value?.run {
         AlertDialog(onDismissRequest = { openDialog.value = null },
-                confirmButton = { TextButton(onClick = { onConfirm(download, openDialog) }) { Text("Yes") } },
-                dismissButton = { TextButton(onClick = { openDialog.value = null }) { Text("No") } },
+                confirmButton = { TextButton(onClick = { onConfirm(download, openDialog) }) { Text(context.getString(R.string.yes)) } },
+                dismissButton = { TextButton(onClick = { openDialog.value = null }) { Text(context.getString(R.string.no)) } },
                 text = { Text(message) },
                 title = { Text(title) })
     }
@@ -233,9 +233,9 @@ fun DownloadItem(download: DownloadedArchive) {
             .constrainAs(button) { end.linkTo(parent.end, margin = 8.dp) },
                 content = {
                     val text = when {
-                        DownloadManager.isDownloading(download.archive.id) -> "Cancel"
-                        !download.complete -> "Resume"
-                        else -> "Delete"
+                        DownloadManager.isDownloading(download.archive.id) -> context.getString(android.R.string.cancel)
+                        !download.complete -> context.getString(R.string.resume_button)
+                        else -> context.getString(R.string.delete_button)
                     }
                     ThemeText(text = text)
                 })
@@ -246,12 +246,12 @@ private fun handleButtonClick(download: DownloadedArchive, context: Context, ope
     val archive = download.archive
     if (!DownloadManager.isDownloading(archive.id)) {
         if (download.count == archive.numPages) {
-            openDialog.value = ButtonOption(download, context.getString(R.string.delete_archive_item), "Delete downloaded files?") { dl, dialog ->
+            openDialog.value = ButtonOption(download, context.getString(R.string.delete_archive_item), context.getString(R.string.delete_downloads_message)) { dl, dialog ->
                 dialog.value = null
                 DownloadManager.deleteArchive(dl.archive.id)
             }
         } else if (download.count > 0) {
-            openDialog.value = ButtonOption(download, "Download", "Resume download?") { dl, dialog ->
+            openDialog.value = ButtonOption(download, context.getString(R.string.download_button), context.getString(R.string.resume_download_message)) { dl, dialog ->
                 dialog.value = null
                 DownloadManager.resumeDownload(dl.archive.id, dl.count)
             }
