@@ -48,7 +48,6 @@ import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -429,17 +428,16 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun downloadImage(file: File, serverPath: String) : Boolean {
+    suspend fun downloadImage(serverPath: String) : InputStream? {
         val url = getRawImageUrl(serverPath)
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
 
-        response.use {
+        response.let {
             if (it?.isSuccessful != true)
-                return false
+                return null
 
-            it.body?.byteStream()?.use { file.outputStream().use { f -> it.copyTo(f) } } ?: return false
-            return true
+            return it.body?.byteStream()
         }
     }
 

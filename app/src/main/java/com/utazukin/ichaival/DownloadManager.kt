@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -79,10 +80,11 @@ object DownloadManager {
         val filename = index.toString()
         val file = File(downloadDir, filename)
         val thumbFile = File(thumbDir, filename)
-        val imageDownload = scope.async { WebHandler.downloadImage(file, url) }
+        val imageDownload = scope.async { WebHandler.downloadImage(url) }
         val thumbDownload = scope.async { WebHandler.downloadThumb(id, index) }
-        imageDownload.await()
-        thumbDownload.await()?.use { thumbFile.outputStream().use { f -> it.copyTo(f) } }
+        val (image, thumb) = listOf(imageDownload, thumbDownload).awaitAll()
+        image?.use { file.outputStream().use { f -> it.copyTo(f) } }
+        thumb?.use { thumbFile.outputStream().use { f -> it.copyTo(f) } }
         updateListeners(id, index + 1)
     }
 
@@ -145,6 +147,7 @@ object DownloadManager {
     fun getDownloadedArchives() : List<String> {
         val downloadDir = File(App.context.noBackupFilesDir, downloadsPath)
         val files = downloadDir.listFiles() ?: return emptyList()
+        files.sortBy { it.lastModified() }
         return buildList(files.size) {
             for (file in files)
                 add(file.name)
