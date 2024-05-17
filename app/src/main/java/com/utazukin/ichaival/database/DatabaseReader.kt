@@ -403,7 +403,8 @@ object DatabaseReader {
         mutex.withLock {
             archivePageMap.getOrPut(id) {
                 WebHandler.getPageList(WebHandler.extractArchive(context, id, forceFull)).also {
-                    database.archiveDao().updatePageCount(id, it.size)
+                    if (it.isNotEmpty())
+                        database.archiveDao().updatePageCount(id, it.size)
                     notifyExtractListeners(id, it.size)
                 }
             }.also { extractingArchives.remove(id) }
