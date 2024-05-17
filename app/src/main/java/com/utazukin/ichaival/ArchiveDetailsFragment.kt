@@ -303,7 +303,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         titleView.text = archive.title
 
         val downloadedCount = DownloadManager.getDownloadedPageCount(archiveId)
-        if (downloadedCount == archive.numPages)
+        if (downloadedCount == archive.numPages && downloadedCount > 0)
             downloadButton.text = resources.getString(R.string.download_button_downloaded)
         else if (DownloadManager.isDownloading(archiveId))
             downloadButton.text = if (downloadedCount > 0) resources.getString(R.string.download_button_downloading, downloadedCount, archive.numPages) else resources.getString(R.string.archive_extract_message)
