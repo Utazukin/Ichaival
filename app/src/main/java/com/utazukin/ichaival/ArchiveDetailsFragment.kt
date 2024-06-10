@@ -309,6 +309,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             downloadButton.text = if (downloadedCount > 0) resources.getString(R.string.download_button_downloading, downloadedCount, archive.numPages) else resources.getString(R.string.archive_extract_message)
         else if (downloadedCount > 0)
             downloadButton.text = getString(R.string.download_button_download_progress, downloadedCount, archive.numPages)
+        else
+            downloadButton.text = getString(R.string.download_button)
 
         downloadButton.setOnClickListener {
             if (!DownloadManager.isDownloading(archiveId)) {

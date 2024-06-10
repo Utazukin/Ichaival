@@ -55,30 +55,34 @@ object DownloadManager {
         if (runningDownloads.containsKey(id))
             return
 
-        val downloadDir = File(App.context.noBackupFilesDir, "$downloadsPath/$id")
-        if (overwrite && downloadDir.exists())
-            downloadDir.deleteRecursively()
+        scope.launch {
+            val downloadDir = File(App.context.noBackupFilesDir, "$downloadsPath/$id")
+            if (overwrite && downloadDir.exists())
+                downloadDir.deleteRecursively()
 
-        if (!downloadDir.mkdirs())
-            return
+            if (!downloadDir.mkdirs())
+                return@launch
 
-        val thumbDir = File(downloadDir, "thumbs")
-        if (!thumbDir.mkdirs())
-            return
+            val thumbDir = File(downloadDir, "thumbs")
+            if (!thumbDir.mkdirs())
+                return@launch
 
-        val job = scope.launch {
-            downloadSemaphore.withPermit {
-                val pages = DatabaseReader.getPageList(App.context, id, true)
-                for ((i, page) in pages.withIndex())
-                    downloadImage(id, page, i, downloadDir, thumbDir)
-                runningDownloads.remove(id)
+            val job = scope.launch {
+                downloadSemaphore.withPermit {
+                    val pages = DatabaseReader.getPageList(App.context, id, true)
+                    for ((i, page) in pages.withIndex()) {
+                        if (!downloadImage(id, page, i, downloadDir, thumbDir))
+                            break
+                    }
+                    runningDownloads.remove(id)
+                }
             }
+            runningDownloads[id] = DownloadJob(job)
+            updateListeners(id, 0)
         }
-        runningDownloads[id] = DownloadJob(job)
-        updateListeners(id, 0)
     }
 
-    private suspend fun downloadImage(id: String, url: String, index: Int, downloadDir: File, thumbDir: File) {
+    private suspend fun downloadImage(id: String, url: String, index: Int, downloadDir: File, thumbDir: File) : Boolean {
         val filename = index.toString()
         val file = File(downloadDir, filename)
         val thumbFile = File(thumbDir, filename)
@@ -87,31 +91,41 @@ object DownloadManager {
         val (image, thumb) = listOf(imageDownload, thumbDownload).awaitAll()
         image?.use { file.outputStream().use { f -> it.copyTo(f) } }
         thumb?.use { thumbFile.outputStream().use { f -> it.copyTo(f) } }
-        updateListeners(id, index + 1)
+
+        if (image != null) {
+            updateListeners(id, index + 1)
+            return true
+        }
+
+        return false
     }
 
     fun resumeDownload(id: String, from: Int) {
         if (runningDownloads.containsKey(id))
             return
 
-        val downloadDir = File(App.context.noBackupFilesDir, "$downloadsPath/$id")
-        if (!downloadDir.exists())
-            return
+        scope.launch {
+            val downloadDir = File(App.context.noBackupFilesDir, "$downloadsPath/$id")
+            if (!downloadDir.exists())
+                return@launch
 
-        val thumbDir = File(downloadDir, "thumbs")
-        if (!thumbDir.exists() && !thumbDir.mkdirs())
-            return
+            val thumbDir = File(downloadDir, "thumbs")
+            if (!thumbDir.exists() && !thumbDir.mkdirs())
+                return@launch
 
-        val job = scope.launch {
-            downloadSemaphore.withPermit {
-                val pages = DatabaseReader.getPageList(App.context, id, true)
-                for (i in from until pages.size)
-                    downloadImage(id, pages[i], i, downloadDir, thumbDir)
-                runningDownloads.remove(id)
+            val job = scope.launch {
+                downloadSemaphore.withPermit {
+                    val pages = DatabaseReader.getPageList(App.context, id, true)
+                    for (i in from until pages.size) {
+                        if (!downloadImage(id, pages[i], i, downloadDir, thumbDir))
+                            break
+                    }
+                    runningDownloads.remove(id)
+                }
             }
+            runningDownloads[id] = DownloadJob(job)
+            updateListeners(id, from)
         }
-        runningDownloads[id] = DownloadJob(job)
-        updateListeners(id, from)
     }
 
     fun addListener(listener: ImageDownloadListener) {
