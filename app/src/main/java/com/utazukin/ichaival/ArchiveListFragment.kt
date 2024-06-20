@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -280,14 +280,6 @@ class ArchiveListFragment : Fragment(),
     override fun onQueryTextChange(query: String?): Boolean {
         handleSearchSuggestion(query)
         enableRefresh(query.isNullOrEmpty())
-        val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
-        categoryFragment?.selectedCategory?.let {
-            if ((it.isStatic && query != "") || it.search != query) {
-                categoryFragment.clearCategory()
-                viewModel.categoryId = ""
-            }
-        }
-
         if (searchDelay <= 0 && !query.isNullOrBlank())
             return true
 

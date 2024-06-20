@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -98,9 +98,9 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
         archivePagingSource = when {
             !initiated -> EmptySource()
             randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId)
-            categoryId.isNotEmpty() -> DatabaseReader.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
+            categoryId.isNotEmpty() && filter.isBlank() -> DatabaseReader.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
             isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew)
-            filter.isNotBlank() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter)
+            filter.isNotBlank() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, categoryId)
             isSearch -> EmptySource()
             else -> DatabaseReader.getArchiveSource(sortMethod, descending, onlyNew)
         }
@@ -121,11 +121,9 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     }
 
     fun filter(search: CharSequence?) {
-        if (filter != search || categoryId.isNotEmpty()) {
-            resetDisabled = true
+        if (filter != search) {
             filter = search?.toString() ?: ""
-            categoryId = ""
-            resetDisabled = false
+            reset(false)
         }
     }
 

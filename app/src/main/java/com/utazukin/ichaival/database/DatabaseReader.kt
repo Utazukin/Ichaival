@@ -20,6 +20,7 @@ package com.utazukin.ichaival.database
 
 import android.content.Context
 import android.database.DatabaseUtils
+import androidx.paging.PagingSource
 import androidx.room.Entity
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -308,11 +309,15 @@ object DatabaseReader {
         else -> database.archiveDao().getDateAscendingSource(onlyNew)
     }
 
-    fun getArchiveSearchSource(search: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean) = when {
-        sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getSearchResultsTitleDescending(search, onlyNew)
-        sortMethod == SortMethod.Alpha -> database.archiveDao().getSearchResultsTitleAscending(search, onlyNew)
-        sortMethod == SortMethod.Date && descending -> database.archiveDao().getSearchResultsDateDescending(search, onlyNew)
-        else -> database.archiveDao().getSearchResultsDateAscending(search, onlyNew)
+    fun getArchiveSearchSource(search: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean, categoryId: String) : PagingSource<Int, ArchiveBase> {
+        val sort = when (sortMethod) {
+            SortMethod.Alpha -> "titleSortIndex"
+            else -> "dateAdded"
+        }
+        return if (categoryId.isEmpty())
+            database.archiveDao().getSearchResults(search, onlyNew, sort, descending)
+        else
+            database.archiveDao().getSearchResultsCategory(search, categoryId, onlyNew, sort, descending)
     }
 
     fun getStaticCategorySource(categoryId: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) = when {

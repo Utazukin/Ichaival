@@ -217,17 +217,17 @@ interface ArchiveDao {
     @Query("Select count(archiveId) from search where searchText = :search")
     suspend fun getCachedSearchCount(search: String) : Int
 
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by titleSortIndex asc")
-    fun getSearchResultsTitleAscending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
+    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by " +
+            "case when :desc = 1 then :sortMethod end desc," +
+            "case when :desc = 0 then :sortMethod end asc")
+    fun getSearchResults(search: String, onlyNew: Boolean, sortMethod: String, desc: Boolean) : PagingSource<Int, ArchiveBase>
 
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by titleSortIndex desc")
-    fun getSearchResultsTitleDescending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
-
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by dateAdded asc")
-    fun getSearchResultsDateAscending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
-
-    @Query("Select * from archive join search on searchText = :search and archive.id = archiveId where not :onlyNew or isNew order by dateAdded desc")
-    fun getSearchResultsDateDescending(search: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
+    @Query("Select * from archive join search on searchText = :search and archive.id = search.archiveId join staticcategoryref on categoryId = :categoryId and archive.id = staticcategoryref.archiveId where not :onlyNew or isNew order by " +
+            "case when :desc = 1 and :sortMethod = 'dateAdded' then dateAdded end desc," +
+            "case when :desc = 0 and :sortMethod = 'dateAdded' then dateAdded end asc," +
+            "case when :desc = 1 then titleSortIndex end desc," +
+            "case when :desc = 0 then titleSortIndex end asc")
+    fun getSearchResultsCategory(search: String, categoryId: String, onlyNew: Boolean, sortMethod: String, desc: Boolean) : PagingSource<Int, ArchiveBase>
 
     @Query("Select * from archive where id in (select id from archive join search on searchText = :search and archive.id = archiveId order by random() limit :count)")
     fun getSearchResultsRandom(search: String, count: Int) : PagingSource<Int, ArchiveBase>

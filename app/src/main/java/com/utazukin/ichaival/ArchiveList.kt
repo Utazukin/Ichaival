@@ -216,20 +216,19 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         if (category == null) {
             val viewModel: SearchViewModel by viewModels()
 
-            if (viewModel.filter.contentEquals(searchView.query)) {
-                searchView.setQuery("", false)
-                searchView.clearFocus()
-            }
+            if (viewModel.categoryId.isEmpty()) {
+                if (viewModel.filter.contentEquals(searchView.query)) {
+                    searchView.setQuery("", false)
+                    searchView.clearFocus()
+                }
 
-            viewModel.deferReset {
-                filter("")
-                categoryId = ""
-            }
+                viewModel.deferReset {
+                    filter("")
+                    categoryId = ""
+                }
+            } else viewModel.categoryId = ""
         }
         else if (category.isStatic) {
-            searchView.setQuery("", false)
-            searchView.clearFocus()
-
             val viewModel: SearchViewModel by viewModels()
             viewModel.categoryId = category.id
         } else {
