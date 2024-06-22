@@ -55,7 +55,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     private var descending = false
     private val categoryButtons = mutableListOf<Chip>()
     private var savedCategory: ArchiveCategory? = null
-    private val selectedCategory: ArchiveCategory?
+    val selectedCategory: ArchiveCategory?
         get() {
             return when {
                 currentCategories == null -> savedCategory
@@ -148,7 +148,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         }
     }
 
-    private fun clearCategory() = categoryGroup.clearCheck()
+    fun clearCategory() = categoryGroup.clearCheck()
 
     private fun getMethodFromId(id: Int) : SortMethod {
         return when(id) {

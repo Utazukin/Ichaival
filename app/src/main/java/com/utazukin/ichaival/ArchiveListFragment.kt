@@ -280,6 +280,14 @@ class ArchiveListFragment : Fragment(),
     override fun onQueryTextChange(query: String?): Boolean {
         handleSearchSuggestion(query)
         enableRefresh(query.isNullOrEmpty())
+        val categoryFragment = requireActivity().supportFragmentManager.findFragmentById(R.id.category_fragment) as? CategoryFilterFragment
+        categoryFragment?.selectedCategory?.let {
+            if (!it.isStatic && it.search != query) {
+                categoryFragment.clearCategory()
+                viewModel.categoryId = ""
+            }
+        }
+
         if (searchDelay <= 0 && !query.isNullOrBlank())
             return true
 
