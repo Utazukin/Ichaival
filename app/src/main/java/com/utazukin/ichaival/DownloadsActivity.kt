@@ -219,7 +219,8 @@ fun DownloadItem(download: DownloadedArchive) {
             .height(itemSize.dp)
             .wrapContentHeight()
             .constrainAs(title) {
-                start.linkTo(image.end, margin = 5.dp)
+                val link = if (download.archive == null) parent.start else image.end
+                start.linkTo(link, margin = 5.dp)
                 width = Dimension.fillToConstraints
                 end.linkTo(progress.start)
             }
