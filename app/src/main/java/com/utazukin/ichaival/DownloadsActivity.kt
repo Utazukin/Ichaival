@@ -71,8 +71,8 @@ import com.utazukin.ichaival.ui.theme.ThemeButton
 import com.utazukin.ichaival.ui.theme.ThemeText
 import kotlinx.coroutines.launch
 
-data class DownloadedArchive(val archive: Archive, val thumb: String?, val count: Int, val cancelled: Boolean = false) {
-    val complete = count == archive.numPages
+data class DownloadedArchive(val archive: Archive?, val id: String, val thumb: String?, val count: Int, val cancelled: Boolean = false) {
+    val complete = count == archive?.numPages
 }
 
 data class ButtonOption(val download: DownloadedArchive, val title: String, val message: String, val onConfirm: (DownloadedArchive, MutableState<ButtonOption?>) -> Unit)
@@ -85,7 +85,7 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 for (i in downloadedArchives.indices.reversed()) {
-                    if (!DownloadManager.isDownloaded(downloadedArchives[i].archive.id))
+                    if (!DownloadManager.isDownloaded(downloadedArchives[i].id))
                         downloadedArchives.removeAt(i)
                 }
             }
@@ -116,7 +116,7 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
 
     override fun onImageDownloaded(id: String, pagesDownloaded: Int) {
         for (i in downloadedArchives.indices) {
-            if (downloadedArchives[i].archive.id == id) {
+            if (downloadedArchives[i].id == id) {
                 downloadedArchives[i] = downloadedArchives[i].copy(count = pagesDownloaded)
                 return
             }
@@ -125,20 +125,20 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
         lifecycleScope.launch {
             DatabaseReader.getArchive(id)?.also {
                 val thumb = DatabaseReader.getArchiveImage(it, this@DownloadsActivity)?.path
-                if (!downloadedArchives.any { d -> d.archive.id == id })
-                    downloadedArchives.add(DownloadedArchive(it, thumb, pagesDownloaded))
+                if (!downloadedArchives.any { d -> d.id == id })
+                    downloadedArchives.add(DownloadedArchive(it, it.id, thumb, pagesDownloaded))
             }
         }
     }
 
     override fun onDownloadRemoved(id: String) {
-        val downloadIndex = downloadedArchives.indexOfFirst { it.archive.id == id }
+        val downloadIndex = downloadedArchives.indexOfFirst { it.id == id }
         if (downloadIndex >= 0)
             downloadedArchives.removeAt(downloadIndex)
     }
 
     override fun onDownloadCanceled(id: String) {
-        val downloadIndex = downloadedArchives.indexOfFirst { it.archive.id == id }
+        val downloadIndex = downloadedArchives.indexOfFirst { it.id == id }
         if (downloadIndex >= 0) {
             val download = downloadedArchives[downloadIndex]
             downloadedArchives[downloadIndex] = download.copy(cancelled = true)
@@ -148,11 +148,13 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
     override fun onDownloadsAdded(downloads: List<Pair<String, Int>>) {
         lifecycleScope.launch {
             for ((id, pagesDownloaded) in downloads) {
-                DatabaseReader.getArchive(id)?.also {
-                    val thumb = DatabaseReader.getArchiveImage(it, this@DownloadsActivity)?.path
-                    if (!downloadedArchives.any { d -> d.archive.id == id })
-                        downloadedArchives.add(DownloadedArchive(it, thumb, pagesDownloaded))
-                }
+                val archive = DatabaseReader.getArchive(id)
+                if (archive != null) {
+                    val thumb = DatabaseReader.getArchiveImage(archive, this@DownloadsActivity)?.path
+                    if (!downloadedArchives.any { d -> d.id == id })
+                        downloadedArchives.add(DownloadedArchive(archive, id, thumb, pagesDownloaded))
+                } else if (!downloadedArchives.any { d -> d.id ==id })
+                    downloadedArchives.add(DownloadedArchive(null, id, null, pagesDownloaded))
             }
         }
     }
@@ -202,18 +204,18 @@ fun DownloadItem(download: DownloadedArchive) {
         .fillMaxWidth()
         .height(itemSize.dp)
         .padding(vertical = 8.dp)
-        .clickable { startDetailsActivity(download.archive.id, context) }) {
+        .clickable { download.archive?.let { startDetailsActivity(it.id, context) } }) {
         val (image, title, progress, button) = createRefs()
 
-        val model = ImageRequest.Builder(LocalContext.current).data(download.thumb).size(getDpAdjusted(itemSize)).build()
-        AsyncImage(model = model, contentDescription = null, modifier =
-        Modifier
-            .width(itemSize.dp)
-            .constrainAs(image) {
-                start.linkTo(anchor = parent.start)
-            }
-        )
-        Text(text = download.archive.title, overflow = TextOverflow.Ellipsis, modifier = Modifier
+        if (download.archive != null) {
+            val model = ImageRequest.Builder(LocalContext.current).data(download.thumb).size(getDpAdjusted(itemSize)).build()
+            AsyncImage(model = model, contentDescription = null, modifier =
+            Modifier
+                .width(itemSize.dp)
+                .constrainAs(image) { start.linkTo(anchor = parent.start) }
+            )
+        }
+        Text(text = download.archive?.title ?: "Missing", overflow = TextOverflow.Ellipsis, modifier = Modifier
             .height(itemSize.dp)
             .wrapContentHeight()
             .constrainAs(title) {
@@ -222,18 +224,21 @@ fun DownloadItem(download: DownloadedArchive) {
                 end.linkTo(progress.start)
             }
         )
-        val text = if (download.count > 0) "${download.count}/${download.archive.numPages}" else context.getString(R.string.archive_extract_message)
-        Text(text = text, modifier = Modifier
-            .height(itemSize.dp)
-            .wrapContentHeight()
-            .constrainAs(progress) { end.linkTo(button.start, margin = 4.dp) })
+
+        if (download.archive != null) {
+            val text = if (download.count > 0) "${download.count}/${download.archive.numPages}" else context.getString(R.string.archive_extract_message)
+            Text(text = text, modifier = Modifier
+                .height(itemSize.dp)
+                .wrapContentHeight()
+                .constrainAs(progress) { end.linkTo(button.start, margin = 4.dp) })
+        }
         ThemeButton(onClick = { handleButtonClick(download, context, openDialog) }, modifier = Modifier
             .height(itemSize.dp)
             .wrapContentHeight()
             .constrainAs(button) { end.linkTo(parent.end, margin = 8.dp) },
                 content = {
                     val text = when {
-                        DownloadManager.isDownloading(download.archive.id) -> context.getString(android.R.string.cancel)
+                        DownloadManager.isDownloading(download.id) -> context.getString(android.R.string.cancel)
                         !download.complete -> context.getString(R.string.resume_button)
                         else -> context.getString(R.string.delete_button)
                     }
@@ -244,16 +249,21 @@ fun DownloadItem(download: DownloadedArchive) {
 
 private fun handleButtonClick(download: DownloadedArchive, context: Context, openDialog: MutableState<ButtonOption?>) {
     val archive = download.archive
-    if (!DownloadManager.isDownloading(archive.id)) {
+    if (archive == null) {
+        openDialog.value = ButtonOption(download, context.getString(R.string.delete_archive_item), context.getString(R.string.delete_downloads_message)) { dl, dialog ->
+            dialog.value = null
+            DownloadManager.deleteArchive(dl.id)
+        }
+    } else if (!DownloadManager.isDownloading(download.id)) {
         if (download.count == archive.numPages) {
             openDialog.value = ButtonOption(download, context.getString(R.string.delete_archive_item), context.getString(R.string.delete_downloads_message)) { dl, dialog ->
                 dialog.value = null
-                DownloadManager.deleteArchive(dl.archive.id)
+                DownloadManager.deleteArchive(dl.id)
             }
         } else if (download.count > 0) {
             openDialog.value = ButtonOption(download, context.getString(R.string.download_button), context.getString(R.string.resume_download_message)) { dl, dialog ->
                 dialog.value = null
-                DownloadManager.resumeDownload(dl.archive.id, dl.count)
+                DownloadManager.resumeDownload(dl.id, dl.count)
             }
         }
     } else DownloadManager.cancelDownload(archive.id)
