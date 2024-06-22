@@ -22,6 +22,7 @@ import android.util.JsonReader
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.utazukin.ichaival.ArchiveBase
+import com.utazukin.ichaival.CategoryManager
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.containsTag
@@ -44,7 +45,7 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
                                            protected val sortMethod: SortMethod,
                                            protected val descending: Boolean,
                                            onlyNew: Boolean,
-                                           categoryId: String) : PagingSource<Int, ArchiveBase>() {
+                                           protected val categoryId: String) : PagingSource<Int, ArchiveBase>() {
     protected open val roomSource = DatabaseReader.getArchiveSearchSource(filter, sortMethod, descending, onlyNew, categoryId)
     override val jumpingSupported get() = roomSource.jumpingSupported
 
@@ -106,7 +107,8 @@ open class ArchiveListServerPagingSource(
 class ArchiveListLocalPagingSource(filter: String,
                                    sortMethod: SortMethod,
                                    descending: Boolean,
-                                   onlyNew: Boolean) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew, "") {
+                                   onlyNew: Boolean,
+                                   categoryId: String) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew, categoryId) {
     private suspend fun internalFilter() {
         WebHandler.updateRefreshing(true)
         DatabaseReader.withTransaction {
@@ -116,10 +118,12 @@ class ArchiveListLocalPagingSource(filter: String,
             for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
                 val allArchives = DatabaseReader.getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
                 for (archive in allArchives) {
-                    if (archive.title.contains(titleSearch, ignoreCase = true))
-                        insertSearch(archive.id)
-                    else if (terms.all { archive.containsTag(it.term, it.exact) != it.negative })
-                        insertSearch(archive.id)
+                    if (categoryId.isEmpty() || CategoryManager.isInCategory(categoryId, archive.id)) {
+                        if (archive.title.contains(titleSearch, ignoreCase = true))
+                            insertSearch(archive.id)
+                        else if (terms.all { archive.containsTag(it.term, it.exact) != it.negative })
+                            insertSearch(archive.id)
+                    }
                 }
             }
         }
@@ -134,7 +138,7 @@ class ArchiveListLocalPagingSource(filter: String,
     }
 }
 
-class ArchiveListRandomPagingSource(filter: String, count: Int, private val categoryId: String)
+class ArchiveListRandomPagingSource(filter: String, count: Int, categoryId: String)
     : ArchiveListServerPagingSource(false, SortMethod.Alpha, false, filter, categoryId) {
     override val roomSource = DatabaseReader.getRandomSource(filter, categoryId, count)
 

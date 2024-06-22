@@ -196,6 +196,9 @@ interface ArchiveDao {
     @Query("Select archivecategory.* from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
     suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
 
+    @Query("Select exists(select * from staticcategoryref where categoryId = :categoryId and archiveId = :archiveId)")
+    suspend fun isInCategory(categoryId: String, archiveId: String) : Boolean
+
     @Query("Select archive.* from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId where not :onlyNew or archive.isNew order by archive.titleSortIndex asc")
     fun getStaticCategoryArchiveTitleAsc(categoryId: String, onlyNew: Boolean) : PagingSource<Int, ArchiveBase>
 

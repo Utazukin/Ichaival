@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.io.File
 import java.io.InputStream
-import java.util.*
+import java.util.Calendar
 
 interface CategoryListener {
     fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean)
@@ -70,6 +70,8 @@ object CategoryManager {
     suspend inline fun getAllCategories() = DatabaseReader.getAllCategories()
 
     fun removeUpdateListener(listener: CategoryListener) = listeners.remove(listener)
+
+    suspend inline fun isInCategory(categoryId: String, archiveId: String) = DatabaseReader.isInCategory(categoryId, archiveId)
 
     suspend fun updateCategories(categoryJson: InputStream?, filesDir: File) {
         val categoriesFile = File(filesDir, categoriesFilename)

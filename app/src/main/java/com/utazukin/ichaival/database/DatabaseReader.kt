@@ -238,6 +238,8 @@ object DatabaseReader {
 
     suspend fun getCategoryArchives(id: String) = database.archiveDao().getCategoryArchives(id)
 
+    suspend fun isInCategory(categoryId: String, archiveId: String) = database.archiveDao().isInCategory(categoryId, archiveId)
+
     suspend fun insertCategories(categories: Collection<ArchiveCategoryFull>) = database.archiveDao().insertCategories(categories)
 
     suspend fun insertCategory(category: ArchiveCategory) {

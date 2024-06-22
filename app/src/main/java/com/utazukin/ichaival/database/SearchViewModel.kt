@@ -99,7 +99,7 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
             !initiated -> EmptySource()
             randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId)
             categoryId.isNotEmpty() && filter.isBlank() -> DatabaseReader.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
-            isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew)
+            isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, categoryId)
             filter.isNotBlank() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, categoryId)
             isSearch -> EmptySource()
             else -> DatabaseReader.getArchiveSource(sortMethod, descending, onlyNew)
