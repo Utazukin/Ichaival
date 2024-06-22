@@ -239,6 +239,7 @@ fun DownloadItem(download: DownloadedArchive) {
             .constrainAs(button) { end.linkTo(parent.end, margin = 8.dp) },
                 content = {
                     val text = when {
+                        download.archive == null -> context.getString(R.string.delete_button)
                         DownloadManager.isDownloading(download.id) -> context.getString(android.R.string.cancel)
                         !download.complete -> context.getString(R.string.resume_button)
                         else -> context.getString(R.string.delete_button)
