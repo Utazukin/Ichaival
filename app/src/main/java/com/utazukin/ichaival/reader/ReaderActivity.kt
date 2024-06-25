@@ -441,18 +441,30 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (!volControl)
+        if (!volControl && (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP))
             return super.onKeyDown(keyCode, event)
 
         val pageAdjustment = if (rtol && !isWebtoon) -1 else 1
         return when(keyCode) {
-            KeyEvent.KEYCODE_VOLUME_DOWN -> {
+            KeyEvent.KEYCODE_VOLUME_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_BUTTON_R1 -> {
                 jumpToPage(imagePager.currentItem + pageAdjustment)
                 true
             }
-            KeyEvent.KEYCODE_VOLUME_UP -> {
+            KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_BUTTON_L1 -> {
                 jumpToPage(imagePager.currentItem - pageAdjustment)
                 true
+            }
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                if (isWebtoon) {
+                    jumpToPage(imagePager.currentItem - 1)
+                    true
+                } else false
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                if (isWebtoon) {
+                    jumpToPage(imagePager.currentItem + 1)
+                    true
+                } else false
             }
             else -> super.onKeyDown(keyCode, event)
         }
