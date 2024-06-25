@@ -67,7 +67,7 @@ open class ArchiveListServerPagingSource(
         val cacheCount = DatabaseReader.getCachedSearchCount(filter)
         if (cacheCount == 0) {
             WebHandler.updateRefreshing(true)
-            val resultsStream = WebHandler.searchServerRaw(filter, false, sortMethod, descending, -1)
+            val resultsStream = WebHandler.searchServer(filter, false, sortMethod, descending, -1)
             resultsStream?.use {
                 JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                     reader.beginObject()

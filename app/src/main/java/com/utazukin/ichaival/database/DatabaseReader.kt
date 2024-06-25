@@ -147,7 +147,7 @@ object DatabaseReader {
         if (forceUpdate || checkDirty(cacheDir)) {
             WebHandler.updateRefreshing(true)
             launch { database.archiveDao().clearSearchCache() }
-            val archiveStream = WebHandler.searchServerRaw("", false, SortMethod.Alpha, false, -1)
+            val archiveStream = WebHandler.searchServer("", false, SortMethod.Alpha, false, -1)
             val jsonFile = File(cacheDir, jsonLocation)
             archiveStream?.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
 

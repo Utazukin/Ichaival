@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 import android.app.Application
 import android.content.Context
-import android.net.ConnectivityManager
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.google.android.material.color.DynamicColors
@@ -36,7 +35,7 @@ class App : Application(), ImageLoaderFactory {
         super.onCreate()
         CrashLogger.createCrashLogger(this)
         DatabaseReader.init(this)
-        WebHandler.connectivityManager = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        WebHandler.init()
         DynamicColors.applyToActivitiesIfAvailable(this)
     }
 

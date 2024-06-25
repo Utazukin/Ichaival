@@ -20,8 +20,9 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
-import android.os.Build
+import android.net.NetworkRequest
 import android.util.Base64
 import androidx.preference.Preference
 import com.utazukin.ichaival.database.DatabaseMessageListener
@@ -47,7 +48,6 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -106,8 +106,29 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     var verboseMessages = false
     var listener: DatabaseMessageListener? = null
+    private var hasNetwork = false
     private val refreshListeners = mutableListOf<DatabaseRefreshListener>()
-    var connectivityManager: ConnectivityManager? = null
+    private val connectivityManager by lazy { App.context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            hasNetwork = true
+        }
+
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            hasNetwork = false
+        }
+    }
+
+    fun init() {
+        val networkRequest = NetworkRequest.Builder()
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+            .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+            .build()
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+    }
 
     suspend fun getServerInfo(context: Context): JSONObject? {
         if (!canConnect(context))
@@ -280,44 +301,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         withContext(Dispatchers.IO) { httpClient.newCall(connection).await(autoClose = true) }
     }
 
-    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0, showRefresh: Boolean = true) : ServerSearchResult {
-        return withContext(Dispatchers.IO) {
-            if (search.isBlank() && !onlyNew)
-                return@withContext ServerSearchResult(null)
-
-            if (showRefresh)
-                updateRefreshing(true)
-
-            val jsonStream = searchServerRaw(search, onlyNew, sortMethod, descending, start)
-            if (jsonStream == null) {
-                if (showRefresh)
-                    updateRefreshing(false)
-                return@withContext ServerSearchResult(null)
-            }
-
-            val jsonResults = jsonStream.use {
-                val reader = BufferedReader(it.reader())
-                val builder = StringBuilder()
-                var line = reader.readLine()
-                while (line != null){
-                    builder.append(line)
-                    line = reader.readLine()
-                }
-                JSONObject(builder.toString())
-            }
-
-            val totalResults = jsonResults.getInt("recordsFiltered")
-
-            val dataArray = jsonResults.getJSONArray("data")
-            val results = List(dataArray.length()) { dataArray.getJSONObject(it).getString("arcid") }
-
-            if (showRefresh)
-                updateRefreshing(false)
-
-            ServerSearchResult(results, totalResults, search, onlyNew)
-        }
-    }
-
     suspend fun getRandomArchives(count: UInt, filter: CharSequence? = null, categoryId: String? = null) : ServerSearchResult {
         if (!canConnect())
             return ServerSearchResult(null)
@@ -346,11 +329,11 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         return result
     }
 
-    suspend fun searchServerRaw(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : InputStream? {
+    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : InputStream? {
         if (!canConnect())
             return null
 
-        val encodedSearch =  withContext(Dispatchers.IO) { URLEncoder.encode(search.toString(), "utf-8") }
+        val encodedSearch = if (search.isNotBlank()) withContext(Dispatchers.IO) { URLEncoder.encode(search.toString(), "utf-8") } else ""
         val sort = when(sortMethod) {
             SortMethod.Alpha -> "title"
             SortMethod.Date -> "date_added"
@@ -606,32 +589,29 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
+    suspend fun canReachServer() : Boolean = withContext(Dispatchers.IO) {
+        if (!canConnect(App.context))
+            return@withContext false
+
+        val connection = createServerConnection(serverLocation, "HEAD")
+        val response = httpClient.newCall(connection).await()
+        response.isSuccessful
+    }
+
     private fun canConnect() = canConnect(null, true)
 
     private fun canConnect(context: Context) = canConnect(context, false)
 
-    @Suppress("DEPRECATION")
     private fun canConnect(context: Context?, silent: Boolean) : Boolean {
         if (serverLocation.isEmpty())
             return false
 
-        val connected = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-           connectivityManager?.let {
-               it.getNetworkCapabilities(it.activeNetwork)?.let { active ->
-                   (active.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                           || active.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                           || active.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
-               }
-           } ?: false
-        } else
-            connectivityManager?.activeNetworkInfo?.isConnected == true
-
-        if (!connected && !silent) {
+        if (!hasNetwork && !silent) {
             context?.run { notifyError(getString(R.string.no_net_connection)) }
             return false
         }
 
-        return connected
+        return hasNetwork
     }
 
     fun getRawImageUrl(path: String) = serverLocation + path

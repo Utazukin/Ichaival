@@ -56,6 +56,9 @@ object DownloadManager {
             return
 
         scope.launch {
+            if (!WebHandler.canReachServer())
+                return@launch
+
             val downloadDir = File(App.context.noBackupFilesDir, "$downloadsPath/$id")
             if (overwrite && downloadDir.exists())
                 downloadDir.deleteRecursively()
@@ -105,6 +108,9 @@ object DownloadManager {
             return
 
         scope.launch {
+            if (!WebHandler.canReachServer())
+                return@launch
+
             val downloadDir = File(App.context.noBackupFilesDir, "$downloadsPath/$id")
             if (!downloadDir.exists())
                 return@launch
