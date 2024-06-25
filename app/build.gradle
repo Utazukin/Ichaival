@@ -3,6 +3,7 @@ plugins {
     id 'kotlin-android'
     id 'kotlin-parcelize'
     id 'com.google.devtools.ksp'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.0.0'
 }
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -78,7 +79,7 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation "androidx.constraintlayout:constraintlayout-compose:1.0.1"
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
@@ -92,7 +93,7 @@ dependencies {
     implementation 'com.github.seven332.Image:singlelib:a7b102262a'
     implementation "androidx.room:room-runtime:$room_version"
     implementation 'androidx.activity:activity-compose:1.9.0'
-    implementation platform('androidx.compose:compose-bom:2024.05.00')
+    implementation platform('androidx.compose:compose-bom:2024.06.00')
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
@@ -103,15 +104,15 @@ dependencies {
     implementation "androidx.paging:paging-runtime-ktx:3.3.0"
     implementation "android.arch.lifecycle:extensions:1.1.1"
     implementation "android.arch.lifecycle:viewmodel:1.1.1"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2"
     implementation "androidx.room:room-ktx:$room_version"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.0"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.2"
     implementation "androidx.preference:preference-ktx:1.2.1"
-    implementation "androidx.fragment:fragment-ktx:1.7.1"
+    implementation "androidx.fragment:fragment-ktx:1.8.0"
     implementation "com.squareup.okhttp3:okhttp:4.12.0"
     implementation "androidx.room:room-paging:$room_version"
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.google.code.gson:gson:2.11.0'
     implementation "io.coil-kt:coil:$coil_version"
     implementation "io.coil-kt:coil-gif:$coil_version"
     implementation "io.coil-kt:coil-compose:$coil_version"
