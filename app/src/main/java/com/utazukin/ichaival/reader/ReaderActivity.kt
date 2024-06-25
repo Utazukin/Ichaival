@@ -454,18 +454,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 jumpToPage(imagePager.currentItem - pageAdjustment)
                 true
             }
-            KeyEvent.KEYCODE_DPAD_UP -> {
-                if (isWebtoon) {
-                    jumpToPage(imagePager.currentItem - 1)
-                    true
-                } else false
-            }
-            KeyEvent.KEYCODE_DPAD_DOWN -> {
-                if (isWebtoon) {
-                    jumpToPage(imagePager.currentItem + 1)
-                    true
-                } else false
-            }
             KeyEvent.KEYCODE_BUTTON_A -> {
                 openSettings()
                 true
