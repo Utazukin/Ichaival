@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival.reader
 
+import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.res.Resources
@@ -27,7 +28,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.Spinner
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.utazukin.ichaival.R
@@ -80,6 +83,17 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
         with(requireDialog() as BottomSheetDialog) { dismissWithAnimation = true }
 
         return view
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        return super.onCreateDialog(savedInstanceState).apply {
+            setOnShowListener {
+                val d = it as BottomSheetDialog
+                val bottom: FrameLayout? = d.findViewById(com.google.android.material.R.id.design_bottom_sheet)
+                if (bottom != null)
+                    BottomSheetBehavior.from(bottom).state = BottomSheetBehavior.STATE_EXPANDED
+            }
+        }
     }
 
     private fun setupSpinner(view: View) {

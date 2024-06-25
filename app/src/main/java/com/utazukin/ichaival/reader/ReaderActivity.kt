@@ -466,6 +466,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     true
                 } else false
             }
+            KeyEvent.KEYCODE_BUTTON_A -> {
+                openSettings()
+                true
+            }
             else -> super.onKeyDown(keyCode, event)
         }
     }
