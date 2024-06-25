@@ -21,6 +21,7 @@ package com.utazukin.ichaival.database
 import android.content.Context
 import android.database.DatabaseUtils
 import androidx.paging.PagingSource
+import androidx.preference.PreferenceManager
 import androidx.room.Entity
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -32,7 +33,18 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.stream.JsonReader
-import com.utazukin.ichaival.*
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ArchiveBase
+import com.utazukin.ichaival.ArchiveCategory
+import com.utazukin.ichaival.ArchiveCategoryFull
+import com.utazukin.ichaival.ArchiveJson
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.ReaderTab
+import com.utazukin.ichaival.ServerManager
+import com.utazukin.ichaival.SortMethod
+import com.utazukin.ichaival.StaticCategoryRef
+import com.utazukin.ichaival.WebHandler
+import com.utazukin.ichaival.castStringPrefToLong
 import com.utazukin.ichaival.reader.ScaleType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -144,7 +156,7 @@ object DatabaseReader {
 
     suspend fun updateArchiveList(context: Context, forceUpdate: Boolean = false) = withContext(Dispatchers.IO) {
         val cacheDir = context.noBackupFilesDir
-        if (forceUpdate || checkDirty(cacheDir)) {
+        if (forceUpdate || checkDirty(cacheDir, context)) {
             WebHandler.updateRefreshing(true)
             launch { database.archiveDao().clearSearchCache() }
             val archiveStream = WebHandler.searchServer("", false, SortMethod.Alpha, false, -1)
@@ -426,10 +438,12 @@ object DatabaseReader {
 
     suspend fun isBookmarked(id: String) = database.archiveDao().isBookmarked(id)
 
-    private fun checkDirty(fileDir: File) : Boolean {
+    private fun checkDirty(fileDir: File, context: Context) : Boolean {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val syncTime = prefs.castStringPrefToLong(context.getString(R.string.sync_time_key), 24)
         val jsonCache = File(fileDir, jsonLocation)
-        val dayInMill = 1000 * 60 * 60 * 24L
-        return isDirty || !jsonCache.exists() || Calendar.getInstance().timeInMillis - jsonCache.lastModified() >  dayInMill
+        val dayInMill = 1000 * 60 * 60 * syncTime
+        return isDirty || !jsonCache.exists() || (dayInMill >= 0 && Calendar.getInstance().timeInMillis - jsonCache.lastModified() > dayInMill)
     }
 
     suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)

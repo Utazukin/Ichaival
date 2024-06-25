@@ -115,6 +115,9 @@
     <string name="fullscreen_timeout_key" translatable="false">fullscreen_timeout_key</string>
     <string name="fullscreen_timeout_title">Fullscreen Timeout</string>
     <string name="fullscreen_timeout_summary">The amount of time before hiding the buttons.  -1 for never.  Current: %s seconds</string>
+    <string name="sync_time_key" translatable="false">sync_time_key</string>
+    <string name="sync_time_title">Sync Time</string>
+    <string name="sync_time_summary">The amount of time to wait before automatically syncing with the server.  -1 for never.  Current: %s hours</string>
     <string name="search_header_key" translatable="false">search_header_key</string>
     <string name="category_label">Categories</string>
     <string name="clear_category_button">Clear Category</string>

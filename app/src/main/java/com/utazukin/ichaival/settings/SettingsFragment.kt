@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,19 +25,32 @@ import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.util.AttributeSet
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.app.ShareCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.*
+import androidx.preference.EditTextPreference
 import androidx.preference.EditTextPreference.OnBindEditTextListener
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
+import androidx.preference.PreferenceViewHolder
 import coil.imageLoader
-import com.utazukin.ichaival.*
 import com.utazukin.ichaival.R
+import com.utazukin.ichaival.ServerManager
+import com.utazukin.ichaival.WebHandler
+import com.utazukin.ichaival.clearDiskCache
 import com.utazukin.ichaival.database.DatabaseReader
+import com.utazukin.ichaival.diskCacheSize
 import com.utazukin.ichaival.reader.DualPageHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -133,6 +146,11 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
         }
 
         findPreference<EditTextPreference>(getString(R.string.fullscreen_timeout_key))?.let {
+            it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED))
+            bindPreferenceSummaryFormat(it)
+        }
+
+        findPreference<EditTextPreference>(getString(R.string.sync_time_key))?.let {
             it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED))
             bindPreferenceSummaryFormat(it)
         }

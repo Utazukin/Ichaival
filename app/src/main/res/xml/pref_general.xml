@@ -94,6 +94,14 @@
             app:summary="@string/thumbnail_summary"
             app:iconSpaceReserved="false"
             app:title="@string/thumbnail_setting" />
+        <EditTextPreference
+            app:defaultValue="@integer/default_sync_time"
+            android:selectAllOnFocus="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/sync_time_key"
+            app:singleLine="true"
+            app:summary="@string/sync_time_summary"
+            app:title="@string/sync_time_title" />
     </PreferenceCategory>
 
     <PreferenceCategory
