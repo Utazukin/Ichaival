@@ -340,7 +340,18 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                             setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
                         }
                         builder.show()
-                    } else DownloadManager.download(archiveId)
+                    } else {
+                        val builder = MaterialAlertDialogBuilder(requireContext()).apply {
+                            setTitle(R.string.download_button)
+                            setMessage(R.string.start_downloads_message)
+                            setPositiveButton(R.string.yes) { dialog, _ ->
+                                dialog.dismiss()
+                                DownloadManager.download(archiveId)
+                            }
+                            setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
+                        }
+                        builder.show()
+                    }
                 }
             }
             else {

@@ -223,6 +223,7 @@
     <string name="screen_on_pref_key" translatable="false">screen_on_key</string>
     <string name="screen_on_pref_title">Keep Screen Awake</string>
     <string name="download_button">Download</string>
+    <string name="start_downloads_message">Download archive?</string>
     <string name="delete_downloads_message">Delete downloaded files?</string>
     <string name="cancel_downloads_message">Cancel download?</string>
     <string name="delete_button">Delete</string>
