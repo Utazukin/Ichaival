@@ -22,8 +22,6 @@ import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -66,15 +64,11 @@ object DownloadManager {
             if (!downloadDir.mkdirs())
                 return@launch
 
-            val thumbDir = File(downloadDir, "thumbs")
-            if (!thumbDir.mkdirs())
-                return@launch
-
             val job = scope.launch {
                 downloadSemaphore.withPermit {
                     val pages = DatabaseReader.getPageList(App.context, id, true)
                     for ((i, page) in pages.withIndex()) {
-                        if (!downloadImage(id, page, i, downloadDir, thumbDir))
+                        if (!downloadImage(id, page, i, downloadDir))
                             break
                     }
                     runningDownloads.remove(id)
@@ -85,17 +79,12 @@ object DownloadManager {
         }
     }
 
-    private suspend fun downloadImage(id: String, url: String, index: Int, downloadDir: File, thumbDir: File) : Boolean {
-        val filename = index.toString()
-        val file = File(downloadDir, filename)
-        val thumbFile = File(thumbDir, filename)
-        val imageDownload = scope.async { WebHandler.downloadImage(url) }
-        val thumbDownload = scope.async { WebHandler.downloadThumb(id, index) }
-        val (image, thumb) = listOf(imageDownload, thumbDownload).awaitAll()
-        image?.use { file.outputStream().use { f -> it.copyTo(f) } }
-        thumb?.use { thumbFile.outputStream().use { f -> it.copyTo(f) } }
-
+    private suspend fun downloadImage(id: String, url: String, index: Int, downloadDir: File) : Boolean {
+        val image = WebHandler.downloadImage(url)
         if (image != null) {
+            val filename = index.toString()
+            val file = File(downloadDir, filename)
+            image.use { file.outputStream().use { f -> it.copyTo(f) } }
             updateListeners(id, index + 1)
             return true
         }
@@ -115,15 +104,11 @@ object DownloadManager {
             if (!downloadDir.exists())
                 return@launch
 
-            val thumbDir = File(downloadDir, "thumbs")
-            if (!thumbDir.exists() && !thumbDir.mkdirs())
-                return@launch
-
             val job = scope.launch {
                 downloadSemaphore.withPermit {
                     val pages = DatabaseReader.getPageList(App.context, id, true)
                     for (i in from until pages.size) {
-                        if (!downloadImage(id, pages[i], i, downloadDir, thumbDir))
+                        if (!downloadImage(id, pages[i], i, downloadDir))
                             break
                     }
                     runningDownloads.remove(id)
@@ -168,11 +153,6 @@ object DownloadManager {
 
     fun getDownloadedPage(id: String, page: Int) : String? {
         val file = File(App.context.noBackupFilesDir, "$downloadsPath/$id/$page")
-        return if (file.exists()) file.path else null
-    }
-
-    fun getDownloadThumb(id: String, page: Int) : String? {
-        val file = File(App.context.noBackupFilesDir, "$downloadsPath/$id/thumbs/$page")
         return if (file.exists()) file.path else null
     }
 

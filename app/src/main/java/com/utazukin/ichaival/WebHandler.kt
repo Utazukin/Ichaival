@@ -379,7 +379,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     }
 
     suspend fun getThumbUrl(id: String, page: Int): String? {
-        val localThumb = DownloadManager.getDownloadThumb(id, page)
+        val localThumb = DownloadManager.getDownloadedPage(id, page)
         if (localThumb != null)
             return localThumb
 
