@@ -24,14 +24,26 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 
+data class LanraragiVersion(val major: Int, val minor: Int, val patch: Int) : Comparable<LanraragiVersion> {
+    override fun compareTo(other: LanraragiVersion): Int {
+        if (this == other)
+            return 0
+
+        if (major < other.major)
+            return -1
+
+        if (major == other.major && minor < other.minor)
+            return -1
+
+        if (major == other.major && minor == other.minor && patch < other.patch)
+            return -1
+
+        return 1
+    }
+}
+
 object ServerManager {
     private const val serverInfoFilename = "info.json"
-    var majorVersion = 0
-        private set
-    var minorVersion = 0
-        private set
-    var patchVersion = 0
-        private set
     var pageSize = 50
         private set
     var tagSuggestions: List<TagSuggestion> = emptyList()
@@ -44,10 +56,12 @@ object ServerManager {
         get() = !hasPassword || WebHandler.apiKey.isNotBlank()
     private var initialized = false
     private var hasPassword = false
+    private var version = LanraragiVersion(0, 0, 0)
+    private val lowestVersion = LanraragiVersion(0, 8, 2)
 
-    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) : Boolean {
+    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) : Boolean? {
         if (initialized && !force)
-            return checkVersionAtLeast(0, 8, 2)
+            return checkVersionAtLeast(lowestVersion)
 
         val infoFile = File(context.filesDir, serverInfoFilename)
         val serverInfo = withContext(Dispatchers.IO) {
@@ -68,40 +82,28 @@ object ServerManager {
                 null
         }
 
-        if (serverInfo != null) {
-            val lanraragiVersionString = serverInfo.getString("version")
+        initialized = true
+
+        return serverInfo?.run {
+            val lanraragiVersionString = getString("version")
             if (lanraragiVersionString.isNotBlank()) {
                 val versionRegex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)")
-                versionRegex.matchEntire(lanraragiVersionString)?.let {
-                    majorVersion = Integer.parseInt(it.groupValues[1])
-                    minorVersion = Integer.parseInt(it.groupValues[2])
-                    patchVersion = Integer.parseInt(it.groupValues[3])
+                versionRegex.matchEntire(lanraragiVersionString)?.groupValues?.let {
+                    version = LanraragiVersion(it[1].toInt(), it[2].toInt(), it[3].toInt())
                 }
             }
 
-            pageSize = serverInfo.getInt("archives_per_page")
-            serverTracksProgress = serverInfo.optInt("server_tracks_progress", 1) == 1
-            hasPassword = serverInfo.getInt("has_password") == 1
-            serverName = serverInfo.getString("name")
+            pageSize = getInt("archives_per_page")
+            serverTracksProgress = optInt("server_tracks_progress", 1) == 1
+            hasPassword = getInt("has_password") == 1
+            serverName = getString("name")
+            checkVersionAtLeast(lowestVersion)
         }
-
-        initialized = true
-
-        return checkVersionAtLeast(0, 8, 2)
     }
 
-    fun checkVersionAtLeast(major: Int, minor: Int, patch: Int) : Boolean {
-        if (majorVersion < major)
-            return false
+    fun checkVersionAtLeast(major: Int, minor: Int, patch: Int) = checkVersionAtLeast(LanraragiVersion(major, minor, patch))
 
-        if (majorVersion == major && minorVersion < minor)
-            return false
-
-        if (majorVersion == major && minorVersion == minor && patchVersion < patch)
-            return false
-
-        return true
-    }
+    private fun checkVersionAtLeast(lrrVersion: LanraragiVersion) = version >= lrrVersion
 
     suspend fun generateTagSuggestions() {
         if (tagSuggestions.isEmpty()) {

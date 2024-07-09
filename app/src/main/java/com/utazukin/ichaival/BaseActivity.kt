@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -89,7 +89,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         intent.removeExtra(REFRESH_KEY)
     }
 
-    protected open fun onServerInitialized(serverSupported: Boolean) {}
+    protected open fun onServerInitialized(serverSupported: Boolean?) {}
 
     protected open fun setTheme() {
         when (getCustomTheme()) {

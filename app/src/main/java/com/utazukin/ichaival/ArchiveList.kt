@@ -39,6 +39,7 @@ import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.navigation.NavigationView
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
@@ -193,18 +194,29 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         }
     }
 
-    override fun onServerInitialized(serverSupported: Boolean) {
+    override fun onServerInitialized(serverSupported: Boolean?) {
         super.onServerInitialized(serverSupported)
         ServerManager.serverName?.let { supportActionBar?.title = it }
-        if (serverSupported) {
-            launch {
-                DatabaseReader.updateArchiveList(this@ArchiveList)
-                val viewModel: SearchViewModel by viewModels()
-                viewModel.init()
+        when (serverSupported) {
+            true -> {
+                launch {
+                    DatabaseReader.updateArchiveList(this@ArchiveList)
+                    val viewModel: SearchViewModel by viewModels()
+                    viewModel.init()
+                }
             }
-        } else {
-            setupText.text = getString(R.string.unsupported_server_message)
-            handleSetupText(true)
+            false -> {
+                setupText.text = getString(R.string.unsupported_server_message)
+                handleSetupText(true)
+            }
+            else -> {
+                val builder = MaterialAlertDialogBuilder(this).apply {
+                    setTitle(R.string.connect_error_modal_title)
+                    setMessage(R.string.connect_error_modal_message)
+                    setPositiveButton(android.R.string.ok) { dialog, _ -> dialog.dismiss() }
+                }
+                builder.show()
+            }
         }
     }
 
