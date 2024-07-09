@@ -213,9 +213,8 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         (listView.adapter as? ArchiveRecyclerViewAdapter)?.disableMultiSelect()
 
         val searchView: SearchView = findViewById(R.id.archive_search)
+        val viewModel: SearchViewModel by viewModels()
         if (category == null) {
-            val viewModel: SearchViewModel by viewModels()
-
             if (viewModel.categoryId.isEmpty()) {
                 if (viewModel.filter.contentEquals(searchView.query)) {
                     searchView.setQuery("", false)
@@ -229,9 +228,9 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             } else viewModel.categoryId = ""
         }
         else if (category.isStatic) {
-            val viewModel: SearchViewModel by viewModels()
             viewModel.categoryId = category.id
         } else {
+            viewModel.categoryId = ""
             searchView.setQuery(category.search, true)
             searchView.clearFocus()
         }
