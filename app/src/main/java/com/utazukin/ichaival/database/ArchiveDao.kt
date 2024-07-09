@@ -279,6 +279,9 @@ class DatabaseTypeConverters {
         return buildMap<String, MutableList<String>> {
             val split = json.split(',')
             for (tag in split.asSequence().map { it.trim() }) {
+                if (tag.isEmpty())
+                    continue
+
                 val colonIndex = tag.indexOf(':')
                 if (colonIndex >= 0) {
                     val namespace = tag.substring(0, colonIndex)
