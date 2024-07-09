@@ -245,8 +245,7 @@ class ArchiveListFragment : Fragment(),
 
     private fun setSubtitle() {
         val size = listAdapter?.itemCount ?: 0
-        if (size > 0)
-            (activity as? AppCompatActivity)?.supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
+        (activity as? AppCompatActivity)?.supportActionBar?.subtitle = resources.getQuantityString(R.plurals.archive_count, size, size)
     }
 
     override fun onResume() {
