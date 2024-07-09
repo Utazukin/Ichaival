@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ object ServerManager {
     private var initialized = false
     private var hasPassword = false
     private var version = LanraragiVersion(0, 0, 0)
-    private val lowestVersion = LanraragiVersion(0, 8, 2)
+    private val lowestVersion = LanraragiVersion(0, 8, 5)
 
     suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) : Boolean? {
         if (initialized && !force)

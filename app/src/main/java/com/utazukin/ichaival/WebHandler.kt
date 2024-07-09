@@ -379,7 +379,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    suspend fun getThumbUrl(id: String, page: Int): String? {
+    fun getThumbUrl(id: String, page: Int): String {
         val localThumb = DownloadManager.getDownloadedPage(id, page)
         if (localThumb != null)
             return localThumb
@@ -387,14 +387,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         if (!canConnect())
             return ""
 
-        if (!ServerManager.checkVersionAtLeast(0, 8, 4))
-            return null
-
-        return when {
-            //The minion api is protected before v0.8.5, so fallback to the old logic since we can't check in the interceptor.
-            !ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5) -> internalGetThumbUrl(id, page)
-            else -> "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
-        }
+        return "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
     }
 
     private suspend fun internalGetThumbUrl(id: String, page: Int): String? = withContext(Dispatchers.IO) {

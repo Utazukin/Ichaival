@@ -32,8 +32,6 @@ import coil.imageLoader
 import coil.load
 import coil.request.Disposable
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
@@ -43,10 +41,7 @@ class ThumbRecyclerViewAdapter(
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
     private val scope = fragment.lifecycleScope
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
-    private val loader = if (!ServerManager.canEdit && !ServerManager.checkVersionAtLeast(0, 8, 5))
-        fragment.requireContext().imageLoader
-    else
-        fragment.requireContext().imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor(scope)).build() }.build()
+    private val loader = fragment.requireContext().imageLoader.newBuilder().okHttpClient { WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor(scope)).build() }.build()
 
     private val onClickListener = View.OnClickListener { v ->
         val item = v.getTag(R.id.small_thumb) as Int
@@ -61,7 +56,6 @@ class ThumbRecyclerViewAdapter(
     var maxThumbnails = 10
     val hasMorePreviews: Boolean
         get() = maxThumbnails < archive.numPages
-    private val imageLoadingJobs: MutableMap<ViewHolder, Job> = mutableMapOf()
     private val imageLoadRequests: MutableMap<ViewHolder, Disposable> = mutableMapOf()
 
     init {
@@ -93,25 +87,22 @@ class ThumbRecyclerViewAdapter(
             setOnLongClickListener(onLongPressListener)
         }
 
-        imageLoadingJobs[holder] = scope.launch {
-            val image = archive.getThumb(holder.thumbView.context, page)
-            imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
-                allowRgb565(true)
-                crossfade(true)
-                size(defaultHeight)
-                dispatcher(Dispatchers.IO)
-                listener { _, _ ->
-                    with(holder.thumbView) {
-                        updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
-                        adjustViewBounds = true
-                    }
+        val image = archive.getThumb(page)
+        imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
+            allowRgb565(true)
+            crossfade(true)
+            size(defaultHeight)
+            dispatcher(Dispatchers.IO)
+            listener { _, _ ->
+                with(holder.thumbView) {
+                    updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
+                    adjustViewBounds = true
                 }
             }
         }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
-        imageLoadingJobs.remove(holder)?.cancel()
         imageLoadRequests.remove(holder)?.dispose()
         super.onViewRecycled(holder)
 
