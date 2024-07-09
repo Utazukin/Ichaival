@@ -35,7 +35,7 @@ class App : Application(), ImageLoaderFactory {
         super.onCreate()
         CrashLogger.createCrashLogger(this)
         DatabaseReader.init(this)
-        WebHandler.init()
+        WebHandler.init(this)
         DynamicColors.applyToActivitiesIfAvailable(this)
     }
 

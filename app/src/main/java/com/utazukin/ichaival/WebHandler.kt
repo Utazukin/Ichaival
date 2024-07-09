@@ -108,7 +108,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     var listener: DatabaseMessageListener? = null
     private var hasNetwork = false
     private val refreshListeners = mutableListOf<DatabaseRefreshListener>()
-    private val connectivityManager by lazy { App.context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             super.onAvailable(network)
@@ -121,12 +120,14 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun init() {
+    fun init(context: Context) {
         val networkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
             .build()
+
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
     }
 
