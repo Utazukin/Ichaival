@@ -53,13 +53,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.utazukin.ichaival.Header
 import com.utazukin.ichaival.R
@@ -88,7 +86,7 @@ class HeaderSettingsFragment : Fragment() {
                 val color = if (theme == getString(R.string.dark_theme)) Color.DarkGray else Color.Black
                 IchaivalTheme(theme = theme) {
                     Surface(color = color) {
-                        Scaffold(topBar = { AppBar(activity = requireActivity()) }) {
+                        Scaffold(topBar = { AppBar() }) {
                             ConstraintLayout(modifier = Modifier.fillMaxSize()) {
                                 val (list, button) = createRefs()
                                 HeaderList(headers = headers, modifier = Modifier
@@ -97,7 +95,7 @@ class HeaderSettingsFragment : Fragment() {
                                     .constrainAs(list) {
                                         top.linkTo(parent.top)
                                     })
-                                HeaderButton(content = { ThemeText(text = "Add Header") }, modifier = Modifier
+                                HeaderButton(content = { ThemeText(text = getString(R.string.add_header)) }, modifier = Modifier
                                     .padding(it)
                                     .fillMaxWidth()
                                     .constrainAs(button) {
@@ -114,10 +112,10 @@ class HeaderSettingsFragment : Fragment() {
     }
 
     @Composable
-    private fun AppBar(activity: FragmentActivity) {
-        val colors = when(activity.getCustomTheme()) {
-            activity.getString(R.string.black_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color.Black)
-            activity.getString(R.string.dark_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color(0xFF212121))
+    private fun AppBar() {
+        val colors = when(requireContext().getCustomTheme()) {
+            getString(R.string.black_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color.Black)
+            getString(R.string.dark_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color(0xFF212121))
             else -> TopAppBarDefaults.topAppBarColors()
         }
         TopAppBar(title = { Text("Custom Headers") }, navigationIcon = {
@@ -184,17 +182,16 @@ class HeaderSettingsFragment : Fragment() {
 
     @Composable
     private fun HeaderDialog(onDismissRequest: () -> Unit, name: String = "", value: String = "") {
-        val context = LocalContext.current
         var headerName by remember { mutableStateOf(name) }
         var headerValue by remember { mutableStateOf(value) }
         val dismissButton: (@Composable () -> Unit)? = if (name.isEmpty())
             null
         else {
             { ThemeTextButton(onClick = { removeHeader(Header(name, value)); onDismissRequest() }) {
-                Text(text = "Delete")
+                Text(text = getString(R.string.delete_header))
             } }
         }
-        val title = if (name.isEmpty()) "Add Header" else "Modify Header"
+        val title = if (name.isEmpty()) getString(R.string.add_header) else getString(R.string.modify_header)
 
         ThemeAlertDialog(onDismissRequest = onDismissRequest,
                 confirmButton = { ThemeTextButton(onClick = {
@@ -205,14 +202,14 @@ class HeaderSettingsFragment : Fragment() {
                             addHeader(headerName, headerValue)
                         onDismissRequest()
                     }
-                }) { Text(text = context.getString(android.R.string.ok)) } },
+                }) { Text(text = getString(android.R.string.ok)) } },
                 title = { Text(title) },
                 dismissButton = dismissButton,
                 text = {
                     Column {
-                        Text("Name")
+                        Text(getString(R.string.header_name))
                         ThemeTextField(value = headerName, onValueChange = { headerName = it }, singleLine = true)
-                        Text("Value")
+                        Text(getString(R.string.header_value))
                         ThemeTextField(value = headerValue, onValueChange = { headerValue = it }, singleLine = true)
                     }
                 })

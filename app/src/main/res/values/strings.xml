@@ -232,6 +232,7 @@
     <string name="download_button_downloaded">Downloaded</string>
     <string name="download_button_downloading">Downloading %1$d/%2$d</string>
     <string name="download_button_download_progress">Downloaded %1$d/%2$d</string>
+    <string name="sync_snack_message">Syncing…</string>
     <string name="connect_error_modal_title">Cannot Connect</string>
     <string name="connect_error_modal_message">Unable to reach server.  Please check connection settings.</string>
     <string-array name="compression_types">
@@ -249,4 +250,9 @@
     <string name="title_activity_downloads" translatable="false">DownloadsActivity</string>
     <string name="server_headers_pref" translatable="false">server_headers_pref</string>
     <string name="custom_headers_pref_title">Custom Headers</string>
+    <string name="add_header">Add Header</string>
+    <string name="modify_header">Modify Header</string>
+    <string name="delete_header">Delete</string>
+    <string name="header_name">Name</string>
+    <string name="header_value">Value</string>
 </resources>
