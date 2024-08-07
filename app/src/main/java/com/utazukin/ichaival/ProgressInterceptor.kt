@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import com.utazukin.ichaival.WebHandler.addHeaders
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import okhttp3.HttpUrl
@@ -37,28 +38,28 @@ import kotlin.math.floor
 
 class ProgressInterceptor(private val listener: ResponseProgressListener) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
+        val request = chain.request()
         val response = chain.proceed(request)
-        return response.newBuilder()
-            .body(OkHttpProgressResponseBody(request.url, response.body!!, listener))
-            .build()
+        return response.newBuilder().apply {
+            response.body?.let { body(OkHttpProgressResponseBody(request.url, it, listener)) }
+        }.build()
     }
 }
 
 class ThumbHttpInterceptor(private val scope: CoroutineScope) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = if (WebHandler.apiKey.isEmpty()) chain.request() else chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
-        val response = chain.proceed(request)
+        val response = chain.proceed(chain.request())
         if (response.code != HttpURLConnection.HTTP_ACCEPTED)
             return response
 
+        val body = response.body ?: return response
         val clone = chain.call().clone()
-        return response.body?.use {
+        return body.use {
             val json = JSONObject(it.string())
             val job = json.getInt("job")
-            waitForJob(job, chain) ?: return@use response
-            clone.execute()
-        } ?: response
+            val success = waitForJob(job, chain)
+            if (success != null) clone.execute() else response
+        }
     }
 
     private fun waitForJob(jobId: Int, chain: Interceptor.Chain): Boolean? {
@@ -74,7 +75,7 @@ class ThumbHttpInterceptor(private val scope: CoroutineScope) : Interceptor {
     private fun checkJobStatus(jobId: Int, chain: Interceptor.Chain): Boolean? {
         val url = WebHandler.getUrlForJob(jobId)
         val response = chain.proceed(Request.Builder().apply {
-            addHeader("Authorization", WebHandler.apiKey)
+            addHeaders()
             url(url)
         }.build())
 

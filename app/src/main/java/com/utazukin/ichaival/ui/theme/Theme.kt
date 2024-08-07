@@ -22,10 +22,15 @@ import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -34,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -125,4 +131,54 @@ fun ThemeText(text: String) {
         Text(text = text.uppercase())
     else
         Text(text = text)
+}
+
+@Composable
+fun ThemeTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, content:@Composable RowScope.() -> Unit) {
+    val context = LocalContext.current
+    val buttonColors = when(context.getCustomTheme()) {
+        context.getString(R.string.black_theme) -> ButtonDefaults.textButtonColors().copy(contentColor = Color.White)
+        context.getString(R.string.dark_theme) -> ButtonDefaults.textButtonColors().copy(contentColor = Color.White)
+        else -> ButtonDefaults.textButtonColors()
+    }
+    TextButton(onClick = onClick, content = content, modifier = modifier, colors = buttonColors)
+}
+
+@Composable
+fun ThemeTextField(value: String, onValueChange: (String) -> Unit, singleLine: Boolean = false) {
+    val context = LocalContext.current
+    val theme = context.getCustomTheme()
+    val colors = if (theme == context.getString(R.string.material_theme))
+        TextFieldDefaults.colors()
+    else {
+        val containerColor = if (theme == context.getString(R.string.black_theme)) Color.Black else MaterialTheme.colorScheme.primary
+        TextFieldDefaults.colors().copy(
+                focusedContainerColor = containerColor,
+                focusedIndicatorColor = Color(0xFF008577),
+                unfocusedContainerColor = containerColor,
+                cursorColor = Color(0xFF008577))
+    }
+    TextField(value = value, onValueChange = onValueChange, singleLine = singleLine, colors = colors)
+}
+
+@Composable
+fun ThemeAlertDialog(onDismissRequest: () -> Unit,
+                     confirmButton: @Composable () -> Unit,
+                     dismissButton: (@Composable () -> Unit)?,
+                     title: (@Composable () -> Unit)?,
+                     text: (@Composable () -> Unit)?) {
+    val context = LocalContext.current
+    val dialogShape = if (context.getCustomTheme() != context.getString(R.string.material_theme)) RectangleShape else AlertDialogDefaults.shape
+    val containerColor = when(context.getCustomTheme()) {
+        context.getString(R.string.material_theme) -> AlertDialogDefaults.containerColor
+        context.getString(R.string.black_theme) -> Color.Black
+        else -> MaterialTheme.colorScheme.primary
+    }
+    AlertDialog(onDismissRequest = onDismissRequest,
+            confirmButton = confirmButton,
+            dismissButton = dismissButton,
+            title = title,
+            text = text,
+            containerColor = containerColor,
+            shape = dialogShape)
 }

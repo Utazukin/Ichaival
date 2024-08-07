@@ -210,17 +210,28 @@ fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgres
     })
 }
 
+fun ImageRequest.Builder.addAuthHeader() : ImageRequest.Builder {
+    if (WebHandler.apiKey.isNotEmpty())
+        addHeader("Authorization", WebHandler.apiKey)
+
+    for ((name, value) in WebHandler.customHeaders) {
+        addHeader(name, value)
+    }
+    return this
+}
+
 private fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgressListener: UIProgressListener) : ImageRequest {
-    return ImageRequest.Builder(context)
-        .data(imagePath)
-        .dispatcher(Dispatchers.IO)
-        .memoryCachePolicy(CachePolicy.DISABLED)
-        .listener(
+    return ImageRequest.Builder(context).apply {
+        addAuthHeader()
+        data(imagePath)
+        dispatcher(Dispatchers.IO)
+        memoryCachePolicy(CachePolicy.DISABLED)
+        listener(
                 onStart = { ResponseProgressListener.expect(imagePath, uiProgressListener) },
                 onCancel = { ResponseProgressListener.forget(imagePath) },
                 onError = { _, _ -> ResponseProgressListener.forget(imagePath) }
         )
-        .build()
+    }.build()
 }
 
 fun Size.toRect() = Rect(0, 0, width, height)

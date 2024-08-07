@@ -20,10 +20,13 @@ package com.utazukin.ichaival
 
 import android.app.Application
 import android.content.Context
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.google.android.material.color.DynamicColors
 import com.utazukin.ichaival.database.DatabaseReader
+import kotlinx.coroutines.launch
 
 class App : Application(), ImageLoaderFactory {
 
@@ -35,7 +38,9 @@ class App : Application(), ImageLoaderFactory {
         super.onCreate()
         CrashLogger.createCrashLogger(this)
         DatabaseReader.init(this)
-        WebHandler.init(this)
+        with(ProcessLifecycleOwner.get()) {
+            lifecycleScope.launch { WebHandler.init(this@App) }
+        }
         DynamicColors.applyToActivitiesIfAvailable(this)
     }
 

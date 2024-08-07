@@ -247,4 +247,6 @@
         <item>@string/png_compress_display</item>
     </string-array>
     <string name="title_activity_downloads" translatable="false">DownloadsActivity</string>
+    <string name="server_headers_pref" translatable="false">server_headers_pref</string>
+    <string name="custom_headers_pref_title">Custom Headers</string>
 </resources>

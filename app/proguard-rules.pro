@@ -36,5 +36,6 @@
 -keepnames class com.utazukin.ichaival.* {}
 -keep class com.utazukin.ichaival.ImageRegionDecoder
 -keep class com.utazukin.ichaival.ImageDecoder
+-keep class com.utazukin.ichaival.settings.HeaderSettingsFragment
 
 -dontwarn okhttp3.internal.platform.ConscryptPlatform

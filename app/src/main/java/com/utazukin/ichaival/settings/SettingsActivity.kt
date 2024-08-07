@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NavUtils
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.database.DatabaseMessageListener
@@ -31,7 +33,7 @@ import com.utazukin.ichaival.getCustomTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, CoroutineScope {
+class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, CoroutineScope, PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
     override val coroutineContext = lifecycleScope.coroutineContext
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +44,16 @@ class SettingsActivity : AppCompatActivity(), DatabaseMessageListener, Coroutine
             supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingsFragment()).commit()
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
+    override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference): Boolean {
+        val args = pref.extras
+        val fragment = supportFragmentManager.fragmentFactory.instantiate(classLoader, pref.fragment!!).apply {
+            arguments = args
+        }
+
+        supportFragmentManager.beginTransaction().replace(android.R.id.content, fragment).addToBackStack(null).commit()
+        return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

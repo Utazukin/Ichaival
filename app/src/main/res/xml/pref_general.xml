@@ -45,6 +45,13 @@
             app:key="@string/api_key_pref"
             app:singleLine="true"
             app:title="@string/api_key_pref_name" />
+        <Preference
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:iconSpaceReserved="false"
+            app:fragment="com.utazukin.ichaival.settings.HeaderSettingsFragment"
+            app:key="@string/server_headers_pref"
+            app:title="@string/custom_headers_pref_title" />
     </PreferenceCategory>
     <PreferenceCategory
         android:title="@string/cache_header"

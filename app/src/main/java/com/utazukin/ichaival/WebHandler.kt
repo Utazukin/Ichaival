@@ -25,10 +25,13 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Base64
 import androidx.preference.Preference
+import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
+import com.google.gson.reflect.TypeToken
+import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.database.DatabaseMessageListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.DatabaseRefreshListener
-import com.utazukin.ichaival.database.ServerSearchResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -48,6 +51,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -71,6 +75,10 @@ class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
     }
 }
 
+data class Header(
+    @SerializedName("name") val name: String,
+    @SerializedName("value") val value: String)
+
 object WebHandler : Preference.OnPreferenceChangeListener {
     private const val apiPath: String = "/api"
     private const val databasePath = "$apiPath/database"
@@ -91,12 +99,15 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val minionStatusPath = "$apiPath/minion/%s"
     private const val connTimeoutMs = 5000L
     private const val readTimeoutMs = 30000L
+    private const val headerFile = "headers.json"
 
     var serverLocation: String = ""
     var apiKey: String = ""
         set(value) {
             field = if (value.isNotEmpty()) "Bearer ${Base64.encodeToString(value.toByteArray(), Base64.NO_WRAP)}" else ""
         }
+    var customHeaders = listOf<Header>()
+        private set
     private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     val httpClient = OkHttpClient.Builder()
         .connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS)
@@ -120,7 +131,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         }
     }
 
-    fun init(context: Context) {
+    suspend fun init(context: Context) {
         val networkRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
@@ -129,6 +140,23 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+
+        withContext(Dispatchers.IO) {
+            val gson = Gson()
+            val file = File(context.noBackupFilesDir, headerFile)
+            val listType = object: TypeToken<List<Header>>() {}.type
+            customHeaders = if (file.exists()) JsonReader(file.inputStream().bufferedReader()).use { gson.fromJson(it, listType) } else listOf()
+        }
+    }
+
+    suspend fun updateHeaders(context: Context, headers: List<Header>) {
+        customHeaders = headers
+        withContext(Dispatchers.IO) {
+            val gson = Gson()
+            val file = File(context.noBackupFilesDir, headerFile)
+            val json = gson.toJson(headers)
+            file.writeText(json)
+        }
     }
 
     suspend fun getServerInfo(context: Context): JSONObject? {
@@ -610,12 +638,21 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
     fun getRawImageUrl(path: String) = serverLocation + path
 
+    fun Request.Builder.addHeaders() : Request.Builder {
+        if (apiKey.isNotEmpty())
+            addHeader("Authorization", apiKey)
+
+        for ((name, value) in customHeaders) {
+            addHeader(name, value)
+        }
+        return this
+    }
+
     private fun createServerConnection(url: String, method: String = "GET", body: RequestBody? = null) : Request {
         return with (Request.Builder()) {
             method(method, body)
+            addHeaders()
             url(url)
-            if (apiKey.isNotEmpty())
-                addHeader("Authorization", apiKey)
             build()
         }
     }

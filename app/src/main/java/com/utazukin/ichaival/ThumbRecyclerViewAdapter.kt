@@ -89,6 +89,7 @@ class ThumbRecyclerViewAdapter(
 
         val image = archive.getThumb(page)
         imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
+            addAuthHeader()
             allowRgb565(true)
             crossfade(true)
             size(defaultHeight)
