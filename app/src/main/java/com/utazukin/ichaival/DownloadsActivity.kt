@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,7 +43,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -67,8 +65,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.ui.theme.IchaivalTheme
+import com.utazukin.ichaival.ui.theme.ThemeAlertDialog
 import com.utazukin.ichaival.ui.theme.ThemeButton
 import com.utazukin.ichaival.ui.theme.ThemeText
+import com.utazukin.ichaival.ui.theme.ThemeTextButton
 import kotlinx.coroutines.launch
 
 data class DownloadedArchive(val archive: Archive?, val id: String, val thumb: String?, val count: Int, val cancelled: Boolean = false) {
@@ -161,7 +161,7 @@ class DownloadsActivity : ComponentActivity(), DownloadListener {
 }
 
 @Composable
-fun AppBar(activity: DownloadsActivity) {
+private fun AppBar(activity: DownloadsActivity) {
     val colors = when(activity.getCustomTheme()) {
         activity.getString(R.string.black_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color.Black)
         activity.getString(R.string.dark_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color(0xFF212121))
@@ -175,7 +175,7 @@ fun AppBar(activity: DownloadsActivity) {
 }
 
 @Composable
-fun DownloadList(archives: List<DownloadedArchive>, modifier: Modifier) {
+private fun DownloadList(archives: List<DownloadedArchive>, modifier: Modifier) {
     val stateList = remember { archives }
     LazyColumn(modifier) {
         itemsIndexed(stateList) {i, item ->
@@ -187,15 +187,15 @@ fun DownloadList(archives: List<DownloadedArchive>, modifier: Modifier) {
 }
 
 @Composable
-fun DownloadItem(download: DownloadedArchive) {
+private fun DownloadItem(download: DownloadedArchive) {
     val context = LocalContext.current
     val itemSize = 150
     val openDialog = remember { mutableStateOf<ButtonOption?>(null) }
 
     openDialog.value?.run {
-        AlertDialog(onDismissRequest = { openDialog.value = null },
-                confirmButton = { TextButton(onClick = { onConfirm(download, openDialog) }) { Text(context.getString(R.string.yes)) } },
-                dismissButton = { TextButton(onClick = { openDialog.value = null }) { Text(context.getString(R.string.no)) } },
+        ThemeAlertDialog(onDismissRequest = { openDialog.value = null },
+                confirmButton = { ThemeTextButton(onClick = { onConfirm(download, openDialog) }) { Text(context.getString(R.string.yes)) } },
+                dismissButton = { ThemeTextButton(onClick = { openDialog.value = null }) { Text(context.getString(R.string.no)) } },
                 text = { Text(message) },
                 title = { Text(title) })
     }
