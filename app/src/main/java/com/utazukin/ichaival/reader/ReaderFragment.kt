@@ -33,9 +33,11 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import coil.ImageLoader
 import coil.load
 import coil.size.Dimension
@@ -221,7 +223,14 @@ class ReaderFragment : Fragment(), PageFragment {
     }
 
     private fun initializeView(view: View) {
-        view.background = ContextCompat.getDrawable(requireActivity(), android.R.color.black)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val bgColor = when(prefs.getString(getString(R.string.reader_bg_pref_key), getString(R.string.black_bg_color))) {
+            getString(R.string.white_bg_color) -> Color.White
+            getString(R.string.gray_bg_color) -> Color.Gray
+            else -> Color.Black
+        }
+        view.setBackgroundColor(bgColor.toArgb())
+
         val layoutParams = RelativeLayout
             .LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT)
         view.layoutParams = layoutParams

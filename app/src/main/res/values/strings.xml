@@ -104,6 +104,16 @@
         <item>@string/width_scale_type</item>
         <item>@string/webtoon_scale_type</item>
     </string-array>
+    <string name="reader_bg_pref_key">reader_bg_pref</string>
+    <string name="reader_bg_pref_title">Background Color</string>
+    <string name="black_bg_color">Black</string>
+    <string name="white_bg_color">White</string>
+    <string name="gray_bg_color">Gray</string>
+    <string-array name="reader_bg_colors">
+        <item>@string/black_bg_color</item>
+        <item>@string/white_bg_color</item>
+        <item>@string/gray_bg_color</item>
+    </string-array>
     <string name="dark_theme">Dark</string>
     <string name="black_theme">Black</string>
     <string name="material_theme" translatable="false">Material You</string>

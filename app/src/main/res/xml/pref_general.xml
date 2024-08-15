@@ -164,6 +164,13 @@
             android:key="@string/scale_type_pref"
             android:title="@string/scale_type_menu"
             app:iconSpaceReserved="false" />
+        <ListPreference
+            android:defaultValue="@string/black_bg_color"
+            android:entries="@array/reader_bg_colors"
+            android:entryValues="@array/reader_bg_colors"
+            android:key="@string/reader_bg_pref_key"
+            android:title="@string/reader_bg_pref_title"
+            app:iconSpaceReserved="false" />
         <EditTextPreference
             app:defaultValue="@integer/default_fullscreen_timeout"
             android:selectAllOnFocus="true"

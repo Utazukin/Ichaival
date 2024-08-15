@@ -134,6 +134,7 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
         bindPreferenceSummaryToValue(compressPref)
 
         findPreference<Preference>(getString(R.string.scale_type_pref))?.let { bindPreferenceSummaryToValue(it) }
+        findPreference<Preference>(getString(R.string.reader_bg_pref_key))?.let { bindPreferenceSummaryToValue(it) }
 
         findPreference<EditTextPreference>(getString(R.string.random_count_pref))?.let {
             it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_CLASS_NUMBER))
