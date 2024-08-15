@@ -85,7 +85,9 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     var filter by StateDelegate(state, "")
         private set
     var jumpToTop = false
-    private var initiated by StateDelegate(state, false) { reset() }
+    var refreshing by StateDelegate(state, false)
+    var initiated by StateDelegate(state, false) { reset() }
+        private set
     private var resetDisabled by ChangeDelegate(!initiated) { reset(false) }
     private var archivePagingSource: PagingSource<Int, ArchiveBase> = EmptySource()
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)

@@ -142,6 +142,9 @@ interface ArchiveDao {
     @Upsert(entity = ArchiveFull::class)
     suspend fun insertAllJson(archives: Collection<ArchiveJson>)
 
+    @Upsert(entity = ArchiveFull::class)
+    suspend fun insertJson(archiveJson: ArchiveJson)
+
     @Query("Delete from archive where updatedAt < :updateTime")
     suspend fun removeNotUpdated(updateTime: Long)
 
@@ -172,11 +175,14 @@ interface ArchiveDao {
     @Upsert
     suspend fun insertCategories(categories: Collection<ArchiveCategoryFull>)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Upsert
     suspend fun insertCategory(category: ArchiveCategoryFull)
 
     @Upsert
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>)
+
+    @Upsert
+    suspend fun insertStaticCategory(reference: StaticCategoryRef)
 
     @Query("Delete from staticCategoryRef where categoryId = :categoryId and archiveId = :archiveId")
     suspend fun removeFromCategory(categoryId: String, archiveId: String)

@@ -45,16 +45,19 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.DatabaseRefreshListener
 import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
@@ -206,8 +209,10 @@ class ArchiveListFragment : Fragment(),
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.refresh_archives -> {
-                forceArchiveListUpdate()
-                true
+                if (viewModel.initiated && !viewModel.refreshing) {
+                    forceArchiveListUpdate()
+                    true
+                } else false
             }
             R.id.select_archives -> listAdapter?.enableMultiSelect(requireActivity() as AppCompatActivity) ?: false
             R.id.scroll_top -> {
@@ -419,7 +424,17 @@ class ArchiveListFragment : Fragment(),
         listAdapter?.disableMultiSelect()
         searchJob?.cancel()
         launch {
-            DatabaseReader.updateArchiveList(requireContext(), true)
+            swipeRefreshLayout.isEnabled = false
+            val syncMessage = Snackbar.make(requireView(), R.string.sync_snack_message, Snackbar.LENGTH_INDEFINITE)
+            syncMessage.show()
+            viewModel.viewModelScope.async {
+                viewModel.refreshing = true
+                DatabaseReader.updateArchiveList(requireContext())
+                viewModel.refreshing = false
+            }.await()
+            syncMessage.dismiss()
+            swipeRefreshLayout.isRefreshing = false
+            swipeRefreshLayout.isEnabled = canSwipeRefresh
             viewModel.jumpToTop = true
             viewModel.reset()
         }

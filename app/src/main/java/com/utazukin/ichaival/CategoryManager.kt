@@ -29,7 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
-import java.io.File
 import java.io.InputStream
 import java.util.Calendar
 
@@ -60,7 +59,6 @@ data class ArchiveCategory(
 data class StaticCategoryRef(val categoryId: String, val archiveId: String, val updatedAt: Long)
 
 object CategoryManager {
-    private const val categoriesFilename = "categories.json"
     private val listeners = mutableListOf<CategoryListener>()
 
     fun addUpdateListener(listener: CategoryListener) {
@@ -73,11 +71,9 @@ object CategoryManager {
 
     suspend inline fun isInCategory(categoryId: String, archiveId: String) = DatabaseReader.isInCategory(categoryId, archiveId)
 
-    suspend fun updateCategories(categoryJson: InputStream?, filesDir: File) {
-        val categoriesFile = File(filesDir, categoriesFilename)
-        withContext(Dispatchers.IO) { categoryJson?.use { categoriesFile.outputStream().use { f -> it.copyTo(f) } } }
-        if (categoriesFile.exists()) {
-            parseCategories(categoriesFile)
+    suspend fun updateCategories() {
+        WebHandler.getCategories()?.let {
+            parseCategories(it)
             updateListeners()
         }
     }
@@ -85,7 +81,7 @@ object CategoryManager {
     suspend inline fun getStaticCategories(id: String) = DatabaseReader.getCategoryArchives(id)
 
     suspend fun addArchivesToCategory(categoryId: String, archiveIds: Collection<String>) {
-        val references = buildList {
+        val references = buildList(archiveIds.size) {
             for (id in archiveIds) {
                 add(StaticCategoryRef(categoryId, id, 0))
             }
@@ -111,66 +107,47 @@ object CategoryManager {
         }
 }
 
-    private suspend fun parseCategories(categoriesFile: File) = withContext(Dispatchers.IO) {
-        DatabaseReader.withTransaction {
-            val categories = ArrayList<ArchiveCategoryFull>(DatabaseReader.MAX_WORKING_ARCHIVES)
-            val staticRefs = ArrayList<StaticCategoryRef>(DatabaseReader.MAX_WORKING_ARCHIVES)
-            val currentTime = Calendar.getInstance().timeInMillis
-            JsonReader(categoriesFile.bufferedReader(Charsets.UTF_8)).use { reader ->
-                val archives = mutableListOf<String>()
-                reader.beginArray()
+    private suspend fun parseCategories(categoriesStream: InputStream) = DatabaseReader.withTransaction {
+        val currentTime = Calendar.getInstance().timeInMillis
+        JsonReader(categoriesStream.bufferedReader(Charsets.UTF_8)).use { reader ->
+            val archives = mutableListOf<String>()
+            reader.beginArray()
+            while (reader.hasNext()) {
+                var name = ""
+                var id = ""
+                var search = ""
+                var pinned = false
+                reader.beginObject()
                 while (reader.hasNext()) {
-                    var name = ""
-                    var id = ""
-                    var search = ""
-                    var pinned = false
-                    reader.beginObject()
-                    while (reader.hasNext()) {
-                        when (reader.nextName()) {
-                            "name" -> name = reader.nextString()
-                            "id" -> id = reader.nextString()
-                            "pinned" -> pinned = reader.nextInt() == 1
-                            "search" -> search = reader.nextString()
-                            "archives" -> {
-                                archives.clear()
-                                reader.beginArray()
-                                while (reader.hasNext())
-                                    archives.add(reader.nextString())
-                                reader.endArray()
-                            }
-                            else -> reader.skipValue()
+                    when (reader.nextName()) {
+                        "name" -> name = reader.nextString()
+                        "id" -> id = reader.nextString()
+                        "pinned" -> pinned = reader.nextInt() == 1
+                        "search" -> search = reader.nextString()
+                        "archives" -> {
+                            archives.clear()
+                            reader.beginArray()
+                            while (reader.hasNext())
+                                archives.add(reader.nextString())
+                            reader.endArray()
                         }
-                    }
-                    reader.endObject()
-
-                    if (archives.isNotEmpty()) {
-                        for (archive in archives) {
-                            staticRefs.add(StaticCategoryRef(id, archive, currentTime))
-
-                            if (staticRefs.size == DatabaseReader.MAX_WORKING_ARCHIVES) {
-                                DatabaseReader.insertStaticCategories(staticRefs)
-                                staticRefs.clear()
-                            }
-                        }
-                        archives.clear()
-                    }
-
-                    categories.add(ArchiveCategoryFull(name, id, search, pinned, currentTime))
-                    if (categories.size == DatabaseReader.MAX_WORKING_ARCHIVES) {
-                        DatabaseReader.insertCategories(categories)
-                        categories.clear()
+                        else -> reader.skipValue()
                     }
                 }
+                reader.endObject()
 
-                reader.endArray()
+                if (archives.isNotEmpty()) {
+                    for (archive in archives)
+                        DatabaseReader.insertStaticCategory(StaticCategoryRef(id, archive, currentTime))
+                    archives.clear()
+                }
+
+                DatabaseReader.insertCategory(ArchiveCategoryFull(name, id, search, pinned, currentTime))
             }
 
-            if (categories.isNotEmpty())
-                DatabaseReader.insertCategories(categories)
-            if (staticRefs.isNotEmpty())
-                DatabaseReader.insertStaticCategories(staticRefs)
-            
-            DatabaseReader.removeOutdatedCategories(currentTime)
+            reader.endArray()
         }
+
+        DatabaseReader.removeOutdatedCategories(currentTime)
     }
 }

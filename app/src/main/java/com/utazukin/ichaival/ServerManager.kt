@@ -107,23 +107,20 @@ object ServerManager {
 
     suspend fun generateTagSuggestions() {
         if (tagSuggestions.isEmpty()) {
-            WebHandler.generateSuggestionList()?.let {
-                val length = it.length()
-                tagSuggestions = buildList(length) {
-                    for (i in 0 until length) {
-                        val item = it.getJSONObject(i)
-                        val namespace = item.getString("namespace")
-                        if (namespace != "date_added" && namespace != "source")
-                            add(TagSuggestion(item.getString("text"), namespace, item.getInt("weight")))
+            withContext(Dispatchers.IO) {
+                WebHandler.generateSuggestionList()?.let {
+                    val length = it.length()
+                    tagSuggestions = buildList(length) {
+                        for (i in 0 until length) {
+                            val item = it.getJSONObject(i)
+                            val namespace = item.getString("namespace")
+                            if (namespace != "date_added" && namespace != "source")
+                                add(TagSuggestion(item.getString("text"), namespace, item.getInt("weight")))
+                        }
+                        sortByDescending { tag -> tag.weight }
                     }
-                    sortByDescending { tag -> tag.weight }
                 }
             }
         }
     }
-
-    suspend fun parseCategories(context: Context) {
-        CategoryManager.updateCategories(WebHandler.getCategories(), context.filesDir)
-    }
-
 }

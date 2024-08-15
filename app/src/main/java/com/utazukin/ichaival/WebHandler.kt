@@ -330,35 +330,9 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         withContext(Dispatchers.IO) { httpClient.newCall(connection).await(autoClose = true) }
     }
 
-    suspend fun getRandomArchives(count: UInt, filter: CharSequence? = null, categoryId: String? = null) : ServerSearchResult {
-        if (!canConnect())
-            return ServerSearchResult(null)
+    suspend fun getOrderedArchives(start: Long = -1) = searchServer("", false, SortMethod.Alpha, false, start)
 
-        updateRefreshing(true)
-
-        val encodedSearch = if (filter.isNullOrEmpty()) null else withContext(Dispatchers.IO) { URLEncoder.encode(filter.toString(), "utf-8") }
-        val url = "$serverLocation$randomPath?count=$count${if (encodedSearch == null) "" else "&filter=$encodedSearch"}${if (categoryId == null) "" else "&category=$categoryId"}"
-        val idKey = if (ServerManager.checkVersionAtLeast(0, 8, 8)) "arcid" else "id"
-
-        val connection = createServerConnection(url)
-        val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
-        val result = tryOrNull { response?.use {
-            if (!it.isSuccessful)
-                ServerSearchResult(null)
-            else {
-                it.body?.run { JSONObject(suspendString()) }?.let { json ->
-                    val dataArray = json.getJSONArray("data")
-                    val results = List(dataArray.length()) { i -> dataArray.getJSONObject(i).getString(idKey) }
-                    ServerSearchResult(results, results.size)
-                }
-            }
-        } } ?: ServerSearchResult(null)
-
-        updateRefreshing(false)
-        return result
-    }
-
-    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Int = 0) : InputStream? {
+    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long = 0) : InputStream? {
         if (!canConnect())
             return null
 
@@ -617,7 +591,12 @@ object WebHandler : Preference.OnPreferenceChangeListener {
 
         val connection = createServerConnection(serverLocation, "HEAD")
         val response = httpClient.newCall(connection).await()
-        response.isSuccessful
+        if (response.isSuccessful)
+            true
+        else {
+            handleErrorMessage(response.code, App.context.getString(R.string.failed_to_connect_message))
+            false
+        }
     }
 
     private fun canConnect() = canConnect(null, true)

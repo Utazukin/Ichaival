@@ -20,6 +20,7 @@ package com.utazukin.ichaival.database
 
 import android.content.Context
 import android.database.DatabaseUtils
+import androidx.core.content.edit
 import androidx.paging.PagingSource
 import androidx.preference.PreferenceManager
 import androidx.room.Entity
@@ -38,6 +39,7 @@ import com.utazukin.ichaival.ArchiveBase
 import com.utazukin.ichaival.ArchiveCategory
 import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveJson
+import com.utazukin.ichaival.CategoryManager
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.ServerManager
@@ -136,7 +138,8 @@ private class DatabaseHelper {
 
 object DatabaseReader {
     const val MAX_WORKING_ARCHIVES = 3000
-    private const val jsonLocation: String = "archives.json"
+    private const val jsonLocation = "archives.json"
+    private const val UPDATE_KEY = "last_update"
 
     private var isDirty = false
     private val archivePageMap = mutableMapOf<String, List<String>>()
@@ -154,51 +157,30 @@ object DatabaseReader {
             .build()
     }
 
-    suspend fun updateArchiveList(context: Context, forceUpdate: Boolean = false) = withContext(Dispatchers.IO) {
-        val cacheDir = context.noBackupFilesDir
-        if (forceUpdate || checkDirty(cacheDir, context)) {
-            WebHandler.updateRefreshing(true)
-            launch { database.archiveDao().clearSearchCache() }
-            val archiveStream = WebHandler.searchServer("", false, SortMethod.Alpha, false, -1)
-            val jsonFile = File(cacheDir, jsonLocation)
-            archiveStream?.use { jsonFile.outputStream().use { output -> it.copyTo(output) } }
+    suspend fun updateArchiveList(context: Context) = withContext(Dispatchers.IO) {
+        if (!WebHandler.canReachServer())
+            return@withContext
 
-            if (jsonFile.exists())
-                readArchiveJson(jsonFile)
-            ServerManager.parseCategories(context)
-            WebHandler.updateRefreshing(false)
-            isDirty = false
-        }
-    }
-
-    private suspend fun readArchiveJson(jsonFile: File) = jsonFile.inputStream().use {
+        val currentTime = Calendar.getInstance().timeInMillis
         withTransaction {
-            val serverArchives = ArrayList<ArchiveJson>(MAX_WORKING_ARCHIVES)
-            val currentTime = Calendar.getInstance().timeInMillis
             val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
-
-            JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
-                reader.beginObject()
-                while (reader.hasNext()) {
-                    if (reader.nextName() == "data") {
-                        reader.beginArray()
-                        while (reader.hasNext()) {
-                            val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
-                            serverArchives.add(archive)
-
-                            if (serverArchives.size == MAX_WORKING_ARCHIVES) {
-                                updateArchives(serverArchives)
-                                serverArchives.clear()
-                            }
+            val archiveStream = WebHandler.getOrderedArchives(-1) ?: return@withTransaction
+            JsonReader(archiveStream.bufferedReader(Charsets.UTF_8)).use {
+                it.beginObject()
+                while (it.hasNext()) {
+                    val name = it.nextName()
+                    if (name == "data") {
+                        it.beginArray()
+                        while (it.hasNext()) {
+                            val archive: ArchiveJson = gson.fromJson(it, ArchiveJson::class.java)
+                            updateArchive(archive)
                         }
-                        reader.endArray()
-                    } else reader.skipValue()
+                        it.endArray()
+                    } else it.skipValue()
                 }
-                reader.endObject()
+                it.endObject()
             }
 
-            if (serverArchives.isNotEmpty())
-                updateArchives(serverArchives)
             removeOldArchives(currentTime)
 
             if (ServerManager.serverTracksProgress) {
@@ -225,9 +207,16 @@ object DatabaseReader {
                     database.archiveDao().upsertBookmarks(toUpdate)
             }
         }
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.edit { putLong(UPDATE_KEY, currentTime) }
+
+        launch { database.archiveDao().clearSearchCache() }
+        CategoryManager.updateCategories()
+        isDirty = false
     }
 
-    private suspend fun updateArchives(archives: List<ArchiveJson>) = database.archiveDao().insertAllJson(archives)
+    private suspend fun updateArchive(archiveJson: ArchiveJson) = database.archiveDao().insertJson(archiveJson)
 
     suspend fun <R> withTransaction(block: suspend () -> R) = database.withTransaction { block() }
 
@@ -254,6 +243,8 @@ object DatabaseReader {
 
     suspend fun insertCategories(categories: Collection<ArchiveCategoryFull>) = database.archiveDao().insertCategories(categories)
 
+    suspend fun insertCategory(category: ArchiveCategoryFull) = database.archiveDao().insertCategory(category)
+
     suspend fun insertCategory(category: ArchiveCategory) {
         with(category) {
             database.archiveDao().insertCategory(ArchiveCategoryFull(name, id, search, false, 0))
@@ -263,6 +254,7 @@ object DatabaseReader {
     suspend fun removeFromCategory(categoryId: String, archiveId: String) = database.archiveDao().removeFromCategory(categoryId, archiveId)
 
     suspend fun insertStaticCategories(references: Collection<StaticCategoryRef>) = database.archiveDao().insertStaticCategories(references)
+    suspend fun insertStaticCategory(reference: StaticCategoryRef) = database.archiveDao().insertStaticCategory(reference)
 
     private suspend fun getBookmarkMap(): MutableMap<String, ReaderTab> {
         val map = mutableMapOf<String, ReaderTab>()
@@ -301,10 +293,8 @@ object DatabaseReader {
         val tab = database.archiveDao().getBookmark(id)
         if (tab != null) {
             removeBookmark(tab)
-            return@withTransaction true
-        }
-
-        false
+            true
+        } else false
     }
 
     suspend fun deleteArchives(ids: Collection<String>) {
@@ -403,6 +393,7 @@ object DatabaseReader {
             tabs
         }
     }
+
     fun setDatabaseDirty() {
         isDirty = true
     }
@@ -438,12 +429,12 @@ object DatabaseReader {
 
     suspend fun isBookmarked(id: String) = database.archiveDao().isBookmarked(id)
 
-    private fun checkDirty(fileDir: File, context: Context) : Boolean {
+    suspend fun needsUpdate(context: Context) : Boolean = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val syncTime = prefs.castStringPrefToLong(context.getString(R.string.sync_time_key), 24)
-        val jsonCache = File(fileDir, jsonLocation)
-        val dayInMill = 1000 * 60 * 60 * syncTime
-        return isDirty || !jsonCache.exists() || (dayInMill >= 0 && Calendar.getInstance().timeInMillis - jsonCache.lastModified() > dayInMill)
+        val updateTime = prefs.getLong(UPDATE_KEY, -1)
+        val syncMilli = 1000 * 60 * 60 * syncTime
+        isDirty || updateTime < 0 || (syncMilli >= 0 && Calendar.getInstance().timeInMillis - updateTime > syncMilli)
     }
 
     suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)

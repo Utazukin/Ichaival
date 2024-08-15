@@ -27,6 +27,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
@@ -36,16 +37,18 @@ import androidx.activity.viewModels
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.util.Pair
 import androidx.core.view.isVisible
+import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
 import com.utazukin.ichaival.settings.SettingsActivity
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 const val COVER_TRANSITION = "cover"
@@ -200,8 +203,14 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
         when (serverSupported) {
             true -> {
                 launch {
-                    DatabaseReader.updateArchiveList(this@ArchiveList)
                     val viewModel: SearchViewModel by viewModels()
+                    if (DatabaseReader.needsUpdate(applicationContext)) {
+                        val view = findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
+                        val syncMessage = Snackbar.make(view, R.string.sync_snack_message, Snackbar.LENGTH_INDEFINITE)
+                        syncMessage.show()
+                        viewModel.viewModelScope.async { DatabaseReader.updateArchiveList(applicationContext) }.await()
+                        syncMessage.dismiss()
+                    }
                     viewModel.init()
                 }
             }
@@ -281,7 +290,7 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onStart() {
         super.onStart()
         ReaderTabHolder.registerAddListener(this)
-        launch(Dispatchers.IO) { ServerManager.generateTagSuggestions() }
+        launch { ServerManager.generateTagSuggestions() }
     }
 
     override fun onStop() {
