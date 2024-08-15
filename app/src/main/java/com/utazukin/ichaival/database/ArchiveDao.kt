@@ -317,7 +317,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [ArchiveFull::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class, SearchArchiveRef::class], version = 8, exportSchema = false)
+@Database(entities = [ArchiveFull::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class, SearchArchiveRef::class], version = 9, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao

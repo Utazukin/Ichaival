@@ -38,7 +38,8 @@ data class ArchiveFull(
     @ColumnInfo val currentPage: Int,
     @ColumnInfo val pageCount: Int,
     @ColumnInfo val updatedAt: Long,
-    @ColumnInfo val titleSortIndex: Int
+    @ColumnInfo val titleSortIndex: Int,
+    @ColumnInfo val summary: String?
 )
 
 private fun containsTag(tag: String, exact: Boolean, tags: Map<String, List<String>>) : Boolean {
@@ -70,6 +71,7 @@ data class Archive (
     var isNew: Boolean,
     val tags: Map<String, List<String>>,
     var currentPage: Int,
+    val summary: String?,
     @ColumnInfo(name = "pageCount") var numPages: Int) {
 
     @delegate:Ignore
@@ -113,6 +115,7 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int
     val pageCount = json.get("pagecount")?.asInt ?: 0
     val currentPage = json.get("progress")?.asInt?.minus(1) ?: 0
     val isNew = json.get("isnew").asString == "true"
+    val summary = json.getOrNull("summary")?.asString
     val dateAdded: Long
 
     init {

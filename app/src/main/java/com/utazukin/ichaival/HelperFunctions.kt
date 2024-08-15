@@ -35,6 +35,8 @@ import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.ImageInfo
 import kotlinx.coroutines.Dispatchers
@@ -137,6 +139,11 @@ fun SharedPreferences.castStringPrefToFloat(pref: String, defaultValue: Float = 
 fun Context.getCustomTheme() : String {
     val prefs = PreferenceManager.getDefaultSharedPreferences(this)
     return prefs.getString(getString(R.string.theme_pref), getString(R.string.dark_theme)).toString()
+}
+
+fun JsonObject.getOrNull(memberName: String) : JsonElement? {
+    val member = get(memberName)
+    return if (member.isJsonNull) null else member
 }
 
 fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
