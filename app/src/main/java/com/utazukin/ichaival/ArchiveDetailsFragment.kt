@@ -303,14 +303,13 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         titleView.text = archive.title
 
         val summaryView: TextView = view.findViewById(R.id.summary_text)
-        if (archive.summary != null) {
+        if (archive.summary.isNullOrEmpty()) {
+            summaryView.visibility = View.GONE
+            view.findViewById<View>(R.id.divider).visibility = View.GONE
+        } else {
             summaryView.text = archive.summary
             summaryView.isVisible = true
             view.findViewById<View>(R.id.divider).isVisible = true
-        }
-        else {
-            summaryView.visibility = View.GONE
-            view.findViewById<View>(R.id.divider).visibility = View.GONE
         }
 
         val downloadedCount = DownloadManager.getDownloadedPageCount(archiveId)
