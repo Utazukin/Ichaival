@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2024 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
@@ -115,7 +116,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                                 setMessage(getString(R.string.delete_archive_prompt, arc.title))
                                 setPositiveButton(R.string.yes) { dialog, _ ->
                                     dialog.dismiss()
-                                    launch {
+                                    lifecycleScope.launch {
                                         val success = WebHandler.deleteArchive(it)
                                         if (success) {
                                             Toast.makeText(applicationContext, getString(R.string.deleted_archive, arc.title), Toast.LENGTH_SHORT).show()
