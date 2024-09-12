@@ -143,7 +143,7 @@ fun Context.getCustomTheme() : String {
 
 fun JsonObject.getOrNull(memberName: String) : JsonElement? {
     val member = get(memberName)
-    return if (member.isJsonNull) null else member
+    return if (member?.isJsonNull != false) null else member
 }
 
 fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
