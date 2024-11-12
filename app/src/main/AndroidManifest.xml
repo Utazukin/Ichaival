@@ -27,7 +27,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".ArchiveDetails" />
-        <activity android:name=".ArchiveSearch" />
+        <activity android:name=".ArchiveSearch"
+            android:label="@string/title_activity_search"/>
         <activity android:name=".ArchiveRandomActivity" />
         <activity
             android:name=".settings.WebViewActivity"

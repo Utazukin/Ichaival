@@ -179,14 +179,16 @@ class ArchiveListFragment : Fragment(),
         swipeRefreshLayout.setOnRefreshListener { forceArchiveListUpdate() }
         swipeRefreshLayout.isEnabled = canSwipeRefresh
 
-        if (activity is ArchiveSearch || activity is ArchiveRandomActivity) {
-            randomButton.visibility = View.GONE
-            newCheckBox.visibility = View.GONE
-            swipeRefreshLayout.isEnabled = false
-
-            when (activity) {
-                is ArchiveSearch -> searchView.setQuery(viewModel.filter, false)
-                is ArchiveRandomActivity -> searchView.visibility = View.GONE
+        when (activity) {
+            is ArchiveSearch -> {
+                swipeRefreshLayout.isEnabled = false
+                searchView.setQuery(viewModel.filter, false)
+            }
+            is ArchiveRandomActivity -> {
+                randomButton.visibility = View.GONE
+                newCheckBox.visibility = View.GONE
+                searchView.visibility = View.GONE
+                swipeRefreshLayout.isEnabled = false
             }
         }
 
