@@ -38,7 +38,8 @@ import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -479,7 +480,6 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
     }
 
     private fun initializeView(view: View) {
-        view.background = ContextCompat.getDrawable(requireActivity(), android.R.color.black)
         val layoutParams = RelativeLayout.LayoutParams(
             RelativeLayout.LayoutParams.MATCH_PARENT,
             RelativeLayout.LayoutParams.MATCH_PARENT
@@ -488,6 +488,14 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
         topLayout.addView(view)
         pageNum.bringToFront()
         progressBar.bringToFront()
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val bgColor = when(prefs.getString(getString(R.string.reader_bg_pref_key), getString(R.string.black_bg_color))) {
+            getString(R.string.white_bg_color) -> Color.White
+            getString(R.string.gray_bg_color) -> Color.Gray
+            else -> Color.Black
+        }
+        view.setBackgroundColor(bgColor.toArgb())
     }
 
     override fun reloadImage() {
