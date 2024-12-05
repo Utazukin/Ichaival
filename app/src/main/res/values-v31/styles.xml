@@ -40,6 +40,7 @@
         <item name="borderlessButtonStyle">@style/MaterialYou.BorderlessButton</item>
         <item name="actionBarBackgroundColor">?colorSurface</item>
         <item name="android:windowBackground">@color/black</item>
+        <item name="archive_color_label">@color/archive_cover_label</item>
     </style>
 
     <style name="MaterialYou.BorderlessButton" parent="Widget.Material3.Button.TextButton.Icon">

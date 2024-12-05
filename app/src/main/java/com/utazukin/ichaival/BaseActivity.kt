@@ -96,6 +96,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
             getString(R.string.dark_theme) -> setTheme(R.style.AppTheme)
             getString(R.string.black_theme) -> setTheme(R.style.AppTheme_Black)
             getString(R.string.material_theme) -> setTheme(R.style.MaterialYou)
+            getString(R.string.white_theme) -> setTheme(R.style.AppTheme_White)
         }
     }
 

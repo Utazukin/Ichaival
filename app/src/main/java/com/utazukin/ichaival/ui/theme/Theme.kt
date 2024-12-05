@@ -68,19 +68,9 @@ private val GrayColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-        primary = Purple40,
-        secondary = PurpleGrey40,
-        tertiary = Pink40
-
-        /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+        primary = Color(0xFF9E9E9E),
+        onPrimary = Color(0xFF212121),
+        background = Color.White
 )
 
 @Composable
@@ -92,9 +82,11 @@ fun IchaivalTheme(
     content: @Composable () -> Unit
 ) {
     val grayTheme = LocalContext.current.getString(R.string.dark_theme)
+    val whiteTheme = LocalContext.current.getString(R.string.white_theme)
     val colorScheme = when {
         theme == LocalContext.current.getString(R.string.black_theme) -> BlackColorScheme
         theme == grayTheme -> GrayColorScheme
+        theme == whiteTheme -> LightColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -107,7 +99,11 @@ fun IchaivalTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = if (theme != grayTheme) colorScheme.background.toArgb() else Color.Black.toArgb()
+            window.statusBarColor = when {
+                theme == whiteTheme -> colorScheme.primary.toArgb()
+                theme != grayTheme -> colorScheme.background.toArgb()
+                else -> Color.Black.toArgb()
+            }
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
@@ -139,6 +135,7 @@ fun ThemeTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, content:
     val buttonColors = when(context.getCustomTheme()) {
         context.getString(R.string.black_theme) -> ButtonDefaults.textButtonColors().copy(contentColor = Color.White)
         context.getString(R.string.dark_theme) -> ButtonDefaults.textButtonColors().copy(contentColor = Color.White)
+        context.getString(R.string.white_theme) -> ButtonDefaults.textButtonColors().copy(containerColor = Color.White)
         else -> ButtonDefaults.textButtonColors()
     }
     TextButton(onClick = onClick, content = content, modifier = modifier, colors = buttonColors)
@@ -151,12 +148,20 @@ fun ThemeTextField(value: String, onValueChange: (String) -> Unit, singleLine: B
     val colors = if (theme == context.getString(R.string.material_theme))
         TextFieldDefaults.colors()
     else {
-        val containerColor = if (theme == context.getString(R.string.black_theme)) Color.Black else MaterialTheme.colorScheme.primary
+        val containerColor = when (theme) {
+            context.getString(R.string.black_theme) -> Color.Black
+            else -> MaterialTheme.colorScheme.primary
+        }
+        val indicatorColor = when (theme) {
+            context.getString(R.string.white_theme) -> Color.White
+            else -> Color(0xFF008577)
+        }
+
         TextFieldDefaults.colors().copy(
                 focusedContainerColor = containerColor,
-                focusedIndicatorColor = Color(0xFF008577),
+                focusedIndicatorColor = indicatorColor,
                 unfocusedContainerColor = containerColor,
-                cursorColor = Color(0xFF008577))
+                cursorColor = indicatorColor)
     }
     TextField(value = value, onValueChange = onValueChange, singleLine = singleLine, colors = colors)
 }

@@ -40,6 +40,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -165,6 +166,7 @@ private fun AppBar(activity: DownloadsActivity) {
     val colors = when(activity.getCustomTheme()) {
         activity.getString(R.string.black_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color.Black)
         activity.getString(R.string.dark_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = Color(0xFF212121))
+        activity.getString(R.string.white_theme) -> TopAppBarDefaults.topAppBarColors().copy(containerColor = MaterialTheme.colorScheme.primary)
         else -> TopAppBarDefaults.topAppBarColors()
     }
     TopAppBar(title = { Text("Downloads") }, navigationIcon = {

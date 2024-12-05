@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2022 Utazukin
+  ~ Copyright (C) 2024 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
         <item name="fullscreen_theme">@style/FullscreenTheme</item>
         <item name="borderlessButtonStyle">@style/AppTheme.BorderlessButton</item>
         <item name="actionBarBackgroundColor">?colorPrimary</item>
+        <item name="archive_color_label">@color/archive_cover_label</item>
     </style>
 
     <style name="AppTheme.BorderlessButton" parent="Widget.AppCompat.Button.Borderless.Colored" />
@@ -48,6 +49,33 @@
         <item name="tag_color">@color/dark_gray</item>
         <item name="cardBackgroundColor">#000000</item>
         <item name="bottomSheetDialogTheme">@style/ReaderSettingsDialog.Black</item>
+    </style>
+
+    <style name="AppTheme.White" parent="Theme.MaterialComponents.Light.NoActionBar.Bridge">
+        <item name="colorPrimary">#9E9E9E</item>
+        <item name="colorPrimaryDark">#616161</item>
+        <item name="colorSurface">?colorPrimary</item>
+        <item name="colorAccent">?colorPrimaryDark</item>
+        <item name="android:textColorLink">@android:color/white</item>
+        <item name="android:statusBarColor">?colorPrimary</item>
+        <item name="tag_color">@color/black</item>
+        <item name="archive_color_label">@color/archive_cover_label_light</item>
+        <item name="namespace_color">@android:color/darker_gray</item>
+        <item name="cardBackgroundColor">#F5F5F5</item>
+        <item name="progress_color">@color/category_remove_color</item>
+        <item name="select_color">@color/category_remove_color</item>
+        <item name="category_remove_color">@color/category_remove_color</item>
+        <item name="category_add_color">@color/category_add_color</item>
+        <item name="category_add_back_color">?colorPrimaryDark</item>
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:windowContentTransitions">true</item>
+        <item name="fullscreen_theme">@style/FullscreenTheme</item>
+        <item name="borderlessButtonStyle">@style/AppTheme.BorderlessButton</item>
+        <item name="actionBarBackgroundColor">?colorPrimary</item>
+        <item name="bottomSheetDialogTheme">@style/ReaderSettingsDialog.White</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:colorBackground">@android:color/transparent</item>
     </style>
 
     <style name="FullscreenTheme" parent="AppTheme">
@@ -64,6 +92,10 @@
         <item name="android:backgroundTint">@color/black</item>
     </style>
 
+    <style name="ReaderSettingsDialog.White" parent="ReaderSettingsDialog">
+        <item name="android:backgroundTint">#FFFFFF</item>
+    </style>
+
     <style name="FullscreenActionBarStyle" parent="Widget.MaterialComponents.ActionBar.Primary">
         <item name="android:background">#000000</item>
     </style>
@@ -73,6 +105,10 @@
     </style>
 
     <style name="SettingsTheme.Black" parent="AppTheme.Black">
+        <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
+    </style>
+
+    <style name="SettingsTheme.White" parent="AppTheme.White">
         <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
     </style>
 
