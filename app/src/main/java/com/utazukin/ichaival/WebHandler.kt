@@ -98,7 +98,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val modifyCatPath = "$categoryPath/%s/%s"
     private const val minionStatusPath = "$apiPath/minion/%s"
     private const val connTimeoutMs = 5000L
-    private const val readTimeoutMs = 30000L
+    private const val readTimeoutMs = 60000L
     private const val headerFile = "headers.json"
 
     var serverLocation: String = ""
