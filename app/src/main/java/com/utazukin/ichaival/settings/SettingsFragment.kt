@@ -119,8 +119,9 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
 
             //Remove the Material You option for versions before 12.
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                entries = entries.copyOf(entries.size - 1)
-                entryValues = entryValues.copyOf(entryValues.size - 1)
+                val materialTheme = getString(R.string.material_theme)
+                entries = entries.filterNot { it == materialTheme }.toTypedArray()
+                entryValues = entryValues.filterNot { it == materialTheme  }.toTypedArray()
             }
         }
 
