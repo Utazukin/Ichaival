@@ -84,7 +84,6 @@ object WebHandler : Preference.OnPreferenceChangeListener {
     private const val databasePath = "$apiPath/database"
     private const val archiveListPath = "$apiPath/archives"
     private const val thumbPath = "$archiveListPath/%s/thumbnail"
-    private const val extractPath = "$archiveListPath/%s/extract"
     private const val filesPath = "$archiveListPath/%s/files"
     private const val progressPath = "$archiveListPath/%s/progress/%s"
     private const val deleteArchivePath = "$archiveListPath/%s"
@@ -360,7 +359,7 @@ object WebHandler : Preference.OnPreferenceChangeListener {
                 response?.keys()?.next()?.let { notifyError(it) }
                 emptyList()
             }
-            else -> List(jsonPages.length()) { jsonPages.getString(it).substring(1) }
+            else -> List(jsonPages.length()) { jsonPages.getString(it).trimStart('.') }
         }
     }
 
@@ -525,10 +524,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         notify(context.getString(R.string.archive_extract_message))
 
         val errorMessage = context.getString(R.string.archive_extract_fail_message)
-        var url = "$serverLocation${extractPath.format(id)}"
+        var url = "$serverLocation${filesPath.format(id)}"
         if (forceFull)
             url += "?force=true"
-        val connection = createServerConnection(url, "POST", FormBody.Builder().build())
+        val connection = createServerConnection(url)
 
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail(errorMessage) }
         return response?.use {
