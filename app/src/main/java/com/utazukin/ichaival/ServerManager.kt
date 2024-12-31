@@ -94,8 +94,13 @@ object ServerManager {
             }
 
             pageSize = getInt("archives_per_page")
-            serverTracksProgress = optInt("server_tracks_progress", 1) == 1
-            hasPassword = getInt("has_password") == 1
+            if (checkVersionAtLeast(0, 9, 30)) {
+                serverTracksProgress = getBoolean("server_tracks_progress")
+                hasPassword = getBoolean("has_password")
+            } else {
+                serverTracksProgress = optInt("server_tracks_progress", 1) == 1
+                hasPassword = getInt("has_password") == 1
+            }
             serverName = getString("name")
             checkVersionAtLeast(lowestVersion)
         }
