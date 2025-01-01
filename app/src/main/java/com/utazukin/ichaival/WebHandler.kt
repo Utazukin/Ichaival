@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -411,12 +411,10 @@ object WebHandler : Preference.OnPreferenceChangeListener {
         val connection = createServerConnection(url)
         val response = tryOrNull { httpClient.newCall(connection).awaitWithFail() }
 
-        response.let {
-            if (it?.isSuccessful != true)
-                return null
+        if (response?.isSuccessful != true)
+            return null
 
-            return it.body?.byteStream()
-        }
+        return response.body?.byteStream()
     }
 
     fun getUrlForJob(jobId: Int) = "$serverLocation${minionStatusPath.format(jobId)}"
