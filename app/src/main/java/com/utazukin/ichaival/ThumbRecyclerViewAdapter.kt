@@ -28,10 +28,12 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import coil.imageLoader
-import coil.load
-import coil.request.Disposable
-import kotlinx.coroutines.Dispatchers
+import coil3.imageLoader
+import coil3.load
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.Disposable
+import coil3.request.allowRgb565
+import coil3.request.crossfade
 
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
@@ -42,8 +44,13 @@ class ThumbRecyclerViewAdapter(
     private val scope = fragment.lifecycleScope
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
     private val loader = fragment.requireContext().imageLoader.newBuilder()
-        .okHttpClient {
-            WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor(scope, WebHandler.httpClient)).build()
+        .components {
+            add(
+                    OkHttpNetworkFetcherFactory(
+                            callFactory = WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor(scope, WebHandler.httpClient))
+                                .build()
+                    )
+            )
         }.build()
 
     private val onClickListener = View.OnClickListener { v ->
@@ -96,7 +103,6 @@ class ThumbRecyclerViewAdapter(
             allowRgb565(true)
             crossfade(true)
             size(defaultHeight)
-            dispatcher(Dispatchers.IO)
             listener { _, _ ->
                 with(holder.thumbView) {
                     updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }

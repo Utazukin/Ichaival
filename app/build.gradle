@@ -113,8 +113,9 @@ dependencies {
     implementation "androidx.room:room-paging:$room_version"
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'com.google.code.gson:gson:2.11.0'
-    implementation "io.coil-kt:coil:$coil_version"
-    implementation "io.coil-kt:coil-gif:$coil_version"
-    implementation "io.coil-kt:coil-compose:$coil_version"
+    implementation "io.coil-kt.coil3:coil:$coil_version"
+    implementation "io.coil-kt.coil3:coil-gif:$coil_version"
+    implementation "io.coil-kt.coil3:coil-compose:$coil_version"
+    implementation "io.coil-kt.coil3:coil-network-okhttp:$coil_version"
     implementation "com.drakeet.drawer:drawer:1.0.3"
 }

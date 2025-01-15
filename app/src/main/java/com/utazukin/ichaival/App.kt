@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,13 +22,15 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import coil.ImageLoader
-import coil.ImageLoaderFactory
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.google.android.material.color.DynamicColors
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.launch
 
-class App : Application(), ImageLoaderFactory {
+class App : Application(), SingletonImageLoader.Factory {
 
     init {
         instance = this
@@ -44,9 +46,10 @@ class App : Application(), ImageLoaderFactory {
         DynamicColors.applyToActivitiesIfAvailable(this)
     }
 
-    override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(applicationContext)
-            .okHttpClient {
+    override fun newImageLoader(context: PlatformContext): ImageLoader {
+        return ImageLoader.Builder(context)
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory =
                 WebHandler.httpClient.newBuilder()
                     .addNetworkInterceptor { chain ->
                         val request = if (WebHandler.apiKey.isEmpty())
@@ -54,7 +57,7 @@ class App : Application(), ImageLoaderFactory {
                         else
                             chain.request().newBuilder().addHeader("Authorization", WebHandler.apiKey).build()
                         chain.proceed(request)
-                    }.build()
+                    }.build()))
             }
             .build()
     }

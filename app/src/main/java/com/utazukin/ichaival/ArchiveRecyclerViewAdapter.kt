@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,8 +38,12 @@ import androidx.paging.PagingDataAdapter
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import coil.dispose
-import coil.load
+import coil3.dispose
+import coil3.load
+import coil3.request.allowHardware
+import coil3.request.allowRgb565
+import coil3.request.crossfade
+import coil3.request.transformations
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
@@ -128,7 +132,6 @@ class ArchiveRecyclerViewAdapter(
                     holder.archiveImage.load(file) {
                         allowRgb565(true)
                         allowHardware(false)
-                        dispatcher(Dispatchers.Default)
                         crossfade(true)
                         if (listViewType == ListViewType.Cover)
                             transformations(StartCrop())

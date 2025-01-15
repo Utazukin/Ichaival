@@ -52,7 +52,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import coil.imageLoader
+import coil3.imageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ArchiveDetails
@@ -105,10 +106,11 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         private set
     val loader by lazy {
         imageLoader.newBuilder()
-            .okHttpClient {
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory =
                 WebHandler.httpClient.newBuilder()
                     .addNetworkInterceptor(ProgressInterceptor(ResponseProgressListener()))
-                    .build()
+                    .build()))
             }
             .build()
     }

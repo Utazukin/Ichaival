@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,8 +27,10 @@ import androidx.activity.viewModels
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import coil.dispose
-import coil.load
+import coil3.dispose
+import coil3.load
+import coil3.request.allowRgb565
+import coil3.request.crossfade
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.ReaderTabViewModel
 import kotlinx.coroutines.CoroutineScope

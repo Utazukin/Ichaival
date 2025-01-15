@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,11 +23,11 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.createBitmap
-import coil.size.Size
-import coil.size.pxOrElse
-import coil.transform.Transformation
+import coil3.size.Size
+import coil3.size.pxOrElse
+import coil3.transform.Transformation
 
-class StartCrop : Transformation {
+class StartCrop : Transformation() {
     override val cacheKey: String = javaClass.name
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {

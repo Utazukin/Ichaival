@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ package com.utazukin.ichaival.reader.webtoon
 
 import android.annotation.SuppressLint
 import android.graphics.PointF
-import android.view.*
+import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
@@ -28,13 +28,26 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
-import coil.size.Dimension
+import coil3.load
+import coil3.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
-import com.utazukin.ichaival.*
-import com.utazukin.ichaival.reader.*
+import com.utazukin.ichaival.Archive
+import com.utazukin.ichaival.ImageDecoder
+import com.utazukin.ichaival.ImageFormat
+import com.utazukin.ichaival.ImageRegionDecoder
+import com.utazukin.ichaival.R
+import com.utazukin.ichaival.cacheOrGet
+import com.utazukin.ichaival.createGifLoader
+import com.utazukin.ichaival.downloadCoilImageWithProgress
+import com.utazukin.ichaival.getImageFormat
+import com.utazukin.ichaival.getMaxTextureSize
+import com.utazukin.ichaival.reader.PageFragment
+import com.utazukin.ichaival.reader.ReaderActivity
+import com.utazukin.ichaival.reader.ScaleType
+import com.utazukin.ichaival.reader.TouchToggleLayout
+import com.utazukin.ichaival.reader.TouchZone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch

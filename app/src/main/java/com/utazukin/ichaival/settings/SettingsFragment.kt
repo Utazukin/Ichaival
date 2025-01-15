@@ -44,7 +44,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.PreferenceViewHolder
-import coil.imageLoader
+import coil3.imageLoader
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.WebHandler

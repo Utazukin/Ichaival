@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,12 +28,13 @@ import android.os.Build
 import android.util.DisplayMetrics
 import android.util.Size
 import androidx.preference.PreferenceManager
-import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.request.CachePolicy
-import coil.request.ImageRequest
+import coil3.ImageLoader
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -184,19 +185,16 @@ fun isLocalFile(path: String) = path.startsWith("/data")
 fun ImageLoader.createGifLoader() : ImageLoader {
     return newBuilder().components {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-            add(ImageDecoderDecoder.Factory())
+            add(AnimatedImageDecoder.Factory())
         else
             add(GifDecoder.Factory())
     }.build()
 }
 
-@OptIn(ExperimentalCoilApi::class)
 val ImageLoader.diskCacheSize get() = diskCache?.size ?: 0
 
-@OptIn(ExperimentalCoilApi::class)
 fun ImageLoader.clearDiskCache() = diskCache?.clear()
 
-@OptIn(ExperimentalCoilApi::class)
 suspend fun ImageLoader.cacheOrGet(request: ImageRequest) : File? {
     return withContext(Dispatchers.IO) {
         val cache = diskCache?.openSnapshot(request.data as String)?.use { it.data.toFile() }
@@ -218,20 +216,21 @@ fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgres
 }
 
 fun ImageRequest.Builder.addAuthHeader() : ImageRequest.Builder {
+    val headers = NetworkHeaders.Builder()
     if (WebHandler.apiKey.isNotEmpty())
-        addHeader("Authorization", WebHandler.apiKey)
+        headers["Authorization"] = WebHandler.apiKey
 
     for ((name, value) in WebHandler.customHeaders) {
-        addHeader(name, value)
+        headers[name] = value
     }
-    return this
+
+    return this.httpHeaders(headers.build())
 }
 
 private fun downloadCoilImageWithProgress(context: Context, imagePath: String, uiProgressListener: UIProgressListener) : ImageRequest {
     return ImageRequest.Builder(context).apply {
         addAuthHeader()
         data(imagePath)
-        dispatcher(Dispatchers.IO)
         memoryCachePolicy(CachePolicy.DISABLED)
         listener(
                 onStart = { ResponseProgressListener.expect(imagePath, uiProgressListener) },
