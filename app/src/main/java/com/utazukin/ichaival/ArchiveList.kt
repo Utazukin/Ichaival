@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -129,7 +129,6 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             getString(R.string.server_address_preference) -> {
                 val location = pref.getString(key, "") as String
                 intent.putExtra(REFRESH_KEY, true)
-                WebHandler.serverLocation = location
                 handleSetupText(location.isEmpty())
             }
             getString(R.string.api_key_pref) -> {

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -273,7 +273,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 }
 
                 if (savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
-                    launch { WebHandler.updateProgress(it.id, currentPage) }
+                    WebHandler.updateProgress(it.id, currentPage)
 
                 //Use the page from the thumbnail over the bookmark
                 val page = max(savedPage ?: it.currentPage, 0)
@@ -855,7 +855,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                         --loadedPages[loadedPages.lastIndex]
                         notifyItemChanged(loadedPages.lastIndex)
                     } else {
-                        loadedPages.removeLast()
+                        loadedPages.removeAt(loadedPages.lastIndex)
                         notifyItemRemoved(loadedPages.size)
                     }
                 } else if (page != failPage && adapterPage < loadedPages.lastIndex) {

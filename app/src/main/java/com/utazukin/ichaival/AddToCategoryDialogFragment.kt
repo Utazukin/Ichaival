@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,12 @@ import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.RadioGroup
+import android.widget.ScrollView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.DialogFragment
@@ -126,7 +131,7 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, Coroutin
     }
 
     private suspend fun addToCategory(category: ArchiveCategory, ids: List<String>) {
-        val success = WebHandler.addToCategory(requireContext(), category.id, ids)
+        val success = WebHandler.addToCategory(category.id, ids)
         if (success) {
             CategoryManager.addArchivesToCategory(category.id, ids)
             listener?.onAddedToCategory(category, ids)

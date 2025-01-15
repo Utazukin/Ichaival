@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -109,7 +109,7 @@ object ReaderTabHolder {
     }
 
     fun resetServerProgress(id: String) {
-        scope.launch { WebHandler.updateProgress(id, 0) }
+        WebHandler.updateProgress(id, 0)
     }
 
     fun removeAll() {
@@ -118,10 +118,8 @@ object ReaderTabHolder {
     }
 
     fun resetServerProgress(tabs: List<ReaderTab>) {
-        scope.launch {
-            for (tab in tabs)
-                launch { WebHandler.updateProgress(tab.id, 0) }
-        }
+        for (tab in tabs)
+            WebHandler.updateProgress(tab.id, 0)
     }
 
     private fun updateRemoveListeners(id: String) {

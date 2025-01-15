@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -233,6 +233,7 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
     private fun setupCachePref(cachePref: Preference) {
         cachePref.setOnPreferenceClickListener {
             launch(Dispatchers.IO) {
+                DatabaseReader.invalidateImageCache()
                 DualPageHelper.clearMergedPages(requireContext().cacheDir)
                 with(requireContext().imageLoader) {
                     clearDiskCache()
@@ -314,10 +315,7 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
         }
 
         private val bindAndNotifyPreferenceListener = Preference.OnPreferenceChangeListener { pref, value ->
-            if (WebHandler.onPreferenceChange(pref, value))
-                sBindPreferenceSummaryToValueListener.onPreferenceChange(pref, value)
-            else
-                false
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(pref, WebHandler.onPreferenceChange(value as? String))
         }
 
         /**
