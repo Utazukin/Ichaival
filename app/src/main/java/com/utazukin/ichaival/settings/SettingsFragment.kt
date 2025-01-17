@@ -103,8 +103,11 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val pref: Preference? = findPreference(getString(R.string.server_address_preference))
-        bindPrefSummaryNotify(pref)
+        val pref: EditTextPreference? = findPreference(getString(R.string.server_address_preference))
+        pref?.let {
+            it.setOnBindEditTextListener(onBindEditText(InputType.TYPE_TEXT_VARIATION_URI))
+            bindPrefSummaryNotify(it)
+        }
 
         val apiPref: Preference? = findPreference(getString(R.string.api_key_pref))
         bindPreferenceSummaryToValue(apiPref)
@@ -315,7 +318,17 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
         }
 
         private val bindAndNotifyPreferenceListener = Preference.OnPreferenceChangeListener { pref, value ->
-            sBindPreferenceSummaryToValueListener.onPreferenceChange(pref, WebHandler.onPreferenceChange(value as? String))
+            val (canUse, newValue) = WebHandler.onPreferenceChange(value as? String)
+            if (!canUse)
+                return@OnPreferenceChangeListener false
+
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(pref, newValue)
+            if (newValue == value)
+                true
+            else {
+                pref.sharedPreferences?.edit()?.putString(pref.key, newValue)?.apply()
+                false
+            }
         }
 
         /**

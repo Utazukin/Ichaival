@@ -604,13 +604,13 @@ object WebHandler {
 
     private fun notify(message: String) = listener?.onInfo(message)
 
-    fun onPreferenceChange(newValue: String?): String {
+    fun onPreferenceChange(newValue: String?): Pair<Boolean, String> {
         if (newValue !is String || newValue.isEmpty())
-            return ""
+            return Pair(true, "")
 
         var v = newValue.trimEnd('/')
         if (serverLocation == v)
-            return serverLocation
+            return Pair(false, serverLocation)
 
         if (!v.startsWith("http") && !v.startsWith("https")) {
             //assume http if not present
@@ -620,10 +620,12 @@ object WebHandler {
         if (v.toHttpUrlOrNull() != null) {
             DatabaseReader.setDatabaseDirty()
             serverLocation = v
-        } else
+        } else {
             notifyError("Invalid URL!")
+            return Pair(false, serverLocation)
+        }
 
-        return serverLocation
+        return Pair(true, serverLocation)
     }
 
 }
