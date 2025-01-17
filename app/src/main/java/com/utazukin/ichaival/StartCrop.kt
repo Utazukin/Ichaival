@@ -31,6 +31,8 @@ class StartCrop : Transformation() {
     override val cacheKey: String = javaClass.name
 
     override suspend fun transform(input: Bitmap, size: Size): Bitmap {
+        val config = input.config ?: return input
+
         val outWidth = size.width.pxOrElse { input.width }
         val outHeight = size.height.pxOrElse { input.height }
         if (input.width == outWidth && input.height == outHeight)
@@ -42,7 +44,7 @@ class StartCrop : Transformation() {
             outWidth.toFloat() / input.width
         }
 
-        val result = createBitmap(outWidth, outHeight, input.config).apply {
+        val result = createBitmap(outWidth, outHeight, config).apply {
             setHasAlpha(input.hasAlpha())
         }
 

@@ -187,7 +187,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             val safeLeft = insets.displayCutout?.safeInsetLeft
 
             val safeInsetLeft = safeLeft ?: systemInsets.left
-            params.setMargins(safeInsetLeft, safeTop, safeRight, params.bottomMargin)
+            params.setMargins(safeInsetLeft, params.topMargin, safeRight, params.bottomMargin)
             appBar.layoutParams = params
 
             params = pageSeekLayout.layoutParams as FrameLayout.LayoutParams

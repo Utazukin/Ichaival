@@ -67,10 +67,13 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
             addIntentFlags(it, id)
         }
         val coverView: View = view.findViewById(R.id.archive_thumb)
-        val statusBar: View = findViewById(android.R.id.statusBarBackground)
         val coverPair = Pair(coverView, COVER_TRANSITION)
-        val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
-        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair, statusPair).toBundle())
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val statusBar: View = findViewById(android.R.id.statusBarBackground)
+            val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+            startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair, statusPair).toBundle())
+        } else
+            startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair).toBundle())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

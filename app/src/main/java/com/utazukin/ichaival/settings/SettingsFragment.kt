@@ -80,7 +80,7 @@ class SettingsFragment : PreferenceFragmentCompat(), MenuProvider, CoroutineScop
         with(requireActivity() as MenuHost) {
             addMenuProvider(this@SettingsFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
-        return super.onCreateView(inflater, container, savedInstanceState)
+        return super.onCreateView(inflater, container, savedInstanceState).apply { fitsSystemWindows = true }
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2021 Utazukin
+  ~ Copyright (C) 2025 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -26,13 +26,13 @@
         tools:context=".GalleryPreviewFragment"
         android:fillViewport="true"-->
 
-<LinearLayout
-        xmlns:tools="http://schemas.android.com/tools"
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        tools:context=".GalleryPreviewFragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    tools:context=".GalleryPreviewFragment">
 
     <NumberPicker
         android:id="@+id/page_picker_preview"
@@ -40,14 +40,14 @@
         android:layout_height="wrap_content" />
 
     <androidx.recyclerview.widget.RecyclerView
-            android:layout_width="match_parent"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:id="@+id/thumb_list"
-            android:layout_marginTop="8dp"
-            tools:listitem="@layout/thumb_layout"
-            android:layout_weight="30"
-            android:layout_height="0dp">
+        android:id="@+id/thumb_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_weight="30"
+        tools:listitem="@layout/thumb_layout">
 
     </androidx.recyclerview.widget.RecyclerView>
 

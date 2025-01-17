@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2022 Utazukin
+  ~ Copyright (C) 2025 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
     android:layout_height="match_parent"
     android:layout_marginStart="8dp"
     android:layout_marginEnd="8dp"
+    android:fitsSystemWindows="true"
     android:orientation="vertical">
 
     <Button
@@ -108,8 +109,8 @@
             android:id="@+id/scale_type_spinner"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:entries="@array/scale_types"
             android:backgroundTint="?colorOnSurface"
+            android:entries="@array/scale_types"
             android:spinnerMode="dropdown" />
     </LinearLayout>
 
