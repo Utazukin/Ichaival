@@ -35,6 +35,7 @@ import android.widget.SearchView
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.content.IntentSanitizer
 import androidx.core.util.Pair
 import androidx.core.view.isVisible
 import androidx.lifecycle.viewModelScope
@@ -276,6 +277,11 @@ class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPre
     override fun onResume() {
         super.onResume()
 
+        val filter = IntentSanitizer.Builder()
+            .allowExtra(REFRESH_KEY) { it is Boolean }
+            .allowComponentWithPackage(packageName)
+            .build()
+        val intent = filter.sanitizeByFiltering(intent)
         if (intent.getBooleanExtra(REFRESH_KEY, false)) {
             finish()
             startActivity(intent)
