@@ -45,7 +45,6 @@ import coil3.request.allowRgb565
 import coil3.request.crossfade
 import coil3.request.transformations
 import com.google.android.material.color.MaterialColors
-import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.Dispatchers
@@ -78,7 +77,7 @@ class ArchiveRecyclerViewAdapter(
     private val scope = fragment.lifecycleScope
     private val context = fragment.requireContext()
     private val fragmentManager = fragment.childFragmentManager
-    private val listener = fragment.activity as? OnListFragmentInteractionListener
+    private val listener = fragment as? OnListFragmentInteractionListener
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
     private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
 

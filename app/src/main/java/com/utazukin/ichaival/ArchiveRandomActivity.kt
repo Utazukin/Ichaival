@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,44 +20,24 @@ package com.utazukin.ichaival
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
 import android.text.InputType
-import android.view.*
+import android.view.Menu
+import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.core.app.ActivityOptionsCompat
-import androidx.core.util.Pair
 import androidx.preference.PreferenceManager
-import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.SearchViewModel
 
 const val RANDOM_SEARCH = "random"
 const val RANDOM_CAT = "category"
 
-class ArchiveRandomActivity : BaseActivity(), OnListFragmentInteractionListener {
+class ArchiveRandomActivity : BaseActivity() {
     private val viewModel: SearchViewModel by viewModels()
-
-    override fun onListFragmentInteraction(archive: ArchiveBase, view: View) {
-        setResult(Activity.RESULT_OK)
-        startDetailsActivity(archive.id, view)
-    }
-
-    private fun startDetailsActivity(id: String, view: View) {
-        val intent = Intent(this, ArchiveDetails::class.java)
-        val bundle = Bundle()
-        bundle.putString("id", id)
-        intent.putExtras(bundle)
-        addIntentFlags(intent, id)
-        val coverView: View = view.findViewById(R.id.archive_thumb)
-        val statusBar: View = findViewById(android.R.id.statusBarBackground)
-        val coverPair = Pair(coverView, COVER_TRANSITION)
-        val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
-        startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair, statusPair).toBundle())
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

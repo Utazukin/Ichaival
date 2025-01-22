@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,12 +18,14 @@
 
 package com.utazukin.ichaival
 
+import android.app.Activity
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.database.Cursor
 import android.database.MatrixCursor
+import android.os.Build
 import android.os.Bundle
 import android.provider.BaseColumns
 import android.view.LayoutInflater
@@ -32,6 +34,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CursorAdapter
@@ -39,6 +42,8 @@ import android.widget.SearchView
 import android.widget.SimpleCursorAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityOptionsCompat
+import androidx.core.util.Pair
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -65,9 +70,13 @@ import kotlin.math.min
 
 private const val DEFAULT_SEARCH_DELAY = 750L
 
+interface OnListFragmentInteractionListener {
+    fun onListFragmentInteraction(archive: ArchiveBase, view: View)
+}
+
 class ArchiveListFragment : Fragment(),
     DatabaseRefreshListener, SharedPreferences.OnSharedPreferenceChangeListener, AddCategoryListener, CoroutineScope, MenuProvider,
-    SearchView.OnQueryTextListener, SearchView.OnSuggestionListener {
+    SearchView.OnQueryTextListener, SearchView.OnSuggestionListener, OnListFragmentInteractionListener {
     override val coroutineContext = lifecycleScope.coroutineContext
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
@@ -484,7 +493,21 @@ class ArchiveListFragment : Fragment(),
         }
     }
 
-    interface OnListFragmentInteractionListener {
-        fun onListFragmentInteraction(archive: ArchiveBase, view: View)
+    override fun onListFragmentInteraction(archive: ArchiveBase, view: View) {
+        when (val act = requireActivity()) {
+            is ArchiveSearch, is ArchiveRandomActivity -> act.setResult(Activity.RESULT_OK)
+        }
+
+        val intent = Intent(activity, ArchiveDetails::class.java).apply {
+            putExtras(Bundle().apply { putString("id", archive.id) })
+        }
+        val coverView: View = view.findViewById(R.id.archive_thumb)
+        val coverPair = Pair(coverView, COVER_TRANSITION)
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val statusBar: View = requireActivity().findViewById(android.R.id.statusBarBackground)
+            val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+            startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(requireActivity(), coverPair, statusPair).toBundle())
+        } else
+            startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(requireActivity(), coverPair).toBundle())
     }
 }

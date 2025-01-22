@@ -28,15 +28,12 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.SearchView
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.IntentSanitizer
-import androidx.core.util.Pair
 import androidx.core.view.isVisible
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
@@ -45,7 +42,6 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
-import com.utazukin.ichaival.ArchiveListFragment.OnListFragmentInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
 import com.utazukin.ichaival.settings.SettingsActivity
@@ -54,28 +50,9 @@ import kotlinx.coroutines.launch
 
 const val COVER_TRANSITION = "cover"
 
-class ArchiveList : BaseActivity(), OnListFragmentInteractionListener, SharedPreferences.OnSharedPreferenceChangeListener, FilterListener {
+class ArchiveList : BaseActivity(), SharedPreferences.OnSharedPreferenceChangeListener, FilterListener {
     private lateinit var setupText: TextView
     private lateinit var categoryView: NavigationView
-
-    override fun onListFragmentInteraction(archive: ArchiveBase, view: View) {
-        startDetailsActivity(archive.id, view)
-    }
-
-    private fun startDetailsActivity(id: String, view: View) {
-        val intent = Intent(this, ArchiveDetails::class.java).also {
-            it.putExtras(Bundle().apply { putString("id", id) })
-            addIntentFlags(it, id)
-        }
-        val coverView: View = view.findViewById(R.id.archive_thumb)
-        val coverPair = Pair(coverView, COVER_TRANSITION)
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val statusBar: View = findViewById(android.R.id.statusBarBackground)
-            val statusPair = Pair(statusBar, Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
-            startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair, statusPair).toBundle())
-        } else
-            startActivity(intent, ActivityOptionsCompat.makeSceneTransitionAnimation(this, coverPair).toBundle())
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
