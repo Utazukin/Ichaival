@@ -78,12 +78,14 @@ import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.reader.ReaderFragment.OnFragmentInteractionListener
 import com.utazukin.ichaival.reader.webtoon.WebtoonReaderViewHolder
 import com.utazukin.ichaival.reader.webtoon.WebtoonRecyclerView
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -238,7 +240,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             private var seekPage = -1
             override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
                 seekPage = currentAdapter?.getPositionFromPage(progress) ?: 0
-                currentAdapter?.run { progressStartText.text = (getPageFromPosition(seekPage) + 1).toString() }
+                currentAdapter?.run { progressStartText.text = String.format(Locale.getDefault(), "%d", getPageFromPosition(seekPage) + 1) }
             }
             override fun onStartTrackingTouch(p0: SeekBar?) { switchLayoutJob?.cancel() }
             override fun onStopTrackingTouch(p0: SeekBar?) {
@@ -286,7 +288,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
                 if (it.numPages > 0) {
                     pageSeekBar.max = it.numPages - 1
-                    progressEndText.text = it.numPages.toString()
+                    progressEndText.text = String.format(Locale.getDefault(), "%d", it.numPages)
                     if (mVisible)
                         pageSeekLayout.visibility = View.VISIBLE
                 }
@@ -750,6 +752,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             delayedHide(100)
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onDestroy() {
         super.onDestroy()
         archive?.run {
@@ -767,7 +770,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         if (dualPageAdapter.onMergeFailed(page, failPage, split)) {
             supportActionBar?.subtitle = subtitle
             pageSeekBar.progress = currentPage
-            progressStartText.text = (currentPage + 1).toString()
+            progressStartText.text = String.format(Locale.getDefault(), "%d", currentPage + 1)
             optionsMenu?.run {
                 findItem(R.id.swap_merged_page)?.isVisible = false
                 findItem(R.id.split_merged_page)?.isVisible = false
@@ -794,7 +797,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         launch {
             withContext(Dispatchers.Main) {
                 pageSeekBar.max = pageCount - 1
-                progressEndText.text = pageCount.toString()
+                progressEndText.text = String.format(Locale.getDefault(), "%d", pageCount)
             }
 
             pageAdapter.updateLoadedPages(pageCount)
