@@ -39,6 +39,8 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Dispatcher
 import okhttp3.FormBody
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -50,8 +52,6 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
@@ -76,25 +76,32 @@ data class Header(
     @SerializedName("value") val value: String)
 
 object WebHandler {
-    private const val apiPath: String = "/api"
-    private const val databasePath = "$apiPath/database"
-    private const val archiveListPath = "$apiPath/archives"
-    private const val thumbPath = "$archiveListPath/%s/thumbnail"
-    private const val filesPath = "$archiveListPath/%s/files"
-    private const val progressPath = "$archiveListPath/%s/progress/%s"
-    private const val deleteArchivePath = "$archiveListPath/%s"
-    private const val tagsPath = "$databasePath/stats"
-    private const val clearNewPath = "$archiveListPath/%s/isnew"
-    private const val searchPath = "$apiPath/search"
-    private const val randomPath = "$searchPath/random"
-    private const val infoPath = "$apiPath/info"
-    private const val categoryPath = "$apiPath/categories"
-    private const val clearTempPath = "$apiPath/tempfolder"
-    private const val modifyCatPath = "$categoryPath/%s/%s"
-    private const val minionStatusPath = "$apiPath/minion/%s"
     private const val connTimeoutMs = 5000L
     private const val readTimeoutMs = 60000L
     private const val headerFile = "headers.json"
+
+    private fun HttpUrl.Builder.addPathSegment(value: Int) = addPathSegment(value.toString())
+    private fun HttpUrl.Builder.addQueryParameter(name: String, value: Int) = addQueryParameter(name, value.toString())
+    private fun HttpUrl.Builder.addQueryParameter(name: String, value: Long) = addQueryParameter(name, value.toString())
+    private fun HttpUrl.Builder.addQueryParameter(name: String, value: Boolean) = addQueryParameter(name, value.toString())
+    private fun HttpUrl.Builder.addQueryParameter(name: String, value: CharSequence) = addQueryParameter(name, value.toString())
+    private fun HttpUrl.Builder.addApi() = addPathSegment("api")
+    private fun HttpUrl.Builder.addDatabase() = addApi().addPathSegment("database")
+    private fun HttpUrl.Builder.addArchiveList() = addApi().addPathSegment("archives")
+    private fun HttpUrl.Builder.addThumb(id: String) = addArchiveList().addPathSegment(id).addPathSegment("thumbnail")
+    private fun HttpUrl.Builder.addFiles(id: String) = addArchiveList().addPathSegment(id).addPathSegment("files")
+    private fun HttpUrl.Builder.addProgress(id: String, page: Int) : HttpUrl.Builder {
+        return addArchiveList().addPathSegment(id).addPathSegment("progress").addPathSegment((page + 1))
+    }
+    private fun HttpUrl.Builder.addDeleteArchive(id: String) = addArchiveList().addPathSegment(id)
+    private fun HttpUrl.Builder.addTags() = addDatabase().addPathSegment("stats")
+    private fun HttpUrl.Builder.addClearNew(id: String) = addArchiveList().addPathSegment(id).addPathSegment("isnew")
+    private fun HttpUrl.Builder.addSearch() = addApi().addPathSegment("search")
+    private fun HttpUrl.Builder.addInfo() = addApi().addPathSegment("info")
+    private fun HttpUrl.Builder.addCategory() = addApi().addPathSegment("categories")
+    private fun HttpUrl.Builder.addClearTemp() = addApi().addPathSegment("tempfolder")
+    private fun HttpUrl.Builder.addModifyCategory(categoryId: String, archiveId: String) = addCategory().addPathSegment(categoryId).addPathSegment(archiveId)
+    private fun HttpUrl.Builder.addMinionStatus(id: Int) = addApi().addPathSegment("minion").addPathSegment(id)
 
     var serverLocation: String = ""
     var apiKey: String = ""
@@ -103,7 +110,6 @@ object WebHandler {
         }
     var customHeaders = listOf<Header>()
         private set
-    private val urlRegex by lazy { Regex("^(https?://|www\\.)?[a-z0-9-]+(\\.[a-z0-9-]+)*(:\\d+)?([/?].*)?\$") }
     val httpClient = OkHttpClient.Builder()
         .connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS)
         .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
@@ -114,6 +120,8 @@ object WebHandler {
     var listener: DatabaseMessageListener? = null
     private var hasNetwork = false
     private val refreshListeners = mutableListOf<DatabaseRefreshListener>()
+    private val serverUrlBuilder: HttpUrl.Builder
+        get() = serverLocation.toHttpUrl().newBuilder()
 
     suspend fun init(context: Context) {
         withContext(Dispatchers.IO) {
@@ -134,29 +142,21 @@ object WebHandler {
         }
     }
 
-    suspend fun getServerInfo(context: Context): JSONObject? {
+    suspend fun getServerInfo(): Pair<Int, JSONObject?> {
         if (!canConnect())
-            return null
+            return Pair(-1, null)
 
-        updateRefreshing(true)
-        val errorMessage = context.getString(R.string.failed_to_connect_message)
-        val url = "$serverLocation$infoPath"
+        val url = serverUrlBuilder.addInfo().build()
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait(errorMessage)
-        response?.use {
-            if (!it.isSuccessful) {
-                handleErrorMessage(it.code, errorMessage)
-                updateRefreshing(false)
-                return null
-            }
-
-            val json = it.body?.run { JSONObject(suspendString()) }
-            updateRefreshing(false)
-            return json
+        val response = httpClient.newCall(connection).await()
+        val result = response.use {
+            if (!it.isSuccessful)
+                Pair(it.code, null)
+            else
+                Pair(it.code, it.body?.run { JSONObject(suspendString()) })
         }
 
-        updateRefreshing(false)
-        return null
+        return result
     }
 
     fun registerRefreshListener(listener: DatabaseRefreshListener) = refreshListeners.add(listener)
@@ -173,7 +173,7 @@ object WebHandler {
             return@withContext
 
         val errorMessage = context.getString(R.string.temp_clear_fail_message)
-        val url = "$serverLocation$clearTempPath"
+        val url = serverUrlBuilder.addClearTemp().build()
         val connection = createServerConnection(url, "DELETE")
         val response = httpClient.newCall(connection).tryAwait(errorMessage)
         response?.use {
@@ -184,11 +184,11 @@ object WebHandler {
         }
     }
 
-    suspend fun generateSuggestionList() : JSONArray? {
+    suspend fun getTagList() : JSONArray? {
         if (!canConnect())
             return null
 
-        val url = "$serverLocation$tagsPath"
+        val url = serverUrlBuilder.addTags().build()
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).tryAwait()
         return response?.use {
@@ -203,7 +203,7 @@ object WebHandler {
         if (!canConnect())
             return@withContext null
 
-        val url = "$serverLocation$categoryPath"
+        val url = serverUrlBuilder.addCategory().build()
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).tryAwait()
         response?.let {
@@ -230,7 +230,7 @@ object WebHandler {
         if (checkConnection && !canConnect())
             return false
 
-        val url = "$serverLocation${deleteArchivePath.format(archiveId)}"
+        val url = serverUrlBuilder.addDeleteArchive(archiveId).build()
         val connection = createServerConnection(url, "DELETE")
         val response = httpClient.newCall(connection).tryAwait()
         return response?.use {
@@ -245,7 +245,7 @@ object WebHandler {
         if (!canConnect())
             return@withContext false
 
-        val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
+        val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
         val connection = createServerConnection(url, "DELETE")
         val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_remove_fail_message))
         response?.use { it.isSuccessful } == true
@@ -255,11 +255,11 @@ object WebHandler {
         if (!canConnect())
             return@withContext null
 
-        val url = "$serverLocation$categoryPath"
-        val builder = FormBody.Builder().addEncoded("name", name)
-        if (search != null)
-            builder.addEncoded("search", search)
-        val formBody = builder.build()
+        val url = serverUrlBuilder.addCategory().build()
+        val formBody = FormBody.Builder().addEncoded("name", name).apply {
+            if (search != null)
+                addEncoded("search", search)
+        }.build()
         val connection = createServerConnection(url, "PUT", formBody)
         val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_create_fail_message))
         response?.use {
@@ -275,7 +275,7 @@ object WebHandler {
         if (!canConnect())
             return@withContext false
 
-        val url = "$serverLocation${modifyCatPath.format(categoryId, archiveId)}"
+        val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
         val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_add_fail_message))
         response?.use { it.isSuccessful } == true
@@ -287,7 +287,7 @@ object WebHandler {
 
         coroutineScope {
             val responses = List(archiveIds.size) { i ->
-                val url = "$serverLocation${modifyCatPath.format(categoryId, archiveIds[i])}"
+                val url = serverUrlBuilder.addModifyCategory(categoryId, archiveIds[i]).build()
                 val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
                 async { httpClient.newCall(connection).tryAwait() }
             }
@@ -300,7 +300,7 @@ object WebHandler {
         if (!canConnect() || !ServerManager.serverTracksProgress)
             return
 
-        val url = "$serverLocation${progressPath.format(id, page + 1)}"
+        val url = serverUrlBuilder.addProgress(id, page).build()
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
         httpClient.newCall(connection).enqueue()
     }
@@ -311,22 +311,23 @@ object WebHandler {
         if (!canConnect())
             return null
 
-        val encodedSearch = if (search.isNotBlank()) withContext(Dispatchers.IO) { URLEncoder.encode(search.toString(), "utf-8") } else ""
         val sort = when(sortMethod) {
             SortMethod.Alpha -> "title"
             SortMethod.Date -> "date_added"
         }
         val order = if (descending) "desc" else "asc"
-        val url = "$serverLocation$searchPath?filter=$encodedSearch&newonly=$onlyNew&sortby=$sort&order=$order&start=$start"
+        val url = serverUrlBuilder
+            .addSearch()
+            .addQueryParameter("filter", search)
+            .addQueryParameter("newonly", onlyNew)
+            .addQueryParameter("sortby", sort)
+            .addQueryParameter("order", order)
+            .addQueryParameter("start", start)
+            .build()
 
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).tryAwait()
-        return response?.let {
-            if (!it.isSuccessful)
-                null
-            else
-                it.body?.byteStream()
-        }
+        return if (response?.isSuccessful == true) response.body?.byteStream() else null
     }
 
     fun getPageList(response: JSONObject?) : List<String> {
@@ -343,7 +344,11 @@ object WebHandler {
         if (!canConnect())
             return@withContext null
 
-        val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
+        val url = serverUrlBuilder
+            .addThumb(id)
+            .addQueryParameter("page", page + 1)
+            .addQueryParameter("no_fallback", true)
+            .build()
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).tryAwait()
 
@@ -364,22 +369,12 @@ object WebHandler {
         if (!canConnect())
             return ""
 
-        return "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
-    }
-
-    private suspend fun internalGetThumbUrl(id: String, page: Int): String? = withContext(Dispatchers.IO) {
-        val url = "$serverLocation${thumbPath.format(id)}?page=${page + 1}&no_fallback=true"
-        val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait()
-
-        response.use {
-            when {
-                it == null || !isActive -> null
-                it.code == HttpURLConnection.HTTP_OK -> url
-                it.code == HttpURLConnection.HTTP_ACCEPTED -> null
-                else -> null
-            }
-        }
+        return serverUrlBuilder
+            .addThumb(id)
+            .addQueryParameter("page", page + 1)
+            .addQueryParameter("no_fallback", true)
+            .build()
+            .toString()
     }
 
     suspend fun downloadImage(serverPath: String) : InputStream? {
@@ -393,7 +388,7 @@ object WebHandler {
         return response.body?.byteStream()
     }
 
-    fun getUrlForJob(jobId: Int) = "$serverLocation${minionStatusPath.format(jobId)}"
+    fun getUrlForJob(jobId: Int) = serverUrlBuilder.addMinionStatus(jobId).build()
 
     private suspend fun waitForJob(jobId: Int): Boolean {
         val url = getUrlForJob(jobId)
@@ -408,26 +403,22 @@ object WebHandler {
         return jobComplete
     }
 
-    suspend fun downloadThumb(context: Context, id: String, page: Int? = null) : InputStream? = withContext(Dispatchers.IO) {
+    suspend fun downloadThumb(context: Context, id: String, page: Int? = null) : InputStream? {
         if (!canConnect())
-            return@withContext null
+            return null
 
-        val url = "$serverLocation${thumbPath.format(id)}"
-        if (page != null) {
-            val updateUrl = url + "?page=${page + 1}"
-            val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
-            val errorMessage = context.getString(R.string.thumb_set_fail_message)
-            httpClient.newCall(connection).tryAwait(errorMessage)?.close() ?: return@withContext null
-        }
-
-        val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait()
-        response.let {
-            if (it?.isSuccessful != true || !isActive)
-                null
-            else {
-                it.body?.byteStream()
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addThumb(id).build()
+            if (page != null) {
+                val updateUrl = url.newBuilder().addQueryParameter("page", page + 1).build()
+                val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
+                val errorMessage = context.getString(R.string.thumb_set_fail_message)
+                httpClient.newCall(connection).tryAwait(errorMessage)?.close() ?: return@withContext null
             }
+
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait()
+            if (isActive && response?.isSuccessful == true) response.body?.byteStream() else null
         }
     }
 
@@ -460,9 +451,9 @@ object WebHandler {
                 enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         if (!it.isCancelled) {
-                            it.resumeWithException(e)
                             if (errorMessage != null)
                                 handleErrorMessage(e, errorMessage)
+                            it.resumeWithException(e)
                         }
                     }
 
@@ -471,6 +462,22 @@ object WebHandler {
                     }
                 })
             }
+        }
+    }
+
+    private suspend inline fun Call.await() : Response {
+        return suspendCancellableCoroutine {
+            it.invokeOnCancellation { cancel() }
+            enqueue(object: Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    if (!it.isCancelled)
+                        it.resumeWithException(e)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    it.resume(response)
+                }
+            })
         }
     }
 
@@ -488,9 +495,12 @@ object WebHandler {
         notify(context.getString(R.string.archive_extract_message))
 
         val errorMessage = context.getString(R.string.archive_extract_fail_message)
-        var url = "$serverLocation${filesPath.format(id)}"
-        if (forceFull)
-            url += "?force=true"
+        val url = serverUrlBuilder
+            .addFiles(id)
+            .apply {
+                if (forceFull)
+                    addQueryParameter("force", true)
+            }.build()
         val connection = createServerConnection(url)
 
         val response = httpClient.newCall(connection).tryAwait(errorMessage)
@@ -526,25 +536,27 @@ object WebHandler {
         if (!canConnect())
             return
 
-        val url = "$serverLocation${clearNewPath.format(id)}"
+        val url = serverUrlBuilder.addClearNew(id).build()
         val connection = createServerConnection(url, "DELETE")
         httpClient.newCall(connection).enqueue()
     }
 
-    suspend fun downloadArchiveList(context: Context) : InputStream? = withContext(Dispatchers.IO) {
+    suspend fun downloadArchiveList(context: Context) : InputStream? {
         if (!canConnect())
-            return@withContext null
+            return null
 
-        val errorMessage = context.getString(R.string.failed_to_connect_message)
-        val url = "$serverLocation$archiveListPath"
-        val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait(errorMessage)
-        response?.let {
-            if (!it.isSuccessful) {
-                handleErrorMessage(it.code, errorMessage)
-                return@withContext null
+        return withContext(Dispatchers.IO) {
+            val errorMessage = context.getString(R.string.failed_to_connect_message)
+            val url = serverUrlBuilder.addArchiveList().build()
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait(errorMessage)
+            response?.let {
+                if (!it.isSuccessful) {
+                    handleErrorMessage(it.code, errorMessage)
+                    return@withContext null
+                }
+                it.body?.byteStream()
             }
-            it.body?.byteStream()
         }
     }
 
@@ -581,7 +593,9 @@ object WebHandler {
         return this
     }
 
-    private fun createServerConnection(url: String, method: String = "GET", body: RequestBody? = null) : Request {
+    private fun createServerConnection(url: String, method: String = "GET", body: RequestBody? = null) = createServerConnection(url.toHttpUrl(), method, body)
+
+    private fun createServerConnection(url: HttpUrl, method: String = "GET", body: RequestBody? = null) : Request {
         return with (Request.Builder()) {
             method(method, body)
             addHeaders()

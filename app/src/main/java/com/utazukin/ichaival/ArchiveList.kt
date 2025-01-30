@@ -177,11 +177,11 @@ class ArchiveList : BaseActivity(), SharedPreferences.OnSharedPreferenceChangeLi
         }
     }
 
-    override fun onServerInitialized(serverSupported: Boolean?) {
+    override fun onServerInitialized(serverSupported: InfoResult) {
         super.onServerInitialized(serverSupported)
         ServerManager.serverName?.let { supportActionBar?.title = it }
         when (serverSupported) {
-            true -> {
+            SupportedResult -> {
                 launch {
                     val viewModel: SearchViewModel by viewModels()
                     if (DatabaseReader.needsUpdate(applicationContext)) {
@@ -194,14 +194,19 @@ class ArchiveList : BaseActivity(), SharedPreferences.OnSharedPreferenceChangeLi
                     viewModel.init()
                 }
             }
-            false -> {
+            UnsupportedResult -> {
                 setupText.text = getString(R.string.unsupported_server_message)
                 handleSetupText(true)
             }
             else -> {
                 val builder = MaterialAlertDialogBuilder(this).apply {
                     setTitle(R.string.connect_error_modal_title)
-                    setMessage(R.string.connect_error_modal_message)
+                    if (!WebHandler.verboseMessages)
+                        setMessage(R.string.connect_error_modal_message)
+                    else if (serverSupported is UnsuccessfulResult)
+                        setMessage(getString(R.string.connect_error_modal_message) + "\n${serverSupported.code}")
+                    else if (serverSupported is ExceptionResult)
+                        setMessage(serverSupported.exception.localizedMessage)
                     setPositiveButton(android.R.string.ok) { dialog, _ -> dialog.dismiss() }
                 }
                 builder.show()

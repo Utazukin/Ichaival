@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2025 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,6 +42,12 @@ data class LanraragiVersion(val major: Int, val minor: Int, val patch: Int) : Co
     }
 }
 
+sealed interface InfoResult
+data object SupportedResult : InfoResult
+data object UnsupportedResult : InfoResult
+class UnsuccessfulResult(val code: Int) : InfoResult
+class ExceptionResult(val exception: Exception) : InfoResult
+
 object ServerManager {
     private const val serverInfoFilename = "info.json"
     var pageSize = 50
@@ -59,32 +65,41 @@ object ServerManager {
     private var version = LanraragiVersion(0, 0, 0)
     private val lowestVersion = LanraragiVersion(0, 8, 5)
 
-    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) : Boolean? {
+    suspend fun init(context: Context, useCachedInfo: Boolean, force: Boolean = false) : InfoResult {
         if (initialized && !force)
-            return checkVersionAtLeast(lowestVersion)
+            return if (checkVersionAtLeast(lowestVersion)) SupportedResult else UnsupportedResult
 
-        val infoFile = File(context.filesDir, serverInfoFilename)
-        val serverInfo = withContext(Dispatchers.IO) {
-            if (!useCachedInfo || force) {
-                val info = WebHandler.getServerInfo(context)
-                if (info == null) {
-                    if (infoFile.exists())
-                        JSONObject(infoFile.readText())
-                    else
-                        null
-                } else {
-                    infoFile.writeText(info.toString())
-                    info
+        val result = withContext(Dispatchers.IO) {
+            val infoFile = File(context.filesDir, serverInfoFilename)
+            if (useCachedInfo && !force && infoFile.exists())
+                parseServerInfo(JSONObject(infoFile.readText()))
+            else {
+                try {
+                    val (code, info) = WebHandler.getServerInfo()
+                    when {
+                        info != null -> {
+                            infoFile.writeText(info.toString())
+                            parseServerInfo(info)
+                        }
+                        infoFile.exists() -> parseServerInfo(JSONObject(infoFile.readText()))
+                        else -> UnsuccessfulResult(code)
+                    }
+                } catch (e: Exception) {
+                    ExceptionResult(e)
                 }
-            } else if (infoFile.exists())
-                JSONObject(infoFile.readText())
-            else
-                null
+            }
         }
 
         initialized = true
+        return result
+    }
 
-        return serverInfo?.run {
+    fun checkVersionAtLeast(major: Int, minor: Int, patch: Int) = checkVersionAtLeast(LanraragiVersion(major, minor, patch))
+
+    private fun checkVersionAtLeast(lrrVersion: LanraragiVersion) = version >= lrrVersion
+
+    private fun parseServerInfo(serverInfo: JSONObject) : InfoResult {
+        with(serverInfo) {
             val lanraragiVersionString = getString("version")
             if (lanraragiVersionString.isNotBlank()) {
                 val versionRegex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)")
@@ -102,18 +117,15 @@ object ServerManager {
                 hasPassword = getInt("has_password") == 1
             }
             serverName = getString("name")
-            checkVersionAtLeast(lowestVersion)
         }
+
+        return if (checkVersionAtLeast(lowestVersion)) SupportedResult else UnsupportedResult
     }
-
-    fun checkVersionAtLeast(major: Int, minor: Int, patch: Int) = checkVersionAtLeast(LanraragiVersion(major, minor, patch))
-
-    private fun checkVersionAtLeast(lrrVersion: LanraragiVersion) = version >= lrrVersion
 
     suspend fun generateTagSuggestions() {
         if (tagSuggestions.isEmpty()) {
             withContext(Dispatchers.IO) {
-                WebHandler.generateSuggestionList()?.let {
+                WebHandler.getTagList()?.let {
                     val length = it.length()
                     tagSuggestions = buildList(length) {
                         for (i in 0 until length) {
