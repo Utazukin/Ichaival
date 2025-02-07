@@ -46,7 +46,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
-import okhttp3.ResponseBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -153,7 +152,7 @@ object WebHandler {
             if (!it.isSuccessful)
                 Pair(it.code, null)
             else
-                Pair(it.code, it.body?.run { JSONObject(suspendString()) })
+                Pair(it.code, it.body?.run { JSONObject(string()) })
         }
 
         return result
@@ -168,19 +167,21 @@ object WebHandler {
             listener.isRefreshing(refreshing)
     }
 
-    suspend fun clearTempFolder(context: Context) = withContext(Dispatchers.IO) {
+    suspend fun clearTempFolder(context: Context) {
         if (!canConnect())
-            return@withContext
+            return
 
-        val errorMessage = context.getString(R.string.temp_clear_fail_message)
-        val url = serverUrlBuilder.addClearTemp().build()
-        val connection = createServerConnection(url, "DELETE")
-        val response = httpClient.newCall(connection).tryAwait(errorMessage)
-        response?.use {
-            if (it.isSuccessful)
-                notify(context.getString(R.string.temp_clear_success_message))
-            else
-                handleErrorMessage(it.code, errorMessage)
+        return withContext(Dispatchers.IO) {
+            val errorMessage = context.getString(R.string.temp_clear_fail_message)
+            val url = serverUrlBuilder.addClearTemp().build()
+            val connection = createServerConnection(url, "DELETE")
+            val response = httpClient.newCall(connection).tryAwait(errorMessage)
+            response?.use {
+                if (it.isSuccessful)
+                    notify(context.getString(R.string.temp_clear_success_message))
+                else
+                    handleErrorMessage(it.code, errorMessage)
+            }
         }
     }
 
@@ -188,29 +189,33 @@ object WebHandler {
         if (!canConnect())
             return null
 
-        val url = serverUrlBuilder.addTags().build()
-        val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait()
-        return response?.use {
-            if (!it.isSuccessful)
-                null
-            else
-                tryOrNull { it.body?.run { JSONArray(suspendString()) } }
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addTags().build()
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait()
+            response?.use {
+                if (!it.isSuccessful)
+                    null
+                else
+                    tryOrNull { it.body?.run { JSONArray(string()) } }
+            }
         }
     }
 
-    suspend fun getCategories() : InputStream? = withContext(Dispatchers.IO) {
+    suspend fun getCategories() : InputStream? {
         if (!canConnect())
-            return@withContext null
+            return null
 
-        val url = serverUrlBuilder.addCategory().build()
-        val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait()
-        response?.let {
-            if (!it.isSuccessful)
-                null
-            else
-                it.body?.byteStream()
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addCategory().build()
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait()
+            response?.let {
+                if (!it.isSuccessful)
+                    null
+                else
+                    it.body?.byteStream()
+            }
         }
     }
 
@@ -237,55 +242,63 @@ object WebHandler {
             if (!it.isSuccessful)
                 false
             else
-                it.body?.run { JSONObject(suspendString()).optInt("success", 0) } == 1
+                it.body?.run { JSONObject(string()).optInt("success", 0) } == 1
         } == true
     }
 
-    suspend fun removeFromCategory(context: Context, categoryId: String, archiveId: String) : Boolean = withContext(Dispatchers.IO) {
+    suspend fun removeFromCategory(context: Context, categoryId: String, archiveId: String) : Boolean {
         if (!canConnect())
-            return@withContext false
+            return false
 
-        val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
-        val connection = createServerConnection(url, "DELETE")
-        val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_remove_fail_message))
-        response?.use { it.isSuccessful } == true
-    }
-
-    suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false) : JSONObject? = withContext(Dispatchers.IO) {
-        if (!canConnect())
-            return@withContext null
-
-        val url = serverUrlBuilder.addCategory().build()
-        val formBody = FormBody.Builder().addEncoded("name", name).apply {
-            if (search != null)
-                addEncoded("search", search)
-        }.build()
-        val connection = createServerConnection(url, "PUT", formBody)
-        val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_create_fail_message))
-        response?.use {
-            if (!it.isSuccessful) {
-                notifyError(it.body?.run { JSONObject(suspendString()) }?.optString("error") ?: context.getString(R.string.category_create_fail_message))
-                null
-            } else
-                it.body?.run { JSONObject(suspendString()) }
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
+            val connection = createServerConnection(url, "DELETE")
+            val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_remove_fail_message))
+            response?.use { it.isSuccessful } == true
         }
     }
 
-    suspend fun addToCategory(context: Context, categoryId: String, archiveId: String) : Boolean = withContext(Dispatchers.IO) {
+    suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false) : JSONObject? {
         if (!canConnect())
-            return@withContext false
+            return null
 
-        val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
-        val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
-        val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_add_fail_message))
-        response?.use { it.isSuccessful } == true
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addCategory().build()
+            val formBody = FormBody.Builder().addEncoded("name", name).apply {
+                if (search != null)
+                    addEncoded("search", search)
+            }.build()
+            val connection = createServerConnection(url, "PUT", formBody)
+            val response =
+                httpClient.newCall(connection).tryAwait(context.getString(R.string.category_create_fail_message))
+            response?.use {
+                if (!it.isSuccessful) {
+                    notifyError(it.body?.run { JSONObject(string()) }
+                        ?.optString("error") ?: context.getString(R.string.category_create_fail_message))
+                    null
+                } else
+                    it.body?.run { JSONObject(string()) }
+            }
+        }
     }
 
-    suspend fun addToCategory(categoryId: String, archiveIds: List<String>) : Boolean = withContext(Dispatchers.IO) {
+    suspend fun addToCategory(context: Context, categoryId: String, archiveId: String) : Boolean {
         if (!canConnect())
-            return@withContext false
+            return false
 
-        coroutineScope {
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
+            val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
+            val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_add_fail_message))
+            response?.use { it.isSuccessful } == true
+        }
+    }
+
+    suspend fun addToCategory(categoryId: String, archiveIds: List<String>) : Boolean {
+        if (!canConnect())
+            return false
+
+        return withContext(Dispatchers.IO) {
             val responses = List(archiveIds.size) { i ->
                 val url = serverUrlBuilder.addModifyCategory(categoryId, archiveIds[i]).build()
                 val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
@@ -340,23 +353,25 @@ object WebHandler {
         }
     }
 
-    suspend fun downloadThumb(id: String, page: Int): InputStream? = withContext(Dispatchers.IO) {
+    suspend fun downloadThumb(id: String, page: Int): InputStream? {
         if (!canConnect())
-            return@withContext null
+            return null
 
-        val url = serverUrlBuilder
-            .addThumb(id)
-            .addQueryParameter("page", page + 1)
-            .addQueryParameter("no_fallback", true)
-            .build()
-        val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait()
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder
+                .addThumb(id)
+                .addQueryParameter("page", page + 1)
+                .addQueryParameter("no_fallback", true)
+                .build()
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait()
 
-        response.let {
-            if (it?.isSuccessful != true || !isActive)
-                null
-            else {
-                it.body?.byteStream()
+            response.let {
+                if (it?.isSuccessful != true || !isActive)
+                    null
+                else {
+                    it.body?.byteStream()
+                }
             }
         }
     }
@@ -432,7 +447,7 @@ object WebHandler {
                 return false
 
             it.body?.run {
-                val json = JSONObject(suspendString())
+                val json = JSONObject(string())
                 return when(json.optString("state")) {
                     "finished" -> true
                     "failed" -> false
@@ -509,7 +524,7 @@ object WebHandler {
                 handleErrorMessage(it.code, errorMessage)
                 null
             } else {
-                val jsonString = it.body?.suspendString()
+                val jsonString = it.body?.string()
                 if (jsonString == null) {
                     notifyError(errorMessage)
                     null
@@ -529,8 +544,6 @@ object WebHandler {
             }
         }
     }
-
-    private suspend inline fun ResponseBody.suspendString() = withContext(Dispatchers.IO) { string() }
 
     fun setArchiveNewFlag(id: String) {
         if (!canConnect())
@@ -553,9 +566,8 @@ object WebHandler {
             response?.let {
                 if (!it.isSuccessful) {
                     handleErrorMessage(it.code, errorMessage)
-                    return@withContext null
-                }
-                it.body?.byteStream()
+                    null
+                } else it.body?.byteStream()
             }
         }
     }
@@ -567,14 +579,16 @@ object WebHandler {
         return withContext(Dispatchers.IO) {
             val connection = createServerConnection(serverLocation, "HEAD")
             val response = httpClient.newCall(connection).tryAwait()
-            if (response == null) {
-                notifyError(App.context.getString(R.string.failed_to_connect_message))
-                false
-            } else if (response.isSuccessful)
-                true
-            else {
-                handleErrorMessage(response.code, App.context.getString(R.string.failed_to_connect_message))
-                false
+            when {
+                response == null -> {
+                    notifyError(App.context.getString(R.string.failed_to_connect_message))
+                    false
+                }
+                response.isSuccessful -> true
+                else -> {
+                    handleErrorMessage(response.code, App.context.getString(R.string.failed_to_connect_message))
+                    false
+                }
             }
         }
     }

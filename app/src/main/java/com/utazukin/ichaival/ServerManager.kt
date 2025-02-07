@@ -124,18 +124,16 @@ object ServerManager {
 
     suspend fun generateTagSuggestions() {
         if (tagSuggestions.isEmpty()) {
-            withContext(Dispatchers.IO) {
-                WebHandler.getTagList()?.let {
-                    val length = it.length()
-                    tagSuggestions = buildList(length) {
-                        for (i in 0 until length) {
-                            val item = it.getJSONObject(i)
-                            val namespace = item.getString("namespace")
-                            if (namespace != "date_added" && namespace != "source")
-                                add(TagSuggestion(item.getString("text"), namespace, item.getInt("weight")))
-                        }
-                        sortByDescending { tag -> tag.weight }
+            WebHandler.getTagList()?.let {
+                val length = it.length()
+                tagSuggestions = buildList(length) {
+                    for (i in 0 until length) {
+                        val item = it.getJSONObject(i)
+                        val namespace = item.getString("namespace")
+                        if (namespace != "date_added" && namespace != "source")
+                            add(TagSuggestion(item.getString("text"), namespace, item.getInt("weight")))
                     }
+                    sortByDescending { tag -> tag.weight }
                 }
             }
         }
