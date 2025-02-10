@@ -438,6 +438,7 @@ class ArchiveListFragment : Fragment(),
             swipeRefreshLayout.isEnabled = false
             val syncMessage = Snackbar.make(requireView(), R.string.sync_snack_message, Snackbar.LENGTH_INDEFINITE)
             syncMessage.show()
+            viewModel.jumpToTop = true
             viewModel.viewModelScope.async {
                 viewModel.refreshing = true
                 DatabaseReader.updateArchiveList(requireContext())
@@ -446,7 +447,6 @@ class ArchiveListFragment : Fragment(),
             syncMessage.dismiss()
             swipeRefreshLayout.isRefreshing = false
             swipeRefreshLayout.isEnabled = canSwipeRefresh
-            viewModel.jumpToTop = true
             viewModel.reset()
         }
     }
