@@ -106,33 +106,25 @@ class ArchiveListFragment : Fragment(),
             val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
             val columns = dpWidth.floorDiv(itemWidth)
             layoutManager = when {
-                columns > 1 -> {
-                    object : GridLayoutManager(context, columns) {
-                        override fun onLayoutCompleted(state: RecyclerView.State?) {
-                            super.onLayoutCompleted(state)
-                            if (viewModel.jumpToTop) {
-                                scrollToPosition(0)
-                                viewModel.jumpToTop = false
-                            }
-                        }
-                    }
-                }
-                else -> {
-                    object : LinearLayoutManager(context) {
-                        override fun onLayoutCompleted(state: RecyclerView.State?) {
-                            super.onLayoutCompleted(state)
-                            if (viewModel.jumpToTop) {
-                                scrollToPosition(0)
-                                viewModel.jumpToTop = false
-                            }
-                        }
-                    }
-                }
+                columns > 1 -> GridLayoutManager(context, columns)
+                else -> LinearLayoutManager(context)
             }
             listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, viewModel, ::handleArchiveLongPress).apply {
                 registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
-                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = setSubtitle()
-                    override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) = setSubtitle()
+                    override fun onItemRangeInserted(positionStart: Int, itemCount: Int)  {
+                        setSubtitle()
+                        if (viewModel.jumpToTop) {
+                            layoutManager?.scrollToPosition(0)
+                            viewModel.jumpToTop = false
+                        }
+                    }
+                    override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                        setSubtitle()
+                        if (viewModel.jumpToTop) {
+                            layoutManager?.scrollToPosition(0)
+                            viewModel.jumpToTop = false
+                        }
+                    }
                 })
             }
             setSubtitle()
