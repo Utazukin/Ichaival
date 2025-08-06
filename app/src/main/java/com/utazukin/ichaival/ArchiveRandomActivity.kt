@@ -36,6 +36,10 @@ import com.utazukin.ichaival.database.SearchViewModel
 const val RANDOM_SEARCH = "random"
 const val RANDOM_CAT = "category"
 
+// Refresh button UI constants
+private const val LEFT_BUTTON_TAG = "refresh_button_left"
+private const val TOOLBAR_BUTTON_MARGIN_DP = 56
+
 class ArchiveRandomActivity : BaseActivity() {
     private val viewModel: SearchViewModel by viewModels()
 
@@ -66,12 +70,99 @@ class ArchiveRandomActivity : BaseActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.archive_random_menu, menu)
+        setupRefreshButtonPosition(menu)
         return super.onCreateOptionsMenu(menu)
+    }
+
+    /**
+     * Configures the refresh button position based on user preference
+     */
+    private fun setupRefreshButtonPosition(menu: Menu) {
+        val refreshPosition = getRefreshButtonPosition()
+        val leftPositionValue = getString(R.string.refresh_position_left_value)
+        
+        when (refreshPosition) {
+            leftPositionValue -> {
+                // Hide menu item and add custom button on left
+                menu.findItem(R.id.random_archive_refresh)?.isVisible = false
+                addLeftRefreshButton()
+            }
+            else -> {
+                // Keep standard menu item, remove any custom button
+                removeLeftRefreshButton()
+            }
+        }
+    }
+
+    /**
+     * Gets the current refresh button position preference
+     */
+    private fun getRefreshButtonPosition(): String {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val defaultValue = getString(R.string.refresh_position_right_value)
+        return prefs.getString(getString(R.string.random_refresh_position_pref), defaultValue) ?: defaultValue
+    }
+    
+    /**
+     * Adds a refresh button to the left side of the toolbar
+     */
+    private fun addLeftRefreshButton() {
+        removeLeftRefreshButton() // Ensure no duplicates
+        
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        toolbar?.let { 
+            val refreshButton = createRefreshButton()
+            val layoutParams = createLeftButtonLayoutParams()
+            toolbar.addView(refreshButton, layoutParams)
+        }
+    }
+
+    /**
+     * Removes any existing left refresh button from the toolbar
+     */
+    private fun removeLeftRefreshButton() {
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        toolbar?.findViewWithTag<android.widget.ImageButton>(LEFT_BUTTON_TAG)?.let { button ->
+            toolbar.removeView(button)
+        }
+    }
+
+    /**
+     * Creates a properly configured refresh button
+     */
+    private fun createRefreshButton(): android.widget.ImageButton {
+        return android.widget.ImageButton(this).apply {
+            tag = LEFT_BUTTON_TAG
+            setImageResource(R.drawable.ic_refresh_white_24dp)
+            background = null
+            contentDescription = getString(R.string.refresh_archive_menu)
+            setOnClickListener { onRefreshClicked() }
+        }
+    }
+
+    /**
+     * Creates layout parameters for positioning the left button correctly
+     */
+    private fun createLeftButtonLayoutParams(): androidx.appcompat.widget.Toolbar.LayoutParams {
+        return androidx.appcompat.widget.Toolbar.LayoutParams(
+            androidx.appcompat.widget.Toolbar.LayoutParams.WRAP_CONTENT,
+            androidx.appcompat.widget.Toolbar.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
+            marginStart = (TOOLBAR_BUTTON_MARGIN_DP * resources.displayMetrics.density).toInt()
+        }
+    }
+
+    /**
+     * Handles refresh button click - extracted for reusability
+     */
+    private fun onRefreshClicked() {
+        viewModel.reset()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.random_archive_refresh -> viewModel.reset()
+            R.id.random_archive_refresh -> onRefreshClicked()
             R.id.change_random_count -> {
                 val prefs = PreferenceManager.getDefaultSharedPreferences(this)
                 val builder = AlertDialog.Builder(this).apply {
@@ -113,6 +204,12 @@ class ArchiveRandomActivity : BaseActivity() {
     override fun onStop() {
         super.onStop()
         ReaderTabHolder.unregisterAddListener(this)
+    }
+
+    override fun onDestroy() {
+        // Clean up any custom toolbar buttons to prevent memory leaks
+        removeLeftRefreshButton()
+        super.onDestroy()
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {

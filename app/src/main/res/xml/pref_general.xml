@@ -228,6 +228,14 @@
             android:summary="@string/random_count_pref_summary"
             android:title="@string/random_count_pref_title"
             app:iconSpaceReserved="false" />
+        <ListPreference
+            android:entries="@array/refresh_position_options"
+            android:entryValues="@array/refresh_position_values"
+            android:key="@string/random_refresh_position_pref"
+            android:title="@string/random_refresh_position_title"
+            android:summary="@string/random_refresh_position_summary"
+            app:defaultValue="@string/refresh_position_right_value"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
     <PreferenceCategory
         app:iconSpaceReserved="false"

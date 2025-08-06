@@ -220,6 +220,9 @@
     <string name="random_count_pref_title">Random Archive Count</string>
     <string name="random_count_pref_summary">The amount of random archives that should be picked when pressing the random button. Current: %s</string>
     <string name="random_count_dialog_title">Number of Random Archives</string>
+    <string name="random_refresh_position_pref" translatable="false">random_refresh_position_pref</string>
+    <string name="random_refresh_position_title">Refresh Button Position</string>
+    <string name="random_refresh_position_summary">Position of the refresh button in random archives view</string>
     <string name="category_remove_title">Remove from category</string>
     <string name="date_added_tag">date added</string>
     <string name="bookmark_removed_snack">Bookmark removed</string>
@@ -274,4 +277,16 @@
     <string name="delete_header">Delete</string>
     <string name="header_name">Name</string>
     <string name="header_value">Value</string>
+    <string name="refresh_position_right">Right</string>
+    <string name="refresh_position_left">Left</string>
+    <string-array name="refresh_position_options">
+        <item>@string/refresh_position_right</item>
+        <item>@string/refresh_position_left</item>
+    </string-array>
+    <string-array name="refresh_position_values">
+        <item>@string/refresh_position_right_value</item>
+        <item>@string/refresh_position_left_value</item>
+    </string-array>
+    <string name="refresh_position_right_value" translatable="false">right</string>
+    <string name="refresh_position_left_value" translatable="false">left</string>
 </resources>
