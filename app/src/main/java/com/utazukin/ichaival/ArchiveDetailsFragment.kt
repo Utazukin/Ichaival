@@ -55,6 +55,7 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.database.DatabaseReader
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 
@@ -66,6 +67,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private lateinit var bookmarkButton: Button
     private lateinit var thumbView: ImageView
     private lateinit var downloadButton: Button
+    private lateinit var ratingBar: android.widget.RatingBar
+    private var isSettingRatingProgrammatically = false
+    private var ratingJob: kotlinx.coroutines.Job? = null
     private var archive: Archive? = null
     private var tagListener: TagInteractionListener? = null
     private val isLocalSearch by lazy {
@@ -84,6 +88,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             catFlexLayout = findViewById(R.id.cat_flex)
             thumbView = findViewById(R.id.cover)
             downloadButton = findViewById(R.id.download_button)
+            ratingBar = findViewById(R.id.ratingBar)
         }
         ViewCompat.setTransitionName(thumbView, COVER_TRANSITION)
 
@@ -298,6 +303,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
         val archive = DatabaseReader.getArchive(archiveId)?.also { this.archive = it } ?: return
+        setupRatingBar(archive)
         setUpTags(view, archive)
         setupCategories(view, archive)
 
@@ -448,6 +454,55 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                     pagesDownloaded < it.numPages -> resources.getString(R.string.download_button_downloading, pagesDownloaded, it.numPages)
                     else -> resources.getString(R.string.download_button_downloaded)
                 }
+            }
+        }
+    }
+
+    private fun parseRatingFromArchive(archive: Archive): Int? {
+        val list = archive.tags["rating"] ?: return null
+        val value = list.firstOrNull() ?: return null
+        return value.count { it == '⭐' }.coerceIn(0, 5)
+    }
+
+    private fun buildUpdatedTagsMap(
+        original: Map<String, List<String>>,
+        rating: Int
+    ): Map<String, List<String>> {
+        val copy = original.toMutableMap()
+        copy["rating"] = listOf("⭐".repeat(rating.coerceIn(0, 5)))
+        return copy
+    }
+
+    private fun tagsMapToString(tags: Map<String, List<String>>): String {
+        return tags.flatMap { (ns, list) ->
+            list.map { v -> if (ns == "global") v else "$ns:$v" }
+        }.joinToString(", ")
+    }
+
+    private fun applyInitialRating(archive: Archive) {
+        val r = parseRatingFromArchive(archive) ?: return
+        isSettingRatingProgrammatically = true
+        ratingBar.rating = r.toFloat()
+        isSettingRatingProgrammatically = false
+    }
+
+    private fun setupRatingBar(archive: Archive) {
+        applyInitialRating(archive)
+        ratingBar.setOnRatingBarChangeListener { _, rating, fromUser ->
+            if (isSettingRatingProgrammatically) return@setOnRatingBarChangeListener
+            if (!fromUser) return@setOnRatingBarChangeListener
+
+            ratingJob?.cancel()
+            ratingJob = viewLifecycleOwner.lifecycleScope.launch {
+                delay(400)
+
+                val updatedMap = buildUpdatedTagsMap(archive.tags, rating.toInt())
+                val tagString = tagsMapToString(updatedMap)
+
+                WebHandler.updateArchiveMetadata(
+                    archiveId = archive.id,
+                    tags = tagString,
+                )
             }
         }
     }

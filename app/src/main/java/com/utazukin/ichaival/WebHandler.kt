@@ -92,6 +92,7 @@ object WebHandler {
     private fun HttpUrl.Builder.addProgress(id: String, page: Int) : HttpUrl.Builder {
         return addArchiveList().addPathSegment(id).addPathSegment("progress").addPathSegment((page + 1))
     }
+    private fun HttpUrl.Builder.addUpdateMetadata(id: String) = addArchiveList().addPathSegment(id).addPathSegment("metadata")
     private fun HttpUrl.Builder.addDeleteArchive(id: String) = addArchiveList().addPathSegment(id)
     private fun HttpUrl.Builder.addTags() = addDatabase().addPathSegment("stats")
     private fun HttpUrl.Builder.addClearNew(id: String) = addArchiveList().addPathSegment(id).addPathSegment("isnew")
@@ -227,6 +228,24 @@ object WebHandler {
             val jobs = List(ids.size) { async { if (deleteArchive(ids[it], false)) ids[it] else null } }
             jobs.awaitAll().filterNotNull()
         }
+    }
+
+    suspend fun updateArchiveMetadata(
+        archiveId: String,
+        title: String? = null,
+        tags: String? = null,
+        summary: String? = null
+    ): Boolean {
+        if (!canConnect()) return false
+
+        val urlBuilder = serverUrlBuilder.addUpdateMetadata(archiveId)
+        title?.let { urlBuilder.addQueryParameter("title", it) }
+        tags?.let { urlBuilder.addQueryParameter("tags", it) }
+        summary?.let { urlBuilder.addQueryParameter("summary", it) }
+
+        val req = createServerConnection(urlBuilder.build(), "PUT", FormBody.Builder().build())
+        val res = httpClient.newCall(req).tryAwait()
+        return res?.use { it.isSuccessful } == true
     }
 
     suspend fun deleteArchive(archiveId: String) = withContext(Dispatchers.IO) { deleteArchive(archiveId, true) }
