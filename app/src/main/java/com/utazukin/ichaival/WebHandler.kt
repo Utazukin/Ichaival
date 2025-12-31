@@ -230,17 +230,23 @@ object WebHandler {
         }
     }
 
+    private fun mapTagsToString(tags: Map<String, List<String>>): String {
+        return tags.flatMap { (namespace, values) ->
+            values.map { value -> if (namespace == "global") value else "$namespace:$value" }
+        }.joinToString(", ")
+    }
+
     suspend fun updateArchiveMetadata(
         archiveId: String,
         title: String? = null,
-        tags: String? = null,
+        tags: Map<String, List<String>>? = null,
         summary: String? = null
     ): Boolean {
         if (!canConnect()) return false
 
         val urlBuilder = serverUrlBuilder.addUpdateMetadata(archiveId)
         title?.let { urlBuilder.addQueryParameter("title", it) }
-        tags?.let { urlBuilder.addQueryParameter("tags", it) }
+        tags?.let { urlBuilder.addQueryParameter("tags", mapTagsToString(it)) }
         summary?.let { urlBuilder.addQueryParameter("summary", it) }
 
         val req = createServerConnection(urlBuilder.build(), "PUT", FormBody.Builder().build())

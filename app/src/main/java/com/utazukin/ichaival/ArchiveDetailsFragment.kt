@@ -437,6 +437,9 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     }
 
     companion object {
+        private const val RATING_STAR = '\u2B50'
+        private const val RATING_UPDATE_DEBOUNCE_MS = 400L
+
         @JvmStatic
         fun createInstance(id: String) =
             ArchiveDetailsFragment().apply {
@@ -461,22 +464,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private fun parseRatingFromArchive(archive: Archive): Int? {
         val list = archive.tags["rating"] ?: return null
         val value = list.firstOrNull() ?: return null
-        return value.count { it == '⭐' }.coerceIn(0, 5)
-    }
-
-    private fun buildUpdatedTagsMap(
-        original: Map<String, List<String>>,
-        rating: Int
-    ): Map<String, List<String>> {
-        val copy = original.toMutableMap()
-        copy["rating"] = listOf("⭐".repeat(rating.coerceIn(0, 5)))
-        return copy
-    }
-
-    private fun tagsMapToString(tags: Map<String, List<String>>): String {
-        return tags.flatMap { (ns, list) ->
-            list.map { v -> if (ns == "global") v else "$ns:$v" }
-        }.joinToString(", ")
+        return value.count { it == RATING_STAR }.coerceIn(0, 5)
     }
 
     private fun applyInitialRating(archive: Archive) {
@@ -484,6 +472,25 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         isSettingRatingProgrammatically = true
         ratingBar.rating = r.toFloat()
         isSettingRatingProgrammatically = false
+    }
+
+    private fun tagsWithUpdatedRating(
+        currentTags: Map<String, List<String>>,
+        ratingStars: Int
+    ): Map<String, List<String>> {
+        val boundedStars = ratingStars.coerceIn(0, 5)
+        return currentTags.toMutableMap().apply {
+            this["rating"] = listOf(RATING_STAR.toString().repeat(boundedStars))
+        }
+    }
+
+    private suspend fun updateArchiveRating(archive: Archive, rating: Int) {
+        val updatedTags = tagsWithUpdatedRating(archive.tags, rating)
+
+        WebHandler.updateArchiveMetadata(
+            archiveId = archive.id,
+            tags = updatedTags,
+        )
     }
 
     private fun setupRatingBar(archive: Archive) {
@@ -494,15 +501,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
             ratingJob?.cancel()
             ratingJob = viewLifecycleOwner.lifecycleScope.launch {
-                delay(400)
-
-                val updatedMap = buildUpdatedTagsMap(archive.tags, rating.toInt())
-                val tagString = tagsMapToString(updatedMap)
-
-                WebHandler.updateArchiveMetadata(
-                    archiveId = archive.id,
-                    tags = tagString,
-                )
+                delay(RATING_UPDATE_DEBOUNCE_MS)
+                updateArchiveRating(archive, rating.toInt())
             }
         }
     }
