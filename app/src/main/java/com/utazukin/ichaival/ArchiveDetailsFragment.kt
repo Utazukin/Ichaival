@@ -69,7 +69,6 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private lateinit var thumbView: ImageView
     private lateinit var downloadButton: Button
     private lateinit var ratingBar: android.widget.RatingBar
-    private var isSettingRatingProgrammatically = false
     private var ratingJob: kotlinx.coroutines.Job? = null
     private var archive: Archive? = null
     private var tagListener: TagInteractionListener? = null
@@ -473,9 +472,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     private fun applyInitialRating(archive: Archive) {
         val r = parseRatingFromArchive(archive) ?: return
-        isSettingRatingProgrammatically = true
         ratingBar.rating = r.toFloat()
-        isSettingRatingProgrammatically = false
     }
 
     private fun tagsWithUpdatedRating(
@@ -548,7 +545,6 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private fun setupRatingBar(rootView: View, archive: Archive) {
         applyInitialRating(archive)
         ratingBar.setOnRatingBarChangeListener { _, rating, fromUser ->
-            if (isSettingRatingProgrammatically) return@setOnRatingBarChangeListener
             if (!fromUser) return@setOnRatingBarChangeListener
 
             ratingJob?.cancel()
