@@ -484,8 +484,21 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
+    private fun addDateAddedTag(
+        tags: Map<String, List<String>>,
+        dateAddedSeconds: Long
+    ): Map<String, List<String>> {
+        if (dateAddedSeconds <= 0) return tags
+        if ("date_added" in tags) return tags
+
+        return tags.toMutableMap().apply {
+            put("date_added", listOf(dateAddedSeconds.toString()))
+        }
+    }
+
     private suspend fun updateArchiveRating(archive: Archive, rating: Int) {
         val updatedTags = tagsWithUpdatedRating(archive.tags, rating)
+            .let { addDateAddedTag(it, archive.dateAdded) }
 
         WebHandler.updateArchiveMetadata(
             archiveId = archive.id,
