@@ -54,6 +54,7 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.JsonObject
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -187,6 +188,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
 
     private fun setUpTags(view: View, archive: Archive) {
         val tagLayout: LinearLayout = view.findViewById(R.id.tag_layout)
+        tagLayout.removeAllViews()
         if (archive.dateAdded > 0) {
             val namespaceLayout = FlexboxLayout(context).apply {
                 flexWrap = FlexWrap.WRAP
@@ -303,7 +305,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
         val archive = DatabaseReader.getArchive(archiveId)?.also { this.archive = it } ?: return
-        setupRatingBar(archive)
+        setupRatingBar(view, archive)
         setUpTags(view, archive)
         setupCategories(view, archive)
 
@@ -439,6 +441,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     companion object {
         private const val RATING_STAR = '\u2B50'
         private const val RATING_UPDATE_DEBOUNCE_MS = 400L
+        private const val TAG_KEY_RATING = "rating"
+        private const val TAG_KEY_DATE_ADDED = "date_added"
 
         @JvmStatic
         fun createInstance(id: String) =
@@ -462,7 +466,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     }
 
     private fun parseRatingFromArchive(archive: Archive): Int? {
-        val list = archive.tags["rating"] ?: return null
+        val list = archive.tags[TAG_KEY_RATING] ?: return null
         val value = list.firstOrNull() ?: return null
         return value.count { it == RATING_STAR }.coerceIn(0, 5)
     }
@@ -480,8 +484,29 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     ): Map<String, List<String>> {
         val boundedStars = ratingStars.coerceIn(0, 5)
         return currentTags.toMutableMap().apply {
-            this["rating"] = listOf(RATING_STAR.toString().repeat(boundedStars))
+            this[TAG_KEY_RATING] = listOf(RATING_STAR.toString().repeat(boundedStars))
         }
+    }
+
+    private fun tagsMapToString(tags: Map<String, List<String>>): String {
+        return tags.flatMap { (namespace, values) ->
+            values.map { value -> if (namespace == "global") value else "$namespace:$value" }
+        }.joinToString(", ")
+    }
+
+    private fun showRatingUpdateError(rootView: View, messageRes: Int = R.string.failed_to_connect_message) {
+        Snackbar.make(rootView, messageRes, Snackbar.LENGTH_SHORT).show()
+    }
+
+    private suspend fun fetchMetadataForUpdate(rootView: View, archive: Archive): Pair<JsonObject, Archive>? {
+        val metadataJson = WebHandler.getArchive(archive.id)
+        if (metadataJson == null) {
+            showRatingUpdateError(rootView)
+            return null
+        }
+        val currentArchive = DatabaseReader.parseArchiveMetadata(metadataJson)
+        this.archive = currentArchive
+        return metadataJson to currentArchive
     }
 
     private fun addDateAddedTag(
@@ -489,24 +514,38 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         dateAddedSeconds: Long
     ): Map<String, List<String>> {
         if (dateAddedSeconds <= 0) return tags
-        if ("date_added" in tags) return tags
+        if (TAG_KEY_DATE_ADDED in tags) return tags
 
         return tags.toMutableMap().apply {
-            put("date_added", listOf(dateAddedSeconds.toString()))
+            put(TAG_KEY_DATE_ADDED, listOf(dateAddedSeconds.toString()))
         }
     }
 
-    private suspend fun updateArchiveRating(archive: Archive, rating: Int) {
-        val updatedTags = tagsWithUpdatedRating(archive.tags, rating)
-            .let { addDateAddedTag(it, archive.dateAdded) }
+    private suspend fun updateArchiveRating(rootView: View, archive: Archive, rating: Int) {
+        val (metadataJson, currentArchive) = fetchMetadataForUpdate(rootView, archive) ?: return
+        val updatedTags = addDateAddedTag(tagsWithUpdatedRating(currentArchive.tags, rating), currentArchive.dateAdded)
+        val updatedJson = metadataJson.deepCopy().apply {
+            addProperty("tags", tagsMapToString(updatedTags))
+        }
 
-        WebHandler.updateArchiveMetadata(
+        val success = WebHandler.updateArchiveMetadata(
             archiveId = archive.id,
             tags = updatedTags,
         )
+
+        val jsonForUpsert = if (success) updatedJson else metadataJson
+        val fallbackArchive = if (success) currentArchive.copy(tags = updatedTags) else currentArchive
+        val refreshed = DatabaseReader.upsertArchiveFromJson(jsonForUpsert, archive.id) ?: fallbackArchive
+        this.archive = refreshed
+        setUpTags(rootView, refreshed)
+
+        if (!success) {
+            applyInitialRating(refreshed)
+            showRatingUpdateError(rootView)
+        }
     }
 
-    private fun setupRatingBar(archive: Archive) {
+    private fun setupRatingBar(rootView: View, archive: Archive) {
         applyInitialRating(archive)
         ratingBar.setOnRatingBarChangeListener { _, rating, fromUser ->
             if (isSettingRatingProgrammatically) return@setOnRatingBarChangeListener
@@ -515,7 +554,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             ratingJob?.cancel()
             ratingJob = viewLifecycleOwner.lifecycleScope.launch {
                 delay(RATING_UPDATE_DEBOUNCE_MS)
-                updateArchiveRating(archive, rating.toInt())
+                updateArchiveRating(rootView, archive, rating.toInt())
             }
         }
     }
