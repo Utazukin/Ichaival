@@ -31,8 +31,8 @@ android {
         applicationId "com.utazukin.ichaival"
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 51
-        versionName "1.9.8"
+        versionCode 52
+        versionName "1.9.9"
         vectorDrawables {
             useSupportLibrary true
         }
