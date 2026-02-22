@@ -23,6 +23,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.PointF
+import android.os.Build
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.LayoutInflater
@@ -46,7 +47,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ImageDecoder
-import com.utazukin.ichaival.ImageFormat
 import com.utazukin.ichaival.ImageRegionDecoder
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.cacheOrGet
@@ -55,7 +55,9 @@ import com.utazukin.ichaival.downloadCoilImageWithProgress
 import com.utazukin.ichaival.getImageFormat
 import com.utazukin.ichaival.getMaxTextureSize
 import com.utazukin.ichaival.isAnimatedImage
+import com.utazukin.ichaival.isAnimatedWebp
 import com.utazukin.ichaival.isLocalFile
+import com.utazukin.ichaival.loadAnimatedWebpWithGlide
 import com.utazukin.ichaival.setDefaultScale
 import kotlinx.coroutines.launch
 import java.io.File
@@ -172,10 +174,27 @@ class ReaderFragment : Fragment(), PageFragment {
             mainImage = if (isAnimatedImage(imageFile)) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    it.load(imageFile, gifLoader) {
-                        diskCacheKey(image)
-                        size(Dimension.Undefined, Dimension.Undefined)
-                        listener(
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && isAnimatedWebp(imageFile)) {
+                        // Use Glide fallback helper for animated WebP on older Android
+                        loadAnimatedWebpWithGlide(
+                            this@ReaderFragment,
+                            it,
+                            imageFile,
+                            onReady = {
+                                pageNum.visibility = View.GONE
+                                view?.run {
+                                    setOnClickListener(null)
+                                    setOnLongClickListener(null)
+                                }
+                                progressBar.visibility = View.GONE
+                            },
+                            onError = { showErrorMessage() }
+                        )
+                    } else {
+                        it.load(imageFile, gifLoader) {
+                            diskCacheKey(image)
+                            size(Dimension.Undefined, Dimension.Undefined)
+                            listener(
                                 onSuccess = { _, _ ->
                                     pageNum.visibility = View.GONE
                                     view?.run {
@@ -185,7 +204,8 @@ class ReaderFragment : Fragment(), PageFragment {
                                     progressBar.visibility = View.GONE
                                 },
                                 onError = { _, _ -> showErrorMessage() }
-                        )
+                            )
+                        }
                     }
                 }
             } else {
@@ -220,7 +240,6 @@ class ReaderFragment : Fragment(), PageFragment {
                 }
             }.also { setupImageTapEvents(it) }
         }
-
     }
 
     private fun initializeView(view: View) {
