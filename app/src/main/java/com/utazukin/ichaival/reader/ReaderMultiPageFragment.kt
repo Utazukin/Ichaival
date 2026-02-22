@@ -23,6 +23,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.PointF
+import android.os.Build
 import android.os.Bundle
 import android.util.Size
 import android.view.GestureDetector
@@ -54,7 +55,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ImageDecoder
-import com.utazukin.ichaival.ImageFormat
 import com.utazukin.ichaival.ImageRegionDecoder
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.cacheOrGet
@@ -63,7 +63,9 @@ import com.utazukin.ichaival.downloadCoilImageWithProgress
 import com.utazukin.ichaival.getImageFormat
 import com.utazukin.ichaival.getMaxTextureSize
 import com.utazukin.ichaival.isAnimatedImage
+import com.utazukin.ichaival.isAnimatedWebp
 import com.utazukin.ichaival.isLocalFile
+import com.utazukin.ichaival.loadAnimatedWebpWithGlide
 import com.utazukin.ichaival.outSize
 import com.utazukin.ichaival.setDefaultScale
 import com.utazukin.ichaival.tryOrNull
@@ -265,9 +267,25 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             mainImage = if (isAnimatedImage(imageFile)) {
                 PhotoView(activity).also {
                     initializeView(it)
-                    it.load(imageFile, gifLoader) {
-                        size(Dimension.Undefined, Dimension.Undefined)
-                        listener(
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && isAnimatedWebp(imageFile)) {
+                        loadAnimatedWebpWithGlide(
+                            this@ReaderMultiPageFragment,
+                            it,
+                            imageFile,
+                            onReady = {
+                                pageNum.visibility = View.GONE
+                                view?.run {
+                                    setOnClickListener(null)
+                                    setOnLongClickListener(null)
+                                }
+                                progressBar.visibility = View.GONE
+                            },
+                            onError = { showErrorMessage() }
+                        )
+                    } else {
+                        it.load(imageFile, gifLoader) {
+                            size(Dimension.Undefined, Dimension.Undefined)
+                            listener(
                                 onSuccess = { _, _ ->
                                     pageNum.visibility = View.GONE
                                     view?.run {
@@ -277,7 +295,8 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                                     progressBar.visibility = View.GONE
                                 },
                                 onError = { _, _ -> showErrorMessage() }
-                        )
+                            )
+                        }
                     }
                 }
             } else {
