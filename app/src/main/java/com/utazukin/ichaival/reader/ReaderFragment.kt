@@ -54,6 +54,7 @@ import com.utazukin.ichaival.createGifLoader
 import com.utazukin.ichaival.downloadCoilImageWithProgress
 import com.utazukin.ichaival.getImageFormat
 import com.utazukin.ichaival.getMaxTextureSize
+import com.utazukin.ichaival.isAnimatedImage
 import com.utazukin.ichaival.isLocalFile
 import com.utazukin.ichaival.setDefaultScale
 import kotlinx.coroutines.launch
@@ -168,7 +169,7 @@ class ReaderFragment : Fragment(), PageFragment {
             }
 
             val format = getImageFormat(imageFile)
-            mainImage = if (format == ImageFormat.GIF) {
+            mainImage = if (isAnimatedImage(imageFile)) {
                 PhotoView(activity).also {
                     initializeView(it)
                     it.load(imageFile, gifLoader) {
