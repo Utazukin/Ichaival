@@ -115,4 +115,9 @@ dependencies {
     implementation "io.coil-kt.coil3:coil-compose:$coil_version"
     implementation "io.coil-kt.coil3:coil-network-okhttp:$coil_version"
     implementation "com.drakeet.drawer:drawer:1.0.3"
+    // webpdecoder
+    implementation "com.github.zjupure:webpdecoder:2.7.$GLIDE_VERSION"
+    // glide 4.10.0+
+    implementation "com.github.bumptech.glide:glide:$GLIDE_VERSION"
+    annotationProcessor "com.github.bumptech.glide:compiler:$GLIDE_VERSION"
 }

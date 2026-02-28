@@ -5,6 +5,7 @@ buildscript {
     ext.coroutine_version = "1.10.1"
     ext.coil_version = '3.0.4'
     ext.room_version = "2.6.1"
+    ext.GLIDE_VERSION = "4.16.0"
     repositories {
         google()
         mavenCentral()
