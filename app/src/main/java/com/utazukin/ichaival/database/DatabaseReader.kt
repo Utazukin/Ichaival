@@ -33,6 +33,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ArchiveBase
@@ -154,7 +155,6 @@ object DatabaseReader {
     private val extractingMutex = Mutex()
     private val extractListeners = mutableListOf<DatabaseExtractListener>()
     private lateinit var database: ArchiveDatabase
-
     fun init(context: Context) {
         val dbHelper = DatabaseHelper()
         database = Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db")
@@ -224,6 +224,25 @@ object DatabaseReader {
     }
 
     private suspend fun updateArchive(archiveJson: ArchiveJson) = database.archiveDao().insertJson(archiveJson)
+
+    private fun parseArchiveJson(jsonObject: JsonObject, updateTime: Long) =
+        GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(updateTime)).create()
+            .fromJson(jsonObject, ArchiveJson::class.java)
+
+    fun parseArchiveMetadata(jsonObject: JsonObject): Archive {
+        val archiveJson = ArchiveJson(jsonObject, Calendar.getInstance().timeInMillis, 0)
+        val converters = DatabaseTypeConverters()
+        return Archive(
+            id = archiveJson.id,
+            title = archiveJson.title,
+            dateAdded = archiveJson.dateAdded,
+            isNew = archiveJson.isNew,
+            tags = converters.fromString(archiveJson.tags),
+            currentPage = archiveJson.currentPage,
+            summary = archiveJson.summary,
+            numPages = archiveJson.pageCount
+        )
+    }
 
     suspend fun <R> withTransaction(block: suspend () -> R) = database.withTransaction { block() }
 
@@ -500,5 +519,17 @@ object DatabaseReader {
             withContext(Dispatchers.IO) { WebHandler.downloadThumb(context, id, page)?.use { image.outputStream().use { f -> it.copyTo(f) } } } ?: return null
 
         return image
+    }
+
+    suspend fun refreshArchiveFromServer(archiveId: String) : Archive? = withContext(Dispatchers.IO) {
+        val jsonObject = WebHandler.getArchive(archiveId) ?: return@withContext null
+        upsertArchiveFromJson(jsonObject, archiveId)
+    }
+
+    suspend fun upsertArchiveFromJson(jsonObject: JsonObject, archiveId: String) : Archive? = withContext(Dispatchers.IO) {
+        val updateTime = Calendar.getInstance().timeInMillis
+        val archiveJson: ArchiveJson = parseArchiveJson(jsonObject, updateTime)
+        updateArchive(archiveJson)
+        database.archiveDao().getArchive(archiveId)
     }
 }
