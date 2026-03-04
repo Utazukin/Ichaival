@@ -115,4 +115,7 @@ dependencies {
     implementation "io.coil-kt.coil3:coil-compose:$coil_version"
     implementation "io.coil-kt.coil3:coil-network-okhttp:$coil_version"
     implementation "com.drakeet.drawer:drawer:1.0.3"
+    
+    // JPEG XL support
+    implementation 'io.github.awxkee:jxl-coder:2.2.0'
 }
