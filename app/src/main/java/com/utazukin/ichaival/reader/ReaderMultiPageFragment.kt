@@ -62,6 +62,7 @@ import com.utazukin.ichaival.createGifLoader
 import com.utazukin.ichaival.downloadCoilImageWithProgress
 import com.utazukin.ichaival.getImageFormat
 import com.utazukin.ichaival.getMaxTextureSize
+import com.utazukin.ichaival.isAnimatedImage
 import com.utazukin.ichaival.isLocalFile
 import com.utazukin.ichaival.outSize
 import com.utazukin.ichaival.setDefaultScale
@@ -261,7 +262,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
             }
 
             val format = getImageFormat(imageFile)
-            mainImage = if (format == ImageFormat.GIF) {
+            mainImage = if (isAnimatedImage(imageFile)) {
                 PhotoView(activity).also {
                     initializeView(it)
                     it.load(imageFile, gifLoader) {
@@ -408,7 +409,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
                 val img = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeFile(imgFile.absolutePath, img)
-                if (img.outMimeType == null || ImageFormat.fromMimeType(img.outMimeType) == ImageFormat.GIF) {
+                if (isAnimatedImage(imgFile)) {
                     dotherTarget?.cancel()
                     displaySingleImageMain(image, page)
                     return@launch
@@ -423,7 +424,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
                 }
                 val otherImg = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeFile(otherImgFile.absolutePath, otherImg)
-                if (img.outMimeType == null || ImageFormat.fromMimeType(otherImg.outMimeType) == ImageFormat.GIF) {
+                if (isAnimatedImage(otherImgFile)) {
                     displaySingleImageMain(image, otherPage)
                     return@launch
                 }

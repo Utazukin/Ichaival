@@ -684,7 +684,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         }
     }
 
-    private fun show() {
+    private fun show(autoHide: Boolean = true) {
         // Show the system bar
         with(WindowInsetsControllerCompat(window, imagePager)) {
             show(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.statusBars())
@@ -693,14 +693,20 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         mVisible = true
 
         switchLayoutJob?.cancel()
-        switchLayoutJob = launch {
-            delay(UI_ANIMATION_DELAY)
+        if (autoHide) {
+            switchLayoutJob = launch {
+                delay(UI_ANIMATION_DELAY)
+                supportActionBar?.show()
+                if (pageSeekBar.max > 0)
+                    pageSeekLayout.visibility = View.VISIBLE
+
+                if (autoHideEnabled)
+                    delayedHide(autoHideDelay)
+            }
+        } else {
             supportActionBar?.show()
             if (pageSeekBar.max > 0)
                 pageSeekLayout.visibility = View.VISIBLE
-
-            if (autoHideEnabled)
-                delayedHide(autoHideDelay)
         }
     }
 
@@ -733,6 +739,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     private fun openSettings() {
         if (!supportFragmentManager.isDestroyed) {
+            show(false)
             val settingsFragment = ReaderSettingsDialogFragment.newInstance(currentScaleType)
             settingsFragment.show(supportFragmentManager, "reader_settings")
         }
@@ -741,6 +748,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
     private fun closeSettings() {
         val settingsFragment = supportFragmentManager.findFragmentByTag("reader_settings") as? ReaderSettingsDialogFragment
         settingsFragment?.dismiss()
+        hide()
     }
 
     override fun onFragmentLongPress() : Boolean {
