@@ -289,4 +289,7 @@
     </string-array>
     <string name="refresh_position_right_value" translatable="false">right</string>
     <string name="refresh_position_left_value" translatable="false">left</string>
+    <string name="rating_header">Rating</string>
+    <string name="rating_update_success">Rating updated</string>
+    <string name="rating_update_fail">Failed to update rating</string>
 </resources>

@@ -101,6 +101,7 @@ object WebHandler {
     private fun HttpUrl.Builder.addClearTemp() = addApi().addPathSegment("tempfolder")
     private fun HttpUrl.Builder.addModifyCategory(categoryId: String, archiveId: String) = addCategory().addPathSegment(categoryId).addPathSegment(archiveId)
     private fun HttpUrl.Builder.addMinionStatus(id: Int) = addApi().addPathSegment("minion").addPathSegment(id)
+    private fun HttpUrl.Builder.addMetadata(id: String) = addArchiveList().addPathSegment(id).addPathSegment("metadata")
 
     var serverLocation: String = ""
     var apiKey: String = ""
@@ -316,6 +317,42 @@ object WebHandler {
         val url = serverUrlBuilder.addProgress(id, page).build()
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
         httpClient.newCall(connection).enqueue()
+    }
+
+    suspend fun getArchiveMetadata(archiveId: String): JSONObject? {
+        if (!canConnect())
+            return null
+
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addMetadata(archiveId).build()
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait()
+            response?.use {
+                if (!it.isSuccessful)
+                    null
+                else
+                    it.body?.run { JSONObject(string()) }
+            }
+        }
+    }
+
+    suspend fun updateArchiveMetadata(archiveId: String, tags: String): Boolean {
+        if (!canConnect())
+            return false
+
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addMetadata(archiveId)
+                .addQueryParameter("tags", tags)
+                .build()
+            val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
+            val response = httpClient.newCall(connection).tryAwait()
+            response?.use {
+                if (!it.isSuccessful)
+                    false
+                else
+                    it.body?.run { JSONObject(string()).optInt("success", 0) } == 1
+            } == true
+        }
     }
 
     suspend fun getOrderedArchives(start: Long = -1) = searchServer("", false, SortMethod.Alpha, false, start)

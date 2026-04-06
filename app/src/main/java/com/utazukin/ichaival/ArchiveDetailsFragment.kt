@@ -100,6 +100,8 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             dialog.show(childFragmentManager, "add_category")
         }
 
+        setupRatingStars(view)
+
         return view
     }
 
@@ -300,6 +302,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val archive = DatabaseReader.getArchive(archiveId)?.also { this.archive = it } ?: return
         setUpTags(view, archive)
         setupCategories(view, archive)
+        updateRatingStarsDisplay(view, archive)
 
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive.title
@@ -424,6 +427,87 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         catFlexLayout.addView(catView)
 
         Snackbar.make(requireView(), getString(R.string.category_add_message, category.name), Snackbar.LENGTH_SHORT).show()
+    }
+
+    private fun setupRatingStars(view: View) {
+        val stars = listOf(
+            view.findViewById<TextView>(R.id.star1),
+            view.findViewById<TextView>(R.id.star2),
+            view.findViewById<TextView>(R.id.star3),
+            view.findViewById<TextView>(R.id.star4),
+            view.findViewById<TextView>(R.id.star5)
+        )
+
+        stars.forEachIndexed { index, star ->
+            star.setOnClickListener {
+                lifecycleScope.launch {
+                    updateRating(index + 1, stars)
+                }
+            }
+        }
+
+        val ratingLayout: LinearLayout = view.findViewById(R.id.rating_layout)
+        ratingLayout.isVisible = ServerManager.canEdit
+    }
+
+    private fun updateRatingStarsDisplay(view: View, archive: Archive) {
+        val stars = listOf(
+            view.findViewById<TextView>(R.id.star1),
+            view.findViewById<TextView>(R.id.star2),
+            view.findViewById<TextView>(R.id.star3),
+            view.findViewById<TextView>(R.id.star4),
+            view.findViewById<TextView>(R.id.star5)
+        )
+        updateStarDisplay(archive, stars)
+    }
+
+    private fun getCurrentRating(archive: Archive): Int {
+        // Check if "rating" namespace exists in tags
+        val ratingTags = archive.tags["rating"] ?: return 0
+        // Get the first rating value and count stars
+        val ratingValue = ratingTags.firstOrNull() ?: return 0
+        return ratingValue.count { it == '⭐' }
+    }
+
+    private fun updateStarDisplay(archive: Archive, stars: List<TextView>) {
+        val rating = getCurrentRating(archive)
+        stars.forEachIndexed { index, star ->
+            star.text = if (index < rating) "⭐" else "☆"
+        }
+    }
+
+    private suspend fun updateRating(rating: Int, stars: List<TextView>) {
+        // Get current metadata from server
+        val metadata = WebHandler.getArchiveMetadata(archiveId)
+        if (metadata == null) {
+            Snackbar.make(requireView(), getString(R.string.rating_update_fail), Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        val currentTags = metadata.optString("tags", "")
+        val ratingTag = "rating:" + "⭐".repeat(rating)
+
+        // Remove existing rating tag if present
+        val tagsList = currentTags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        val filteredTags = tagsList.filter { !it.startsWith("rating:") }
+
+        // Add new rating tag
+        val updatedTags = (filteredTags + ratingTag).joinToString(", ")
+
+        // Update on server
+        val success = WebHandler.updateArchiveMetadata(archiveId, updatedTags)
+        if (success) {
+            // Update star display immediately
+            stars.forEachIndexed { index, star ->
+                star.text = if (index < rating) "⭐" else "☆"
+            }
+
+            Snackbar.make(requireView(), getString(R.string.rating_update_success), Snackbar.LENGTH_SHORT).show()
+            // Refresh the database to get updated tags
+            DatabaseReader.setDatabaseDirty()
+        } else {
+            Snackbar.make(requireView(), getString(R.string.rating_update_fail), Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     interface TagInteractionListener {
