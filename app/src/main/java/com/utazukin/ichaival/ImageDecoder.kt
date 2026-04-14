@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,15 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.Rect
 import android.net.Uri
+import coil3.ImageLoader
+import coil3.asImage
+import coil3.decode.DecodeResult
+import coil3.decode.Decoder
+import coil3.decode.ImageSource
+import coil3.fetch.SourceFetchResult
+import coil3.request.Options
+import com.github.penfeizhou.animation.webp.WebPDrawable
+import com.github.penfeizhou.animation.webp.decode.WebPParser
 import com.hippo.image.BitmapDecoder
 import com.hippo.image.BitmapRegionDecoder
 import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder as IImageDecoder
@@ -69,5 +78,22 @@ class ImageRegionDecoder : IImageRegionDecoder {
 
     override fun recycle() {
         decoder?.recycle()
+    }
+}
+
+class AnimatedWebPDecoder(private val source: ImageSource) : Decoder {
+    override suspend fun decode(): DecodeResult {
+        return DecodeResult(
+                image = WebPDrawable.fromFile(source.file().toFile().path).asImage(),
+                isSampled = false
+        )
+    }
+
+    class Factory : Decoder.Factory {
+        override fun create(result: SourceFetchResult, options: Options, imageLoader: ImageLoader): Decoder? {
+            if (WebPParser.isAWebP(result.source.file().toFile().path))
+                return AnimatedWebPDecoder(result.source)
+            return null
+        }
     }
 }

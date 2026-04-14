@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -178,9 +178,6 @@ private fun ByteArray.isAscii(offset: Int, value: String) : Boolean {
 }
 
 fun isSupportedAnimatedWebp(imageFile: File) : Boolean {
-    // Only Android 9+ (API 28) natively supports animated webp
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
-
     val header = ByteArray(32)
     val bytesRead = imageFile.inputStream().use { it.read(header) }
     if (bytesRead < header.size)
@@ -216,8 +213,10 @@ fun ImageLoader.createGifLoader() : ImageLoader {
     return newBuilder().components {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
             add(AnimatedImageDecoder.Factory())
-        else
+        else {
             add(GifDecoder.Factory())
+            add(AnimatedWebPDecoder.Factory())
+        }
     }.build()
 }
 
