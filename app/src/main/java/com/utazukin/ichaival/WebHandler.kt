@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -310,7 +310,7 @@ object WebHandler {
     }
 
     fun updateProgress(id: String, page: Int) {
-        if (!canConnect() || !ServerManager.serverTracksProgress)
+        if (!canConnect() || !ServerManager.serverTracksProgress || (ServerManager.authenticatedProgress && apiKey.isEmpty()))
             return
 
         val url = serverUrlBuilder.addProgress(id, page).build()

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -56,10 +56,13 @@ object ServerManager {
         private set
     var serverTracksProgress = false
         private set
+    var authenticatedProgress = false
+        private set
     var serverName: String? = null
         private set
     val canEdit
         get() = !hasPassword || WebHandler.apiKey.isNotBlank()
+    private var excludedNamespaces: List<String> = listOf("data_added", "source")
     private var initialized = false
     private var hasPassword = false
     private var version = LanraragiVersion(0, 0, 0)
@@ -108,6 +111,11 @@ object ServerManager {
                 }
             }
 
+            optJSONArray("excluded_namespaces")?.let { excluded ->
+                excludedNamespaces = List(excluded.length()) { excluded.getString(it) }
+            }
+
+            authenticatedProgress = optBoolean("authenticated_progress")
             pageSize = getInt("archives_per_page")
             if (checkVersionAtLeast(0, 9, 30)) {
                 serverTracksProgress = getBoolean("server_tracks_progress")
@@ -130,7 +138,7 @@ object ServerManager {
                     for (i in 0 until length) {
                         val item = it.getJSONObject(i)
                         val namespace = item.getString("namespace")
-                        if (namespace != "date_added" && namespace != "source")
+                        if (!excludedNamespaces.contains(namespace))
                             add(TagSuggestion(item.getString("text"), namespace, item.getInt("weight")))
                     }
                     sortByDescending { tag -> tag.weight }
