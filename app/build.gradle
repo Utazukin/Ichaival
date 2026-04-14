@@ -3,7 +3,7 @@ plugins {
     id 'kotlin-android'
     id 'kotlin-parcelize'
     id 'com.google.devtools.ksp'
-    id 'org.jetbrains.kotlin.plugin.compose' version '2.1.0'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.3.20'
 }
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -26,11 +26,11 @@ android {
         }
     }
 
-    compileSdk 35
+    compileSdk = 36
     defaultConfig {
         applicationId "com.utazukin.ichaival"
         minSdkVersion 21
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode 47
         versionName "1.9.4"
         vectorDrawables {
@@ -83,7 +83,7 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutine_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutine_version"
-    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'com.google.android.material:material:1.13.0'
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
@@ -98,7 +98,7 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
     ksp "androidx.room:room-compiler:$room_version"
-    implementation "androidx.paging:paging-runtime-ktx:3.3.5"
+    implementation "androidx.paging:paging-runtime-ktx:3.3.6"
     implementation "android.arch.lifecycle:extensions:1.1.1"
     implementation "android.arch.lifecycle:viewmodel:1.1.1"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7"

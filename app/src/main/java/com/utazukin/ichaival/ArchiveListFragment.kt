@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -375,7 +375,7 @@ class ArchiveListFragment : Fragment(),
         if (!lastWord.isNullOrBlank()) {
             for ((i, suggestion) in ServerManager.tagSuggestions.withIndex()) {
                 if (suggestion.contains(lastWord))
-                    cursor.addRow(arrayOf(i, suggestion.displayTag))
+                    cursor.addRow(arrayOf<Comparable<*>>(i, suggestion.displayTag))
             }
         }
 
