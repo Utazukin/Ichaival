@@ -22,6 +22,8 @@ import android.content.Context
 import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.database.DatabaseMessageListener
@@ -87,6 +89,7 @@ object WebHandler {
     private fun HttpUrl.Builder.addApi() = addPathSegment("api")
     private fun HttpUrl.Builder.addDatabase() = addApi().addPathSegment("database")
     private fun HttpUrl.Builder.addArchiveList() = addApi().addPathSegment("archives")
+    private fun HttpUrl.Builder.addArchiveMetadata(id: String) = addArchiveList().addPathSegment(id).addPathSegment("metadata")
     private fun HttpUrl.Builder.addThumb(id: String) = addArchiveList().addPathSegment(id).addPathSegment("thumbnail")
     private fun HttpUrl.Builder.addFiles(id: String) = addArchiveList().addPathSegment(id).addPathSegment("files")
     private fun HttpUrl.Builder.addProgress(id: String, page: Int) : HttpUrl.Builder {
@@ -229,6 +232,30 @@ object WebHandler {
         }
     }
 
+    private fun mapTagsToString(tags: Map<String, List<String>>): String {
+        return tags.flatMap { (namespace, values) ->
+            values.map { value -> if (namespace == "global") value else "$namespace:$value" }
+        }.joinToString(", ")
+    }
+
+    suspend fun updateArchiveMetadata(
+        archiveId: String,
+        title: String? = null,
+        tags: Map<String, List<String>>? = null,
+        summary: String? = null
+    ): Boolean {
+        if (!canConnect()) return false
+
+        val urlBuilder = serverUrlBuilder.addArchiveMetadata(archiveId)
+        title?.let { urlBuilder.addQueryParameter("title", it) }
+        tags?.let { urlBuilder.addQueryParameter("tags", mapTagsToString(it)) }
+        summary?.let { urlBuilder.addQueryParameter("summary", it) }
+
+        val req = createServerConnection(urlBuilder.build(), "PUT", FormBody.Builder().build())
+        val res = httpClient.newCall(req).tryAwait()
+        return res?.use { it.isSuccessful } == true
+    }
+
     suspend fun deleteArchive(archiveId: String) = withContext(Dispatchers.IO) { deleteArchive(archiveId, true) }
 
     private suspend fun deleteArchive(archiveId: String, checkConnection: Boolean) : Boolean {
@@ -319,6 +346,28 @@ object WebHandler {
     }
 
     suspend fun getOrderedArchives(start: Long = -1) = searchServer("", false, SortMethod.Alpha, false, start)
+
+    suspend fun getArchive(archiveId: String): JsonObject? {
+        if (!canConnect())
+            return null
+
+        return withContext(Dispatchers.IO) {
+            val errorMessage = App.context.getString(R.string.failed_to_connect_message)
+            val url = serverUrlBuilder.addArchiveMetadata(archiveId).build()
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait(errorMessage)
+            response?.use {
+                if (!it.isSuccessful) {
+                    handleErrorMessage(it.code, errorMessage)
+                    null
+                } else {
+                    it.body?.charStream()?.use { reader ->
+                        JsonParser.parseReader(reader).asJsonObject
+                    }
+                }
+            }
+        }
+    }
 
     suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long = 0) : InputStream? {
         if (!canConnect())
