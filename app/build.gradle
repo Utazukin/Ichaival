@@ -3,7 +3,7 @@ plugins {
     id 'kotlin-android'
     id 'kotlin-parcelize'
     id 'com.google.devtools.ksp'
-    id 'org.jetbrains.kotlin.plugin.compose' version '2.3.20'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.3.21'
 }
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
