@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,12 +42,10 @@ import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.CategoryManager
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
-import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToLong
-import com.utazukin.ichaival.reader.ScaleType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -133,7 +131,14 @@ private class DatabaseHelper {
         }
     }
 
-    val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+    private val MIGRATION_9_10 = object: Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("drop table if exists readertab")
+            db.execSQL("create table if not exists readertab (id text not null, title text not null, index integer not null default 0, currentPage integer not null, primary key (id, currentPage))")
+        }
+    }
+
+    val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
 
     val callbacks = object: RoomDatabase.Callback() {
         override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
@@ -159,7 +164,7 @@ object DatabaseReader {
         val dbHelper = DatabaseHelper()
         database = Room.databaseBuilder(context, ArchiveDatabase::class.java, "archive-db")
             .addMigrations(*dbHelper.migrations)
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(true)
             .addCallback(dbHelper.callbacks)
             .build()
     }
@@ -189,30 +194,6 @@ object DatabaseReader {
             }
 
             removeOldArchives(currentTime)
-
-            if (ServerManager.serverTracksProgress) {
-                val inProgress = database.archiveDao().getInProgressArchives()
-                val bookmarks = getBookmarkMap()
-                var count = bookmarks.size
-                val toUpdate = buildList {
-                    for (archive in inProgress) {
-                        val bookmark = bookmarks.remove(archive.id)
-                        if (bookmark != null) {
-                            bookmark.page = archive.currentPage
-                            add(bookmark)
-                        } else add(ReaderTab(archive.id, archive.title, count++, archive.currentPage))
-                    }
-
-                    //Reset any remaining bookmarks, but don't remove them.
-                    for (bookmark in bookmarks.values) {
-                        bookmark.page = 0
-                        add(bookmark)
-                    }
-                }
-
-                if (toUpdate.isNotEmpty())
-                    database.archiveDao().upsertBookmarks(toUpdate)
-            }
         }
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -275,34 +256,19 @@ object DatabaseReader {
 
     suspend fun getBookmarkCount() = database.archiveDao().getBookmarkCount()
 
-    suspend fun getBookmark(id: String) = database.archiveDao().getBookmark(id)
+    suspend fun getBookmark(id: String, page: Int) = database.archiveDao().getBookmark(id, page)
 
-    suspend fun addBookmark(tab: ReaderTab) = withTransaction {
-        with(database.archiveDao()) {
-            addBookmark(tab)
-            updateBookmark(tab.id, tab.page)
-        }
-    }
+    suspend fun addBookmark(tab: ReaderTab) = database.archiveDao().addBookmark(tab)
 
-    suspend fun updateBookmark(id: String, page: Int) : Boolean = withTransaction {
-        with(database.archiveDao()) {
-            val tab = getBookmark(id)
-            tab?.let {
-                it.page = page
-                updateBookmark(it)
-                updateBookmark(it.id, page)
-                true
-            } ?: false
-        }
-    }
-
-    suspend fun removeBookmark(id: String) : Boolean = withTransaction {
-        val tab = database.archiveDao().getBookmark(id)
+    suspend fun removeBookmark(id: String, page: Int) : Boolean = withTransaction {
+        val tab = database.archiveDao().getBookmark(id, page)
         if (tab != null) {
             removeBookmark(tab)
             true
         } else false
     }
+
+    suspend fun updateProgress(id: String, page: Int) = database.archiveDao().updateProgress(id, page)
 
     suspend fun deleteArchives(ids: Collection<String>) {
         withTransaction {
@@ -363,14 +329,13 @@ object DatabaseReader {
         }
     }
 
-    private suspend fun removeBookmark(tab: ReaderTab) = withTransaction {
+    suspend fun removeBookmark(tab: ReaderTab) = withTransaction {
         with(database.archiveDao()) {
             val tabs = getBookmarks()
             val adjustedTabs = tabs.filter { it.index > tab.index }
             for (adjustedTab in adjustedTabs)
                 --adjustedTab.index
 
-            removeBookmark(tab.id)
             removeBookmark(tab)
             updateBookmarks(adjustedTabs)
         }
@@ -384,22 +349,11 @@ object DatabaseReader {
                 ++adjustedTab.index
 
             addBookmark(tab)
-            updateBookmark(tab.id, tab.page)
             updateBookmarks(adjustedTabs)
         }
     }
 
-    suspend fun clearBookmarks() : List<String> = withTransaction {
-        with(database.archiveDao()) {
-            val tabs = getBookmarkedIds()
-            if (tabs.isNotEmpty()) {
-                removeAllBookmarks(tabs)
-                clearBookmarks()
-            }
-
-            tabs
-        }
-    }
+    suspend fun clearBookmarks() = database.archiveDao().clearBookmarks()
 
     fun setDatabaseDirty() {
         isDirty = true
@@ -434,7 +388,7 @@ object DatabaseReader {
 
     fun invalidateImageCache() = archivePageMap.clear()
 
-    suspend fun isBookmarked(id: String) = database.archiveDao().isBookmarked(id)
+    suspend fun isBookmarked(id: String, page: Int) = database.archiveDao().isBookmarked(id, page)
 
     suspend fun needsUpdate(context: Context) : Boolean = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
@@ -449,15 +403,6 @@ object DatabaseReader {
     suspend fun getRandomArchive() = database.archiveDao().getRandom(false)
 
     suspend fun deleteArchive(id: String) = deleteArchives(listOf(id))
-
-    suspend fun updateBookmark(id: String, scaleType: ScaleType) : Boolean {
-        val tab = database.archiveDao().getBookmark(id)
-        return tab?.let {
-            it.scaleType = scaleType
-            database.archiveDao().updateBookmark(tab)
-            true
-        } ?: false
-    }
 
     suspend fun setArchiveNewFlag(id: String) = withContext(Dispatchers.IO) {
         database.archiveDao().updateNewFlag(id, false)

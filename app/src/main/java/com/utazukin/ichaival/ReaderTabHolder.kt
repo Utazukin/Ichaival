@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,23 +20,15 @@ package com.utazukin.ichaival
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import com.utazukin.ichaival.database.DatabaseReader
-import com.utazukin.ichaival.reader.ScaleType
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 object ReaderTabHolder {
     private val scope by lazy { MainScope() }
     private val removeListeners = mutableSetOf<TabRemovedListener>()
     private val addListeners = mutableSetOf<TabAddedListener>()
     private val clearListeners = mutableSetOf<TabsClearedListener>()
-
-    suspend fun updatePageIfTabbed(id: String, page: Int) : Boolean = DatabaseReader.updateBookmark(id, page)
-
-    suspend fun updateScaleTypeIfTabbed(id: String, scaleType: ScaleType) = DatabaseReader.updateBookmark(id, scaleType)
 
     fun registerRemoveListener(listener: TabRemovedListener) = removeListeners.add(listener)
 
@@ -50,21 +42,18 @@ object ReaderTabHolder {
 
     fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
 
-    suspend fun addTab(archive: Archive, page: Int, scaleType: ScaleType? = null) {
-        if (!isTabbed(archive.id)) {
+    suspend fun addTab(archive: Archive, page: Int) {
+        if (!isTabbed(archive.id, page)) {
             val tabCount = DatabaseReader.getBookmarkCount()
-            val tab = ReaderTab(archive.id, archive.title, tabCount, page, scaleType)
-            archive.currentPage = page
-            if (page > 0)
-                WebHandler.updateProgress(archive.id, page)
+            val tab = ReaderTab(archive.id, archive.title, tabCount, page)
             DatabaseReader.addBookmark(tab)
-            updateAddListeners(archive.id)
+            updateAddListeners(archive.id, tab.page)
         }
     }
 
     fun insertTab(tab: ReaderTab) {
         scope.launch { DatabaseReader.insertBookmark(tab) }
-        updateAddListeners(tab.id)
+        updateAddListeners(tab.id, tab.page)
     }
 
     fun addTabs(archives: List<ArchiveBase>) {
@@ -72,8 +61,8 @@ object ReaderTabHolder {
             var tabCount = DatabaseReader.getBookmarkCount()
             val ids = buildList(archives.size) {
                 for (archive in archives) {
-                    if (!isTabbed(archive.id)) {
-                        val tab = ReaderTab(archive.id, archive.title, tabCount++, 0)
+                    if (!isTabbed(archive.id, -1)) {
+                        val tab = ReaderTab(archive.id, archive.title, tabCount++, -1)
                         DatabaseReader.addBookmark(tab)
                         add(archive.id)
                     }
@@ -96,20 +85,15 @@ object ReaderTabHolder {
         DatabaseReader.getArchive(id)?.let { addTab(it, page) }
     }
 
-    suspend fun isTabbed(id: String) = DatabaseReader.isBookmarked(id)
+    suspend fun isTabbed(id: String, page: Int) = DatabaseReader.isBookmarked(id, page)
 
-    suspend fun getTab(id: String) = withContext(Dispatchers.IO) { DatabaseReader.getBookmark(id) }
+    suspend fun getTab(id: String, page: Int) = DatabaseReader.getBookmark(id, page)
 
-    fun removeTab(id: String) {
+    fun removeTab(tab: ReaderTab) {
         scope.launch {
-            if (DatabaseReader.removeBookmark(id)) {
-                updateRemoveListeners(id)
-            }
+            DatabaseReader.removeBookmark(tab)
+            updateRemoveListeners(tab.id, tab.page)
         }
-    }
-
-    fun resetServerProgress(id: String) {
-        WebHandler.updateProgress(id, 0)
     }
 
     fun removeAll() {
@@ -117,19 +101,14 @@ object ReaderTabHolder {
         updateClearListeners()
     }
 
-    fun resetServerProgress(tabs: List<ReaderTab>) {
-        for (tab in tabs)
-            WebHandler.updateProgress(tab.id, 0)
-    }
-
-    private fun updateRemoveListeners(id: String) {
+    private fun updateRemoveListeners(id: String, page: Int) {
         for (listener in removeListeners)
-            listener.onTabRemoved(id)
+            listener.onTabRemoved(id, page)
     }
 
-    private fun updateAddListeners(id: String){
+    private fun updateAddListeners(id: String, page: Int){
         for (listener in addListeners)
-            listener.onTabAdded(id)
+            listener.onTabAdded(id, page)
     }
 
     private fun updateAddListeners(ids: List<String>) {
@@ -143,12 +122,11 @@ object ReaderTabHolder {
     }
 }
 
-@Entity
+@Entity(primaryKeys = ["id", "currentPage"])
 data class ReaderTab(
-    @PrimaryKey val id: String,
+    @ColumnInfo val id: String,
     @ColumnInfo val title: String,
     @ColumnInfo var index: Int,
-    @ColumnInfo(name = "currentPage") var page: Int,
-    @ColumnInfo var scaleType: ScaleType? = null)
+    @ColumnInfo(name = "currentPage") val page: Int)
 
 

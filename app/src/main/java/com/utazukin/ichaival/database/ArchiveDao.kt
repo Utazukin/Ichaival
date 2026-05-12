@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -104,13 +104,7 @@ interface ArchiveDao {
     suspend fun updateNewFlag(id: String, isNew: Boolean)
 
     @Query("Update archive set currentPage = :page where id = :id")
-    suspend fun updateBookmark(id: String, page: Int)
-
-    @Query("Update archive set currentPage = -1 where id = :id")
-    suspend fun removeBookmark(id: String)
-
-    @Query("Update archive set currentPage = -1 where id in (:ids)")
-    suspend fun removeAllBookmarks(ids: List<String>)
+    suspend fun updateProgress(id: String, page: Int)
 
     @Query("Select * from archive where currentPage > 0")
     suspend fun getInProgressArchives() : List<Archive>
@@ -124,11 +118,11 @@ interface ArchiveDao {
     @Query("Select id from readertab")
     suspend fun getBookmarkedIds() : List<String>
 
-    @Query("Select exists (select id from readertab where id = :id limit 1)")
-    suspend fun isBookmarked(id: String) : Boolean
+    @Query("Select exists (select id from readertab where id = :id and currentPage = :page limit 1)")
+    suspend fun isBookmarked(id: String, page: Int) : Boolean
 
-    @Query("Select * from readertab where id = :id limit 1")
-    suspend fun getBookmark(id: String) : ReaderTab?
+    @Query("Select * from readertab where id = :id and currentPage = :page limit 1")
+    suspend fun getBookmark(id: String, page: Int) : ReaderTab?
 
     @Query("Select * from readertab order by `index`")
     fun getDataBookmarks() : PagingSource<Int, ReaderTab>
@@ -317,7 +311,7 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [ArchiveFull::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class, SearchArchiveRef::class], version = 9, exportSchema = false)
+@Database(entities = [ArchiveFull::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class, SearchArchiveRef::class], version = 10, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao

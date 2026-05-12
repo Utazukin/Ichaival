@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,6 +67,7 @@ import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.ReaderTabHolder
 import com.utazukin.ichaival.ReaderTabViewAdapter
 import com.utazukin.ichaival.ResponseProgressListener
+import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.TabRemovedListener
 import com.utazukin.ichaival.TabsClearedListener
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter
@@ -87,8 +88,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.max
 import kotlin.math.truncate
 
 private const val ID_STRING = "id"
@@ -265,9 +264,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                 supportActionBar?.title = it.title
 
                 if (savedType == -1) {
-                    val bookmarkScaleType = ReaderTabHolder.getTab(it.id)?.scaleType
                     currentScaleType = when {
-                        bookmarkScaleType != null -> bookmarkScaleType
                         it.isWebtoon -> ScaleType.Webtoon
                         else -> getScaleTypePref(prefs, resources)
                     }
@@ -275,16 +272,23 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     initializePager(appBar)
                 }
 
-                if (savedPage != it.currentPage && ReaderTabHolder.isTabbed(it.id))
+                it.clearNewFlag()
+
+                //Use the page from the thumbnail over the current progress
+                val page = when {
+                    savedPage != null -> savedPage
+                    it.currentPage < 0 || it.currentPage == it.numPages - 1 -> 0
+                    else -> it.currentPage
+                }
+
+                if (page != it.currentPage)
                     WebHandler.updateProgress(it.id, currentPage)
 
-                //Use the page from the thumbnail over the bookmark
-                val page = max(savedPage ?: it.currentPage, 0)
                 it.currentPage = page
                 currentPage = page
                 jumpPage = currentPage
                 supportActionBar?.subtitle = subtitle
-                setTabbedIcon(ReaderTabHolder.isTabbed(it.id))
+                setTabbedIcon(ReaderTabHolder.isTabbed(it.id, currentPage))
 
                 if (it.numPages > 0) {
                     pageSeekBar.max = it.numPages - 1
@@ -372,19 +376,19 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         currentPage = currentAdapter?.run { getPageFromPosition(getAdjustedPage(page)) } ?: 0
         archive?.run {
             val current = this@ReaderActivity.currentPage
-            launch(Dispatchers.IO) {
-                if (ReaderTabHolder.updatePageIfTabbed(id, current)) {
-                    updateProgressJob?.cancel()
-                    clearNewFlag()
-                    updateProgressJob = launch {
-                        delay(PROGRESS_UPDATE_DELAY)
-                        WebHandler.updateProgress(id, current)
-                    }
+            launch {
+                setTabbedIcon(ReaderTabHolder.isTabbed(id, page))
+                currentPage = page
+                DatabaseReader.updateProgress(id, page)
+            }
+
+            if (ServerManager.serverTracksProgress) {
+                updateProgressJob?.cancel()
+                updateProgressJob = launch {
+                    delay(PROGRESS_UPDATE_DELAY)
+                    WebHandler.updateProgress(id, current)
                 }
             }
-            val markCompletePage = floor(numPages * 0.9f).toInt()
-            if (numPages > 0 && current + 1 == markCompletePage && isNew)
-                launch { clearNewFlag() }
         }
 
         pageSeekBar.progress = if (currentAdapter?.isSinglePage(page) == false) currentPage + 1 else currentPage
@@ -438,10 +442,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
         DatabaseReader.registerExtractListener(this)
     }
 
-    override fun onTabRemoved(id: String) {
-        if (id == archive?.id) {
+    override fun onTabRemoved(id: String, page: Int) {
+        if (id == archive?.id && page == currentPage) {
             launch { setTabbedIcon(false) }
-            archive?.currentPage = -1
         }
     }
 
@@ -469,7 +472,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun onTabsCleared() {
         setTabbedIcon(false)
-        archive?.currentPage = -1
     }
 
     private fun setTabbedIcon(tabbed: Boolean) = setTabbedIcon(optionsMenu?.findItem(R.id.bookmark_archive), tabbed)
@@ -521,7 +523,6 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     override fun updateScaleType(type: ScaleType) {
         if (type != currentScaleType) {
-            archive?.run { launch { ReaderTabHolder.updateScaleTypeIfTabbed(id, type) } }
             if (type == ScaleType.Webtoon || currentScaleType == ScaleType.Webtoon) {
                 currentScaleType = type
                 recreate()
@@ -612,13 +613,12 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             R.id.bookmark_archive -> {
                 archive?.let {
                     launch {
-                        if (!ReaderTabHolder.isTabbed(it.id)) {
-                            val defaultScaleType = getScaleTypePref(this@ReaderActivity)
-                            val scaleType = if (currentScaleType != defaultScaleType) currentScaleType else null
-                            ReaderTabHolder.addTab(it, currentPage, scaleType)
+                        val tab = ReaderTabHolder.getTab(it.id, currentPage)
+                        if (tab == null) {
+                            ReaderTabHolder.addTab(it, currentPage)
                             setTabbedIcon(item, true)
                         } else {
-                            ReaderTabHolder.removeTab(it.id)
+                            ReaderTabHolder.removeTab(tab)
                             setTabbedIcon(item, false)
                         }
                     }
@@ -649,6 +649,9 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             setResult(Activity.RESULT_OK)
             super.onTabInteraction(tab)
             finish()
+        }  else if (tab.page >= 0 && tab.page != currentPage) {
+            jumpToPage(tab.page)
+            drawerLayout.closeDrawers()
         } else
             drawerLayout.closeDrawers()
     }

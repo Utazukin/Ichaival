@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -140,18 +140,15 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         DownloadManager.removeListener(this)
     }
 
-    override fun onTabAdded(id: String) {
-        if (id == archiveId)
+    override fun onTabAdded(id: String, page: Int) {
+        if (id == archiveId && page == -1)
             lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
     }
 
-    override fun onTabsAdded(ids: List<String>) {
-        if (archiveId in ids)
-            lifecycleScope.launch { bookmarkButton.text = getString(R.string.unbookmark) }
-    }
+    override fun onTabsAdded(ids: List<String>) {}
 
-    override fun onTabRemoved(id: String) {
-        if (id == archiveId) {
+    override fun onTabRemoved(id: String, page: Int) {
+        if (id == archiveId && page == -1) {
             lifecycleScope.launch { bookmarkButton.text = getString(R.string.bookmark) }
         }
     }
@@ -280,18 +277,18 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             setOnClickListener {
                 lifecycleScope.launch {
                     if (archiveId.isNotEmpty()) {
-                        text = if (ReaderTabHolder.isTabbed(archiveId)) {
-                            ReaderTabHolder.removeTab(archiveId)
-                            ReaderTabHolder.resetServerProgress(archiveId)
+                        val tab = ReaderTabHolder.getTab(archiveId, -1)
+                        text = if (tab != null) {
+                            ReaderTabHolder.removeTab(tab)
                             getString(R.string.bookmark)
                         } else {
-                            ReaderTabHolder.addTab(archiveId, 0)
+                            ReaderTabHolder.addTab(archiveId, -1)
                             getString(R.string.unbookmark)
                         }
                     }
                 }
             }
-            text = getString(if (ReaderTabHolder.isTabbed(archiveId)) R.string.unbookmark else R.string.bookmark)
+            text = getString(if (ReaderTabHolder.isTabbed(archiveId, -1)) R.string.unbookmark else R.string.bookmark)
         }
 
         val readButton: Button = view.findViewById(R.id.read_button)

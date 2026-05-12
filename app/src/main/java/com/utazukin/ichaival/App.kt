@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,14 +20,13 @@ package com.utazukin.ichaival
 
 import android.app.Application
 import android.content.Context
-import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.google.android.material.color.DynamicColors
 import com.utazukin.ichaival.database.DatabaseReader
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 class App : Application(), SingletonImageLoader.Factory {
@@ -40,9 +39,7 @@ class App : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         CrashLogger.createCrashLogger(this)
         DatabaseReader.init(this)
-        with(ProcessLifecycleOwner.get()) {
-            lifecycleScope.launch { WebHandler.init(this@App) }
-        }
+        MainScope().launch { WebHandler.init(this@App) }
         DynamicColors.applyToActivitiesIfAvailable(this)
     }
 

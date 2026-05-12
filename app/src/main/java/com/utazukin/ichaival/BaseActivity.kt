@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.divider.MaterialDividerItemDecoration
 import com.google.android.material.navigation.NavigationView
-import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import com.utazukin.ichaival.ReaderTabViewAdapter.OnTabInteractionListener
 import com.utazukin.ichaival.database.DatabaseMessageListener
@@ -54,7 +53,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
     override val coroutineContext = lifecycleScope.coroutineContext
     protected lateinit var drawerLayout: DrawerLayout
     protected lateinit var navView: NavigationView
-    private lateinit var tabView: RecyclerView
+    protected lateinit var tabView: RecyclerView
     private val backPressedCallback = object: OnBackPressedCallback(false) {
         override fun handleOnBackPressed() = handleBackPressed()
     }
@@ -133,13 +132,6 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                     with(Snackbar.make(navView, R.string.cleared_bookmarks_snack, Snackbar.LENGTH_LONG)) {
                         ReaderTabHolder.removeAll()
                         setAction(R.string.undo) { ReaderTabHolder.addReaderTabs(bookmarks) }
-                        addCallback(object : BaseTransientBottomBar.BaseCallback<Snackbar>() {
-                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                                super.onDismissed(transientBottomBar, event)
-                                if (event != DISMISS_EVENT_ACTION)
-                                    ReaderTabHolder.resetServerProgress(bookmarks)
-                            }
-                        })
                         show()
                     }
                 }
@@ -151,15 +143,8 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
                 ItemTouchHelper.LEFT -> handleTabSwipeLeft(tab, position)
                 ItemTouchHelper.RIGHT -> {
                     with(Snackbar.make(navView, R.string.bookmark_removed_snack, Snackbar.LENGTH_LONG)) {
-                        ReaderTabHolder.removeTab(tab.id)
+                        ReaderTabHolder.removeTab(tab)
                         setAction(R.string.undo) { ReaderTabHolder.insertTab(tab) }
-                        addCallback(object: BaseTransientBottomBar.BaseCallback<Snackbar>() {
-                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                                super.onDismissed(transientBottomBar, event)
-                                if (event != DISMISS_EVENT_ACTION)
-                                    ReaderTabHolder.resetServerProgress(tab.id)
-                            }
-                        })
                         show()
                     }
                 }
@@ -218,7 +203,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         launch { Toast.makeText(this@BaseActivity, message, Toast.LENGTH_SHORT).show() }
     }
 
-    override fun onTabAdded(id: String) {
+    override fun onTabAdded(id: String, page: Int) {
         drawerLayout.openDrawer(navView, true)
     }
 
@@ -226,7 +211,7 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         drawerLayout.openDrawer(navView, true)
     }
 
-    override fun onTabInteraction(tab: ReaderTab) = startReaderActivity(tab.id)
+    override fun onTabInteraction(tab: ReaderTab) = startReaderActivity(tab.id, tab.page)
 
     override fun onLongPressTab(tab: ReaderTab): Boolean {
         val tagFragment = TagDialogFragment.newInstance(tab.id)
@@ -244,10 +229,12 @@ abstract class BaseActivity : AppCompatActivity(), DatabaseMessageListener, OnTa
         }
     }
 
-    protected fun startReaderActivity(id: String) {
+    protected fun startReaderActivity(id: String, page: Int = 0) {
         val intent = Intent(this, ReaderActivity::class.java)
         val bundle = Bundle()
         bundle.putString("id", id)
+        if (page > 0)
+            bundle.putInt("page", page)
         intent.putExtras(bundle)
         addIntentFlags(intent, id)
         startActivity(intent)

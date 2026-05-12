@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,10 +61,11 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let { item ->
             holder.titleView.text = item.title
-            holder.pageView.text = (item.page + 1).toString()
+            holder.pageView.text = if (item.page >= 0) (item.page + 1).toString() else ""
+
             jobs[holder] = activityScope.launch {
-                val thumbFile = DatabaseReader.getArchiveImage(item.id, holder.view.context)
-                thumbFile?.let {
+                val thumbFile = if (item.page >= 0) WebHandler.getThumbUrl(item.id, item.page) else DatabaseReader.getArchiveImage(item.id, holder.view.context)
+                thumbFile.let {
                     holder.thumbView.load(it) {
                         allowRgb565(true)
                         crossfade(true)
@@ -108,7 +109,7 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
 
     companion object {
         private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ReaderTab>() {
-            override fun areItemsTheSame(oldItem: ReaderTab, newItem: ReaderTab) = oldItem.id == newItem.id
+            override fun areItemsTheSame(oldItem: ReaderTab, newItem: ReaderTab) = oldItem.id == newItem.id && oldItem.page == newItem.page
 
             override fun areContentsTheSame(oldItem: ReaderTab, newItem: ReaderTab) = oldItem == newItem
         }

@@ -169,7 +169,7 @@ class ArchiveListFragment : Fragment(),
             launch {
                 val archive = DatabaseReader.getRandom(viewModel.filter, viewModel.onlyNew, viewModel.categoryId, true)
                 if (archive != null)
-                    ReaderTabHolder.addTab(archive, 0)
+                    ReaderTabHolder.addTab(archive, -1)
             }
             true
         }
