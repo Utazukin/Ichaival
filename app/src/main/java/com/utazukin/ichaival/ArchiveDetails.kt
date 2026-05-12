@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -79,8 +79,9 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
         archiveId?.let {
             launch {
-                val archive = DatabaseReader.getArchive(it)
-                toolbar.menu.findItem(R.id.mark_read_item)?.isVisible = archive?.isNew == true
+                DatabaseReader.getArchive(it)?.run {
+                    toolbar.menu.findItem(R.id.mark_read_item)?.isVisible = isNew || currentPage < numPages - 1
+                }
             }
         }
 
@@ -103,6 +104,10 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
                 archiveId?.let {
                     launch {
                         DatabaseReader.setArchiveNewFlag(it)
+                        DatabaseReader.getArchive(it)?.run {
+                            DatabaseReader.updateProgress(it, numPages - 1)
+                            WebHandler.updateProgress(it, numPages - 1)
+                        }
                         item.isVisible = false
                     }
                 }
@@ -144,9 +149,9 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     suspend fun extractArchive(id: String) {
         DatabaseReader.getArchive(id)?.let {
-            toolbar.menu.findItem(R.id.mark_read_item)?.isVisible = it.isNew
             if (it.numPages <= 0)
                 it.extract(this@ArchiveDetails)
+            toolbar.menu.findItem(R.id.mark_read_item)?.isVisible = it.isNew || it.currentPage < it.numPages - 1
             pageCount = it.numPages
             if (pager.currentItem == 1)
                 supportActionBar?.subtitle = resources.getQuantityString(R.plurals.page_count, pageCount, pageCount)
