@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import androidx.paging.PagingState
 import com.utazukin.ichaival.ArchiveBase
 import com.utazukin.ichaival.CategoryManager
 import com.utazukin.ichaival.SortMethod
+import com.utazukin.ichaival.StatusFilter
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.containsTag
 import com.utazukin.ichaival.parseTermsInfo
@@ -44,9 +45,13 @@ class EmptySource<Key : Any, Value : Any> : PagingSource<Key, Value>() {
 abstract class ArchiveListPagingSourceBase(protected val filter: String,
                                            protected val sortMethod: SortMethod,
                                            protected val descending: Boolean,
-                                           onlyNew: Boolean,
+                                           status: StatusFilter,
                                            protected val categoryId: String) : PagingSource<Int, ArchiveBase>() {
-    protected open val roomSource = DatabaseReader.getArchiveSearchSource(filter, sortMethod, descending, onlyNew, categoryId)
+    protected open val roomSource = DatabaseReader.getArchiveSource(sortMethod,
+            descending,
+            status,
+            filter,
+            categoryId)
     override val jumpingSupported get() = roomSource.jumpingSupported
 
     override fun getRefreshKey(state: PagingState<Int, ArchiveBase>) = roomSource.getRefreshKey(state)
@@ -58,11 +63,11 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
 }
 
 open class ArchiveListServerPagingSource(
-    onlyNew: Boolean,
+    status: StatusFilter,
     sortMethod: SortMethod,
     descending: Boolean,
     filter: String,
-    categoryId: String) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew, categoryId) {
+    categoryId: String) : ArchiveListPagingSourceBase(filter, sortMethod, descending, status, categoryId) {
     protected open suspend fun loadResults() {
         val cacheCount = DatabaseReader.getCachedSearchCount(filter)
         if (cacheCount == 0) {
@@ -107,8 +112,8 @@ open class ArchiveListServerPagingSource(
 class ArchiveListLocalPagingSource(filter: String,
                                    sortMethod: SortMethod,
                                    descending: Boolean,
-                                   onlyNew: Boolean,
-                                   categoryId: String) : ArchiveListPagingSourceBase(filter, sortMethod, descending, onlyNew, categoryId) {
+                                   status: StatusFilter,
+                                   categoryId: String) : ArchiveListPagingSourceBase(filter, sortMethod, descending, status, categoryId) {
     private suspend fun internalFilter() {
         WebHandler.updateRefreshing(true)
         DatabaseReader.withTransaction {
@@ -139,7 +144,7 @@ class ArchiveListLocalPagingSource(filter: String,
 }
 
 class ArchiveListRandomPagingSource(filter: String, count: Int, categoryId: String)
-    : ArchiveListServerPagingSource(false, SortMethod.Alpha, false, filter, categoryId) {
+    : ArchiveListServerPagingSource(StatusFilter.None, SortMethod.Alpha, false, filter, categoryId) {
     override val roomSource = DatabaseReader.getRandomSource(filter, categoryId, count)
 
     override suspend fun loadResults() {

@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2024 Utazukin
+  ~ Copyright (C) 2026 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -268,4 +268,7 @@
     <string name="delete_header">Delete</string>
     <string name="header_name">Name</string>
     <string name="header_value">Value</string>
+    <string name="status_header">Status</string>
+    <string name="status_in_progress">In Progress</string>
+    <string name="status_completed">Completed</string>
 </resources>

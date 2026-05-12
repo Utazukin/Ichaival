@@ -28,6 +28,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.room.withTransaction
+import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
@@ -44,6 +45,7 @@ import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StaticCategoryRef
+import com.utazukin.ichaival.StatusFilter
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToLong
 import kotlinx.coroutines.Dispatchers
@@ -279,29 +281,30 @@ object DatabaseReader {
         }
     }
 
-    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) = when {
-        sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getTitleDescendingSource(onlyNew)
-        sortMethod == SortMethod.Alpha -> database.archiveDao().getTitleAscendingSource(onlyNew)
-        sortMethod == SortMethod.Date && descending -> database.archiveDao().getDateDescendingSource(onlyNew)
-        else -> database.archiveDao().getDateAscendingSource(onlyNew)
-    }
+    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null) : PagingSource<Int, ArchiveBase> {
+        val queryBuilder = StringBuilder("Select id, title, tags from archive")
+        val args = buildList(2) {
+            if (!search.isNullOrBlank()) {
+                add(search)
+                queryBuilder.append(" join search on searchText = ? and archive.id = search.archiveId")
+            }
 
-    fun getArchiveSearchSource(search: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean, categoryId: String) : PagingSource<Int, ArchiveBase> {
-        val sort = when (sortMethod) {
-            SortMethod.Alpha -> "titleSortIndex"
-            else -> "dateAdded"
+            if (!categoryId.isNullOrBlank()) {
+                add(categoryId)
+                queryBuilder.append(" join staticcategoryref on categoryId = ? and archive.id = staticcategoryref.archiveId")
+            }
         }
-        return if (categoryId.isEmpty())
-            database.archiveDao().getSearchResults(search, onlyNew, sort, descending)
-        else
-            database.archiveDao().getSearchResultsCategory(search, categoryId, onlyNew, sort, descending)
-    }
 
-    fun getStaticCategorySource(categoryId: String, sortMethod: SortMethod, descending: Boolean, onlyNew: Boolean = false) = when {
-        sortMethod == SortMethod.Alpha && descending -> database.archiveDao().getStaticCategoryArchiveTitleDesc(categoryId, onlyNew)
-        sortMethod == SortMethod.Alpha -> database.archiveDao().getStaticCategoryArchiveTitleAsc(categoryId, onlyNew)
-        sortMethod == SortMethod.Date && descending -> database.archiveDao().getStaticCategoryArchiveDateDesc(categoryId, onlyNew)
-        else -> database.archiveDao().getStaticCategoryArchiveDateAsc(categoryId, onlyNew)
+        when (status) {
+            StatusFilter.OnlyNew -> queryBuilder.append(" where archive.isNew")
+            StatusFilter.InProgress -> queryBuilder.append(" where archive.currentPage > 0 and archive.currentPage < archive.pageCount - 1")
+            StatusFilter.Completed -> queryBuilder.append(" where archive.currentPage == archive.pageCount - 1")
+            StatusFilter.None -> {}
+        }
+        queryBuilder.append(" order by ${if (sortMethod == SortMethod.Date) "dateAdded" else "titleSortIndex"} ${if (descending) "desc" else "asc"}")
+
+        val query = if (args.isNotEmpty()) SimpleSQLiteQuery(queryBuilder.toString(), args.toTypedArray()) else SimpleSQLiteQuery(queryBuilder.toString())
+        return database.archiveDao().getSearchSource(query)
     }
 
     suspend fun insertSearch(reference: SearchArchiveRef) = database.archiveDao().insertSearch(reference)
@@ -318,15 +321,33 @@ object DatabaseReader {
         else -> database.archiveDao().getRandomSource(count)
     }
 
-    suspend fun getRandom(search: String, onlyNew: Boolean, categoryId: String, excludeBookmarked: Boolean = false): Archive? {
-        return when {
-            categoryId.isNotEmpty() && excludeBookmarked -> database.archiveDao().getRandomFromCategoryExcludeBookmarked(categoryId, onlyNew)
-            categoryId.isNotEmpty() -> database.archiveDao().getRandomFromCategory(categoryId, onlyNew)
-            search.isBlank() && excludeBookmarked -> database.archiveDao().getRandomExcludeBookmarked(onlyNew)
-            search.isBlank() -> database.archiveDao().getRandom(onlyNew)
-            excludeBookmarked -> database.archiveDao().getRandomExcludeBookmarked(search, onlyNew)
-            else -> database.archiveDao().getRandom(search, onlyNew)
+    suspend fun getRandom(search: String, status: StatusFilter, categoryId: String, excludeBookmarked: Boolean = false): Archive? {
+        val queryBuilder = StringBuilder("Select archive.id, archive.title, dateAdded, isNew, tags, archive.currentPage, summary from archive")
+        val args = buildList(2) {
+            if (search.isNotBlank()) {
+                add(search)
+                queryBuilder.append(" join search on searchText = ? and archive.id = search.archiveId")
+            }
+
+            if (categoryId.isNotBlank()) {
+                add(categoryId)
+                queryBuilder.append(" join staticcategoryref on categoryId = ? and archive.id = staticcategoryref.archiveId")
+            }
         }
+
+        when (status) {
+            StatusFilter.OnlyNew -> queryBuilder.append(" where archive.isNew")
+            StatusFilter.InProgress -> queryBuilder.append(" where archive.currentPage > 0 and archive.currentPage < archive.pageCount - 1")
+            StatusFilter.Completed -> queryBuilder.append(" where archive.currentPage == archive.pageCount - 1")
+            StatusFilter.None -> {}
+        }
+
+        if (excludeBookmarked)
+            queryBuilder.append(" left join readertab on archive.id = readertab.id and readertab.currentPage = -1 where readertab.id is null")
+
+        queryBuilder.append(" order by random() limit 1")
+        val query = if (args.isNotEmpty()) SimpleSQLiteQuery(queryBuilder.toString(), args.toTypedArray()) else SimpleSQLiteQuery(queryBuilder.toString())
+        return database.archiveDao().getRandom(query)
     }
 
     suspend fun removeBookmark(tab: ReaderTab) = withTransaction {

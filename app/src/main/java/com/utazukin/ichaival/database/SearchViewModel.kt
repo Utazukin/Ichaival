@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.SortMethod
+import com.utazukin.ichaival.StatusFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -75,7 +76,7 @@ private class ChangeDelegate<T>(private var field: T, private val onChange: () -
 
 class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPreferences) : AndroidViewModel(app), CategoryListener {
     constructor(app: Application, state: SavedStateHandle) : this(app, state, PreferenceManager.getDefaultSharedPreferences(app.applicationContext))
-    var onlyNew by StateDelegate(state, false) { reset(false) }
+    var status by StateDelegate(state, StatusFilter.None) { reset() }
     var isLocal by StateDelegate(state, prefs.getBoolean(app.resources.getString(R.string.local_search_key), false)) { reset(false) }
     var randomCount by StateDelegate(state, 0) { reset() }
     var categoryId by StateDelegate(state, "") { reset() }
@@ -100,11 +101,11 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
         archivePagingSource = when {
             !initiated -> EmptySource()
             randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId)
-            categoryId.isNotEmpty() && filter.isBlank() -> DatabaseReader.getStaticCategorySource(categoryId, sortMethod, descending, onlyNew)
-            isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, onlyNew, categoryId)
-            filter.isNotBlank() -> ArchiveListServerPagingSource(onlyNew, sortMethod, descending, filter, categoryId)
+            categoryId.isNotEmpty() && filter.isBlank() -> DatabaseReader.getArchiveSource(sortMethod, descending, status, categoryId = categoryId)
+            isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, status, categoryId)
+            filter.isNotBlank() -> ArchiveListServerPagingSource(status, sortMethod, descending, filter, categoryId)
             isSearch -> EmptySource()
-            else -> DatabaseReader.getArchiveSource(sortMethod, descending, onlyNew)
+            else -> DatabaseReader.getArchiveSource(sortMethod, descending, status)
         }
         return archivePagingSource
     }

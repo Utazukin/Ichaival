@@ -36,7 +36,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.CursorAdapter
 import android.widget.SearchView
 import android.widget.SimpleCursorAdapter
@@ -80,7 +79,6 @@ class ArchiveListFragment : Fragment(),
     override val coroutineContext = lifecycleScope.coroutineContext
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var listView: RecyclerView
-    private lateinit var newCheckBox: CheckBox
     private lateinit var searchView: SearchView
     private var listAdapter: ArchiveRecyclerViewAdapter? = null
     private var searchJob: Job? = null
@@ -132,11 +130,6 @@ class ArchiveListFragment : Fragment(),
         }
 
         searchView = view.findViewById(R.id.archive_search)
-        newCheckBox = view.findViewById(R.id.new_checkbox)
-        newCheckBox.setOnCheckedChangeListener { _, checked ->
-            listAdapter?.disableMultiSelect()
-            viewModel.onlyNew = checked
-        }
 
         setupTagSuggestions()
         searchView.clearFocus()
@@ -157,7 +150,7 @@ class ArchiveListFragment : Fragment(),
                 startActivity(intent)
             } else {
                 launch {
-                    val archive = DatabaseReader.getRandom(viewModel.filter, viewModel.onlyNew, viewModel.categoryId)
+                    val archive = DatabaseReader.getRandom(viewModel.filter, viewModel.status, viewModel.categoryId)
                     if (archive != null)
                         startDetailsActivity(archive.id, requireContext())
                 }
@@ -167,7 +160,7 @@ class ArchiveListFragment : Fragment(),
         randomButton.setOnLongClickListener {
             listAdapter?.disableMultiSelect()
             launch {
-                val archive = DatabaseReader.getRandom(viewModel.filter, viewModel.onlyNew, viewModel.categoryId, true)
+                val archive = DatabaseReader.getRandom(viewModel.filter, viewModel.status, viewModel.categoryId, true)
                 if (archive != null)
                     ReaderTabHolder.addTab(archive, -1)
             }
@@ -187,7 +180,6 @@ class ArchiveListFragment : Fragment(),
             }
             is ArchiveRandomActivity -> {
                 randomButton.visibility = View.GONE
-                newCheckBox.visibility = View.GONE
                 searchView.visibility = View.GONE
                 swipeRefreshLayout.isEnabled = false
             }
@@ -444,13 +436,12 @@ class ArchiveListFragment : Fragment(),
     }
 
     private fun resetSearch(local: Boolean) {
-        newCheckBox.isChecked = false
         searchView.setQuery("", true)
         searchJob?.cancel()
         searchView.clearFocus()
         viewModel.deferReset {
             isLocal = local
-            onlyNew = false
+            status = StatusFilter.None
             filter("")
         }
     }

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioGroup
 import android.widget.TextView
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -45,6 +46,13 @@ enum class SortMethod(val value: Int) {
     }
 }
 
+enum class StatusFilter(val value: Int) {
+    None(0),
+    OnlyNew(1),
+    InProgress(2),
+    Completed(3);
+}
+
 class CategoryFilterFragment : Fragment(), CategoryListener {
     private lateinit var categoryGroup: ChipGroup
     private var currentCategories: List<ArchiveCategory>? = null
@@ -53,6 +61,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     private val viewModel: SearchViewModel by activityViewModels()
     private var sortMethod = SortMethod.Alpha
     private var descending = false
+    private var status = StatusFilter.None
     private val categoryButtons = mutableListOf<Chip>()
     private var savedCategory: ArchiveCategory? = null
     val selectedCategory: ArchiveCategory?
@@ -88,14 +97,32 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
 
                 sortGroup.setOnCheckedChangeListener { _, id ->
                     sortMethod = getMethodFromId(id)
-                    prefs.edit().putInt(getString(R.string.sort_pref), sortMethod.value).apply()
+                    prefs.edit { putInt(getString(R.string.sort_pref), sortMethod.value) }
                     viewModel.sortMethod = sortMethod
                 }
 
                 dirGroup.setOnCheckedChangeListener { _, id ->
                     descending = getDirectionFromId(id)
-                    prefs.edit().putBoolean(getString(R.string.desc_pref), descending).apply()
+                    prefs.edit { putBoolean(getString(R.string.desc_pref), descending) }
                     viewModel.descending = descending
+                }
+
+                with(findViewById<ChipGroup>(R.id.status_filter_group)) {
+                    when (viewModel.status) {
+                        StatusFilter.OnlyNew -> check(R.id.chip_new)
+                        StatusFilter.InProgress -> check(R.id.chip_progress)
+                        StatusFilter.Completed -> check(R.id.chip_complete)
+                        else -> {}
+                    }
+
+                    setOnCheckedStateChangeListener { _, ids ->
+                        viewModel.status = when (ids.firstOrNull()) {
+                            R.id.chip_new -> StatusFilter.OnlyNew
+                            R.id.chip_progress -> StatusFilter.InProgress
+                            R.id.chip_complete -> StatusFilter.Completed
+                            else -> StatusFilter.None
+                        }
+                    }
                 }
             }
         }
@@ -134,6 +161,7 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
                     text = category.name
                     id = i
                     isCheckable = true
+                    savedCategory?.run { check(id == category.id) }
                     setOnClickListener { listener?.onCategoryChanged(selectedCategory) }
                 }
                 categoryGroup.addView(categoryButton, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
