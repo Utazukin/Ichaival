@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private const val ARCHIVE_ID = "arcid"
-private const val MAX_PAGES = "max pages"
+private const val CHAPTER_PAGE = "max pages"
 
 class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.ThumbInteractionListener, CoroutineScope {
     override val coroutineContext = lifecycleScope.coroutineContext
@@ -116,15 +116,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(MAX_PAGES, thumbAdapter.maxThumbnails)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        savedInstanceState?.let {
-            val maxPages = it.getInt(MAX_PAGES, -1)
-            savedPageCount = maxPages
-        }
+        outState.putInt(CHAPTER_PAGE, thumbAdapter.firstThumb)
     }
 
     override fun onThumbSelection(page: Int) {
@@ -161,7 +153,6 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
             val dpWidth = getDpWidth(requireActivity().getWindowWidth())
             val columns = dpWidth.floorDiv(150)
             thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, archive!!)
-            archive?.let { thumbAdapter.maxThumbnails = it.numPages }
             layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
 
             adapter = thumbAdapter

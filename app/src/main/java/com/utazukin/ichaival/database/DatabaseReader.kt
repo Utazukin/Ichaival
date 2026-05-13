@@ -46,6 +46,7 @@ import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.StatusFilter
+import com.utazukin.ichaival.ToCEntryFull
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToLong
 import kotlinx.coroutines.Dispatchers
@@ -140,7 +141,24 @@ private class DatabaseHelper {
         }
     }
 
-    val migrations = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+    private val MIGRATION_10_11 = object: Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("create table toc (name text not null, page integer not null, updateTime integer not null, archiveId text not null, primary key (name, page))")
+        }
+    }
+
+    val migrations = arrayOf(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+            MIGRATION_6_7,
+            MIGRATION_7_8,
+            MIGRATION_8_9,
+            MIGRATION_9_10,
+            MIGRATION_10_11
+    )
 
     val callbacks = object: RoomDatabase.Callback() {
         override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
@@ -188,6 +206,19 @@ object DatabaseReader {
                         while (it.hasNext()) {
                             val archive: ArchiveJson = gson.fromJson(it, ArchiveJson::class.java)
                             updateArchive(archive)
+                            val tocList = archive.toc?.let { toc ->
+                                List(toc.size()) { i ->
+                                    val entry = toc.get(i).asJsonObject
+                                    ToCEntryFull(
+                                            entry.get("name").asString,
+                                            entry.get("page").asInt - 1,
+                                            currentTime,
+                                            archive.id
+                                    )
+                                }
+                            }
+                            if (tocList != null)
+                                database.archiveDao().addToc(tocList)
                         }
                         it.endArray()
                     } else it.skipValue()
@@ -215,6 +246,7 @@ object DatabaseReader {
             removeNotUpdatedBookmarks(updateTime)
             removeOldCategoryReferences(updateTime)
             removeNotUpdated(updateTime)
+            removeOldToC(updateTime)
         }
     }
 
@@ -280,6 +312,8 @@ object DatabaseReader {
             }
         }
     }
+
+    suspend fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
 
     fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null) : PagingSource<Int, ArchiveBase> {
         val queryBuilder = StringBuilder("Select id, title, tags from archive")

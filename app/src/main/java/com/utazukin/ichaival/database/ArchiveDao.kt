@@ -41,6 +41,8 @@ import com.utazukin.ichaival.ArchiveFull
 import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.StaticCategoryRef
+import com.utazukin.ichaival.ToCEntry
+import com.utazukin.ichaival.ToCEntryFull
 import org.json.JSONObject
 
 @Dao
@@ -165,6 +167,15 @@ interface ArchiveDao {
 
     @RawQuery(observedEntities = [ArchiveFull::class])
     suspend fun getRandom(query: SupportSQLiteQuery) : Archive?
+
+    @Query("Select * from toc where archiveId = :archiveId order by page asc")
+    suspend fun getToC(archiveId: String) : List<ToCEntry>
+
+    @Upsert
+    suspend fun addToc(entries: List<ToCEntryFull>)
+
+    @Query("Delete from toc where updateTime < :updateTime")
+    suspend fun removeOldToC(updateTime: Long)
 }
 
 class DatabaseTypeConverters {
@@ -234,7 +245,15 @@ class DatabaseTypeConverters {
     }
 }
 
-@Database(entities = [ArchiveFull::class, ReaderTab::class, ArchiveCategoryFull::class, StaticCategoryRef::class, SearchArchiveRef::class], version = 10, exportSchema = false)
+@Database(entities =
+    [
+        ArchiveFull::class,
+        ReaderTab::class,
+        ArchiveCategoryFull::class,
+        StaticCategoryRef::class,
+        SearchArchiveRef::class,
+        ToCEntryFull::class
+    ], version = 11, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao

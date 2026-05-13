@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,6 +35,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.Disposable
 import coil3.request.allowRgb565
 import coil3.request.crossfade
+import kotlin.math.min
 
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
@@ -43,6 +45,7 @@ class ThumbRecyclerViewAdapter(
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
     private val scope = fragment.lifecycleScope
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
+    private val thumbIds = (0 until archive.numPages).toMutableList()
     private val loader = fragment.requireContext().imageLoader.newBuilder()
         .components {
             add(
@@ -63,21 +66,19 @@ class ThumbRecyclerViewAdapter(
         listener?.onThumbLongPress(item) ?: false
     }
 
-    var maxThumbnails = 10
-    val hasMorePreviews: Boolean
-        get() = maxThumbnails < archive.numPages
+    val firstThumb
+        get() = thumbIds[0]
     private val imageLoadRequests: MutableMap<ViewHolder, Disposable> = mutableMapOf()
 
     init {
         setHasStableIds(true)
     }
 
-    fun increasePreviewCount() {
-        if (maxThumbnails < archive.numPages) {
-            val currentCount = itemCount
-            maxThumbnails = archive.numPages
-            notifyItemRangeInserted(currentCount + 1, maxThumbnails)
-        }
+    @SuppressLint("NotifyDataSetChanged")
+    fun useSubset(start: Int, end: Int) {
+        thumbIds.clear()
+        thumbIds.addAll(start until end)
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -85,19 +86,19 @@ class ThumbRecyclerViewAdapter(
         return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int = if (archive.numPages > maxThumbnails) maxThumbnails else archive.numPages
+    override fun getItemCount(): Int = min(thumbIds.size, archive.numPages)
     override fun getItemId(position: Int) = position.toLong()
 
-    override fun onBindViewHolder(holder: ViewHolder, page: Int) {
-        holder.pageNumView.text = (page + 1).toString()
+    override fun onBindViewHolder(holder: ViewHolder, index: Int) {
+        holder.pageNumView.text = (thumbIds[index] + 1).toString()
 
         with(holder.thumbView) {
-            setTag(R.id.small_thumb, page)
+            setTag(R.id.small_thumb, thumbIds[index])
             setOnClickListener(onClickListener)
             setOnLongClickListener(onLongPressListener)
         }
 
-        val image = archive.getThumb(page)
+        val image = archive.getThumb(thumbIds[index])
         imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
             addAuthHeader()
             allowRgb565(true)

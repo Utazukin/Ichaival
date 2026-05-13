@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,9 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ProgressBar
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -39,13 +41,10 @@ import androidx.recyclerview.widget.RecyclerView
 import coil3.imageLoader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.ceil
-import kotlin.math.min
 
 private const val ARCHIVE_ID = "arcid"
-private const val MAX_PAGES = "max pages"
+private const val CHAPTER_PAGE = "chapter page"
 
 class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
     override val coroutineContext = lifecycleScope.coroutineContext
@@ -53,9 +52,9 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
     private var archive: Archive? = null
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
     private lateinit var progress: ProgressBar
-    private var savedPageCount = -1
     private var readerPage = -1
     private lateinit var listView: RecyclerView
+    private lateinit var tocButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +72,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
         val view = inflater.inflate(R.layout.fragment_gallery_preview, container, false)
         progress = view.findViewById(R.id.thumb_load_progress)
         listView = view.findViewById(R.id.thumb_list)
+        tocButton = view.findViewById(R.id.btn_toc)
 
         with(requireActivity() as MenuHost) {
             addMenuProvider(this@GalleryPreviewFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
@@ -80,7 +80,46 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
 
         launch {
             archive = DatabaseReader.getArchive(archiveId!!)
-            setGalleryView()
+            setGalleryView(savedInstanceState)
+            val toc = DatabaseReader.getToC(archiveId!!)
+            if (toc.isNotEmpty()) {
+                tocButton.let {
+                    val items = if (toc[0].page > 0) {
+                        buildList(toc.size + 1) {
+                            add(ToCEntry("Untitled Chapter", 0))
+                            addAll(toc)
+                        }
+                    } else toc
+
+                    val currentIndex = if (savedInstanceState == null)
+                        items.indexOfFirst { x -> x.page == thumbAdapter.firstThumb }
+                    else
+                        items.indexOfFirst { x -> x.page == savedInstanceState.getInt(CHAPTER_PAGE) }
+
+                    if (currentIndex >= 0) {
+                        val currentItem = items[currentIndex]
+                        it.text = currentItem.name
+                        val start = items[currentIndex].page
+                        val end = if (currentIndex < items.size - 1) items[currentIndex + 1].page else archive!!.numPages
+                        thumbAdapter.useSubset(start, end)
+                    }
+
+                    it.setOnClickListener {
+                        val dialog = AlertDialog.Builder(requireContext()).apply {
+                            val current = items.indexOfFirst { x -> x.page == thumbAdapter.firstThumb }
+                            setSingleChoiceItems(items.map { x -> x.name }.toTypedArray(), current) { dialog, id ->
+                                val start = items[id].page
+                                val end = if (id < items.size - 1) items[id + 1].page else archive!!.numPages
+                                thumbAdapter.useSubset(start, end)
+                                tocButton.text = items[id].name
+                                dialog.dismiss()
+                            }
+                        }.create()
+                        dialog.show()
+                    }
+                    it.visibility = View.VISIBLE
+                }
+            } else tocButton.visibility = View.GONE
         }
 
         return view
@@ -113,48 +152,25 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(MAX_PAGES, thumbAdapter.maxThumbnails)
+        outState.putInt(CHAPTER_PAGE, thumbAdapter.firstThumb)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        savedInstanceState?.let {
-            val maxPages = it.getInt(MAX_PAGES, -1)
-            savedPageCount = maxPages
-        }
-    }
-
-    private fun setGalleryView() {
+    private fun setGalleryView(savedInstanceBundle: Bundle?) {
         with(listView) {
             val dpWidth = getDpWidth(requireActivity().getWindowWidth())
             val columns = dpWidth.floorDiv(150)
             thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, archive!!)
             layoutManager = (if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)).apply {
-                if (savedPageCount <= 0) {
+                if (savedInstanceBundle != null) {
                     archive?.let {
                         val page = if (readerPage > -1) readerPage else it.currentPage
-                        if (page > 0) {
-                            thumbAdapter.maxThumbnails = min((ceil(page / 10f) * 10).toInt(), it.numPages)
+                        if (page > 0)
                             scrollToPosition(page)
-                        }
                     }
-                } else thumbAdapter.maxThumbnails = savedPageCount
+                }
             }
 
             adapter = thumbAdapter
-            addOnScrollListener(object: RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    super.onScrollStateChanged(recyclerView, newState)
-                    if (!listView.canScrollVertically(1) && thumbAdapter.hasMorePreviews) {
-                        thumbAdapter.increasePreviewCount()
-                        launch {
-                            progress.visibility = View.VISIBLE
-                            delay(1000)
-                            progress.visibility = View.GONE
-                        }
-                    }
-                }
-            })
         }
     }
 

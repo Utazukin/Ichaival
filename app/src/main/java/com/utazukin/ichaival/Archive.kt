@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -108,6 +108,10 @@ data class Archive (
     }
 }
 
+@Entity(tableName = "toc", primaryKeys = ["name", "page"])
+data class ToCEntryFull(val name: String, val page: Int, val updateTime: Long, val archiveId: String)
+data class ToCEntry(val name: String, val page: Int)
+
 class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int) {
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString
@@ -117,6 +121,9 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int
     val isNew = json.get("isnew").asString == "true"
     val summary = json.getOrNull("summary")?.asString
     val dateAdded: Long
+
+    @Ignore
+    val toc = json.getOrNull("toc")?.asJsonArray
 
     init {
         val timeStampIndex = tags.indexOf("date_added:")
