@@ -201,6 +201,18 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
         resultLauncher.launch(intent)
     }
 
+    override fun onLongPressTab(tab: ReaderTab): Boolean {
+        val tagFragment = TagDialogFragment.newInstance(tab.id)
+        tagFragment.setDetailsButtonListener {
+            if (it != archiveId) {
+                startDetailsActivity(it)
+                finish()
+            }
+        }
+        tagFragment.show(supportFragmentManager, "tag_popup")
+        return true
+    }
+
     override fun onThumbSelection(page: Int) {
         startReaderActivityForResult(page)
     }

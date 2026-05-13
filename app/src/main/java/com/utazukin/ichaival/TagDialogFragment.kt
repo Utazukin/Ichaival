@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2023 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import android.text.method.LinkMovementMethod
 import android.text.util.Linkify
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -44,11 +45,13 @@ private const val ARCHIVE_PARAM = "archive"
 
 typealias TagPressListener = (String) -> Unit
 typealias TagLongPressListener = (String) -> Boolean
+typealias DetailsButtonListener = (String) -> Unit
 
 class TagDialogFragment : DialogFragment() {
     private lateinit var tagLayout: LinearLayout
     private var tagPressListener: TagPressListener? = null
     private var tagLongPressListener: TagLongPressListener? = null
+    private var detailsButtonListener: DetailsButtonListener? = null
     private val isLocalSearch by lazy {
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.getBoolean(getString(R.string.local_search_key), false)
@@ -66,6 +69,8 @@ class TagDialogFragment : DialogFragment() {
             tagLayout = findViewById(R.id.tag_layout)
             arguments?.run {
                 getString(ARCHIVE_PARAM)?.let {
+                    val detailsButton = findViewById<Button>(R.id.btn_details)
+                    detailsButton.setOnClickListener { _ -> detailsButtonListener?.run { invoke(it); dismiss() } }
                     lifecycleScope.launch {
                         val archive = DatabaseReader.getArchive(it)
                         if (archive != null)
@@ -145,6 +150,10 @@ class TagDialogFragment : DialogFragment() {
 
     fun setTagLongPressListener(listener: TagLongPressListener?) {
         tagLongPressListener = listener
+    }
+
+    fun setDetailsButtonListener(listener: DetailsButtonListener?) {
+        detailsButtonListener = listener
     }
 
     companion object {

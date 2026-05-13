@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -148,21 +148,27 @@ class ArchiveList : BaseActivity(), SharedPreferences.OnSharedPreferenceChangeLi
     }
 
     override fun onLongPressTab(tab: ReaderTab): Boolean {
-        val tagFragment = TagDialogFragment.newInstance(tab.id)
-        tagFragment.setTagPressListener { tag ->
-            val searchView: SearchView = findViewById(R.id.archive_search)
-            searchView.setQuery(tag, true)
-            drawerLayout.closeDrawers()
-        }
+        with (TagDialogFragment.newInstance(tab.id)) {
+            setTagPressListener { tag ->
+                val searchView: SearchView = findViewById(R.id.archive_search)
+                searchView.setQuery(tag, true)
+                drawerLayout.closeDrawers()
+            }
 
-        tagFragment.setTagLongPressListener { tag ->
-            val searchView: SearchView = findViewById(R.id.archive_search)
-            searchView.setQuery("${searchView.query} $tag", true)
-            drawerLayout.closeDrawers()
-            true
-        }
+            setTagLongPressListener { tag ->
+                val searchView: SearchView = findViewById(R.id.archive_search)
+                searchView.setQuery("${searchView.query} $tag", true)
+                drawerLayout.closeDrawers()
+                true
+            }
 
-        tagFragment.show(supportFragmentManager, "tag_popup")
+            setDetailsButtonListener {
+                drawerLayout.closeDrawers()
+                startDetailsActivity(it)
+            }
+
+            show(supportFragmentManager, "tag_popup")
+        }
 
         return true
     }

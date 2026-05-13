@@ -70,6 +70,7 @@ import com.utazukin.ichaival.ResponseProgressListener
 import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.TabRemovedListener
 import com.utazukin.ichaival.TabsClearedListener
+import com.utazukin.ichaival.TagDialogFragment
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToFloat
@@ -654,6 +655,17 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             drawerLayout.closeDrawers()
         } else
             drawerLayout.closeDrawers()
+    }
+
+    override fun onLongPressTab(tab: ReaderTab): Boolean {
+        val tagFragment = TagDialogFragment.newInstance(tab.id)
+        tagFragment.setDetailsButtonListener {
+            setResult(Activity.RESULT_OK)
+            startDetailsActivity(it)
+            finish()
+        }
+        tagFragment.show(supportFragmentManager, "tag_popup")
+        return true
     }
 
     private fun toggle() {

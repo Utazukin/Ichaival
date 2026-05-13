@@ -390,6 +390,9 @@ class ArchiveListFragment : Fragment(),
                 true
             }
         }
+
+        tagFragment.setDetailsButtonListener { startDetailsActivity(it, requireContext()) }
+
         tagFragment.show(parentFragmentManager, "tag_popup")
         return true
     }
