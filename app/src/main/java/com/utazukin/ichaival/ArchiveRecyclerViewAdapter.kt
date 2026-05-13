@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -156,7 +156,7 @@ class ArchiveRecyclerViewAdapter(
                     if (!multiSelect)
                         mOnClickListener.onClick(view)
                     else
-                        selectArchive(position)
+                        selectArchive(holder.bindingAdapterPosition)
                 }
                 setOnLongClickListener(onLongClickListener)
             }
@@ -229,12 +229,21 @@ class ArchiveRecyclerViewAdapter(
                 val dialog = AddToCategoryDialogFragment.newInstance(selectedArchives.mapNotNull { getItem(it)?.id })
                 dialog.show(fragmentManager, "add_category")
             }
+            R.id.read_select_item -> {
+                scope.launch {
+                    val archives = selectedArchives.mapNotNull { getItem(it) }
+                    DatabaseReader.markCompleted(archives)
+                    for (archive in archives)
+                        WebHandler.updateProgress(archive.id, archive.pageCount - 1)
+                }
+                mode?.finish()
+            }
         }
         return true
     }
 
     fun onAddedToCategory(category: ArchiveCategory) {
-        if (!multiSelect || selectedArchives.none())
+        if (!multiSelect || selectedArchives.isEmpty())
             return
 
         Toast.makeText(context, context.getString(R.string.category_add_message, category.name), Toast.LENGTH_SHORT).show()

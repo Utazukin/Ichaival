@@ -62,7 +62,7 @@ private fun containsTag(tag: String, exact: Boolean, tags: Map<String, List<Stri
 fun Archive.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
 fun ArchiveBase.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
 
-data class ArchiveBase(val id: String, val title: String, val tags: Map<String, List<String>>)
+data class ArchiveBase(val id: String, val title: String, val pageCount: Int, val tags: Map<String, List<String>>)
 
 data class Archive (
     val id: String,

@@ -176,6 +176,9 @@ interface ArchiveDao {
 
     @Query("Delete from toc where updateTime < :updateTime")
     suspend fun removeOldToC(updateTime: Long)
+
+    @Query("Update archive set currentPage = pageCount - 1 where id = :id")
+    suspend fun markCompleted(id: String)
 }
 
 class DatabaseTypeConverters {

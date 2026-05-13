@@ -304,6 +304,11 @@ object DatabaseReader {
 
     suspend fun updateProgress(id: String, page: Int) = database.archiveDao().updateProgress(id, page)
 
+    suspend fun markCompleted(archives: List<ArchiveBase>) = withTransaction {
+        for (archive in archives)
+            database.archiveDao().markCompleted(archive.id)
+    }
+
     suspend fun deleteArchives(ids: Collection<String>) {
         withTransaction {
             with(database.archiveDao()) {
@@ -316,7 +321,7 @@ object DatabaseReader {
     suspend fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
 
     fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null) : PagingSource<Int, ArchiveBase> {
-        val queryBuilder = StringBuilder("Select id, title, tags from archive")
+        val queryBuilder = StringBuilder("Select id, title, tags, pageCount from archive")
         val args = buildList(2) {
             if (!search.isNullOrBlank()) {
                 add(search)
