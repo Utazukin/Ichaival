@@ -271,4 +271,5 @@
     <string name="status_header">Status</string>
     <string name="status_in_progress">In Progress</string>
     <string name="status_completed">Completed</string>
+    <string name="default_chapter">Untitled Chapter</string>
 </resources>

@@ -86,7 +86,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
                 tocButton.let {
                     val items = if (toc[0].page > 0) {
                         buildList(toc.size + 1) {
-                            add(ToCEntry("Untitled Chapter", 0))
+                            add(ToCEntry(resources.getString(R.string.default_chapter), 0))
                             addAll(toc)
                         }
                     } else toc
