@@ -36,8 +36,10 @@
 
     <Button
         android:id="@+id/btn_toc"
+        style="@style/Widget.AppCompat.Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:drawableEnd="@drawable/outline_arrow_drop_down_24"
         android:visibility="gone"
         tools:visibility="visible" />
 

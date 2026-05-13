@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2024 Utazukin
+  ~ Copyright (C) 2026 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@
         <attr name="fullscreen_theme" format="reference" />
         <attr name="actionBarBackgroundColor" format="reference" />
         <attr name="archive_color_label" format="reference" />
+        <attr name="dropdown_button_color" format="reference" />
     </declare-styleable>
 
 </resources>

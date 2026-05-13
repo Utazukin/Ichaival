@@ -1,6 +1,6 @@
 <!--
   ~ Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
-  ~ Copyright (C) 2024 Utazukin
+  ~ Copyright (C) 2026 Utazukin
   ~
   ~  This program is free software: you can redistribute it and/or modify
   ~  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
         <item name="cardBackgroundColor">@android:color/system_neutral1_800</item>
         <item name="progress_color">?colorPrimary</item>
         <item name="select_color">@android:color/system_accent1_700</item>
+        <item name="dropdown_button_color">@android:color/system_accent1_700</item>
         <item name="category_remove_color">?colorOnBackground</item>
         <item name="category_add_color">?colorOnPrimary</item>
         <item name="category_add_back_color">?colorPrimary</item>
