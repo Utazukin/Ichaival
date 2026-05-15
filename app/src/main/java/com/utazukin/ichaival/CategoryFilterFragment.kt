@@ -161,7 +161,6 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
                     text = category.name
                     id = i
                     isCheckable = true
-                    savedCategory?.run { check(id == category.id) }
                     setOnClickListener { listener?.onCategoryChanged(selectedCategory) }
                 }
                 categoryGroup.addView(categoryButton, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
