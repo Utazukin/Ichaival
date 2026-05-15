@@ -31,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -51,10 +52,9 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.time.Duration.Companion.milliseconds
 
 class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
     private val tag = tagText.lowercase()
@@ -89,6 +89,7 @@ object WebHandler {
     private fun HttpUrl.Builder.addArchiveList() = addApi().addPathSegment("archives")
     private fun HttpUrl.Builder.addThumb(id: String) = addArchiveList().addPathSegment(id).addPathSegment("thumbnail")
     private fun HttpUrl.Builder.addFiles(id: String) = addArchiveList().addPathSegment(id).addPathSegment("files")
+    private fun HttpUrl.Builder.addThumbs(id: String) = addArchiveList().addPathSegment(id).addPathSegment("files").addPathSegment("thumbnails")
     private fun HttpUrl.Builder.addProgress(id: String, page: Int) : HttpUrl.Builder {
         return addArchiveList().addPathSegment(id).addPathSegment("progress").addPathSegment((page + 1))
     }
@@ -110,8 +111,8 @@ object WebHandler {
     var customHeaders = listOf<Header>()
         private set
     val httpClient = OkHttpClient.Builder()
-        .connectTimeout(connTimeoutMs, TimeUnit.MILLISECONDS)
-        .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
+        .connectTimeout(connTimeoutMs.milliseconds)
+        .readTimeout(readTimeoutMs.milliseconds)
         .dispatcher(Dispatcher().apply { maxRequests = 20 })
         .build()
 
@@ -152,7 +153,7 @@ object WebHandler {
             if (!it.isSuccessful)
                 Pair(it.code, null)
             else
-                Pair(it.code, it.body?.run { JSONObject(string()) })
+                Pair(it.code, JSONObject(it.body.string()))
         }
 
         return result
@@ -197,7 +198,7 @@ object WebHandler {
                 if (!it.isSuccessful)
                     null
                 else
-                    tryOrNull { it.body?.run { JSONArray(string()) } }
+                    tryOrNull { JSONArray(it.body.string()) }
             }
         }
     }
@@ -214,7 +215,7 @@ object WebHandler {
                 if (!it.isSuccessful)
                     null
                 else
-                    it.body?.byteStream()
+                    it.body.byteStream()
             }
         }
     }
@@ -242,7 +243,7 @@ object WebHandler {
             if (!it.isSuccessful)
                 false
             else
-                it.body?.run { JSONObject(string()).optInt("success", 0) } == 1
+                JSONObject(it.body.string()).optInt("success", 0) == 1
         } == true
     }
 
@@ -273,11 +274,10 @@ object WebHandler {
                 httpClient.newCall(connection).tryAwait(context.getString(R.string.category_create_fail_message))
             response?.use {
                 if (!it.isSuccessful) {
-                    notifyError(it.body?.run { JSONObject(string()) }
-                        ?.optString("error") ?: context.getString(R.string.category_create_fail_message))
+                    notifyError(JSONObject(it.body.string()).optString("error") ?: context.getString(R.string.category_create_fail_message))
                     null
                 } else
-                    it.body?.run { JSONObject(string()) }
+                    JSONObject(it.body.string())
             }
         }
     }
@@ -340,7 +340,7 @@ object WebHandler {
 
         val connection = createServerConnection(url)
         val response = httpClient.newCall(connection).tryAwait()
-        return if (response?.isSuccessful == true) response.body?.byteStream() else null
+        return if (response?.isSuccessful == true) response.body.byteStream() else null
     }
 
     fun getPageList(response: JSONObject?) : List<String> {
@@ -370,7 +370,7 @@ object WebHandler {
                 if (it?.isSuccessful != true || !isActive)
                     null
                 else {
-                    it.body?.byteStream()
+                    it.body.byteStream()
                 }
             }
         }
@@ -400,7 +400,7 @@ object WebHandler {
         if (response?.isSuccessful != true)
             return null
 
-        return response.body?.byteStream()
+        return response.body.byteStream()
     }
 
     fun getUrlForJob(jobId: Int) = serverUrlBuilder.addMinionStatus(jobId).build()
@@ -433,7 +433,7 @@ object WebHandler {
 
             val connection = createServerConnection(url)
             val response = httpClient.newCall(connection).tryAwait()
-            if (isActive && response?.isSuccessful == true) response.body?.byteStream() else null
+            if (isActive && response?.isSuccessful == true) response.body.byteStream() else null
         }
     }
 
@@ -443,10 +443,10 @@ object WebHandler {
 
         val response = httpClient.newCall(connection).tryAwait()
         response?.use {
-            if (!it.isSuccessful || !coroutineContext.isActive)
+            if (!it.isSuccessful || !currentCoroutineContext().isActive)
                 return false
 
-            it.body?.run {
+            it.body.run {
                 val json = JSONObject(string())
                 return when(json.optString("state")) {
                     "finished" -> true
@@ -524,22 +524,16 @@ object WebHandler {
                 handleErrorMessage(it.code, errorMessage)
                 null
             } else {
-                val jsonString = it.body?.string()
-                if (jsonString == null) {
-                    notifyError(errorMessage)
+                val json = JSONObject(it.body.string())
+                if (json.has("error")) {
+                    notifyError(json.getString("error"))
                     null
                 } else {
-                    val json = JSONObject(jsonString)
-                    if (json.has("error")) {
-                        notifyError(json.getString("error"))
-                        null
-                    } else {
-                        if (forceFull) {
-                            if (json.has("job"))
-                                waitForJob(json.getInt("job"))
-                        }
-                        json
+                    if (forceFull) {
+                        if (json.has("job"))
+                            waitForJob(json.getInt("job"))
                     }
+                    json
                 }
             }
         }
@@ -567,7 +561,7 @@ object WebHandler {
                 if (!it.isSuccessful) {
                     handleErrorMessage(it.code, errorMessage)
                     null
-                } else it.body?.byteStream()
+                } else it.body.byteStream()
             }
         }
     }

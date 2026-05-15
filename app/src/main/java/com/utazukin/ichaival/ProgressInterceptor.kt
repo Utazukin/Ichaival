@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ class ProgressInterceptor(private val listener: ResponseProgressListener) : Inte
         val request = chain.request()
         val response = chain.proceed(request)
         return response.newBuilder().apply {
-            response.body?.let { body(OkHttpProgressResponseBody(request.url, it, listener)) }
+            body(OkHttpProgressResponseBody(request.url, response.body, listener))
         }.build()
     }
 }
@@ -53,9 +53,8 @@ class ThumbHttpInterceptor(private val scope: CoroutineScope, private val client
         if (response.code != HttpURLConnection.HTTP_ACCEPTED)
             return response
 
-        val body = response.body ?: return response
         val clone = client.newCall(chain.request())
-        return body.use {
+        return response.body.use {
             val json = JSONObject(it.string())
             val job = json.getInt("job")
             val success = waitForJob(job, chain)
@@ -84,9 +83,8 @@ class ThumbHttpInterceptor(private val scope: CoroutineScope, private val client
             if (!it.isSuccessful)
                 return false
 
-            it.body?.run {
+            with(it.body) {
                 val json = JSONObject(string())
-                val st = json.toString()
                 return when(json.optString("state")) {
                     "finished" -> true
                     "failed" -> false
@@ -94,8 +92,6 @@ class ThumbHttpInterceptor(private val scope: CoroutineScope, private val client
                 }
             }
         }
-
-        return false
     }
 }
 
