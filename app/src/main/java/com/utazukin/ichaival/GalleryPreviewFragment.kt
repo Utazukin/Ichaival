@@ -41,6 +41,7 @@ import androidx.recyclerview.widget.RecyclerView
 import coil3.imageLoader
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 private const val ARCHIVE_ID = "arcid"
@@ -55,6 +56,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
     private var readerPage = -1
     private lateinit var listView: RecyclerView
     private lateinit var tocButton: Button
+    private var currentToc: List<ToCEntry>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,14 +83,26 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
         launch {
             archive = DatabaseReader.getArchive(archiveId!!)
             setGalleryView(savedInstanceState)
-            updateToCButton(savedInstanceState)
+            DatabaseReader.getToC(archiveId!!).collectLatest {
+                var firstThumb = -1
+                if (it.isNotEmpty() && currentToc != null) {
+                    for ((i, chapter) in it.withIndex()) {
+                        if (chapter.page != currentToc?.getOrNull(i)?.page) {
+                            firstThumb = chapter.page
+                            break
+                        }
+                    }
+                }
+
+                currentToc = it
+                updateToCButton(it, savedInstanceState, firstThumb)
+            }
         }
 
         return view
     }
 
-    suspend fun updateToCButton(savedInstanceState: Bundle? = null, firstThumb: Int = -1) {
-        val toc = DatabaseReader.getToC(archiveId!!)
+    private fun updateToCButton(toc: List<ToCEntry>, savedInstanceState: Bundle? = null, firstThumb: Int = -1) {
         if (toc.isNotEmpty()) {
             with(tocButton) {
                 val items = if (toc[0].page > 0) {

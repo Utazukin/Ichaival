@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import android.widget.AdapterView
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.Spinner
+import androidx.core.view.children
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -64,22 +65,17 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
         val view = inflater.inflate(R.layout.fragment_reader_settings_dialog, container, false)
 
         setupSpinner(view)
-        val detailsButton: Button = view.findViewById(R.id.detail_button)
-        val gotoButton: Button = view.findViewById(R.id.goto_button)
-        val thumbButton: Button = view.findViewById(R.id.thumb_button)
-        val refreshButton: Button = view.findViewById(R.id.refresh_button)
-        val bookmarkButton: Button = view.findViewById(R.id.bookmark_button)
-        val randomButton: Button = view.findViewById(R.id.random_archive_button)
+        if (view is ViewGroup) {
+            for (child in view.children) {
+                if (child !is Button)
+                    continue
 
-        if (!ServerManager.canEdit)
-            thumbButton.visibility = View.GONE
+                child.setOnClickListener { handler?.handleButton(child.id) }
+                if (child.id == R.id.thumb_button && !ServerManager.canEdit)
+                    child.visibility = View.GONE
+            }
+        }
 
-        detailsButton.setOnClickListener{ handler?.handleButton(R.id.detail_button) }
-        gotoButton.setOnClickListener { handler?.handleButton(R.id.goto_button) }
-        thumbButton.setOnClickListener { handler?.handleButton(R.id.thumb_button) }
-        refreshButton.setOnClickListener{ handler?.handleButton(R.id.refresh_button) }
-        bookmarkButton.setOnClickListener { handler?.handleButton(R.id.bookmark_button) }
-        randomButton.setOnClickListener { handler?.handleButton(R.id.random_archive_button) }
         with(requireDialog() as BottomSheetDialog) { dismissWithAnimation = true }
 
         return view

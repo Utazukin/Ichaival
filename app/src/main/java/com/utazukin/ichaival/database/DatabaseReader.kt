@@ -319,7 +319,7 @@ object DatabaseReader {
         }
     }
 
-    suspend fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
+    fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
 
     suspend fun getToCEntry(page: Int, archiveId: String) = database.archiveDao().getTocEntry(page, archiveId)
 

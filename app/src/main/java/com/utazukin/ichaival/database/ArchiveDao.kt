@@ -44,6 +44,7 @@ import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.ToCEntry
 import com.utazukin.ichaival.ToCEntryFull
 import com.utazukin.ichaival.ToCEntryUpdate
+import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 
 @Dao
@@ -170,7 +171,7 @@ interface ArchiveDao {
     suspend fun getRandom(query: SupportSQLiteQuery) : Archive?
 
     @Query("Select * from toc where archiveId = :archiveId order by page asc")
-    suspend fun getToC(archiveId: String) : List<ToCEntry>
+    fun getToC(archiveId: String) : Flow<List<ToCEntry>>
 
     @Upsert
     suspend fun addToc(entries: List<ToCEntryFull>)

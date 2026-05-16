@@ -39,7 +39,6 @@ import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.reader.ReaderActivity
 import kotlinx.coroutines.launch
-import kotlin.math.max
 
 const val FROM_READER_PAGE = "READER_PAGE"
 
@@ -248,17 +247,11 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             launch {
                 if (!delete) {
                     val chapter = ToCEntryUpdate(name, page, it)
-                    if (WebHandler.addToCEntry(chapter)) {
+                    if (WebHandler.addToCEntry(chapter))
                         DatabaseReader.updateToCEntry(chapter)
-                        getThumbFragment()?.updateToCButton(firstThumb = page)
-                    }
                 }
-                else if (WebHandler.removeToCEntry(it, page)) {
-                    val toc = DatabaseReader.getToC(it)
-                    val prev = max(toc.indexOfFirst { x -> x.page == page } - 1, 0)
+                else if (WebHandler.removeToCEntry(it, page))
                     DatabaseReader.removeToCEntry(page, it)
-                    getThumbFragment()?.updateToCButton(firstThumb = prev)
-                }
             }
         }
     }

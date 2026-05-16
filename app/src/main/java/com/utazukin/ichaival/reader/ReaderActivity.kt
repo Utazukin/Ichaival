@@ -59,6 +59,8 @@ import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ArchiveDetails
 import com.utazukin.ichaival.BaseActivity
+import com.utazukin.ichaival.ChapterEditListener
+import com.utazukin.ichaival.EditChapterDialogFragment
 import com.utazukin.ichaival.FROM_READER_PAGE
 import com.utazukin.ichaival.GalleryPreviewDialogFragment
 import com.utazukin.ichaival.ProgressInterceptor
@@ -72,6 +74,7 @@ import com.utazukin.ichaival.TabRemovedListener
 import com.utazukin.ichaival.TabsClearedListener
 import com.utazukin.ichaival.TagDialogFragment
 import com.utazukin.ichaival.ThumbRecyclerViewAdapter
+import com.utazukin.ichaival.ToCEntryUpdate
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToFloat
 import com.utazukin.ichaival.clearDiskCache
@@ -99,7 +102,7 @@ private const val FORCE_REFRESH = "force"
 
 class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemovedListener,
     TabsClearedListener, ReaderSettingsHandler, DatabaseExtractListener,
-    ThumbRecyclerViewAdapter.ThumbInteractionListener {
+    ThumbRecyclerViewAdapter.ThumbInteractionListener, ChapterEditListener {
     private var mVisible: Boolean = false
     private var switchLayoutJob: Job? = null
 
@@ -605,6 +608,27 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
             R.id.bookmark_button -> {
                 closeSettings()
                 drawerLayout.openDrawer(navView)
+            }
+            R.id.chapter_button -> {
+                closeSettings()
+                archive?.let {
+                    val editDialog = EditChapterDialogFragment.newInstance(currentPage, it.id)
+                    editDialog.show(supportFragmentManager, "chapter_dialog")
+                }
+            }
+        }
+    }
+
+    override fun onChapterEdit(name: String, page: Int, delete: Boolean) {
+        archive?.let {
+            launch {
+                if (!delete) {
+                    val chapter = ToCEntryUpdate(name, page, it.id)
+                    if (WebHandler.addToCEntry(chapter))
+                        DatabaseReader.updateToCEntry(chapter)
+                }
+                else if (WebHandler.removeToCEntry(it.id, page))
+                    DatabaseReader.removeToCEntry(page, it.id)
             }
         }
     }
