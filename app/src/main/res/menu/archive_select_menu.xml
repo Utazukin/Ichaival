@@ -20,9 +20,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/delete_select_archive"
-        android:icon="@drawable/ic_baseline_delete_forever_24"
-        android:title="@string/delete_archive_item"
+        android:id="@+id/read_select_item"
+        android:icon="@drawable/outline_check_24"
+        android:title="@string/mark_read_item"
         app:showAsAction="always" />
     <item
         android:id="@+id/bookmark_select_item"
@@ -35,7 +35,8 @@
         android:title="@string/add_to_cat_button"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/read_select_item"
-        android:title="@string/mark_read_item"
-        app:showAsAction="never" />
+        android:id="@+id/delete_select_archive"
+        android:icon="@drawable/ic_baseline_delete_forever_24"
+        android:title="@string/delete_archive_item"
+        app:showAsAction="ifRoom" />
 </menu>
