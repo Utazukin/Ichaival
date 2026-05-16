@@ -35,6 +35,11 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.Disposable
 import coil3.request.allowRgb565
 import coil3.request.crossfade
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlin.math.min
 
 class ThumbRecyclerViewAdapter(
@@ -46,6 +51,7 @@ class ThumbRecyclerViewAdapter(
     private val scope = fragment.lifecycleScope
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
     private val thumbIds = (0 until archive.numPages).toMutableList()
+    private var extractedThumbs: List<Int> = emptyList()
     private val loader = fragment.requireContext().imageLoader.newBuilder()
         .components {
             add(
@@ -69,9 +75,33 @@ class ThumbRecyclerViewAdapter(
     val firstThumb
         get() = thumbIds[0]
     private val imageLoadRequests: MutableMap<ViewHolder, Disposable> = mutableMapOf()
+    private val generateJob: Job
 
     init {
         setHasStableIds(true)
+        generateJob = scope.launch {
+            var thumbFlow = WebHandler.generateThumbs(archive.id, archive.numPages)
+            if (thumbFlow == null) {
+                for (i in 0 until 3) {
+                    delay(500)
+                    thumbFlow = WebHandler.generateThumbs(archive.id, archive.numPages)
+                    if (thumbFlow != null)
+                        break
+                }
+            }
+
+            thumbFlow?.cancellable()?.collectLatest {
+                val new = it.toMutableList().apply { removeAll { x -> x in extractedThumbs } }
+                for (page in new) {
+                    val thumbId = thumbIds.indexOf(page)
+                    if (thumbId >= 0)
+                        notifyItemChanged(thumbId)
+                }
+                extractedThumbs = it
+                if (extractedThumbs.size == archive.numPages)
+                    generateJob.cancel()
+            }
+        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -99,16 +129,18 @@ class ThumbRecyclerViewAdapter(
             setOnLongClickListener(onLongPressListener)
         }
 
-        val image = archive.getThumb(thumbIds[index])
-        imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
-            addAuthHeader()
-            allowRgb565(true)
-            crossfade(true)
-            size(defaultHeight)
-            listener { _, _ ->
-                with(holder.thumbView) {
-                    updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
-                    adjustViewBounds = true
+        if (thumbIds[index] in extractedThumbs) {
+            val image = archive.getThumb(thumbIds[index])
+            imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
+                addAuthHeader()
+                allowRgb565(true)
+                crossfade(true)
+                size(defaultHeight)
+                listener { _, _ ->
+                    with(holder.thumbView) {
+                        updateLayoutParams { height = RelativeLayout.LayoutParams.WRAP_CONTENT }
+                        adjustViewBounds = true
+                    }
                 }
             }
         }

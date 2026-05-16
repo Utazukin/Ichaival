@@ -33,6 +33,9 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -52,6 +55,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.net.HttpURLConnection
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.time.Duration.Companion.milliseconds
@@ -394,6 +398,60 @@ object WebHandler {
                     it.body.byteStream()
                 }
             }
+        }
+    }
+
+    suspend fun generateThumbs(id: String, pageCount: Int) : Flow<List<Int>>? {
+        if (!canConnect())
+            return null
+
+        if (!ServerManager.checkVersionAtLeast(0, 9, 10))
+            return flowOf((0 until pageCount).toList())
+
+        var connection = createServerConnection(serverUrlBuilder.addThumbs(id).build(), "POST", FormBody.Builder().build())
+        val response = withContext(Dispatchers.IO) { httpClient.newCall(connection).tryAwait() } ?: return null
+        response.use {
+            if (response.code == HttpURLConnection.HTTP_OK)
+                return flowOf((0 until pageCount).toList())
+            else if (response.code == HttpURLConnection.HTTP_ACCEPTED) {
+                val json = JSONObject(response.body.string())
+                val jobId = json.getInt("job")
+                val jobUrl = getUrlForJob(jobId)
+                connection = createServerConnection(jobUrl)
+
+                return withContext(Dispatchers.IO) {
+                    flow {
+                        var complete: Boolean? = null
+                        do {
+                            delay(100)
+                            val response = httpClient.newCall(connection).tryAwait()
+                            if (response == null || !response.isSuccessful)
+                                complete = false
+                            else {
+                                val json = JSONObject(response.body.string())
+                                val notes = json.getJSONObject("notes")
+                                val size = notes.optInt("total_pages", -1)
+                                if (size < 0)
+                                    continue
+
+                                val pages = buildList(size) {
+                                    for (i in 0 until (size + 1)) {
+                                        if (notes.optString(i.toString()) == "processed")
+                                            add(i - 1)
+                                    }
+                                }
+                                emit(pages)
+                                complete = when (json.optString("state")) {
+                                    "finished" -> true
+                                    "failed" -> false
+                                    else -> null
+                                }
+                            }
+                        } while (currentCoroutineContext().isActive && complete == null)
+                    }
+                }
+            } else
+                return null
         }
     }
 
