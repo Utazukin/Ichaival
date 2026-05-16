@@ -91,11 +91,10 @@ class ThumbRecyclerViewAdapter(
 
             thumbFlow?.cancellable()?.collect {
                 val thumbId = thumbIds.indexOf(it)
-                if (thumbId >= 0) {
-                    extractedThumbs.add(it)
+                if (thumbId >= 0)
                     notifyItemChanged(thumbId)
-                }
 
+                extractedThumbs.add(it)
                 if (extractedThumbs.size == archive.numPages)
                     generateJob.cancel()
             }
