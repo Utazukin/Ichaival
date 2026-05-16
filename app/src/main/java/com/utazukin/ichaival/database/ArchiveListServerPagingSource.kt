@@ -143,9 +143,9 @@ class ArchiveListLocalPagingSource(filter: String,
     }
 }
 
-class ArchiveListRandomPagingSource(filter: String, count: Int, categoryId: String)
-    : ArchiveListServerPagingSource(StatusFilter.None, SortMethod.Alpha, false, filter, categoryId) {
-    override val roomSource = DatabaseReader.getRandomSource(filter, categoryId, count)
+class ArchiveListRandomPagingSource(filter: String, count: Int, categoryId: String, status: StatusFilter)
+    : ArchiveListServerPagingSource(status, SortMethod.Alpha, false, filter, categoryId) {
+    override val roomSource = DatabaseReader.getRandomSource(filter, categoryId, count, status)
 
     override suspend fun loadResults() {
         if (filter.isNotEmpty() && categoryId.isEmpty())

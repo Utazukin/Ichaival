@@ -80,10 +80,6 @@ class CategoryFilterFragment : Fragment() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         lifecycleScope.launch {
-            DatabaseReader.getAllCategories().collectLatest {
-                onCategoriesUpdated(it)
-            }
-
             with(view) {
                 val dirGroup: RadioGroup = findViewById(R.id.direction_group)
                 val sortGroup: RadioGroup = findViewById(R.id.sort_group)
@@ -123,6 +119,10 @@ class CategoryFilterFragment : Fragment() {
                         }
                     }
                 }
+            }
+
+            DatabaseReader.getAllCategories().collectLatest {
+                onCategoriesUpdated(it)
             }
         }
 

@@ -143,7 +143,7 @@ class ArchiveListFragment : Fragment(),
                 val bundle = Bundle().apply {
                     if (viewModel.categoryId.isNotEmpty())
                         putString(RANDOM_CAT, viewModel.categoryId)
-                    else if (searchView.query.isNotBlank())
+                    if (searchView.query.isNotBlank())
                         putString(RANDOM_SEARCH, searchView.query.toString())
                 }
                 intent.putExtras(bundle)

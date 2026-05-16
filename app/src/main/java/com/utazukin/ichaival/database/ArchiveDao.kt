@@ -155,14 +155,8 @@ interface ArchiveDao {
     @Query("Select count(archiveId) from search where searchText = :search")
     suspend fun getCachedSearchCount(search: String) : Int
 
-    @Query("Select * from archive where id in (select id from archive join search on searchText = :search and archive.id = archiveId order by random() limit :count)")
-    fun getSearchResultsRandom(search: String, count: Int) : PagingSource<Int, ArchiveBase>
-
-    @Query("Select * from archive where id in (select id from archive order by random() limit :count)")
-    fun getRandomSource(count: Int) : PagingSource<Int, ArchiveBase>
-
-    @Query("Select archive.* from archive where archive.id in (select archive.id from archive join staticcategoryref on categoryId = :categoryId and archive.id = archiveId order by random() limit :count)")
-    fun getRandomCategorySource(categoryId: String, count: Int) : PagingSource<Int, ArchiveBase>
+    @RawQuery(observedEntities = [ArchiveFull::class])
+    fun getRandomSource(query: SupportSQLiteQuery) : PagingSource<Int, ArchiveBase>
 
     @RawQuery(observedEntities = [ArchiveFull::class])
     fun getSearchSource(query: SupportSQLiteQuery) : PagingSource<Int, ArchiveBase>

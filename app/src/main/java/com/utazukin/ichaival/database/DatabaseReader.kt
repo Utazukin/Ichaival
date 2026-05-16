@@ -361,10 +361,30 @@ object DatabaseReader {
 
     suspend fun getArchives(offset: Int, limit: Int) = database.archiveDao().getArchives(offset, limit)
 
-    fun getRandomSource(filter: String, categoryId: String, count: Int) = when {
-        categoryId.isNotEmpty() -> database.archiveDao().getRandomCategorySource(categoryId, count)
-        filter.isNotBlank() -> database.archiveDao().getSearchResultsRandom(filter, count)
-        else -> database.archiveDao().getRandomSource(count)
+    fun getRandomSource(filter: String, categoryId: String, count: Int, status: StatusFilter): PagingSource<Int, ArchiveBase> {
+        val queryBuilder = StringBuilder("Select archive.id, title, tags, pageCount from archive where id in (select archive.id from archive")
+        val args = mutableListOf<Any>()
+
+        if (filter.isNotBlank()) {
+            args.add(filter)
+            queryBuilder.append(" join search on searchText = ? and archive.id = search.archiveId")
+        }
+
+        if (categoryId.isNotBlank()) {
+            args.add(categoryId)
+            queryBuilder.append(" join staticcategoryref on categoryId = ? and archive.id = staticcategoryref.archiveId")
+        }
+
+        when (status) {
+            StatusFilter.OnlyNew -> queryBuilder.append(" where archive.isNew")
+            StatusFilter.InProgress -> queryBuilder.append(" where archive.currentPage > 0 and archive.currentPage < archive.pageCount - 1")
+            StatusFilter.Completed -> queryBuilder.append(" where archive.currentPage == archive.pageCount - 1")
+            StatusFilter.None -> {}
+        }
+
+        args.add(count)
+        queryBuilder.append(" order by random() limit ?)")
+        return database.archiveDao().getRandomSource(SimpleSQLiteQuery(queryBuilder.toString(), args.toTypedArray()))
     }
 
     suspend fun getRandom(search: String, status: StatusFilter, categoryId: String, excludeBookmarked: Boolean = false): Archive? {

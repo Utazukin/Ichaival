@@ -104,7 +104,7 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     private fun getPagingSource() : PagingSource<Int, ArchiveBase> {
         archivePagingSource = when {
             !initiated -> EmptySource()
-            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId)
+            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, status)
             categoryId.isNotEmpty() && filter.isBlank() -> DatabaseReader.getArchiveSource(sortMethod, descending, status, categoryId = categoryId)
             isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, status, categoryId)
             filter.isNotBlank() -> ArchiveListServerPagingSource(status, sortMethod, descending, filter, categoryId)
