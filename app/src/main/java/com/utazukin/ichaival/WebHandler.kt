@@ -34,8 +34,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -401,18 +401,18 @@ object WebHandler {
         }
     }
 
-    suspend fun generateThumbs(id: String, pageCount: Int) : Flow<List<Int>>? {
+    suspend fun generateThumbs(id: String, pageCount: Int) : Flow<Int>? {
         if (!canConnect())
             return null
 
         if (!ServerManager.checkVersionAtLeast(0, 9, 10))
-            return flowOf((0 until pageCount).toList())
+            return (0 until pageCount).asFlow()
 
         var connection = createServerConnection(serverUrlBuilder.addThumbs(id).build(), "POST", FormBody.Builder().build())
         val response = withContext(Dispatchers.IO) { httpClient.newCall(connection).tryAwait() } ?: return null
         response.use {
             if (response.code == HttpURLConnection.HTTP_OK)
-                return flowOf((0 until pageCount).toList())
+                return (0 until pageCount).asFlow()
             else if (response.code == HttpURLConnection.HTTP_ACCEPTED) {
                 val json = JSONObject(response.body.string())
                 val jobId = json.getInt("job")
@@ -421,6 +421,7 @@ object WebHandler {
 
                 return withContext(Dispatchers.IO) {
                     flow {
+                        val pages = mutableSetOf<Int>()
                         var complete: Boolean? = null
                         do {
                             delay(100)
@@ -434,13 +435,11 @@ object WebHandler {
                                 if (size < 0)
                                     continue
 
-                                val pages = buildList(size) {
-                                    for (i in 0 until (size + 1)) {
-                                        if (notes.optString(i.toString()) == "processed")
-                                            add(i - 1)
-                                    }
+                                for (i in 1 until (size + 1)) {
+                                    if (notes.optString(i.toString()) == "processed" && pages.add(i - 1))
+                                        emit(i - 1)
                                 }
-                                emit(pages)
+
                                 complete = when (json.optString("state")) {
                                     "finished" -> true
                                     "failed" -> false

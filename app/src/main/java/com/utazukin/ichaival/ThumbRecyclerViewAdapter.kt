@@ -38,7 +38,6 @@ import coil3.request.crossfade
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.min
 
@@ -51,7 +50,7 @@ class ThumbRecyclerViewAdapter(
     private val scope = fragment.lifecycleScope
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
     private val thumbIds = (0 until archive.numPages).toMutableList()
-    private var extractedThumbs: List<Int> = emptyList()
+    private var extractedThumbs = mutableListOf<Int>()
     private val loader = fragment.requireContext().imageLoader.newBuilder()
         .components {
             add(
@@ -90,14 +89,13 @@ class ThumbRecyclerViewAdapter(
                 }
             }
 
-            thumbFlow?.cancellable()?.collectLatest {
-                val new = it.toMutableList().apply { removeAll { x -> x in extractedThumbs } }
-                for (page in new) {
-                    val thumbId = thumbIds.indexOf(page)
-                    if (thumbId >= 0)
-                        notifyItemChanged(thumbId)
+            thumbFlow?.cancellable()?.collect {
+                val thumbId = thumbIds.indexOf(it)
+                if (thumbId >= 0) {
+                    extractedThumbs.add(it)
+                    notifyItemChanged(thumbId)
                 }
-                extractedThumbs = it
+
                 if (extractedThumbs.size == archive.numPages)
                     generateJob.cancel()
             }
