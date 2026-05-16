@@ -71,8 +71,14 @@ class ReaderSettingsDialogFragment : BottomSheetDialogFragment() {
                     continue
 
                 child.setOnClickListener { handler?.handleButton(child.id) }
-                if (child.id == R.id.thumb_button && !ServerManager.canEdit)
-                    child.visibility = View.GONE
+                when {
+                    child.id == R.id.thumb_button && !ServerManager.canEdit -> child.visibility = View.GONE
+                    child.id == R.id.chapter_button
+                            && (!ServerManager.checkVersionAtLeast(0, 9, 70)
+                            || !ServerManager.canEdit) -> {
+                        child.visibility = View.GONE
+                    }
+                }
             }
         }
 

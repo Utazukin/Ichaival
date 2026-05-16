@@ -218,26 +218,31 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
     }
 
     override fun onThumbLongPress(page: Int): Boolean {
-        archiveId?.let {
-            AlertDialog.Builder(this).apply {
-                val choices = arrayOf(resources.getString(R.string.use_thumb), resources.getString(R.string.add_edit_chapter))
-                setItems(choices) { dialog, i ->
-                    when (i) {
-                        0 -> {
-                            launch {
-                                DatabaseReader.refreshThumbnail(it, this@ArchiveDetails, page)
-                                Toast.makeText(this@ArchiveDetails, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
-                            }
-                            dialog.dismiss()
+        val id = archiveId
+        if (!ServerManager.canEdit || id == null)
+            return true
+
+        AlertDialog.Builder(this).apply {
+            val choices = if (ServerManager.checkVersionAtLeast(0, 9, 70))
+                arrayOf(resources.getString(R.string.use_thumb), resources.getString(R.string.add_edit_chapter))
+            else
+                arrayOf(resources.getString(R.string.use_thumb))
+            setItems(choices) { dialog, i ->
+                when (i) {
+                    0 -> {
+                        launch {
+                            DatabaseReader.refreshThumbnail(id, this@ArchiveDetails, page)
+                            Toast.makeText(this@ArchiveDetails, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
                         }
-                        1 -> {
-                            val editDialog = EditChapterDialogFragment.newInstance(page, it)
-                            editDialog.show(supportFragmentManager, "chapter_dialog")
-                        }
+                        dialog.dismiss()
+                    }
+                    1 -> {
+                        val editDialog = EditChapterDialogFragment.newInstance(page, id)
+                        editDialog.show(supportFragmentManager, "chapter_dialog")
                     }
                 }
-                show()
             }
+            show()
         }
         return true
     }
