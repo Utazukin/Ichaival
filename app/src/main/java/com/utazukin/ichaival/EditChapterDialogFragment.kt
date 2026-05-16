@@ -24,7 +24,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
@@ -81,7 +80,8 @@ class EditChapterDialogFragment : DialogFragment() {
         lifecycleScope.launch {
             val entry = DatabaseReader.getToCEntry(pageNum, archiveId)
             if (entry != null) {
-                edtChapter.hint = entry.name
+                edtChapter.hint = null
+                edtChapter.setText(entry.name)
                 deleteButton.visibility = View.VISIBLE
                 deleteButton.isEnabled = true
             } else {
@@ -101,11 +101,6 @@ class EditChapterDialogFragment : DialogFragment() {
     override fun onDetach() {
         super.onDetach()
         listener = null
-    }
-
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
     }
 
     companion object {
