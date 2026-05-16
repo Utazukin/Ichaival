@@ -258,7 +258,7 @@ object DatabaseReader {
         }
     }
 
-    suspend fun getAllCategories() = database.archiveDao().getAllCategories()
+    fun getAllCategories() = database.archiveDao().getAllCategories()
 
     suspend fun getCategoryArchives(id: String) = database.archiveDao().getCategoryArchives(id)
 

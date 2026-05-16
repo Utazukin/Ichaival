@@ -138,7 +138,7 @@ interface ArchiveDao {
     suspend fun removeOldCategoryReferences(updateTime: Long)
 
     @Query("Select * from archivecategory order by pinned")
-    suspend fun getAllCategories() : List<ArchiveCategory>
+    fun getAllCategories() : Flow<List<ArchiveCategory>>
 
     @Query("Select archivecategory.* from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
     suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>

@@ -32,8 +32,6 @@ import androidx.paging.cachedIn
 import androidx.preference.PreferenceManager
 import com.utazukin.ichaival.ArchiveBase
 import com.utazukin.ichaival.ArchiveCategory
-import com.utazukin.ichaival.CategoryListener
-import com.utazukin.ichaival.CategoryManager
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.ServerManager
@@ -74,7 +72,7 @@ private class ChangeDelegate<T>(private var field: T, private val onChange: () -
     }
 }
 
-class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPreferences) : AndroidViewModel(app), CategoryListener {
+class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPreferences) : AndroidViewModel(app) {
     constructor(app: Application, state: SavedStateHandle) : this(app, state, PreferenceManager.getDefaultSharedPreferences(app.applicationContext))
     var status by StateDelegate(state, StatusFilter.None) { reset() }
     var isLocal by StateDelegate(state, prefs.getBoolean(app.resources.getString(R.string.local_search_key), false)) { reset(false) }
@@ -94,7 +92,13 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
 
     init {
-        CategoryManager.addUpdateListener(this)
+        viewModelScope.launch {
+            var firstUpdate = true
+            DatabaseReader.getAllCategories().collectLatest {
+                onCategoriesUpdated(it, firstUpdate)
+                firstUpdate = false
+            }
+        }
     }
 
     private fun getPagingSource() : PagingSource<Int, ArchiveBase> {
@@ -130,11 +134,6 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        CategoryManager.removeUpdateListener(this)
-    }
-
     fun reset() = reset(true)
 
     private fun reset(force: Boolean) {
@@ -153,8 +152,8 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
         scope.launch { archiveList.collectLatest(action) }
     }
 
-    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
-        if (!firstUpdate && categoryId.isNotEmpty() && categories?.any { it.id  == categoryId } != true)
+    private fun onCategoriesUpdated(categories: List<ArchiveCategory>, firstUpdate: Boolean) {
+        if (!firstUpdate && categoryId.isNotEmpty() && !categories.any { it.id  == categoryId })
             categoryId = ""
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,16 +25,10 @@ import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.database.DatabaseReader
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.io.InputStream
 import java.util.Calendar
-
-interface CategoryListener {
-    fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean)
-}
 
 @Entity(tableName = "archiveCategory")
 data class ArchiveCategoryFull(
@@ -59,22 +53,11 @@ data class ArchiveCategory(
 data class StaticCategoryRef(val categoryId: String, val archiveId: String, val updatedAt: Long)
 
 object CategoryManager {
-    private val listeners = mutableListOf<CategoryListener>()
-
-    fun addUpdateListener(listener: CategoryListener) {
-        listeners.add(listener)
-    }
-
-    suspend inline fun getAllCategories() = DatabaseReader.getAllCategories()
-
-    fun removeUpdateListener(listener: CategoryListener) = listeners.remove(listener)
-
     suspend inline fun isInCategory(categoryId: String, archiveId: String) = DatabaseReader.isInCategory(categoryId, archiveId)
 
     suspend fun updateCategories() {
         WebHandler.getCategories()?.let {
             parseCategories(it)
-            updateListeners()
         }
     }
 
@@ -88,7 +71,6 @@ object CategoryManager {
         }
 
         DatabaseReader.insertStaticCategories(references)
-        updateListeners()
     }
 
     suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false): ArchiveCategory? {
@@ -98,14 +80,6 @@ object CategoryManager {
             DatabaseReader.insertCategory(category)
         return category
     }
-
-    private suspend fun updateListeners() {
-        val categories = getAllCategories()
-        withContext(Dispatchers.Main.immediate) {
-            for (listener in listeners)
-                listener.onCategoriesUpdated(categories, false)
-        }
-}
 
     private suspend fun parseCategories(categoriesStream: InputStream) = DatabaseReader.withTransaction {
         val currentTime = Calendar.getInstance().timeInMillis

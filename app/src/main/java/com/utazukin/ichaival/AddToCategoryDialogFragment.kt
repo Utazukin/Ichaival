@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,9 @@ import androidx.appcompat.widget.AppCompatRadioButton
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 private const val ARCHIVE_PARAM = "archive"
@@ -43,7 +45,7 @@ interface AddCategoryListener {
     fun onAddedToCategory(category: ArchiveCategory, archiveIds: List<String>)
 }
 
-class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, CoroutineScope {
+class AddToCategoryDialogFragment : DialogFragment(), CoroutineScope {
     override val coroutineContext = lifecycleScope.coroutineContext
     private var listener: AddCategoryListener? = null
     private val archiveIds = mutableListOf<String>()
@@ -71,12 +73,6 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, Coroutin
     override fun onStart() {
         super.onStart()
         dialog?.window?.setLayout(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT)
-        CategoryManager.addUpdateListener(this)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        CategoryManager.removeUpdateListener(this)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -125,7 +121,9 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, Coroutin
             }
         }
 
-        launch { onCategoriesUpdated(CategoryManager.getAllCategories(), true) }
+        launch {
+            DatabaseReader.getAllCategories().collectLatest { onCategoriesUpdated(it) }
+        }
 
         return view
     }
@@ -138,23 +136,20 @@ class AddToCategoryDialogFragment : DialogFragment(), CategoryListener, Coroutin
         }
     }
 
-    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
+    private fun onCategoriesUpdated(categories: List<ArchiveCategory>) {
         this.categories = categories
-        categories?.let {
-            catGroup.removeAllViews()
-            for ((i, category) in it.withIndex()) {
-                if (category.isStatic) {
-                    val categoryButton = AppCompatRadioButton(context).apply {
-                        text = category.name
-                        id = i
-                    }
-                    catGroup.addView(categoryButton, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        catGroup.removeAllViews()
+        for ((i, category) in categories.withIndex()) {
+            if (category.isStatic) {
+                val categoryButton = AppCompatRadioButton(context).apply {
+                    text = category.name
+                    id = i
                 }
+                catGroup.addView(categoryButton, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             }
-            catGroup.addView(newCatButton)
-            catGroup.addView(catText)
         }
-
+        catGroup.addView(newCatButton)
+        catGroup.addView(catText)
     }
 
     companion object {

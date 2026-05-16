@@ -33,7 +33,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 enum class SortMethod(val value: Int) {
@@ -53,15 +55,12 @@ enum class StatusFilter(val value: Int) {
     Completed(3);
 }
 
-class CategoryFilterFragment : Fragment(), CategoryListener {
+class CategoryFilterFragment : Fragment() {
     private lateinit var categoryGroup: ChipGroup
     private var currentCategories: List<ArchiveCategory>? = null
     private var categoryLabel: TextView? = null
     private var listener: FilterListener? = null
     private val viewModel: SearchViewModel by activityViewModels()
-    private var sortMethod = SortMethod.Alpha
-    private var descending = false
-    private var status = StatusFilter.None
     private val categoryButtons = mutableListOf<Chip>()
     private var savedCategory: ArchiveCategory? = null
     val selectedCategory: ArchiveCategory?
@@ -79,30 +78,30 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         categoryLabel = view.findViewById(R.id.category_label)
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        sortMethod = SortMethod.fromInt(prefs.getInt(getString(R.string.sort_pref), 1))
-        descending = prefs.getBoolean(getString(R.string.desc_pref), false)
 
         lifecycleScope.launch {
-            onCategoriesUpdated(CategoryManager.getAllCategories(), true)
+            DatabaseReader.getAllCategories().collectLatest {
+                onCategoriesUpdated(it)
+            }
 
             with(view) {
                 val dirGroup: RadioGroup = findViewById(R.id.direction_group)
                 val sortGroup: RadioGroup = findViewById(R.id.sort_group)
-                when (sortMethod) {
+                when (viewModel.sortMethod) {
                     SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
                     SortMethod.Date -> sortGroup.check(R.id.rad_date)
                 }
 
-                dirGroup.check(if (descending) R.id.rad_desc else R.id.rad_asc)
+                dirGroup.check(if (viewModel.descending) R.id.rad_desc else R.id.rad_asc)
 
                 sortGroup.setOnCheckedChangeListener { _, id ->
-                    sortMethod = getMethodFromId(id)
+                    val sortMethod = getMethodFromId(id)
                     prefs.edit { putInt(getString(R.string.sort_pref), sortMethod.value) }
                     viewModel.sortMethod = sortMethod
                 }
 
                 dirGroup.setOnCheckedChangeListener { _, id ->
-                    descending = getDirectionFromId(id)
+                    val descending = getDirectionFromId(id)
                     prefs.edit { putBoolean(getString(R.string.desc_pref), descending) }
                     viewModel.descending = descending
                 }
@@ -146,14 +145,14 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
         }
     }
 
-    override fun onCategoriesUpdated(categories: List<ArchiveCategory>?, firstUpdate: Boolean) {
+    private fun onCategoriesUpdated(categories: List<ArchiveCategory>) {
         currentCategories = categories
 
         val label = categoryLabel ?: return
         clearCategory()
         categoryButtons.clear()
         categoryGroup.removeAllViews()
-        if (!categories.isNullOrEmpty()) {
+        if (categories.isNotEmpty()) {
             label.visibility = View.VISIBLE
             categoryGroup.visibility = View.VISIBLE
             for ((i, category) in categories.withIndex()) {
@@ -167,8 +166,10 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
                 categoryButtons.add(categoryButton)
             }
 
-            if (firstUpdate)
-                savedCategory?.run { categoryButtons.firstOrNull { it.text == name }?.isChecked = true }
+            savedCategory?.run {
+                categoryButtons.firstOrNull { it.text == name }?.isChecked = true
+                savedCategory = null
+            }
         } else {
             label.visibility = View.GONE
             categoryGroup.visibility = View.GONE
@@ -196,12 +197,6 @@ class CategoryFilterFragment : Fragment(), CategoryListener {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         listener = context as? FilterListener
-        CategoryManager.addUpdateListener(this)
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        CategoryManager.removeUpdateListener(this)
     }
 }
 
