@@ -94,6 +94,9 @@ object WebHandler {
         return addArchiveList().addPathSegment(id).addPathSegment("progress").addPathSegment((page + 1))
     }
     private fun HttpUrl.Builder.addDeleteArchive(id: String) = addArchiveList().addPathSegment(id)
+    private fun HttpUrl.Builder.addToC(id: String, page: Int): HttpUrl.Builder {
+        return addArchiveList().addPathSegment(id).addPathSegment("toc").addQueryParameter("page", page + 1)
+    }
     private fun HttpUrl.Builder.addTags() = addDatabase().addPathSegment("stats")
     private fun HttpUrl.Builder.addClearNew(id: String) = addArchiveList().addPathSegment(id).addPathSegment("isnew")
     private fun HttpUrl.Builder.addSearch() = addApi().addPathSegment("search")
@@ -307,6 +310,24 @@ object WebHandler {
 
             responses.awaitAll().all { it.use { res -> res?.isSuccessful == true } }
         }
+    }
+
+    suspend fun addToCEntry(entry: ToCEntryUpdate) : Boolean {
+        if (!canConnect())
+            return false
+
+        val url = serverUrlBuilder.addToC(entry.archiveId, entry.page).addQueryParameter("title", entry.name).build()
+        val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
+        return withContext(Dispatchers.IO) { httpClient.newCall(connection).tryAwait()?.isSuccessful == true }
+    }
+
+    suspend fun removeToCEntry(id: String, page: Int): Boolean {
+        if (!canConnect())
+            return false
+
+        val url = serverUrlBuilder.addToC(id, page).build()
+        val connection = createServerConnection(url, "DELETE", FormBody.Builder().build())
+        return withContext(Dispatchers.IO) { httpClient.newCall(connection).tryAwait()?.isSuccessful == true }
     }
 
     fun updateProgress(id: String, page: Int) {

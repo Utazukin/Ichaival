@@ -47,6 +47,7 @@ import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.StatusFilter
 import com.utazukin.ichaival.ToCEntryFull
+import com.utazukin.ichaival.ToCEntryUpdate
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToLong
 import kotlinx.coroutines.Dispatchers
@@ -143,7 +144,7 @@ private class DatabaseHelper {
 
     private val MIGRATION_10_11 = object: Migration(10, 11) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("create table toc (name text not null, page integer not null, updateTime integer not null, archiveId text not null, primary key (name, page))")
+            db.execSQL("create table toc (name text not null, page integer not null, updateTime integer default 0, archiveId text not null, primary key (archiveId, page)")
         }
     }
 
@@ -319,6 +320,12 @@ object DatabaseReader {
     }
 
     suspend fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
+
+    suspend fun getToCEntry(page: Int, archiveId: String) = database.archiveDao().getTocEntry(page, archiveId)
+
+    suspend fun updateToCEntry(entry: ToCEntryUpdate) = database.archiveDao().updateToCEntry(entry)
+
+    suspend fun removeToCEntry(page: Int, archiveId: String) = database.archiveDao().removeToCEntry(page, archiveId)
 
     fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null) : PagingSource<Int, ArchiveBase> {
         val queryBuilder = StringBuilder("Select id, title, tags, pageCount from archive")

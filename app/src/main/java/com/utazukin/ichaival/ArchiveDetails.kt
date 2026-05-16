@@ -39,10 +39,11 @@ import com.utazukin.ichaival.ThumbRecyclerViewAdapter.ThumbInteractionListener
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.reader.ReaderActivity
 import kotlinx.coroutines.launch
+import kotlin.math.max
 
 const val FROM_READER_PAGE = "READER_PAGE"
 
-class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener {
+class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener, ChapterEditListener {
     private var archiveId: String? = null
     private var pageCount = -1
     private var readerPage = -1
@@ -219,19 +220,52 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
 
     override fun onThumbLongPress(page: Int): Boolean {
         archiveId?.let {
-            val dialog = AlertDialog.Builder(this)
-                .setTitle(R.string.use_thumb)
-                .setPositiveButton(R.string.yes) { d, _ ->
-                    launch {
-                        DatabaseReader.refreshThumbnail(it, this@ArchiveDetails, page)
-                        Toast.makeText(this@ArchiveDetails, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
+            AlertDialog.Builder(this).apply {
+                val choices = arrayOf(resources.getString(R.string.use_thumb), resources.getString(R.string.add_edit_chapter))
+                setItems(choices) { dialog, i ->
+                    when (i) {
+                        0 -> {
+                            launch {
+                                DatabaseReader.refreshThumbnail(it, this@ArchiveDetails, page)
+                                Toast.makeText(this@ArchiveDetails, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
+                            }
+                            dialog.dismiss()
+                        }
+                        1 -> {
+                            val editDialog = EditChapterDialogFragment.newInstance(page, it)
+                            editDialog.show(supportFragmentManager, "chapter_dialog")
+                        }
                     }
-                    d.dismiss()
                 }
-                .setNegativeButton(R.string.no) { d, _ -> d.cancel() }
-            dialog.show()
+                show()
+            }
         }
         return true
+    }
+
+    override fun onChapterEdit(name: String, page: Int, delete: Boolean) {
+        archiveId?.let {
+            launch {
+                if (!delete) {
+                    val chapter = ToCEntryUpdate(name, page, it)
+                    if (WebHandler.addToCEntry(chapter)) {
+                        DatabaseReader.updateToCEntry(chapter)
+                        getThumbFragment()?.updateToCButton(firstThumb = page)
+                    }
+                }
+                else if (WebHandler.removeToCEntry(it, page)) {
+                    val toc = DatabaseReader.getToC(it)
+                    val prev = max(toc.indexOfFirst { x -> x.page == page } - 1, 0)
+                    DatabaseReader.removeToCEntry(page, it)
+                    getThumbFragment()?.updateToCButton(firstThumb = prev)
+                }
+            }
+        }
+    }
+
+    private fun getThumbFragment(): GalleryPreviewFragment? {
+        val fragmentId = pager.adapter?.getItemId(1) ?: return null
+        return supportFragmentManager.findFragmentByTag("f$fragmentId") as? GalleryPreviewFragment
     }
 
     fun startReaderActivityForResult(page: Int = -1) {

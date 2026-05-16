@@ -108,8 +108,9 @@ data class Archive (
     }
 }
 
-@Entity(tableName = "toc", primaryKeys = ["name", "page"])
-data class ToCEntryFull(val name: String, val page: Int, val updateTime: Long, val archiveId: String)
+@Entity(tableName = "toc", primaryKeys = ["archiveId", "page"])
+data class ToCEntryFull(val name: String, val page: Int, @ColumnInfo(defaultValue = "0") val updateTime: Long, val archiveId: String)
+data class ToCEntryUpdate(val name: String, val page: Int, val archiveId: String)
 data class ToCEntry(val name: String, val page: Int)
 
 class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int) {

@@ -43,6 +43,7 @@ import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.ToCEntry
 import com.utazukin.ichaival.ToCEntryFull
+import com.utazukin.ichaival.ToCEntryUpdate
 import org.json.JSONObject
 
 @Dao
@@ -173,6 +174,15 @@ interface ArchiveDao {
 
     @Upsert
     suspend fun addToc(entries: List<ToCEntryFull>)
+
+    @Upsert(entity = ToCEntryFull::class)
+    suspend fun updateToCEntry(entry: ToCEntryUpdate)
+
+    @Query("Select * from toc where page = :page and archiveId = :archiveId")
+    suspend fun getTocEntry(page: Int, archiveId: String): ToCEntry?
+
+    @Query("Delete from toc where page = :page and archiveId = :archiveId")
+    suspend fun removeToCEntry(page: Int, archiveId: String)
 
     @Query("Delete from toc where updateTime < :updateTime")
     suspend fun removeOldToC(updateTime: Long)

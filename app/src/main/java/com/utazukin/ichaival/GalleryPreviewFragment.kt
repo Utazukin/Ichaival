@@ -81,33 +81,42 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
         launch {
             archive = DatabaseReader.getArchive(archiveId!!)
             setGalleryView(savedInstanceState)
-            val toc = DatabaseReader.getToC(archiveId!!)
-            if (toc.isNotEmpty()) {
-                tocButton.let {
-                    val items = if (toc[0].page > 0) {
-                        buildList(toc.size + 1) {
-                            add(ToCEntry(resources.getString(R.string.default_chapter), 0))
-                            addAll(toc)
-                        }
-                    } else toc
+            updateToCButton(savedInstanceState)
+        }
 
-                    val currentIndex = if (savedInstanceState == null)
-                        items.indexOfFirst { x -> x.page == thumbAdapter.firstThumb }
-                    else
-                        items.indexOfFirst { x -> x.page == savedInstanceState.getInt(CHAPTER_PAGE) }
+        return view
+    }
 
-                    if (currentIndex >= 0) {
-                        val currentItem = items[currentIndex]
-                        it.text = currentItem.name
-                        val start = items[currentIndex].page
-                        val end = if (currentIndex < items.size - 1) items[currentIndex + 1].page else archive!!.numPages
-                        thumbAdapter.useSubset(start, end)
+    suspend fun updateToCButton(savedInstanceState: Bundle? = null, firstThumb: Int = -1) {
+        val toc = DatabaseReader.getToC(archiveId!!)
+        if (toc.isNotEmpty()) {
+            with(tocButton) {
+                val items = if (toc[0].page > 0) {
+                    buildList(toc.size + 1) {
+                        add(ToCEntry(resources.getString(R.string.default_chapter), 0))
+                        addAll(toc)
                     }
+                } else toc
 
-                    it.setOnClickListener {
+                val currentIndex = when {
+                    savedInstanceState != null -> items.indexOfFirst { it.page == savedInstanceState.getInt(CHAPTER_PAGE) }
+                    firstThumb >= 0 -> items.indexOfFirst { it.page == firstThumb }
+                    else -> items.indexOfFirst { it.page == thumbAdapter.firstThumb }
+                }
+
+                if (currentIndex >= 0) {
+                    val currentItem = items[currentIndex]
+                    text = currentItem.name
+                    val start = items[currentIndex].page
+                    val end = if (currentIndex < items.size - 1) items[currentIndex + 1].page else archive!!.numPages
+                    thumbAdapter.useSubset(start, end)
+                }
+
+                setOnClickListener {
+                    launch {
                         val dialog = AlertDialog.Builder(requireContext()).apply {
-                            val current = items.indexOfFirst { x -> x.page == thumbAdapter.firstThumb }
-                            setSingleChoiceItems(items.map { x -> x.name }.toTypedArray(), current) { dialog, id ->
+                            val current = items.indexOfFirst { it.page == thumbAdapter.firstThumb }
+                            setSingleChoiceItems(items.map { it.name }.toTypedArray(), current) { dialog, id ->
                                 val start = items[id].page
                                 val end = if (id < items.size - 1) items[id + 1].page else archive!!.numPages
                                 thumbAdapter.useSubset(start, end)
@@ -117,12 +126,14 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
                         }.create()
                         dialog.show()
                     }
-                    it.visibility = View.VISIBLE
                 }
-            } else tocButton.visibility = View.GONE
+                visibility = View.VISIBLE
+            }
+        } else {
+            tocButton.visibility = View.GONE
+            if (thumbAdapter.firstThumb > 0)
+                thumbAdapter.useSubset(0)
         }
-
-        return view
     }
 
     override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {

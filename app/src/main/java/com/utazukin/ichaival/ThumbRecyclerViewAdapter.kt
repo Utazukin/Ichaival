@@ -75,7 +75,8 @@ class ThumbRecyclerViewAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun useSubset(start: Int, end: Int) {
+    fun useSubset(start: Int, end: Int? = null) {
+        val end = end ?: archive.numPages
         thumbIds.clear()
         thumbIds.addAll(start until end)
         notifyDataSetChanged()
