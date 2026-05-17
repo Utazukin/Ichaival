@@ -140,6 +140,8 @@ class ThumbRecyclerViewAdapter(
                     }
                 }
             }
+        } else {
+            holder.thumbView.setImageDrawable(null)
         }
     }
 
