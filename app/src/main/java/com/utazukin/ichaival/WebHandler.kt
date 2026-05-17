@@ -402,6 +402,9 @@ object WebHandler {
     }
 
     suspend fun generateThumbs(id: String, pageCount: Int) : Flow<Int>? {
+        if (DownloadManager.isDownloaded(id))
+            return (0 until pageCount).asFlow()
+
         if (!canConnect())
             return null
 
