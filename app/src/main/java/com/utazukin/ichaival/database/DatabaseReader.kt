@@ -31,7 +31,6 @@ import androidx.room.migration.Migration
 import androidx.room.withTransaction
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
@@ -50,7 +49,6 @@ import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.StatusFilter
-import com.utazukin.ichaival.ToCEntryFull
 import com.utazukin.ichaival.ToCEntryUpdate
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToLong
@@ -68,13 +66,6 @@ private class ArchiveDeserializer(private val updateTime: Long) : JsonDeserializ
 
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ArchiveJson {
         return ArchiveJson(json.asJsonObject, updateTime, index++)
-    }
-}
-
-private class LocalArchiveDeserializer(private val updateTime: Long) : JsonDeserializer<ArchiveJsonBase> {
-    private var index = 0
-    override fun deserialize(json: JsonElement, type: Type?, context: JsonDeserializationContext?): ArchiveJsonBase {
-        return ArchiveJsonBase(json.asJsonObject, updateTime, index++)
     }
 }
 
@@ -270,21 +261,12 @@ object DatabaseReader {
         withTransaction {
             val gson = GsonBuilder()
                 .registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime))
-                .registerTypeAdapter(ArchiveJsonBase::class.java, LocalArchiveDeserializer(currentTime))
                 .create()
             val archiveStream = WebHandler.getOrderedArchives(-1) ?: return@withTransaction
-            val extractor: suspend (Gson, JsonReader) -> ArchiveJsonBase = if (ServerManager.serverTracksProgress) {
-                { gson, reader ->
-                    val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
-                    updateArchive(archive)
-                    archive
-                }
+            val updateArchive: suspend (ArchiveJson) -> Unit = if (ServerManager.serverTracksProgress) {
+                { updateArchive(it) }
             } else {
-                { gson, reader ->
-                    val archive: ArchiveJsonBase = gson.fromJson(reader, ArchiveJsonBase::class.java)
-                    updateArchive(archive)
-                    archive
-                }
+                { updateArchive(it as ArchiveJsonBase) }
             }
             JsonReader(archiveStream.bufferedReader(Charsets.UTF_8)).use {
                 it.beginObject()
@@ -293,20 +275,9 @@ object DatabaseReader {
                     if (name == "data") {
                         it.beginArray()
                         while (it.hasNext()) {
-                            val archive = extractor(gson, it)
-                            val tocList = archive.toc?.let { toc ->
-                                List(toc.size()) { i ->
-                                    val entry = toc.get(i).asJsonObject
-                                    ToCEntryFull(
-                                            entry.get("name").asString,
-                                            entry.get("page").asInt - 1,
-                                            currentTime,
-                                            archive.id
-                                    )
-                                }
-                            }
-                            if (tocList != null)
-                                database.archiveDao().addToc(tocList)
+                            val archive: ArchiveJson = gson.fromJson(it, ArchiveJson::class.java)
+                            updateArchive(archive)
+                            archive.toc?.let { toc -> database.archiveDao().addToc(toc) }
                         }
                         it.endArray()
                     } else it.skipValue()

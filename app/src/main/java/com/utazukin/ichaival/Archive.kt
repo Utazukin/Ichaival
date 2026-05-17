@@ -123,7 +123,17 @@ open class ArchiveJsonBase(json: JsonObject, val updatedAt: Long, val titleSortI
     val dateAdded: Long
 
     @Ignore
-    val toc = json.getOrNull("toc")?.asJsonArray
+    val toc = json.getOrNull("toc")?.asJsonArray?.let {
+        List(it.size()) { i ->
+            val entry = it.get(i).asJsonObject
+            ToCEntryFull(
+                    entry.get("name").asString,
+                    entry.get("page").asInt - 1,
+                    updatedAt,
+                    id
+            )
+        }
+    }
 
     init {
         val timeStampIndex = tags.indexOf("date_added:")
