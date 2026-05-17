@@ -137,8 +137,23 @@ private class DatabaseHelper {
 
     private val MIGRATION_9_10 = object: Migration(9, 10) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("drop table if exists readertab")
+            db.beginTransaction()
+
+            db.execSQL("alter table readertab rename oldreadertab")
             db.execSQL("create table if not exists readertab (id text not null, title text not null, index integer not null default 0, currentPage integer not null, primary key (id, currentPage))")
+            val cursor = db.query("select * from oldreadertab")
+            cursor.use {
+                while (cursor.moveToNext()) {
+                    val id = it.getString(0)
+                    val title = it.getString(1)
+                    val index = it.getInt(2)
+                    db.execSQL("insert into readertab values(?, ?, ?, ?)", arrayOf(id, title, index, -1))
+                }
+            }
+            db.execSQL("drop table if exists oldreadertab")
+
+            db.setTransactionSuccessful()
+            db.endTransaction()
         }
     }
 
