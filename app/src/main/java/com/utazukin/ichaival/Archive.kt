@@ -35,10 +35,10 @@ data class ArchiveFull(
     @ColumnInfo val dateAdded: Long,
     @ColumnInfo val isNew: Boolean,
     @ColumnInfo val tags: Map<String, List<String>>,
-    @ColumnInfo val currentPage: Int,
+    @ColumnInfo(defaultValue = "0") val currentPage: Int,
     @ColumnInfo val pageCount: Int,
     @ColumnInfo val updatedAt: Long,
-    @ColumnInfo val titleSortIndex: Int,
+    @ColumnInfo(defaultValue = "0") val titleSortIndex: Int,
     @ColumnInfo val summary: String?
 )
 
@@ -113,12 +113,11 @@ data class ToCEntryFull(val name: String, val page: Int, @ColumnInfo(defaultValu
 data class ToCEntryUpdate(val name: String, val page: Int, val archiveId: String)
 data class ToCEntry(val name: String, val page: Int)
 
-class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int) {
+open class ArchiveJsonBase(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int) {
     val title: String = json.get("title").asString
     val id: String = json.get("arcid").asString
     val tags: String = json.get("tags").asString
     val pageCount = json.get("pagecount")?.asInt ?: 0
-    val currentPage = json.get("progress")?.asInt?.minus(1) ?: 0
     val isNew = json.get("isnew").asString == "true"
     val summary = json.getOrNull("summary")?.asString
     val dateAdded: Long
@@ -140,4 +139,8 @@ class ArchiveJson(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int
         }
     }
 
+}
+
+class ArchiveJson(json: JsonObject, updatedAt: Long, titleSortIndex: Int) : ArchiveJsonBase(json, updatedAt, titleSortIndex) {
+    val currentPage = json.get("progress")?.asInt?.minus(1) ?: 0
 }

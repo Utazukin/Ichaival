@@ -21,6 +21,7 @@ package com.utazukin.ichaival.database
 import android.content.Context
 import android.database.DatabaseUtils
 import androidx.core.content.edit
+import androidx.core.database.getStringOrNull
 import androidx.paging.PagingSource
 import androidx.preference.PreferenceManager
 import androidx.room.Entity
@@ -30,6 +31,7 @@ import androidx.room.migration.Migration
 import androidx.room.withTransaction
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
@@ -40,9 +42,11 @@ import com.utazukin.ichaival.ArchiveBase
 import com.utazukin.ichaival.ArchiveCategory
 import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveJson
+import com.utazukin.ichaival.ArchiveJsonBase
 import com.utazukin.ichaival.CategoryManager
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
+import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.StatusFilter
@@ -64,6 +68,13 @@ private class ArchiveDeserializer(private val updateTime: Long) : JsonDeserializ
 
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ArchiveJson {
         return ArchiveJson(json.asJsonObject, updateTime, index++)
+    }
+}
+
+private class LocalArchiveDeserializer(private val updateTime: Long) : JsonDeserializer<ArchiveJsonBase> {
+    private var index = 0
+    override fun deserialize(json: JsonElement, type: Type?, context: JsonDeserializationContext?): ArchiveJsonBase {
+        return ArchiveJsonBase(json.asJsonObject, updateTime, index++)
     }
 }
 
@@ -163,6 +174,51 @@ private class DatabaseHelper {
         }
     }
 
+    private val MIGRATION_11_12 = object: Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.beginTransaction()
+
+            db.execSQL("alter table archive rename to oldarchive")
+            db.execSQL("create table archive (id text not null primary key, title text not null, dateAdded integer not null, isNew integer not null, " +
+            "tags text not null, currentPage integer not null default 0, pageCount integer not null, updatedAt integer not null default 0, " +
+            "titleSortIndex integer not null default 0, summary text)")
+
+            val cursor = db.query("select * from oldarchive")
+            cursor.use {
+                while (cursor.moveToNext()) {
+                    val id = it.getString(0)
+                    val title = it.getString(1)
+                    val dateAdded = it.getLong(2)
+                    val isNew = it.getInt(3)
+                    val tags = it.getString(4)
+                    val currentPage = it.getInt(5)
+                    val pageCount = it.getInt(6)
+                    val updatedAt = it.getLong(7)
+                    val titleSortIndex = it.getInt(8)
+                    val summary = it.getStringOrNull(9)
+                    val args = arrayOf<Any?>(
+                            id,
+                            title,
+                            dateAdded,
+                            isNew,
+                            tags,
+                            currentPage,
+                            pageCount,
+                            updatedAt,
+                            titleSortIndex,
+                            summary
+                    )
+                    db.execSQL("insert into archive values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", args)
+                }
+            }
+
+            db.execSQL("drop table oldarchive")
+
+            db.setTransactionSuccessful()
+            db.endTransaction()
+        }
+    }
+
     val migrations = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -173,7 +229,8 @@ private class DatabaseHelper {
             MIGRATION_7_8,
             MIGRATION_8_9,
             MIGRATION_9_10,
-            MIGRATION_10_11
+            MIGRATION_10_11,
+            MIGRATION_11_12
     )
 
     val callbacks = object: RoomDatabase.Callback() {
@@ -211,8 +268,24 @@ object DatabaseReader {
 
         val currentTime = Calendar.getInstance().timeInMillis
         withTransaction {
-            val gson = GsonBuilder().registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime)).create()
+            val gson = GsonBuilder()
+                .registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime))
+                .registerTypeAdapter(ArchiveJsonBase::class.java, LocalArchiveDeserializer(currentTime))
+                .create()
             val archiveStream = WebHandler.getOrderedArchives(-1) ?: return@withTransaction
+            val extractor: suspend (Gson, JsonReader) -> ArchiveJsonBase = if (ServerManager.serverTracksProgress) {
+                { gson, reader ->
+                    val archive: ArchiveJson = gson.fromJson(reader, ArchiveJson::class.java)
+                    updateArchive(archive)
+                    archive
+                }
+            } else {
+                { gson, reader ->
+                    val archive: ArchiveJsonBase = gson.fromJson(reader, ArchiveJsonBase::class.java)
+                    updateArchive(archive)
+                    archive
+                }
+            }
             JsonReader(archiveStream.bufferedReader(Charsets.UTF_8)).use {
                 it.beginObject()
                 while (it.hasNext()) {
@@ -220,8 +293,7 @@ object DatabaseReader {
                     if (name == "data") {
                         it.beginArray()
                         while (it.hasNext()) {
-                            val archive: ArchiveJson = gson.fromJson(it, ArchiveJson::class.java)
-                            updateArchive(archive)
+                            val archive = extractor(gson, it)
                             val tocList = archive.toc?.let { toc ->
                                 List(toc.size()) { i ->
                                     val entry = toc.get(i).asJsonObject
@@ -254,6 +326,7 @@ object DatabaseReader {
     }
 
     private suspend fun updateArchive(archiveJson: ArchiveJson) = database.archiveDao().insertJson(archiveJson)
+    private suspend fun updateArchive(archiveJson: ArchiveJsonBase) = database.archiveDao().insertJsonBase(archiveJson)
 
     suspend fun <R> withTransaction(block: suspend () -> R) = database.withTransaction { block() }
 

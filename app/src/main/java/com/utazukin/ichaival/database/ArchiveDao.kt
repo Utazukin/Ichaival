@@ -39,6 +39,7 @@ import com.utazukin.ichaival.ArchiveCategory
 import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveFull
 import com.utazukin.ichaival.ArchiveJson
+import com.utazukin.ichaival.ArchiveJsonBase
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.ToCEntry
@@ -91,6 +92,9 @@ interface ArchiveDao {
 
     @Upsert(entity = ArchiveFull::class)
     suspend fun insertJson(archiveJson: ArchiveJson)
+
+    @Upsert(entity = ArchiveFull::class)
+    suspend fun insertJsonBase(archiveJsonBase: ArchiveJsonBase)
 
     @Query("Delete from archive where updatedAt < :updateTime")
     suspend fun removeNotUpdated(updateTime: Long)
@@ -261,7 +265,7 @@ class DatabaseTypeConverters {
         StaticCategoryRef::class,
         SearchArchiveRef::class,
         ToCEntryFull::class
-    ], version = 11, exportSchema = false)
+    ], version = 12, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
