@@ -115,26 +115,27 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
                 val currentIndex = when {
                     savedInstanceState != null -> items.indexOfFirst { it.page == savedInstanceState.getInt(CHAPTER_PAGE) }
                     firstThumb >= 0 -> items.indexOfFirst { it.page == firstThumb }
-                    else -> items.indexOfFirst { it.page == thumbAdapter.firstThumb }
+                    else -> items.indexOfFirst { it.page == thumbAdapter.thumbStart }
                 }
 
                 if (currentIndex >= 0) {
                     val currentItem = items[currentIndex]
                     text = currentItem.name
                     val start = items[currentIndex].page
-                    val end = if (currentIndex < items.size - 1) items[currentIndex + 1].page else archive!!.numPages
+                    val end = items.getOrNull(currentIndex + 1)?.page
                     thumbAdapter.useSubset(start, end)
                 }
 
                 setOnClickListener {
                     launch {
                         val dialog = AlertDialog.Builder(requireContext()).apply {
-                            val current = items.indexOfFirst { it.page == thumbAdapter.firstThumb }
+                            val current = items.indexOfFirst { it.page == thumbAdapter.thumbStart }
                             setSingleChoiceItems(items.map { it.name }.toTypedArray(), current) { dialog, id ->
                                 val start = items[id].page
-                                val end = if (id < items.size - 1) items[id + 1].page else archive!!.numPages
+                                val end = items.getOrNull(id + 1)?.page
                                 thumbAdapter.useSubset(start, end)
                                 tocButton.text = items[id].name
+                                listView.scrollToPosition(0)
                                 dialog.dismiss()
                             }
                         }.create()
@@ -145,8 +146,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
             }
         } else {
             tocButton.visibility = View.GONE
-            if (thumbAdapter.firstThumb > 0)
-                thumbAdapter.useSubset(0)
+            thumbAdapter.useSubset(0)
         }
     }
 
@@ -177,7 +177,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(CHAPTER_PAGE, thumbAdapter.firstThumb)
+        outState.putInt(CHAPTER_PAGE, thumbAdapter.thumbStart)
     }
 
     private fun setGalleryView(savedInstanceBundle: Bundle?) {

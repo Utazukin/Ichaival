@@ -18,7 +18,6 @@
 
 package com.utazukin.ichaival
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,10 +34,10 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.Disposable
 import coil3.request.allowRgb565
 import coil3.request.crossfade
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.min
 
 class ThumbRecyclerViewAdapter(
@@ -49,7 +48,9 @@ class ThumbRecyclerViewAdapter(
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
     private val scope = fragment.lifecycleScope
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
-    private val thumbIds = (0 until archive.numPages).toMutableList()
+    var thumbStart = 0
+        private set
+    private var thumbEnd = archive.numPages
     private var extractedThumbs = mutableListOf<Int>()
     private val loader = fragment.requireContext().imageLoader.newBuilder()
         .components {
@@ -71,14 +72,11 @@ class ThumbRecyclerViewAdapter(
         listener?.onThumbLongPress(item) ?: false
     }
 
-    val firstThumb
-        get() = thumbIds[0]
     private val imageLoadRequests: MutableMap<ViewHolder, Disposable> = mutableMapOf()
-    private val generateJob: Job
 
     init {
         setHasStableIds(true)
-        generateJob = scope.launch {
+        scope.launch {
             var thumbFlow = WebHandler.generateThumbs(archive.id, archive.numPages)
             if (thumbFlow == null) {
                 for (i in 0 until 3) {
@@ -90,23 +88,31 @@ class ThumbRecyclerViewAdapter(
             }
 
             thumbFlow?.cancellable()?.collect {
-                val thumbId = thumbIds.indexOf(it)
-                if (thumbId >= 0)
-                    notifyItemChanged(thumbId)
+                if (it in thumbStart until thumbEnd)
+                    notifyItemChanged(it - thumbStart)
 
                 extractedThumbs.add(it)
-                if (extractedThumbs.size == archive.numPages)
-                    generateJob.cancel()
             }
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     fun useSubset(start: Int, end: Int? = null) {
         val end = end ?: archive.numPages
-        thumbIds.clear()
-        thumbIds.addAll(start until end)
-        notifyDataSetChanged()
+        if (thumbStart == start && end == thumbEnd)
+            return
+
+        val oldSize = thumbEnd - thumbStart
+        val newSize = end - start
+        thumbStart = start
+        thumbEnd = end
+
+        notifyItemRangeChanged(0, min(end - start, oldSize))
+
+        val diff = newSize - oldSize
+        if (diff < 0)
+            notifyItemRangeRemoved(newSize, abs(diff))
+        else
+            notifyItemRangeInserted(oldSize, diff)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -114,20 +120,22 @@ class ThumbRecyclerViewAdapter(
         return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int = min(thumbIds.size, archive.numPages)
-    override fun getItemId(position: Int) = position.toLong()
+    override fun getItemCount(): Int = min(thumbEnd - thumbStart, archive.numPages)
+    override fun getItemId(position: Int) = (thumbStart + position).toLong()
 
     override fun onBindViewHolder(holder: ViewHolder, index: Int) {
-        holder.pageNumView.text = (thumbIds[index] + 1).toString()
+        val pageIndex = thumbStart + index
+        val pageNum = pageIndex + 1
+        holder.pageNumView.text = pageNum.toString()
 
         with(holder.thumbView) {
-            setTag(R.id.small_thumb, thumbIds[index])
+            setTag(R.id.small_thumb, pageIndex)
             setOnClickListener(onClickListener)
             setOnLongClickListener(onLongPressListener)
         }
 
-        if (thumbIds[index] in extractedThumbs) {
-            val image = archive.getThumb(thumbIds[index])
+        if (pageIndex in extractedThumbs) {
+            val image = archive.getThumb(pageIndex)
             imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
                 addAuthHeader()
                 allowRgb565(true)

@@ -116,7 +116,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(CHAPTER_PAGE, thumbAdapter.firstThumb)
+        outState.putInt(CHAPTER_PAGE, thumbAdapter.thumbStart)
     }
 
     override fun onThumbSelection(page: Int) {
