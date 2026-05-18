@@ -61,8 +61,6 @@ object CategoryManager {
         }
     }
 
-    suspend inline fun getStaticCategories(id: String) = DatabaseReader.getCategoryArchives(id)
-
     suspend fun addArchivesToCategory(categoryId: String, archiveIds: Collection<String>) {
         val references = buildList(archiveIds.size) {
             for (id in archiveIds) {

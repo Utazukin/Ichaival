@@ -165,13 +165,12 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         }
     }
 
-    private suspend fun setupCategories(view: View, archive: Archive) {
+    private fun setupCategories(view: View, details: ArchiveWithCategories) {
         val catLayout: LinearLayout = view.findViewById(R.id.cat_layout)
-        val categories = CategoryManager.getStaticCategories(archive.id)
-        if (categories.isNotEmpty() || ServerManager.canEdit) {
+        if (details.categories.isNotEmpty() || ServerManager.canEdit) {
             catLayout.visibility = View.VISIBLE
-            for (category in categories) {
-                val catView = createCatView(category, archive.id)
+            for (category in details.categories) {
+                val catView = createCatView(category, details.archive.id)
                 catFlexLayout.addView(catView)
             }
         } else catLayout.visibility = View.GONE
@@ -294,9 +293,10 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         val readButton: Button = view.findViewById(R.id.read_button)
         readButton.setOnClickListener { (activity as ArchiveDetails).startReaderActivityForResult() }
 
-        val archive = DatabaseReader.getArchive(archiveId)?.also { this.archive = it } ?: return
+        val details = DatabaseReader.getArchiveWithCategories(archiveId)?.also { this.archive = it.archive } ?: return
+        val archive = details.archive
         setUpTags(view, archive)
-        setupCategories(view, archive)
+        setupCategories(view, details)
 
         val titleView: TextView = view.findViewById(R.id.title)
         titleView.text = archive.title

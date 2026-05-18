@@ -20,9 +20,12 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import androidx.room.ColumnInfo
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Ignore
+import androidx.room.Junction
 import androidx.room.PrimaryKey
+import androidx.room.Relation
 import com.google.gson.JsonObject
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +66,22 @@ fun Archive.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, t
 fun ArchiveBase.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
 
 data class ArchiveBase(val id: String, val title: String, val pageCount: Int, val tags: Map<String, List<String>>)
+
+data class ArchiveWithCategories(
+        @Embedded
+        val archive: Archive,
+        @Relation(
+                parentColumn = "id",
+                entityColumn = "id",
+                entity = ArchiveCategoryFull::class,
+                associateBy = Junction(
+                        parentColumn = "archiveId",
+                        entityColumn = "categoryId",
+                        value = StaticCategoryRef::class
+                )
+        )
+        val categories: List<ArchiveCategory>
+)
 
 data class Archive (
     val id: String,

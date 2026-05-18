@@ -40,6 +40,7 @@ import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveFull
 import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.ArchiveJsonBase
+import com.utazukin.ichaival.ArchiveWithCategories
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.ToCEntry
@@ -99,14 +100,8 @@ interface ArchiveDao {
     @Query("Delete from archive where updatedAt < :updateTime")
     suspend fun removeNotUpdated(updateTime: Long)
 
-    @Query("Delete from readertab where id in (select readertab.id from readertab join archive on readertab.id = archive.id where archive.updatedAt < :updateTime)")
-    suspend fun removeNotUpdatedBookmarks(updateTime: Long)
-
     @Delete
     suspend fun removeBookmark(tab: ReaderTab)
-
-    @Query("Delete from readertab where id in (:ids)")
-    suspend fun removeBookmarks(ids: Collection<String>)
 
     @Query("Delete from readertab")
     suspend fun clearBookmarks()
@@ -144,8 +139,8 @@ interface ArchiveDao {
     @Query("Select * from archivecategory order by pinned")
     fun getAllCategories() : Flow<List<ArchiveCategory>>
 
-    @Query("Select archivecategory.* from archivecategory join staticcategoryref on archiveId = :archiveId and archivecategory.id = categoryId")
-    suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
+    @Query("Select * from archive where id = :archiveId")
+    suspend fun getCategoryArchives(archiveId: String) : ArchiveWithCategories?
 
     @Query("Select exists(select * from staticcategoryref where categoryId = :categoryId and archiveId = :archiveId)")
     suspend fun isInCategory(categoryId: String, archiveId: String) : Boolean
