@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -122,7 +123,15 @@ object ReaderTabHolder {
     }
 }
 
-@Entity(primaryKeys = ["id", "currentPage"])
+@Entity(primaryKeys = ["id", "currentPage"],
+        foreignKeys = [
+            ForeignKey(
+                    parentColumns = ["id"],
+                    childColumns = ["id"],
+                    entity = ArchiveFull::class,
+                    onDelete = ForeignKey.CASCADE
+            )
+        ])
 data class ReaderTab(
     @ColumnInfo val id: String,
     @ColumnInfo val title: String,

@@ -139,10 +139,10 @@ private class DatabaseHelper {
 
     private val MIGRATION_9_10 = object: Migration(9, 10) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.beginTransaction()
-
             db.execSQL("alter table readertab rename to oldreadertab")
-            db.execSQL("create table if not exists readertab (id text not null, title text not null, 'index' integer not null default 0, currentPage integer not null, primary key (id, currentPage))")
+            db.execSQL("create table if not exists readertab (id text not null, title text not null, " +
+                    "'index' integer not null default 0, currentPage integer not null, primary key (id, currentPage), " +
+                    "foreign key (id) references archive (id) on delete cascade)")
             val cursor = db.query("select * from oldreadertab")
             cursor.use {
                 while (cursor.moveToNext()) {
@@ -154,25 +154,16 @@ private class DatabaseHelper {
             }
             db.execSQL("drop table if exists oldreadertab")
 
-            db.setTransactionSuccessful()
-            db.endTransaction()
-        }
-    }
-
-    private val MIGRATION_10_11 = object: Migration(10, 11) {
-        override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("create table toc (name text not null, page integer not null, updateTime integer not null default 0, archiveId text not null, primary key (archiveId, page))")
+
+            migrateArchives(db)
         }
-    }
 
-    private val MIGRATION_11_12 = object: Migration(11, 12) {
-        override fun migrate(db: SupportSQLiteDatabase) {
-            db.beginTransaction()
-
+        private fun migrateArchives(db: SupportSQLiteDatabase) {
             db.execSQL("alter table archive rename to oldarchive")
             db.execSQL("create table archive (id text not null primary key, title text not null, dateAdded integer not null, isNew integer not null, " +
-            "tags text not null, currentPage integer not null default 0, pageCount integer not null, updatedAt integer not null default 0, " +
-            "titleSortIndex integer not null default 0, summary text)")
+                    "tags text not null, currentPage integer not null default 0, pageCount integer not null, updatedAt integer not null default 0, " +
+                    "titleSortIndex integer not null default 0, summary text)")
 
             val cursor = db.query("select * from oldarchive")
             cursor.use {
@@ -204,9 +195,6 @@ private class DatabaseHelper {
             }
 
             db.execSQL("drop table oldarchive")
-
-            db.setTransactionSuccessful()
-            db.endTransaction()
         }
     }
 
@@ -220,8 +208,6 @@ private class DatabaseHelper {
             MIGRATION_7_8,
             MIGRATION_8_9,
             MIGRATION_9_10,
-            MIGRATION_10_11,
-            MIGRATION_11_12
     )
 
     val callbacks = object: RoomDatabase.Callback() {
@@ -303,7 +289,6 @@ object DatabaseReader {
 
     private suspend fun removeOldArchives(updateTime: Long) = withTransaction {
         with(database.archiveDao()) {
-            removeNotUpdatedBookmarks(updateTime)
             removeOldCategoryReferences(updateTime)
             removeNotUpdated(updateTime)
             removeOldToC(updateTime)
@@ -369,14 +354,7 @@ object DatabaseReader {
             database.archiveDao().markCompleted(archive.id)
     }
 
-    suspend fun deleteArchives(ids: Collection<String>) {
-        withTransaction {
-            with(database.archiveDao()) {
-                removeArchives(ids)
-                removeBookmarks(ids)
-            }
-        }
-    }
+    suspend fun deleteArchives(ids: Collection<String>) = database.archiveDao().removeArchives(ids)
 
     fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
 

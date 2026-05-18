@@ -265,7 +265,7 @@ class DatabaseTypeConverters {
         StaticCategoryRef::class,
         SearchArchiveRef::class,
         ToCEntryFull::class
-    ], version = 12, exportSchema = false)
+    ], version = 10, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao
