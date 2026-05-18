@@ -285,8 +285,10 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
                     else -> it.currentPage
                 }
 
-                if (page != it.currentPage)
-                    WebHandler.updateProgress(it.id, currentPage)
+                if (page != it.currentPage) {
+                    DatabaseReader.updateProgress(it.id, page)
+                    WebHandler.updateProgress(it.id, page)
+                }
 
                 it.currentPage = page
                 currentPage = page
