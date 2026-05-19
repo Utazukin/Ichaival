@@ -18,13 +18,16 @@
 
 package com.utazukin.ichaival.database
 
+import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
 import android.database.DatabaseUtils
 import androidx.core.content.edit
 import androidx.core.database.getStringOrNull
 import androidx.paging.PagingSource
 import androidx.preference.PreferenceManager
 import androidx.room.Entity
+import androidx.room.OnConflictStrategy
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
@@ -168,29 +171,16 @@ private class DatabaseHelper {
             val cursor = db.query("select * from oldarchive")
             cursor.use {
                 while (cursor.moveToNext()) {
-                    val id = it.getString(0)
-                    val title = it.getString(1)
-                    val dateAdded = it.getLong(2)
-                    val isNew = it.getInt(3)
-                    val tags = it.getString(4)
-                    val currentPage = it.getInt(5)
-                    val pageCount = it.getInt(6)
-                    val updatedAt = it.getLong(7)
-                    val titleSortIndex = it.getInt(8)
-                    val summary = it.getStringOrNull(9)
-                    val args = arrayOf<Any?>(
-                            id,
-                            title,
-                            dateAdded,
-                            isNew,
-                            tags,
-                            currentPage,
-                            pageCount,
-                            updatedAt,
-                            titleSortIndex,
-                            summary
-                    )
-                    db.execSQL("insert into archive values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", args)
+                    val values = ContentValues(cursor.columnCount).apply {
+                        for (i in 0 until cursor.columnCount) {
+                            when (cursor.getType(i)) {
+                                Cursor.FIELD_TYPE_STRING -> put(cursor.getColumnName(i), cursor.getStringOrNull(i))
+                                Cursor.FIELD_TYPE_INTEGER -> put(cursor.getColumnName(i), cursor.getLong(i))
+                                else -> {}
+                            }
+                        }
+                    }
+                    db.insert("archive", OnConflictStrategy.REPLACE, values)
                 }
             }
 
