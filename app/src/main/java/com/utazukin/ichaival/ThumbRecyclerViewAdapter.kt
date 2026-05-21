@@ -28,35 +28,35 @@ import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import coil3.dispose
 import coil3.imageLoader
 import coil3.load
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import coil3.request.Disposable
 import coil3.request.allowRgb565
 import coil3.request.crossfade
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
+    thumbResult: ThumbResult,
     private val archive: Archive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener
-    private val scope = fragment.lifecycleScope
     private val defaultHeight = fragment.resources.getDimension(R.dimen.thumb_preview_size).toInt()
-    var thumbStart = 0
+    var thumbStart = -1
         private set
-    private var thumbEnd = archive.numPages
-    private var extractedThumbs = mutableListOf<Int>()
+    private var thumbEnd = -1
+    private val extractedThumbs: BooleanArray
     private val loader = fragment.requireContext().imageLoader.newBuilder()
         .components {
             add(
                     OkHttpNetworkFetcherFactory(
-                            callFactory = WebHandler.httpClient.newBuilder().addInterceptor(ThumbHttpInterceptor(scope, WebHandler.httpClient))
+                            callFactory = WebHandler.httpClient.newBuilder()
+                                .addInterceptor(ThumbHttpInterceptor(fragment.lifecycleScope, WebHandler.httpClient))
                                 .build()
                     )
             )
@@ -72,26 +72,21 @@ class ThumbRecyclerViewAdapter(
         listener?.onThumbLongPress(item) ?: false
     }
 
-    private val imageLoadRequests: MutableMap<ViewHolder, Disposable> = mutableMapOf()
-
     init {
         setHasStableIds(true)
-        scope.launch {
-            var thumbFlow = WebHandler.generateThumbs(archive.id, archive.numPages)
-            if (thumbFlow == null) {
-                for (i in 0 until 3) {
-                    delay(500)
-                    thumbFlow = WebHandler.generateThumbs(archive.id, archive.numPages)
-                    if (thumbFlow != null)
-                        break
+        when (thumbResult) {
+            is CompleteThumbResult -> extractedThumbs = BooleanArray(archive.numPages) { true }
+            is FailedThumbResult -> extractedThumbs = BooleanArray(archive.numPages)
+            is InProgressThumbResult -> {
+                extractedThumbs = BooleanArray(archive.numPages)
+                fragment.lifecycleScope.launch {
+                    thumbResult.flow.collect {
+                        extractedThumbs[it] = true
+
+                        if (thumbStart >= 0 && thumbEnd >= 0 && it in thumbStart until thumbEnd)
+                            notifyItemChanged(it - thumbStart)
+                    }
                 }
-            }
-
-            thumbFlow?.cancellable()?.collect {
-                if (it in thumbStart until thumbEnd)
-                    notifyItemChanged(it - thumbStart)
-
-                extractedThumbs.add(it)
             }
         }
     }
@@ -106,13 +101,17 @@ class ThumbRecyclerViewAdapter(
         thumbStart = start
         thumbEnd = end
 
-        notifyItemRangeChanged(0, min(end - start, oldSize))
+        if (oldSize <= 0) {
+            notifyItemRangeInserted(0, thumbEnd)
+        } else {
+            notifyItemRangeChanged(0, min(end - start, oldSize))
 
-        val diff = newSize - oldSize
-        if (diff < 0)
-            notifyItemRangeRemoved(newSize, abs(diff))
-        else
-            notifyItemRangeInserted(oldSize, diff)
+            val diff = newSize - oldSize
+            if (diff < 0)
+                notifyItemRangeRemoved(newSize, abs(diff))
+            else
+                notifyItemRangeInserted(oldSize, diff)
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -120,7 +119,7 @@ class ThumbRecyclerViewAdapter(
         return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int = min(thumbEnd - thumbStart, archive.numPages)
+    override fun getItemCount(): Int = max(thumbEnd - thumbStart, 0)
     override fun getItemId(position: Int) = (thumbStart + position).toLong()
 
     override fun onBindViewHolder(holder: ViewHolder, index: Int) {
@@ -134,9 +133,9 @@ class ThumbRecyclerViewAdapter(
             setOnLongClickListener(onLongPressListener)
         }
 
-        if (pageIndex in extractedThumbs) {
+        if (extractedThumbs[pageIndex]) {
             val image = archive.getThumb(pageIndex)
-            imageLoadRequests[holder] = holder.thumbView.load(image, loader) {
+            holder.thumbView.load(image, loader) {
                 addAuthHeader()
                 allowRgb565(true)
                 crossfade(true)
@@ -154,10 +153,10 @@ class ThumbRecyclerViewAdapter(
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
-        imageLoadRequests.remove(holder)?.dispose()
         super.onViewRecycled(holder)
 
         with(holder.thumbView) {
+            dispose()
             adjustViewBounds = false
             updateLayoutParams { height = defaultHeight }
         }

@@ -27,6 +27,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.NumberPicker
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -37,14 +38,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private const val ARCHIVE_ID = "arcid"
-private const val CHAPTER_PAGE = "max pages"
 
 class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.ThumbInteractionListener, CoroutineScope {
     override val coroutineContext = lifecycleScope.coroutineContext
-    private var archiveId: String? = null
-    private var archive: Archive? = null
-    private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
-    private var savedPageCount = -1
+    private var archiveId: String = ""
     private var readerPage = -1
     private lateinit var listView: RecyclerView
     private lateinit var pagePicker: NumberPicker
@@ -59,7 +56,7 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         setStyle(STYLE_NORMAL, theme)
         super.onCreate(savedInstanceState)
         arguments?.run {
-            archiveId = getString(ARCHIVE_ID)
+            archiveId = getString(ARCHIVE_ID, "")
             readerPage = getInt(FROM_READER_PAGE, -1)
         }
     }
@@ -70,22 +67,23 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         pagePicker = view.findViewById(R.id.page_picker_preview)
 
         launch {
-            archive = DatabaseReader.getArchive(archiveId!!)
-            with(pagePicker) {
-                minValue = 1
-                maxValue = archive?.numPages ?: 1
-                value = readerPage + 1
-                setOnValueChangedListener { _, _, newValue ->
-                    if (pickerState == NumberPicker.OnScrollListener.SCROLL_STATE_IDLE)
-                        jumpToPage(newValue - 1)
+            DatabaseReader.getArchive(archiveId)?.let {
+                with(pagePicker) {
+                    minValue = 1
+                    maxValue = it.numPages
+                    value = readerPage + 1
+                    setOnValueChangedListener { _, _, newValue ->
+                        if (pickerState == NumberPicker.OnScrollListener.SCROLL_STATE_IDLE)
+                            jumpToPage(newValue - 1)
+                    }
+                    setOnScrollListener { view, scrollState ->
+                        if (scrollState == NumberPicker.OnScrollListener.SCROLL_STATE_IDLE)
+                            jumpToPage(view.value - 1)
+                        pickerState = scrollState
+                    }
                 }
-                setOnScrollListener { view, scrollState ->
-                    if (scrollState == NumberPicker.OnScrollListener.SCROLL_STATE_IDLE)
-                        jumpToPage(view.value - 1)
-                    pickerState = scrollState
-                }
+                setGalleryView(view, it, savedInstanceState != null)
             }
-            setGalleryView(view)
         }
 
         return view
@@ -95,11 +93,15 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         super.onConfigurationChanged(newConfig)
         when (newConfig.orientation) {
             Configuration.ORIENTATION_LANDSCAPE, Configuration.ORIENTATION_PORTRAIT -> {
-                val ft = parentFragmentManager.beginTransaction()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                    ft.setReorderingAllowed(false)
                 readerPage = pagePicker.value - 1
-                ft.detach(this).attach(this).commit()
+                parentFragmentManager.commit {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                        setReorderingAllowed(false)
+                    detach(this@GalleryPreviewDialogFragment)
+                }
+                parentFragmentManager.commit {
+                    attach(this@GalleryPreviewDialogFragment)
+                }
             }
         }
     }
@@ -112,11 +114,6 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
     override fun onDetach() {
         super.onDetach()
         requireActivity().imageLoader.memoryCache?.clear()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putInt(CHAPTER_PAGE, thumbAdapter.thumbStart)
     }
 
     override fun onThumbSelection(page: Int) {
@@ -147,12 +144,14 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         return layoutManager?.isViewPartiallyVisible(viewHolder.itemView, true, true) == true
     }
 
-    private fun setGalleryView(view: View) {
+    private suspend fun setGalleryView(view: View, archive: Archive, restoring: Boolean) {
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
         with(listView) {
             val dpWidth = getDpWidth(requireActivity().getWindowWidth())
             val columns = dpWidth.floorDiv(150)
-            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, archive!!)
+            val result = WebHandler.tryGenerateThumbs(archive.id)
+            val thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, result, archive)
+            thumbAdapter.useSubset(0)
             layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)
 
             adapter = thumbAdapter
@@ -167,12 +166,8 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
                 }
             })
 
-            if (savedPageCount <= 0) {
-                archive?.let {
-                    if (readerPage > 0)
-                        jumpToPage(readerPage)
-                }
-            }
+            if (!restoring && readerPage > 0)
+                jumpToPage(readerPage)
         }
     }
 

@@ -34,8 +34,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -77,6 +77,11 @@ class TagSuggestion(tagText: String, namespaceText: String, val weight: Int) {
 data class Header(
     @SerializedName("name") val name: String,
     @SerializedName("value") val value: String)
+
+sealed interface ThumbResult
+data object FailedThumbResult: ThumbResult
+data object CompleteThumbResult: ThumbResult
+data class InProgressThumbResult(val flow: Flow<Int>): ThumbResult
 
 object WebHandler {
     private const val connTimeoutMs = 5000L
@@ -401,59 +406,74 @@ object WebHandler {
         }
     }
 
-    suspend fun generateThumbs(id: String, pageCount: Int) : Flow<Int>? {
+    suspend fun tryGenerateThumbs(id: String): ThumbResult {
+        var tries = 0
+        var result: ThumbResult?
+        do {
+            result = generateThumbs(id)
+        } while (result == null && ++tries < 3)
+
+        return result ?: FailedThumbResult
+    }
+
+    private suspend fun generateThumbs(id: String) : ThumbResult? {
         if (DownloadManager.isDownloaded(id))
-            return (0 until pageCount).asFlow()
+            return CompleteThumbResult
 
         if (!canConnect())
-            return null
+            return FailedThumbResult
 
         if (!ServerManager.checkVersionAtLeast(0, 9, 10))
-            return (0 until pageCount).asFlow()
+            return CompleteThumbResult
 
         var connection = createServerConnection(serverUrlBuilder.addThumbs(id).build(), "POST", FormBody.Builder().build())
-        val response = withContext(Dispatchers.IO) { httpClient.newCall(connection).tryAwait() } ?: return null
-        response.use {
-            if (response.code == HttpURLConnection.HTTP_OK)
-                return (0 until pageCount).asFlow()
-            else if (response.code == HttpURLConnection.HTTP_ACCEPTED) {
-                val json = JSONObject(response.body.string())
-                val jobId = json.getInt("job")
-                val jobUrl = getUrlForJob(jobId)
-                connection = createServerConnection(jobUrl)
+        return withContext(Dispatchers.IO) {
+            val response = httpClient.newCall(connection).tryAwait()
+            response.use {
+                when (it?.code) {
+                    HttpURLConnection.HTTP_OK -> CompleteThumbResult
+                    HttpURLConnection.HTTP_BAD_GATEWAY -> null //Might be an nginx issue, but sometimes this call fails
+                    HttpURLConnection.HTTP_ACCEPTED -> {
+                        val json = JSONObject(it.body.string())
+                        val thumbFlow = flow {
+                            val jobId = json.getInt("job")
+                            val jobUrl = getUrlForJob(jobId)
+                            connection = createServerConnection(jobUrl)
 
-                return withContext(Dispatchers.IO) {
-                    flow {
-                        val pages = mutableSetOf<Int>()
-                        var complete: Boolean? = null
-                        do {
-                            delay(100)
-                            val response = httpClient.newCall(connection).tryAwait()
-                            if (response == null || !response.isSuccessful)
-                                complete = false
-                            else {
-                                val json = JSONObject(response.body.string())
-                                val notes = json.getJSONObject("notes")
-                                val size = notes.optInt("total_pages", -1)
-                                if (size < 0)
-                                    continue
+                            val pages = mutableSetOf<Int>()
+                            var complete: Boolean? = null
+                            do {
+                                delay(100)
+                                httpClient.newCall(connection).tryAwait().use { res ->
+                                    if (res == null || !res.isSuccessful)
+                                        complete = false
+                                    else {
+                                        val json = JSONObject(res.body.string())
+                                        val notes = json.getJSONObject("notes")
+                                        val size = notes.optInt("total_pages", -1)
+                                        if (size < 0)
+                                            continue
 
-                                for (i in 1 until (size + 1)) {
-                                    if (notes.optString(i.toString()) == "processed" && pages.add(i - 1))
-                                        emit(i - 1)
+                                        for (i in 1..size) {
+                                            if (notes.optString(i.toString()) == "processed" && pages.add(i - 1))
+                                                emit(i - 1)
+                                        }
+
+                                        complete = when (json.optString("state")) {
+                                            "finished" -> true
+                                            "failed" -> false
+                                            else -> null
+                                        }
+                                    }
                                 }
-
-                                complete = when (json.optString("state")) {
-                                    "finished" -> true
-                                    "failed" -> false
-                                    else -> null
-                                }
-                            }
-                        } while (currentCoroutineContext().isActive && complete == null)
+                            } while (currentCoroutineContext().isActive && complete == null)
+                        }.flowOn(Dispatchers.IO)
+                        InProgressThumbResult(thumbFlow)
                     }
+
+                    else -> FailedThumbResult
                 }
-            } else
-                return null
+            }
         }
     }
 

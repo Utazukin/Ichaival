@@ -35,6 +35,7 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -43,14 +44,14 @@ import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlin.math.max
 
 private const val ARCHIVE_ID = "arcid"
 private const val CHAPTER_PAGE = "chapter page"
 
 class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
     override val coroutineContext = lifecycleScope.coroutineContext
-    private var archiveId: String? = null
-    private var archive: Archive? = null
+    private var archiveId: String = ""
     private lateinit var thumbAdapter: ThumbRecyclerViewAdapter
     private lateinit var progress: ProgressBar
     private var readerPage = -1
@@ -61,7 +62,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.run {
-            archiveId = getString(ARCHIVE_ID)
+            archiveId = getString(ARCHIVE_ID) ?: ""
             readerPage = getInt(FROM_READER_PAGE, -1)
         }
     }
@@ -80,22 +81,25 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
             addMenuProvider(this@GalleryPreviewFragment, viewLifecycleOwner, Lifecycle.State.RESUMED)
         }
 
-        launch {
-            archive = DatabaseReader.getArchive(archiveId!!)
-            setGalleryView(savedInstanceState)
-            DatabaseReader.getToC(archiveId!!).collectLatest {
-                var firstThumb = -1
-                if (it.isNotEmpty() && currentToc != null) {
-                    for ((i, chapter) in it.withIndex()) {
-                        if (chapter.page != currentToc?.getOrNull(i)?.page) {
-                            firstThumb = chapter.page
-                            break
+        lifecycleScope.launch {
+            DatabaseReader.getArchive(archiveId)?.let {
+                setGalleryView(savedInstanceState, it)
+            }
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
+                DatabaseReader.getToC(archiveId).collectLatest {
+                    var firstThumb = -1
+                    if (it.isNotEmpty() && currentToc != null) {
+                        for ((i, chapter) in it.withIndex()) {
+                            if (chapter.page != currentToc?.getOrNull(i)?.page) {
+                                firstThumb = chapter.page
+                                break
+                            }
                         }
                     }
-                }
 
-                currentToc = it
-                updateToCButton(it, savedInstanceState, firstThumb)
+                    currentToc = it
+                    updateToCButton(it, savedInstanceState, firstThumb)
+                }
             }
         }
 
@@ -112,35 +116,31 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
                     }
                 } else toc
 
-                val currentIndex = when {
+                val currentIndex = max(when {
                     savedInstanceState != null -> items.indexOfFirst { it.page == savedInstanceState.getInt(CHAPTER_PAGE) }
                     firstThumb >= 0 -> items.indexOfFirst { it.page == firstThumb }
                     else -> items.indexOfFirst { it.page == thumbAdapter.thumbStart }
-                }
+                }, 0)
 
-                if (currentIndex >= 0) {
-                    val currentItem = items[currentIndex]
-                    text = currentItem.name
-                    val start = items[currentIndex].page
-                    val end = items.getOrNull(currentIndex + 1)?.page
-                    thumbAdapter.useSubset(start, end)
-                }
+                val currentItem = items[currentIndex]
+                text = currentItem.name
+                val start = items[currentIndex].page
+                val end = items.getOrNull(currentIndex + 1)?.page
+                thumbAdapter.useSubset(start, end)
 
                 setOnClickListener {
-                    launch {
-                        val dialog = AlertDialog.Builder(requireContext()).apply {
-                            val current = items.indexOfFirst { it.page == thumbAdapter.thumbStart }
-                            setSingleChoiceItems(items.map { it.name }.toTypedArray(), current) { dialog, id ->
-                                val start = items[id].page
-                                val end = items.getOrNull(id + 1)?.page
-                                thumbAdapter.useSubset(start, end)
-                                tocButton.text = items[id].name
-                                listView.scrollToPosition(0)
-                                dialog.dismiss()
-                            }
-                        }.create()
-                        dialog.show()
-                    }
+                    val dialog = AlertDialog.Builder(requireContext()).apply {
+                        val current = items.indexOfFirst { it.page == thumbAdapter.thumbStart }
+                        setSingleChoiceItems(items.map { it.name }.toTypedArray(), current) { dialog, id ->
+                            val start = items[id].page
+                            val end = items.getOrNull(id + 1)?.page
+                            thumbAdapter.useSubset(start, end)
+                            tocButton.text = items[id].name
+                            listView.scrollToPosition(0)
+                            dialog.dismiss()
+                        }
+                    }.create()
+                    dialog.show()
                 }
                 visibility = View.VISIBLE
             }
@@ -180,18 +180,17 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
         outState.putInt(CHAPTER_PAGE, thumbAdapter.thumbStart)
     }
 
-    private fun setGalleryView(savedInstanceBundle: Bundle?) {
+    private suspend fun setGalleryView(savedInstanceBundle: Bundle?, archive: Archive) {
         with(listView) {
             val dpWidth = getDpWidth(requireActivity().getWindowWidth())
             val columns = dpWidth.floorDiv(150)
-            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, archive!!)
+            val result = WebHandler.tryGenerateThumbs(archive.id)
+            thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, result, archive)
             layoutManager = (if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)).apply {
                 if (savedInstanceBundle != null) {
-                    archive?.let {
-                        val page = if (readerPage > -1) readerPage else it.currentPage
-                        if (page > 0)
-                            scrollToPosition(page)
-                    }
+                    val page = if (readerPage > -1) readerPage else archive.currentPage
+                    if (page > 0)
+                        scrollToPosition(page)
                 }
             }
 
