@@ -45,7 +45,7 @@ class EditChapterDialogFragment : DialogFragment() {
         super.onCreate(savedInstanceState)
         with(requireArguments()) {
             pageNum = getInt(PAGE_KEY)
-            archiveId = getString(ID_KEY)!!
+            archiveId = getString(ID_KEY) ?: ""
         }
     }
 
@@ -53,7 +53,7 @@ class EditChapterDialogFragment : DialogFragment() {
         return when (context?.getCustomTheme()) {
             getString(R.string.material_theme) -> MaterialAlertDialogBuilder(requireContext(), theme)
             else -> AlertDialog.Builder(requireContext(), theme)
-        }.setView(setupDialog()).create()
+        }.setView(setupDialog()).setTitle(R.string.add_edit_chapter).create()
     }
 
     private fun setupDialog(): View? {
