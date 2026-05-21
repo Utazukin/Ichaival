@@ -230,10 +230,7 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             setItems(choices) { dialog, i ->
                 when (i) {
                     0 -> {
-                        launch {
-                            DatabaseReader.refreshThumbnail(id, this@ArchiveDetails, page)
-                            Toast.makeText(this@ArchiveDetails, getString(R.string.update_thumbnail_message), Toast.LENGTH_SHORT).show()
-                        }
+                        launch { DatabaseReader.refreshThumbnail(id, this@ArchiveDetails, page) }
                         dialog.dismiss()
                     }
                     1 -> {

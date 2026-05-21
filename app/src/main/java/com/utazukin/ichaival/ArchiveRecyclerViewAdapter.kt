@@ -33,13 +33,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.paging.PagingDataAdapter
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import coil3.dispose
+import coil3.imageLoader
 import coil3.load
+import coil3.request.addLastModifiedToFileCacheKey
 import coil3.request.allowHardware
 import coil3.request.allowRgb565
 import coil3.request.crossfade
@@ -75,11 +80,13 @@ class ArchiveRecyclerViewAdapter(
     private val selectedArchives = mutableSetOf<Int>()
     private var actionMode: ActionMode? = null
     private val scope = fragment.lifecycleScope
+    private val lifecycleOwner: LifecycleOwner = fragment
     private val context = fragment.requireContext()
     private val fragmentManager = fragment.childFragmentManager
     private val listener = fragment as? OnListFragmentInteractionListener
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
-    private val thumbLoadingJobs = mutableMapOf<ViewHolder, Job>()
+    private val coverLoader = context.imageLoader.newBuilder().components { add(CoverInterceptor()) }.build()
+    private val imageJobs = mutableMapOf<ViewHolder, Job>()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as ArchiveBase
@@ -125,12 +132,12 @@ class ArchiveRecyclerViewAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let {
             holder.archiveName.text = it.title
-            thumbLoadingJobs[holder] = scope.launch {
-                val imageFile = DatabaseReader.getArchiveImage(it, holder.mView.context)
-                imageFile?.let { file ->
-                    holder.archiveImage.load(file) {
+            imageJobs[holder] = scope.launch {
+                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    holder.archiveImage.load(DatabaseReader.getArchiveImagePath(it.id, context), coverLoader) {
                         allowRgb565(true)
                         allowHardware(false)
+                        addLastModifiedToFileCacheKey(true)
                         crossfade(true)
                         if (listViewType == ListViewType.Cover)
                             transformations(StartCrop())
@@ -164,7 +171,7 @@ class ArchiveRecyclerViewAdapter(
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
-        thumbLoadingJobs.remove(holder)?.cancel()
+        imageJobs.remove(holder)?.cancel()
         with(holder.archiveImage) {
             dispose()
             setImageBitmap(null)

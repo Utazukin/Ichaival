@@ -548,10 +548,14 @@ object DatabaseReader {
         }
     }
 
-    suspend fun getArchiveImage(archive: ArchiveBase, context: Context) = getArchiveImage(archive.id, context)
+    fun getArchiveImagePath(id: String, context: Context): File {
+        val thumbDir = getThumbDir(context.noBackupFilesDir, id)
+        return File(thumbDir, "$id.jpg")
+    }
+
     suspend fun getArchiveImage(archive: Archive, context: Context) = getArchiveImage(archive.id, context)
 
-    suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : File? {
+    private suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : File? {
         val thumbDir = getThumbDir(context.noBackupFilesDir, id)
 
         val image = File(thumbDir, "$id.jpg")

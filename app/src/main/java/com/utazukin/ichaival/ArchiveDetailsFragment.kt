@@ -45,7 +45,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import coil3.imageLoader
 import coil3.load
+import coil3.request.addLastModifiedToFileCacheKey
 import coil3.request.allowHardware
 import coil3.request.allowRgb565
 import com.google.android.flexbox.FlexDirection
@@ -68,6 +70,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private lateinit var downloadButton: Button
     private var archive: Archive? = null
     private var tagListener: TagInteractionListener? = null
+    private val coverLoader by lazy { requireContext().imageLoader.newBuilder().components { add(CoverInterceptor()) }.build() }
     private val isLocalSearch by lazy {
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.getBoolean(getString(R.string.local_search_key), false)
@@ -114,6 +117,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                             thumbView.load(file) {
                                 allowRgb565(true)
                                 allowHardware(false)
+                                addLastModifiedToFileCacheKey(true)
                             }
                         }
                     }
@@ -398,17 +402,15 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             true
         }
 
-        val thumbFile = DatabaseReader.getArchiveImage(archive, requireContext())
-        thumbFile?.let {
-            thumbView.load(it) {
-                allowRgb565(true)
-                allowHardware(false)
-                listener(
-                        onSuccess = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
-                        onError = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
-                        onCancel = { requireActivity().supportStartPostponedEnterTransition() }
-                )
-            }
+        thumbView.load(DatabaseReader.getArchiveImagePath(archiveId, requireContext()), coverLoader) {
+            allowRgb565(true)
+            allowHardware(false)
+            addLastModifiedToFileCacheKey(true)
+            listener(
+                    onSuccess = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
+                    onError = { _, _ -> requireActivity().supportStartPostponedEnterTransition() },
+                    onCancel = { requireActivity().supportStartPostponedEnterTransition() }
+            )
         }
     }
 

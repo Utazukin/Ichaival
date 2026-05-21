@@ -18,6 +18,7 @@
 
 package com.utazukin.ichaival
 
+import coil3.request.ImageResult
 import com.utazukin.ichaival.WebHandler.addHeaders
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
@@ -34,6 +35,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import kotlin.math.floor
 
@@ -44,6 +46,21 @@ class ProgressInterceptor(private val listener: ResponseProgressListener) : Inte
         return response.newBuilder().apply {
             body(OkHttpProgressResponseBody(request.url, response.body, listener))
         }.build()
+    }
+}
+
+class CoverInterceptor() : coil3.intercept.Interceptor {
+    override suspend fun intercept(chain: coil3.intercept.Interceptor.Chain): ImageResult {
+        val file = chain.request.data as? File ?: return chain.proceed()
+
+        if (!file.exists() && file.path.contains("thumbs/")) {
+            val id = file.nameWithoutExtension
+            WebHandler.downloadThumb(null, id)?.use {
+                file.outputStream().use { f -> it.copyTo(f) }
+            }
+        }
+
+        return chain.proceed()
     }
 }
 

@@ -28,19 +28,20 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import coil3.dispose
+import coil3.imageLoader
 import coil3.load
+import coil3.request.addLastModifiedToFileCacheKey
 import coil3.request.allowRgb565
 import coil3.request.crossfade
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.ReaderTabViewModel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     private val listener = activity as? OnTabInteractionListener
     private val activityScope = activity as CoroutineScope
+    private val coverLoader = activity.imageLoader.newBuilder().components { add(CoverInterceptor()) }.build()
 
     private val onClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as ReaderTab
@@ -50,8 +51,6 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
         val item = it.tag as ReaderTab
         listener?.onLongPressTab(item) == true
     }
-
-    private val jobs: MutableMap<ViewHolder, Job> = mutableMapOf()
 
     init {
         val viewModel: ReaderTabViewModel by activity.viewModels()
@@ -63,13 +62,16 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
             holder.titleView.text = item.title
             holder.pageView.text = if (item.page >= 0) (item.page + 1).toString() else ""
 
-            jobs[holder] = activityScope.launch {
-                val thumbFile = if (item.page >= 0) WebHandler.getThumbUrl(item.id, item.page) else DatabaseReader.getArchiveImage(item.id, holder.view.context)
-                thumbFile.let {
-                    holder.thumbView.load(it) {
-                        allowRgb565(true)
-                        crossfade(true)
-                    }
+            if (item.page >= 0) {
+                holder.thumbView.load(WebHandler.getThumbUrl(item.id, item.page)) {
+                    allowRgb565(true)
+                    crossfade(true)
+                }
+            } else {
+                holder.thumbView.load(DatabaseReader.getArchiveImagePath(item.id, holder.view.context), coverLoader) {
+                    allowRgb565(true)
+                    crossfade(true)
+                    addLastModifiedToFileCacheKey(true)
                 }
             }
 
@@ -83,7 +85,6 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
-        jobs.remove(holder)?.cancel()
         with(holder.thumbView) {
             dispose()
             setImageBitmap(null)

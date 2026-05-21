@@ -519,7 +519,7 @@ object WebHandler {
         return jobComplete
     }
 
-    suspend fun downloadThumb(context: Context, id: String, page: Int? = null) : InputStream? {
+    suspend fun downloadThumb(context: Context?, id: String, page: Int? = null) : InputStream? {
         if (!canConnect())
             return null
 
@@ -528,7 +528,7 @@ object WebHandler {
             if (page != null) {
                 val updateUrl = url.newBuilder().addQueryParameter("page", page + 1).build()
                 val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
-                val errorMessage = context.getString(R.string.thumb_set_fail_message)
+                val errorMessage = context?.getString(R.string.thumb_set_fail_message)
                 httpClient.newCall(connection).tryAwait(errorMessage)?.close() ?: return@withContext null
             }
 
