@@ -33,10 +33,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.paging.PagingDataAdapter
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
@@ -53,7 +51,6 @@ import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 enum class ListViewType {
@@ -86,7 +83,6 @@ class ArchiveRecyclerViewAdapter(
     private val listener = fragment as? OnListFragmentInteractionListener
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
     private val coverLoader = context.imageLoader.newBuilder().components { add(CoverInterceptor()) }.build()
-    private val imageJobs = mutableMapOf<ViewHolder, Job>()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as ArchiveBase
@@ -129,21 +125,29 @@ class ArchiveRecyclerViewAdapter(
         return ViewHolder(view)
     }
 
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any?>) {
+        if (payloads.isEmpty())
+            onBindViewHolder(holder, position)
+        else {
+            getItem(position)?.let { loadImage(holder.archiveImage, it.id) }
+        }
+    }
+
+    private fun loadImage(archiveImage: ImageView, id: String) {
+        archiveImage.load(DatabaseReader.getArchiveImagePath(id, context), coverLoader) {
+            allowRgb565(true)
+            allowHardware(false)
+            addLastModifiedToFileCacheKey(true)
+            crossfade(true)
+            if (listViewType == ListViewType.Cover)
+                transformations(StartCrop())
+        }
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position)?.let {
             holder.archiveName.text = it.title
-            imageJobs[holder] = scope.launch {
-                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    holder.archiveImage.load(DatabaseReader.getArchiveImagePath(it.id, context), coverLoader) {
-                        allowRgb565(true)
-                        allowHardware(false)
-                        addLastModifiedToFileCacheKey(true)
-                        crossfade(true)
-                        if (listViewType == ListViewType.Cover)
-                            transformations(StartCrop())
-                    }
-                }
-            }
+            loadImage(holder.archiveImage, it.id)
 
             if (listViewType == ListViewType.Card && holder.mContentView != null) {
                 if (selectedArchives.contains(position))
@@ -171,7 +175,6 @@ class ArchiveRecyclerViewAdapter(
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
-        imageJobs.remove(holder)?.cancel()
         with(holder.archiveImage) {
             dispose()
             setImageBitmap(null)

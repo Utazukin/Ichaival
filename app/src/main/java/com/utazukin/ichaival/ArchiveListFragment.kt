@@ -65,6 +65,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
+import kotlin.math.max
 import kotlin.math.min
 
 private const val DEFAULT_SEARCH_DELAY = 750L
@@ -261,6 +262,21 @@ class ArchiveListFragment : Fragment(),
     override fun onStart() {
         super.onStart()
         searchView.setOnQueryTextListener(this)
+
+        //Update the image on all bound view holders to catch any cover updates
+        var firstBoundPosition = Int.MAX_VALUE
+        var lastBoundPosition = Int.MIN_VALUE
+        for (i in 0 until listView.childCount) {
+            val holder = listView.getChildViewHolder(listView.getChildAt(i))
+            if (holder.bindingAdapterPosition < 0)
+                continue
+
+            firstBoundPosition = min(firstBoundPosition, holder.bindingAdapterPosition)
+            lastBoundPosition = max(lastBoundPosition, holder.bindingAdapterPosition)
+        }
+
+        if (firstBoundPosition != Int.MAX_VALUE && lastBoundPosition != Int.MIN_VALUE)
+            listAdapter?.notifyItemRangeChanged(firstBoundPosition, lastBoundPosition, true)
     }
 
     override fun onStop() {
