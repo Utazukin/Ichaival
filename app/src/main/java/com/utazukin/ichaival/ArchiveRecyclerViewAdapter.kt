@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 
 import android.content.Context
+import android.graphics.Matrix
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -46,7 +47,6 @@ import coil3.request.addLastModifiedToFileCacheKey
 import coil3.request.allowHardware
 import coil3.request.allowRgb565
 import coil3.request.crossfade
-import coil3.request.transformations
 import com.google.android.material.color.MaterialColors
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
@@ -70,6 +70,7 @@ enum class ListViewType {
 class ArchiveRecyclerViewAdapter(
     fragment: Fragment,
     viewModel: SearchViewModel,
+    private val itemWidth: Int,
     private val longListener: ((a: ArchiveBase) -> Boolean)?
 ) : PagingDataAdapter<ArchiveBase, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
 
@@ -83,6 +84,7 @@ class ArchiveRecyclerViewAdapter(
     private val listener = fragment as? OnListFragmentInteractionListener
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
     private val coverLoader = context.imageLoader.newBuilder().components { add(CoverInterceptor()) }.build()
+    private val itemHeight = (itemWidth * 1.5f).toInt()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as ArchiveBase
@@ -139,8 +141,21 @@ class ArchiveRecyclerViewAdapter(
             allowHardware(false)
             addLastModifiedToFileCacheKey(true)
             crossfade(true)
-            if (listViewType == ListViewType.Cover)
-                transformations(StartCrop())
+            if (listViewType == ListViewType.Cover) {
+                listener { _, result ->
+                    val input = result.image
+                    if (input.width != itemWidth || input.height != itemHeight) {
+                        val scale = if (input.width * itemHeight > itemWidth * input.height) {
+                            itemHeight.toFloat() / input.height
+                        } else {
+                            itemWidth.toFloat() / input.width
+                        }
+
+                        val matrix = Matrix().apply { setScale(scale, scale) }
+                        archiveImage.imageMatrix = matrix
+                    }
+                }
+            }
         }
     }
 

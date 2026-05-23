@@ -67,6 +67,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 private const val DEFAULT_SEARCH_DELAY = 750L
 
@@ -100,7 +101,8 @@ class ArchiveListFragment : Fragment(),
 
         listView = view.findViewById(R.id.list)
         with(listView) {
-            val dpWidth = getDpWidth(requireActivity().getWindowWidth())
+            val windowWidth = requireActivity().getWindowWidth()
+            val dpWidth = getDpWidth(windowWidth)
             val archiveViewType = ListViewType.fromString(requireContext(), prefs.getString(getString(R.string.archive_list_type_key), ""))
             val itemWidth = getDpWidth(resources.getDimension(if (archiveViewType == ListViewType.Card) R.dimen.archive_card_width else R.dimen.archive_cover_width).toInt())
             val columns = dpWidth.floorDiv(itemWidth)
@@ -108,7 +110,8 @@ class ArchiveListFragment : Fragment(),
                 columns > 1 -> GridLayoutManager(context, columns)
                 else -> LinearLayoutManager(context)
             }
-            listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, viewModel, ::handleArchiveLongPress).apply {
+            val actualItemWidth = (windowWidth / columns.toFloat()).roundToInt()
+            listAdapter = ArchiveRecyclerViewAdapter(this@ArchiveListFragment, viewModel, actualItemWidth, ::handleArchiveLongPress).apply {
                 registerAdapterDataObserver(object: RecyclerView.AdapterDataObserver() {
                     override fun onItemRangeInserted(positionStart: Int, itemCount: Int)  {
                         setSubtitle()
