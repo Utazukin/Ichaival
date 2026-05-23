@@ -20,7 +20,6 @@ package com.utazukin.ichaival
 
 
 import android.content.Context
-import android.graphics.Matrix
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -84,7 +83,7 @@ class ArchiveRecyclerViewAdapter(
     private val listener = fragment as? OnListFragmentInteractionListener
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
     private val coverLoader = context.imageLoader.newBuilder().components { add(CoverInterceptor()) }.build()
-    private val itemHeight = (itemWidth * 1.5f).toInt()
+    private val itemHeight = (itemWidth * 1.43f).toInt()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
         val item = v.tag as ArchiveBase
@@ -141,21 +140,8 @@ class ArchiveRecyclerViewAdapter(
             allowHardware(false)
             addLastModifiedToFileCacheKey(true)
             crossfade(true)
-            if (listViewType == ListViewType.Cover) {
-                listener { _, result ->
-                    val input = result.image
-                    if (input.width != itemWidth || input.height != itemHeight) {
-                        val scale = if (input.width * itemHeight > itemWidth * input.height) {
-                            itemHeight.toFloat() / input.height
-                        } else {
-                            itemWidth.toFloat() / input.width
-                        }
-
-                        val matrix = Matrix().apply { setScale(scale, scale) }
-                        archiveImage.imageMatrix = matrix
-                    }
-                }
-            }
+            if (listViewType == ListViewType.Cover)
+                size(itemWidth, itemHeight)
         }
     }
 
