@@ -256,7 +256,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
                 setPositiveButton(R.string.yes) { dialog, _ ->
                     dialog.dismiss()
                     lifecycleScope.launch {
-                        val success = WebHandler.removeFromCategory(requireContext(), category.id, archiveId)
+                        val success = WebHandler.removeFromCategory(category.id, archiveId)
                         if (success) {
                             catFlexLayout.removeView(it)
                             DatabaseReader.removeFromCategory(category.id, archiveId)

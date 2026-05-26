@@ -201,6 +201,8 @@
     <string name="crash_log_subject">Crash Log</string>
     <string name="error_message">Error: %1$s</string>
     <string name="failed_to_connect_message">Failed to connect to server!</string>
+    <string name="failed_to_sync_message">Unable to sync with server.</string>
+    <string name="invalid_url_message">Invalid URL!</string>
     <string name="temp_clear_fail_message">Failed to clear temp folder.</string>
     <string name="category_remove_fail_message">Failed to remove from category.</string>
     <string name="category_create_fail_message">Failed to create category.</string>

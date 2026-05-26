@@ -20,6 +20,7 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import android.util.Base64
+import androidx.annotation.StringRes
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
@@ -180,20 +181,19 @@ object WebHandler {
             listener.isRefreshing(refreshing)
     }
 
-    suspend fun clearTempFolder(context: Context) {
+    suspend fun clearTempFolder() {
         if (!canConnect())
             return
 
         return withContext(Dispatchers.IO) {
-            val errorMessage = context.getString(R.string.temp_clear_fail_message)
             val url = serverUrlBuilder.addClearTemp().build()
             val connection = createServerConnection(url, "DELETE")
-            val response = httpClient.newCall(connection).tryAwait(errorMessage)
+            val response = httpClient.newCall(connection).tryAwait(R.string.temp_clear_fail_message)
             response?.use {
                 if (it.isSuccessful)
-                    notify(context.getString(R.string.temp_clear_success_message))
+                    notify(R.string.temp_clear_success_message)
                 else
-                    handleErrorMessage(it.code, errorMessage)
+                    handleErrorMessage(it.code, R.string.temp_clear_fail_message)
             }
         }
     }
@@ -259,19 +259,19 @@ object WebHandler {
         } == true
     }
 
-    suspend fun removeFromCategory(context: Context, categoryId: String, archiveId: String) : Boolean {
+    suspend fun removeFromCategory(categoryId: String, archiveId: String) : Boolean {
         if (!canConnect())
             return false
 
         return withContext(Dispatchers.IO) {
             val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
             val connection = createServerConnection(url, "DELETE")
-            val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_remove_fail_message))
+            val response = httpClient.newCall(connection).tryAwait(R.string.category_remove_fail_message)
             response?.use { it.isSuccessful } == true
         }
     }
 
-    suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false) : JSONObject? {
+    suspend fun createCategory(name: String, search: String? = null, pinned: Boolean = false) : JSONObject? {
         if (!canConnect())
             return null
 
@@ -283,10 +283,10 @@ object WebHandler {
             }.build()
             val connection = createServerConnection(url, "PUT", formBody)
             val response =
-                httpClient.newCall(connection).tryAwait(context.getString(R.string.category_create_fail_message))
+                httpClient.newCall(connection).tryAwait(R.string.category_create_fail_message)
             response?.use {
                 if (!it.isSuccessful) {
-                    notifyError(JSONObject(it.body.string()).optString("error") ?: context.getString(R.string.category_create_fail_message))
+                    notifyError(JSONObject(it.body.string()).optString("error") ?: App.context.getString(R.string.category_create_fail_message))
                     null
                 } else
                     JSONObject(it.body.string())
@@ -294,14 +294,14 @@ object WebHandler {
         }
     }
 
-    suspend fun addToCategory(context: Context, categoryId: String, archiveId: String) : Boolean {
+    suspend fun addToCategory(categoryId: String, archiveId: String) : Boolean {
         if (!canConnect())
             return false
 
         return withContext(Dispatchers.IO) {
             val url = serverUrlBuilder.addModifyCategory(categoryId, archiveId).build()
             val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
-            val response = httpClient.newCall(connection).tryAwait(context.getString(R.string.category_add_fail_message))
+            val response = httpClient.newCall(connection).tryAwait(R.string.category_add_fail_message)
             response?.use { it.isSuccessful } == true
         }
     }
@@ -348,12 +348,31 @@ object WebHandler {
         httpClient.newCall(connection).enqueue()
     }
 
-    suspend fun getOrderedArchives(start: Long = -1) = searchServer("", false, SortMethod.Alpha, false, start)
+    suspend fun getOrderedArchives(start: Long = -1): InputStream? {
+        if (!canConnect())
+            return null
+
+        return try {
+            val response = searchServerInternal("", false, SortMethod.Alpha, false, start)
+            if (!response.isSuccessful) {
+                handleErrorMessage(response.code, R.string.failed_to_sync_message)
+                null
+            } else response.body.byteStream()
+        } catch (e: Exception) {
+            handleErrorMessage(e, R.string.failed_to_sync_message)
+            null
+        }
+    }
 
     suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long = 0) : InputStream? {
         if (!canConnect())
             return null
 
+        val response = tryOrNull { searchServerInternal(search, onlyNew, sortMethod, descending, start) }
+        return if (response?.isSuccessful == true) response.body.byteStream() else null
+    }
+
+    private suspend fun searchServerInternal(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long) : Response {
         val sort = when(sortMethod) {
             SortMethod.Alpha -> "title"
             SortMethod.Date -> "date_added"
@@ -369,8 +388,7 @@ object WebHandler {
             .build()
 
         val connection = createServerConnection(url)
-        val response = httpClient.newCall(connection).tryAwait()
-        return if (response?.isSuccessful == true) response.body.byteStream() else null
+        return httpClient.newCall(connection).await()
     }
 
     fun getPageList(response: JSONObject?) : List<String> {
@@ -519,7 +537,7 @@ object WebHandler {
         return jobComplete
     }
 
-    suspend fun downloadThumb(context: Context?, id: String, page: Int? = null) : InputStream? {
+    suspend fun downloadThumb(id: String, page: Int? = null, quiet: Boolean = false) : InputStream? {
         if (!canConnect())
             return null
 
@@ -528,7 +546,7 @@ object WebHandler {
             if (page != null) {
                 val updateUrl = url.newBuilder().addQueryParameter("page", page + 1).build()
                 val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
-                val errorMessage = context?.getString(R.string.thumb_set_fail_message)
+                val errorMessage = if (quiet) null else R.string.thumb_set_fail_message
                 httpClient.newCall(connection).tryAwait(errorMessage)?.close() ?: return@withContext null
             }
 
@@ -560,15 +578,15 @@ object WebHandler {
         return false
     }
 
-    private suspend inline fun Call.tryAwait(errorMessage: String? = null) : Response? {
+    private suspend inline fun Call.tryAwait(errorMessageId: Int? = null) : Response? {
         return tryOrNull {
             suspendCancellableCoroutine {
                 it.invokeOnCancellation { cancel() }
                 enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         if (!it.isCancelled) {
-                            if (errorMessage != null)
-                                handleErrorMessage(e, errorMessage)
+                            if (errorMessageId != null)
+                                handleErrorMessage(e, errorMessageId)
                             it.resumeWithException(e)
                         }
                     }
@@ -604,13 +622,12 @@ object WebHandler {
         })
     }
 
-    suspend fun extractArchive(context: Context, id: String, forceFull: Boolean = false) : JSONObject? {
+    suspend fun extractArchive(id: String, forceFull: Boolean = false) : JSONObject? {
         if (!canConnect())
             return null
 
-        notify(context.getString(R.string.archive_extract_message))
+        notify(R.string.archive_extract_message)
 
-        val errorMessage = context.getString(R.string.archive_extract_fail_message)
         val url = serverUrlBuilder
             .addFiles(id)
             .apply {
@@ -619,10 +636,10 @@ object WebHandler {
             }.build()
         val connection = createServerConnection(url)
 
-        val response = httpClient.newCall(connection).tryAwait(errorMessage)
+        val response = httpClient.newCall(connection).tryAwait(R.string.archive_extract_fail_message)
         return response?.use {
             if (!it.isSuccessful) {
-                handleErrorMessage(it.code, errorMessage)
+                handleErrorMessage(it.code, R.string.archive_extract_fail_message)
                 null
             } else {
                 val json = JSONObject(it.body.string())
@@ -649,18 +666,17 @@ object WebHandler {
         httpClient.newCall(connection).enqueue()
     }
 
-    suspend fun downloadArchiveList(context: Context) : InputStream? {
+    suspend fun downloadArchiveList(): InputStream? {
         if (!canConnect())
             return null
 
         return withContext(Dispatchers.IO) {
-            val errorMessage = context.getString(R.string.failed_to_connect_message)
             val url = serverUrlBuilder.addArchiveList().build()
             val connection = createServerConnection(url)
-            val response = httpClient.newCall(connection).tryAwait(errorMessage)
+            val response = httpClient.newCall(connection).tryAwait(R.string.failed_to_connect_message)
             response?.let {
                 if (!it.isSuccessful) {
-                    handleErrorMessage(it.code, errorMessage)
+                    handleErrorMessage(it.code, R.string.failed_to_connect_message)
                     null
                 } else it.body.byteStream()
             }
@@ -676,12 +692,12 @@ object WebHandler {
             val response = httpClient.newCall(connection).tryAwait()
             when {
                 response == null -> {
-                    notifyError(App.context.getString(R.string.failed_to_connect_message))
+                    notifyError(R.string.failed_to_connect_message)
                     false
                 }
                 response.isSuccessful -> true
                 else -> {
-                    handleErrorMessage(response.code, App.context.getString(R.string.failed_to_connect_message))
+                    handleErrorMessage(response.code, R.string.failed_to_connect_message)
                     false
                 }
             }
@@ -713,19 +729,22 @@ object WebHandler {
         }
     }
 
-    private fun handleErrorMessage(responseCode: Int, defaultMessage: String) {
+    private fun handleErrorMessage(responseCode: Int, @StringRes defaultMessageId: Int) {
+        val defaultMessage = App.context.getString(defaultMessageId)
         notifyError(if (verboseMessages) "$defaultMessage Response Code: $responseCode" else defaultMessage)
     }
 
-    private fun handleErrorMessage(e: Exception, defaultMessage: String) {
-        notifyError(if (verboseMessages) e.localizedMessage else defaultMessage)
+    private fun handleErrorMessage(e: Exception, @StringRes defaultMessageId: Int) {
+        notifyError(if (verboseMessages) e.localizedMessage else App.context.getString(defaultMessageId))
     }
+
+    private fun notifyError(@StringRes errorStringId: Int) = notifyError(App.context.getString(errorStringId))
 
     private fun notifyError(error: String) {
         listener?.onError(error)
     }
 
-    private fun notify(message: String) = listener?.onInfo(message)
+    private fun notify(@StringRes messageId: Int) = listener?.onInfo(App.context.getString(messageId))
 
     fun onPreferenceChange(newValue: String?): Pair<Boolean, String> {
         if (newValue !is String || newValue.isEmpty())
@@ -744,7 +763,7 @@ object WebHandler {
             DatabaseReader.setDatabaseDirty()
             serverLocation = v
         } else {
-            notifyError("Invalid URL!")
+            notifyError(R.string.invalid_url_message)
             return Pair(false, serverLocation)
         }
 

@@ -55,7 +55,7 @@ class CoverInterceptor() : coil3.intercept.Interceptor {
 
         if (!file.exists() && file.path.contains("thumbs/")) {
             val id = file.nameWithoutExtension
-            WebHandler.downloadThumb(null, id)?.use {
+            WebHandler.downloadThumb(id, quiet = true)?.use {
                 file.outputStream().use { f -> it.copyTo(f) }
             }
         }

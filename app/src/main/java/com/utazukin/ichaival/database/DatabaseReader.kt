@@ -230,15 +230,13 @@ object DatabaseReader {
     }
 
     suspend fun updateArchiveList(context: Context) = withContext(Dispatchers.IO) {
-        if (!WebHandler.canReachServer())
-            return@withContext
-
         val currentTime = Calendar.getInstance().timeInMillis
+        var syncComplete = false
         withTransaction {
             val gson = GsonBuilder()
                 .registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime))
                 .create()
-            val archiveStream = WebHandler.getOrderedArchives(-1) ?: return@withTransaction
+            val archiveStream = WebHandler.getOrderedArchives() ?: return@withTransaction
             val updateArchive: suspend (ArchiveJson) -> Unit = if (ServerManager.serverTracksProgress) {
                 { updateArchive(it) }
             } else {
@@ -262,7 +260,11 @@ object DatabaseReader {
             }
 
             removeOldArchives(currentTime)
+            syncComplete = true
         }
+
+        if (!syncComplete)
+            return@withContext
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         prefs.edit { putLong(UPDATE_KEY, currentTime) }
@@ -487,7 +489,7 @@ object DatabaseReader {
 
         mutex.withLock {
             archivePageMap.getOrPut(id) {
-                WebHandler.getPageList(WebHandler.extractArchive(context, id, forceFull)).also {
+                WebHandler.getPageList(WebHandler.extractArchive(id, forceFull)).also {
                     if (it.isNotEmpty())
                         database.archiveDao().updatePageCount(id, it.size)
                     notifyExtractListeners(id, it.size)
@@ -560,7 +562,7 @@ object DatabaseReader {
 
         val image = File(thumbDir, "$id.jpg")
         if (!image.exists())
-            withContext(Dispatchers.IO) { WebHandler.downloadThumb(context, id, page)?.use { image.outputStream().use { f -> it.copyTo(f) } } } ?: return null
+            withContext(Dispatchers.IO) { WebHandler.downloadThumb(id, page)?.use { image.outputStream().use { f -> it.copyTo(f) } } } ?: return null
 
         return image
     }

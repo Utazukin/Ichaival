@@ -72,7 +72,7 @@ object CategoryManager {
     }
 
     suspend fun createCategory(context: Context, name: String, search: String? = null, pinned: Boolean = false): ArchiveCategory? {
-        val json = WebHandler.createCategory(context, name, search, pinned)
+        val json = WebHandler.createCategory(name, search, pinned)
         val category = json?.run { ArchiveCategory(name, getString("category_id"), search) }
         if (category != null)
             DatabaseReader.insertCategory(category)
