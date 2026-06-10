@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ImageDecoder
-import com.utazukin.ichaival.ImageFormat
 import com.utazukin.ichaival.ImageRegionDecoder
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.cacheOrGet
@@ -153,12 +152,16 @@ class ReaderFragment : Fragment(), PageFragment {
     private fun displayImage(image: String) {
         imagePath = image
 
-        progressBar.isIndeterminate = false
         lifecycleScope.launch {
             val imageFile: File?
 
             if (!isLocalFile(image)) {
-                val request = downloadCoilImageWithProgress(requireContext(), image) { progressBar.progress = it }
+                val request = downloadCoilImageWithProgress(requireContext(), image) {
+                    if (it > 0) {
+                        progressBar.isIndeterminate = false
+                        progressBar.progress = it
+                    }
+                }
                 imageFile = loader.cacheOrGet(request)
             } else
                 imageFile = File(image)
