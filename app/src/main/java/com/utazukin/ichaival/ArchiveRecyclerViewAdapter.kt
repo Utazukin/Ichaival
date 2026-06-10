@@ -82,7 +82,10 @@ class ArchiveRecyclerViewAdapter(
     private val fragmentManager = fragment.childFragmentManager
     private val listener = fragment as? OnListFragmentInteractionListener
     private val listViewType = ListViewType.fromString(context, PreferenceManager.getDefaultSharedPreferences(context).getString(fragment.resources.getString(R.string.archive_list_type_key), ""))
-    private val coverLoader = context.imageLoader.newBuilder().components { add(CoverInterceptor()) }.build()
+    private val coverLoader = context.imageLoader.newBuilder()
+        .coroutineContext(Dispatchers.IO.limitedParallelism(3))
+        .components { add(CoverInterceptor()) }
+        .build()
     private val itemHeight = (itemWidth * 1.43f).toInt()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
