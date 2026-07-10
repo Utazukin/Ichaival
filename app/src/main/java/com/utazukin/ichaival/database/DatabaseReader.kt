@@ -204,7 +204,7 @@ private class DatabaseHelper {
 
     private val MIGRATION_10_11 = object: Migration(10, 11) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("create table tankoubonarchiveref (tankId text not null, archiveId text not null, `order` integer not null, updateTime int not null default 0, primary key (id, archiveId))")
+            db.execSQL("create table tankoubonarchiveref (tankId text not null, archiveId text not null, `order` integer not null, updateTime int not null default 0, primary key (tankId, archiveId))")
             db.execSQL("alter table archive add column isTank integer not null default 0")
         }
     }
@@ -274,6 +274,9 @@ object DatabaseReader {
                 it.endArray()
             }
 
+            if (ServerManager.checkVersionAtLeast(0, 9, 30))
+                updateTanks(currentTime)
+
             removeOldArchives(currentTime)
             syncComplete = true
         }
@@ -286,8 +289,6 @@ object DatabaseReader {
 
         launch { database.archiveDao().clearSearchCache() }
         CategoryManager.updateCategories()
-        if (ServerManager.checkVersionAtLeast(0, 9, 30))
-            updateTanks(currentTime)
         isDirty = false
     }
 
@@ -315,7 +316,7 @@ object DatabaseReader {
 
     suspend fun clearSearchCache() = database.archiveDao().clearSearchCache()
 
-    suspend fun updateTanks(updateTime: Long) = withTransaction {
+    suspend fun updateTanks(updateTime: Long) {
         var page = 0
         var viewed = 0
         var total = 0
