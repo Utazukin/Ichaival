@@ -85,21 +85,35 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
             DatabaseReader.getArchive(archiveId)?.let {
                 setGalleryView(savedInstanceState, it)
             }
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                DatabaseReader.getToC(archiveId).collectLatest {
-                    var firstThumb = -1
-                    if (it.isNotEmpty() && currentToc != null) {
-                        for ((i, chapter) in it.withIndex()) {
-                            if (chapter.page != currentToc?.getOrNull(i)?.page) {
-                                firstThumb = chapter.page
-                                break
+
+            if (!isTankId(archiveId)) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    DatabaseReader.getToC(archiveId).collectLatest {
+                        var firstThumb = -1
+                        if (it.isNotEmpty() && currentToc != null) {
+                            for ((i, chapter) in it.withIndex()) {
+                                if (chapter.page != currentToc?.getOrNull(i)?.page) {
+                                    firstThumb = chapter.page
+                                    break
+                                }
                             }
                         }
-                    }
 
-                    currentToc = it
-                    updateToCButton(it, savedInstanceState, firstThumb)
+                        currentToc = it
+                        updateToCButton(it, savedInstanceState, firstThumb)
+                    }
                 }
+            } else {
+                val tank = DatabaseReader.getTank(archiveId) ?: return@launch
+                val toc = buildList {
+                    var total = 0
+                    for (archive in tank.archives) {
+                        add(ToCEntry(archive.title, total))
+                        total += archive.numPages
+                    }
+                }
+                currentToc = toc
+                updateToCButton(toc, savedInstanceState)
             }
         }
 
@@ -180,11 +194,11 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
         outState.putInt(CHAPTER_PAGE, thumbAdapter.thumbStart)
     }
 
-    private suspend fun setGalleryView(savedInstanceBundle: Bundle?, archive: Archive) {
+    private suspend fun setGalleryView(savedInstanceBundle: Bundle?, archive: MetaArchive) {
         with(listView) {
             val dpWidth = getDpWidth(requireActivity().getWindowWidth())
             val columns = dpWidth.floorDiv(150)
-            val result = WebHandler.tryGenerateThumbs(archive.id)
+            val result = archive.generateThumbs()
             thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewFragment, result, archive)
             layoutManager = (if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)).apply {
                 if (savedInstanceBundle != null) {

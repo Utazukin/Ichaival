@@ -275,4 +275,5 @@
     <string name="status_completed">Completed</string>
     <string name="default_chapter">Untitled Chapter</string>
     <string name="add_edit_chapter">Add/Edit Chapter</string>
+    <string name="group_tanks_switch">Group Tankoubons</string>
 </resources>

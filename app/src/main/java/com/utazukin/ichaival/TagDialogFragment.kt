@@ -89,7 +89,7 @@ class TagDialogFragment : DialogFragment() {
         }
     }
 
-    private fun setUpTags(archive: Archive) {
+    private fun setUpTags(archive: MetaArchive) {
         for ((namespace, tags) in archive.tags) {
             if (tags.isEmpty())
                 continue

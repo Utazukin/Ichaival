@@ -68,7 +68,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
     private lateinit var bookmarkButton: Button
     private lateinit var thumbView: ImageView
     private lateinit var downloadButton: Button
-    private var archive: Archive? = null
+    private var archive: MetaArchive? = null
     private var tagListener: TagInteractionListener? = null
     private val coverLoader by lazy { requireContext().imageLoader.newBuilder().components { add(CoverInterceptor()) }.build() }
     private val isLocalSearch by lazy {
@@ -180,7 +180,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
         } else catLayout.visibility = View.GONE
     }
 
-    private fun setUpTags(view: View, archive: Archive) {
+    private fun setUpTags(view: View, archive: MetaArchive) {
         val tagLayout: LinearLayout = view.findViewById(R.id.tag_layout)
         if (archive.dateAdded > 0) {
             val namespaceLayout = FlexboxLayout(context).apply {

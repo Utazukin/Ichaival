@@ -46,12 +46,14 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
                                            protected val sortMethod: SortMethod,
                                            protected val descending: Boolean,
                                            status: StatusFilter,
-                                           protected val categoryId: String) : PagingSource<Int, ArchiveBase>() {
+                                           protected val categoryId: String,
+                                           protected val groupTanks: Boolean) : PagingSource<Int, ArchiveBase>() {
     protected open val roomSource = DatabaseReader.getArchiveSource(sortMethod,
             descending,
             status,
             filter,
-            categoryId)
+            categoryId,
+            groupTanks)
     override val jumpingSupported get() = roomSource.jumpingSupported
 
     override fun getRefreshKey(state: PagingState<Int, ArchiveBase>) = roomSource.getRefreshKey(state)
@@ -67,12 +69,13 @@ open class ArchiveListServerPagingSource(
     sortMethod: SortMethod,
     descending: Boolean,
     filter: String,
-    categoryId: String) : ArchiveListPagingSourceBase(filter, sortMethod, descending, status, categoryId) {
+    categoryId: String,
+    groupTanks: Boolean) : ArchiveListPagingSourceBase(filter, sortMethod, descending, status, categoryId, groupTanks) {
     protected open suspend fun loadResults() {
         val cacheCount = DatabaseReader.getCachedSearchCount(filter)
         if (cacheCount == 0) {
             WebHandler.updateRefreshing(true)
-            val resultsStream = WebHandler.searchServer(filter, false, sortMethod, descending, -1)
+            val resultsStream = WebHandler.searchServer(filter, false, sortMethod, descending, -1, groupTanks)
             resultsStream?.use {
                 JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                     reader.beginObject()
@@ -113,7 +116,8 @@ class ArchiveListLocalPagingSource(filter: String,
                                    sortMethod: SortMethod,
                                    descending: Boolean,
                                    status: StatusFilter,
-                                   categoryId: String) : ArchiveListPagingSourceBase(filter, sortMethod, descending, status, categoryId) {
+                                   categoryId: String,
+                                   groupTanks: Boolean) : ArchiveListPagingSourceBase(filter, sortMethod, descending, status, categoryId, groupTanks) {
     private suspend fun internalFilter() {
         WebHandler.updateRefreshing(true)
         DatabaseReader.withTransaction {
@@ -143,9 +147,9 @@ class ArchiveListLocalPagingSource(filter: String,
     }
 }
 
-class ArchiveListRandomPagingSource(filter: String, count: Int, categoryId: String, status: StatusFilter)
-    : ArchiveListServerPagingSource(status, SortMethod.Alpha, false, filter, categoryId) {
-    override val roomSource = DatabaseReader.getRandomSource(filter, categoryId, count, status)
+class ArchiveListRandomPagingSource(filter: String, count: Int, categoryId: String, status: StatusFilter, groupTanks: Boolean)
+    : ArchiveListServerPagingSource(status, SortMethod.Alpha, false, filter, categoryId, groupTanks) {
+    override val roomSource = DatabaseReader.getRandomSource(filter, categoryId, count, status, groupTanks)
 
     override suspend fun loadResults() {
         if (filter.isNotEmpty() && categoryId.isEmpty())

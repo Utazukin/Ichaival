@@ -20,15 +20,18 @@ package com.utazukin.ichaival
 
 import android.content.Context
 import androidx.room.ColumnInfo
-import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.Ignore
-import androidx.room.Junction
 import androidx.room.PrimaryKey
-import androidx.room.Relation
 import com.google.gson.JsonObject
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
 
 @Entity(tableName = "archive")
@@ -42,7 +45,8 @@ data class ArchiveFull(
     @ColumnInfo val pageCount: Int,
     @ColumnInfo val updatedAt: Long,
     @ColumnInfo(defaultValue = "0") val titleSortIndex: Int,
-    @ColumnInfo val summary: String?
+    @ColumnInfo val summary: String?,
+    @ColumnInfo(defaultValue = "0") val isTank: Boolean = false
 )
 
 private fun containsTag(tag: String, exact: Boolean, tags: Map<String, List<String>>) : Boolean {
@@ -67,55 +71,159 @@ fun ArchiveBase.containsTag(tag: String, exact: Boolean) = containsTag(tag, exac
 
 data class ArchiveBase(val id: String, val title: String, val pageCount: Int, val tags: Map<String, List<String>>)
 
-data class ArchiveWithCategories(
-        @Embedded
-        val archive: Archive,
-        @Relation(
-                parentColumn = "id",
-                entityColumn = "id",
-                entity = ArchiveCategoryFull::class,
-                associateBy = Junction(
-                        parentColumn = "archiveId",
-                        entityColumn = "categoryId",
-                        value = StaticCategoryRef::class
-                )
-        )
-        val categories: List<ArchiveCategory>
-)
+data class ArchiveWithCategories(val archive: MetaArchive, val categories: List<ArchiveCategory>)
 
-data class Archive (
-    val id: String,
-    val title: String,
-    val dateAdded: Long,
-    var isNew: Boolean,
-    val tags: Map<String, List<String>>,
-    var currentPage: Int,
-    val summary: String?,
-    @ColumnInfo(name = "pageCount") var numPages: Int) {
+data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : MetaArchive by tank {
+    @Ignore
+    override val isWebtoon = archives.any { it.isWebtoon }
+    @Ignore
+    override var isNew = false
 
     @delegate:Ignore
-    val isWebtoon by lazy { containsTag("webtoon", false) }
+    override val tags by lazy {
+        buildMap {
+            putAll(tank.tags)
+            for (archive in archives) {
+                for ((namepace, tags) in archive.tags) {
+                    val existing = get(namepace)
+                    if (existing == null)
+                        put(namepace, tags.toList())
+                    else {
+                        val new = existing.toMutableList()
+                        for (tag in tags) {
+                            if (tag !in new)
+                                new.add(tag)
+                        }
+                        put(namepace, new)
+                    }
+                }
+            }
+        }
+    }
 
-    suspend fun extract(context: Context, forceFull: Boolean = false) {
+    override fun getThumb(page: Int): String {
+        val (archive, localPage) = getArchiveForPage(page)
+        return archive.getThumb(localPage)
+    }
+
+    override fun invalidateCache() {
+        for (archive in archives)
+            archive.invalidateCache()
+    }
+
+    private fun getArchiveForPage(page: Int): Pair<MetaArchive, Int> {
+        var total = 0
+        for (archive in archives) {
+            if (page < total + archive.numPages)
+                return Pair(archive, page - total)
+            total += archive.numPages
+        }
+
+        return Pair(archives[0], page)
+    }
+
+    override suspend fun clearNewFlag() {
+        //Do nothing? maybe clear the new flag for all?
+    }
+
+    override suspend fun extract(context: Context, forceFull: Boolean) {
+        var pageCount = 0
+        for (archive in archives) {
+            archive.extract(context, forceFull)
+            pageCount += archive.numPages
+        }
+        tank.numPages = pageCount
+    }
+
+    override suspend fun generateThumbs(): ThumbResult {
+        val results = buildList {
+            coroutineScope {
+                for (archive in archives)
+                    add(async { WebHandler.tryGenerateThumbs(archive.id) })
+            }
+        }.awaitAll()
+
+        if (results.any { it is FailedThumbResult })
+            return FailedThumbResult
+
+        if (results.all { it is CompleteThumbResult })
+            return CompleteThumbResult
+
+        val flows = buildList {
+            for ((i, result) in results.withIndex()) {
+                when (result) {
+                    is InProgressThumbResult -> {
+                        add(result.flow.map { it + archives.take(i).sumOf { arc -> arc.numPages } })
+                    }
+                    is CompleteThumbResult -> {
+                        val start = archives.take(i).sumOf { arc -> arc.numPages }
+                        add((start until start + archives[i].numPages).asFlow())
+                    }
+                    else -> {}
+                }
+            }
+        }
+        return InProgressThumbResult(flows.merge())
+    }
+
+    override suspend fun getPageImage(context: Context, page: Int): String? {
+        val (archive, localPage) = getArchiveForPage(page)
+        return archive.getPageImage(context, localPage)
+    }
+}
+
+interface MetaArchive {
+    val id: String
+    val title: String
+    val summary: String?
+    var numPages: Int
+    var currentPage: Int
+    val isWebtoon: Boolean
+    var isNew: Boolean
+    val dateAdded: Long
+    val tags: Map<String, List<String>>
+    fun getThumb(page: Int): String
+    fun invalidateCache()
+    fun hasPage(page: Int) = numPages <= 0 || (page in 0 until numPages)
+    suspend fun generateThumbs(): ThumbResult
+    suspend fun getPageImage(context: Context, page: Int): String?
+    suspend fun clearNewFlag()
+    suspend fun extract(context: Context, forceFull: Boolean = false)
+}
+
+data class Archive (
+    override val id: String,
+    override val title: String,
+    override val dateAdded: Long,
+    override var isNew: Boolean,
+    override val tags: Map<String, List<String>>,
+    override var currentPage: Int,
+    override val summary: String?,
+    @ColumnInfo(name = "pageCount") override var numPages: Int): MetaArchive {
+
+    @delegate:Ignore
+    override val isWebtoon by lazy { containsTag("webtoon", false) }
+
+    override suspend fun extract(context: Context, forceFull: Boolean) {
         val pages = DatabaseReader.getPageList(context, id, forceFull)
         if (numPages > 0)
             numPages = pages.size
     }
 
-    fun invalidateCache() = DatabaseReader.invalidateImageCache(id)
+    override fun invalidateCache() = DatabaseReader.invalidateImageCache(id)
 
-    fun hasPage(page: Int) = numPages <= 0 || (page in 0 until numPages)
-
-    suspend fun clearNewFlag() = withContext(Dispatchers.IO) {
+    override suspend fun clearNewFlag() = withContext(Dispatchers.IO) {
         DatabaseReader.setArchiveNewFlag(id)
         isNew = false
     }
 
-    suspend fun getPageImage(context: Context, page: Int) : String? {
+    override suspend fun getPageImage(context: Context, page: Int) : String? {
         return downloadPage(context, page)
     }
 
-    fun getThumb(page: Int) = WebHandler.getThumbUrl(id, page)
+    override fun getThumb(page: Int) = WebHandler.getThumbUrl(id, page)
+
+    override suspend fun generateThumbs() = WebHandler.tryGenerateThumbs(id)
 
     private suspend fun downloadPage(context: Context, page: Int) : String? {
         val downloadPath = DownloadManager.getDownloadedPage(id, page)
@@ -131,6 +239,9 @@ data class Archive (
 data class ToCEntryFull(val name: String, val page: Int, @ColumnInfo(defaultValue = "0") val updateTime: Long, val archiveId: String)
 data class ToCEntryUpdate(val name: String, val page: Int, val archiveId: String)
 data class ToCEntry(val name: String, val page: Int)
+
+@Entity(primaryKeys = ["tankId", "archiveId"])
+data class TankoubonArchiveRef(val tankId: String, val archiveId: String, val order: Int, val updateTime: Long)
 
 open class ArchiveJsonBase(json: JsonObject, val updatedAt: Long, val titleSortIndex: Int) {
     val title: String = json.get("title").asString
@@ -170,6 +281,23 @@ open class ArchiveJsonBase(json: JsonObject, val updatedAt: Long, val titleSortI
 
 }
 
-class ArchiveJson(json: JsonObject, updatedAt: Long, titleSortIndex: Int) : ArchiveJsonBase(json, updatedAt, titleSortIndex) {
+open class ArchiveJson(json: JsonObject, updatedAt: Long, titleSortIndex: Int) : ArchiveJsonBase(json, updatedAt, titleSortIndex) {
     val currentPage = json.get("progress")?.asInt?.minus(1) ?: 0
+}
+
+open class TankJsonBase(json: JsonObject, val updatedAt: Long) {
+    val title: String = json.get("name").asString
+    val id: String = json.get("id").asString
+    val summary: String = json.get("summary").asString
+    val tags: String = json.get("tags").asString
+    var dateAdded = 0L //Supplied from the contained archives
+    val isNew = false
+    var pageCount = 0
+    val isTank = true
+    @Ignore
+    val archives: List<String> = json.get("archives").asJsonArray.map { it.asString }
+}
+
+class TankJson(json: JsonObject, updatedAt: Long): TankJsonBase(json, updatedAt) {
+    val currentPage = json.get("progress").asInt - 1
 }

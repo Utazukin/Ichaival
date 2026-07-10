@@ -43,7 +43,7 @@ object ReaderTabHolder {
 
     fun unregisterClearListener(listener: TabsClearedListener) = clearListeners.remove(listener)
 
-    suspend fun addTab(archive: Archive, page: Int) {
+    suspend fun addTab(archive: MetaArchive, page: Int) {
         if (!isTabbed(archive.id, page)) {
             val tabCount = DatabaseReader.getBookmarkCount()
             val tab = ReaderTab(archive.id, archive.title, tabCount, page)

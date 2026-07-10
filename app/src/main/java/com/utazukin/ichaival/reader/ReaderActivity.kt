@@ -56,13 +56,13 @@ import androidx.viewpager2.widget.ViewPager2
 import coil3.imageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.google.android.material.color.MaterialColors
-import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ArchiveDetails
 import com.utazukin.ichaival.BaseActivity
 import com.utazukin.ichaival.ChapterEditListener
 import com.utazukin.ichaival.EditChapterDialogFragment
 import com.utazukin.ichaival.FROM_READER_PAGE
 import com.utazukin.ichaival.GalleryPreviewDialogFragment
+import com.utazukin.ichaival.MetaArchive
 import com.utazukin.ichaival.ProgressInterceptor
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
@@ -108,7 +108,7 @@ class ReaderActivity : BaseActivity(), OnFragmentInteractionListener, TabRemoved
 
     var currentScaleType = ScaleType.FitPage
         private set
-    var archive: Archive? = null
+    var archive: MetaArchive? = null
         private set
     val loader by lazy {
         imageLoader.newBuilder()

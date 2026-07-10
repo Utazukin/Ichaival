@@ -26,13 +26,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioGroup
 import android.widget.TextView
-import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.SearchViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -77,50 +76,51 @@ class CategoryFilterFragment : Fragment() {
         categoryGroup = view.findViewById(R.id.category_button_group)
         categoryLabel = view.findViewById(R.id.category_label)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        with(view) {
+            val dirGroup: RadioGroup = findViewById(R.id.direction_group)
+            val sortGroup: RadioGroup = findViewById(R.id.sort_group)
+            when (viewModel.sortMethod) {
+                SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
+                SortMethod.Date -> sortGroup.check(R.id.rad_date)
+            }
 
-        lifecycleScope.launch {
-            with(view) {
-                val dirGroup: RadioGroup = findViewById(R.id.direction_group)
-                val sortGroup: RadioGroup = findViewById(R.id.sort_group)
-                when (viewModel.sortMethod) {
-                    SortMethod.Alpha -> sortGroup.check(R.id.rad_alpha)
-                    SortMethod.Date -> sortGroup.check(R.id.rad_date)
+            with(findViewById<SwitchMaterial>(R.id.swi_tank)) {
+                isChecked = viewModel.groupTanks
+                setOnCheckedChangeListener { _, checked -> viewModel.groupTanks = checked }
+            }
+
+            dirGroup.check(if (viewModel.descending) R.id.rad_desc else R.id.rad_asc)
+
+            sortGroup.setOnCheckedChangeListener { _, id ->
+                val sortMethod = getMethodFromId(id)
+                viewModel.sortMethod = sortMethod
+            }
+
+            dirGroup.setOnCheckedChangeListener { _, id ->
+                val descending = getDirectionFromId(id)
+                viewModel.descending = descending
+            }
+
+            with(findViewById<ChipGroup>(R.id.status_filter_group)) {
+                when (viewModel.status) {
+                    StatusFilter.OnlyNew -> check(R.id.chip_new)
+                    StatusFilter.InProgress -> check(R.id.chip_progress)
+                    StatusFilter.Completed -> check(R.id.chip_complete)
+                    else -> {}
                 }
 
-                dirGroup.check(if (viewModel.descending) R.id.rad_desc else R.id.rad_asc)
-
-                sortGroup.setOnCheckedChangeListener { _, id ->
-                    val sortMethod = getMethodFromId(id)
-                    prefs.edit { putInt(getString(R.string.sort_pref), sortMethod.value) }
-                    viewModel.sortMethod = sortMethod
-                }
-
-                dirGroup.setOnCheckedChangeListener { _, id ->
-                    val descending = getDirectionFromId(id)
-                    prefs.edit { putBoolean(getString(R.string.desc_pref), descending) }
-                    viewModel.descending = descending
-                }
-
-                with(findViewById<ChipGroup>(R.id.status_filter_group)) {
-                    when (viewModel.status) {
-                        StatusFilter.OnlyNew -> check(R.id.chip_new)
-                        StatusFilter.InProgress -> check(R.id.chip_progress)
-                        StatusFilter.Completed -> check(R.id.chip_complete)
-                        else -> {}
-                    }
-
-                    setOnCheckedStateChangeListener { _, ids ->
-                        viewModel.status = when (ids.firstOrNull()) {
-                            R.id.chip_new -> StatusFilter.OnlyNew
-                            R.id.chip_progress -> StatusFilter.InProgress
-                            R.id.chip_complete -> StatusFilter.Completed
-                            else -> StatusFilter.None
-                        }
+                setOnCheckedStateChangeListener { _, ids ->
+                    viewModel.status = when (ids.firstOrNull()) {
+                        R.id.chip_new -> StatusFilter.OnlyNew
+                        R.id.chip_progress -> StatusFilter.InProgress
+                        R.id.chip_complete -> StatusFilter.Completed
+                        else -> StatusFilter.None
                     }
                 }
             }
+        }
 
+        lifecycleScope.launch {
             DatabaseReader.getAllCategories().collectLatest {
                 onCategoriesUpdated(it)
             }

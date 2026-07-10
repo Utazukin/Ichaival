@@ -120,7 +120,16 @@
                 android:layout_weight="1"
                 android:text="@string/sort_desc"
                 android:textSize="18sp" />
+
         </RadioGroup>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/swi_tank"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:text="@string/group_tanks_switch"
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/textView3"

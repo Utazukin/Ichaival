@@ -42,7 +42,7 @@ import kotlin.math.min
 class ThumbRecyclerViewAdapter(
     fragment: Fragment,
     thumbResult: ThumbResult,
-    private val archive: Archive)
+    private val archive: MetaArchive)
     : RecyclerView.Adapter<ThumbRecyclerViewAdapter.ViewHolder>() {
 
     private val listener = fragment as? ThumbInteractionListener ?: fragment.activity as? ThumbInteractionListener

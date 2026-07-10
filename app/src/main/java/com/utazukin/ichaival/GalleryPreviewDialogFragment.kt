@@ -144,12 +144,12 @@ class GalleryPreviewDialogFragment : DialogFragment(), ThumbRecyclerViewAdapter.
         return layoutManager?.isViewPartiallyVisible(viewHolder.itemView, true, true) == true
     }
 
-    private suspend fun setGalleryView(view: View, archive: Archive, restoring: Boolean) {
+    private suspend fun setGalleryView(view: View, archive: MetaArchive, restoring: Boolean) {
         val listView: RecyclerView = view.findViewById(R.id.thumb_list)
         with(listView) {
             val dpWidth = getDpWidth(requireActivity().getWindowWidth())
             val columns = dpWidth.floorDiv(150)
-            val result = WebHandler.tryGenerateThumbs(archive.id)
+            val result = archive.generateThumbs()
             val thumbAdapter = ThumbRecyclerViewAdapter(this@GalleryPreviewDialogFragment, result, archive)
             thumbAdapter.useSubset(0)
             layoutManager = if (columns > 1) GridLayoutManager(context, columns) else LinearLayoutManager(context)

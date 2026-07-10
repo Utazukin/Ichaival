@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ import com.utazukin.ichaival.ui.theme.ThemeText
 import com.utazukin.ichaival.ui.theme.ThemeTextButton
 import kotlinx.coroutines.launch
 
-data class DownloadedArchive(val archive: Archive?, val id: String, val thumb: String?, val count: Int, val cancelled: Boolean = false) {
+data class DownloadedArchive(val archive: MetaArchive?, val id: String, val thumb: String?, val count: Int, val cancelled: Boolean = false) {
     val complete = count == archive?.numPages
 }
 

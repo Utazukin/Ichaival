@@ -45,16 +45,23 @@ import com.utazukin.ichaival.ArchiveCategory
 import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.ArchiveJsonBase
+import com.utazukin.ichaival.ArchiveWithCategories
 import com.utazukin.ichaival.CategoryManager
+import com.utazukin.ichaival.MetaArchive
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.StatusFilter
+import com.utazukin.ichaival.TankJson
+import com.utazukin.ichaival.TankJsonBase
+import com.utazukin.ichaival.Tankoubon
+import com.utazukin.ichaival.TankoubonArchiveRef
 import com.utazukin.ichaival.ToCEntryUpdate
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToLong
+import com.utazukin.ichaival.isTankId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -63,12 +70,19 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.lang.reflect.Type
 import java.util.Calendar
+import kotlin.math.max
 
 private class ArchiveDeserializer(private val updateTime: Long) : JsonDeserializer<ArchiveJson> {
     private var index = 0
 
     override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): ArchiveJson {
         return ArchiveJson(json.asJsonObject, updateTime, index++)
+    }
+}
+
+private class TankDeserializer(private val updateTime: Long): JsonDeserializer<TankJson> {
+    override fun deserialize(json: JsonElement, typeOfT: Type?, context: JsonDeserializationContext?): TankJson {
+        return TankJson(json.asJsonObject, updateTime)
     }
 }
 
@@ -188,6 +202,13 @@ private class DatabaseHelper {
         }
     }
 
+    private val MIGRATION_10_11 = object: Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("create table tankoubonarchiveref (tankId text not null, archiveId text not null, `order` integer not null, updateTime int not null default 0, primary key (id, archiveId))")
+            db.execSQL("alter table archive add column isTank integer not null default 0")
+        }
+    }
+
     val migrations = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -198,6 +219,7 @@ private class DatabaseHelper {
             MIGRATION_7_8,
             MIGRATION_8_9,
             MIGRATION_9_10,
+            MIGRATION_10_11
     )
 
     val callbacks = object: RoomDatabase.Callback() {
@@ -236,27 +258,20 @@ object DatabaseReader {
             val gson = GsonBuilder()
                 .registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime))
                 .create()
-            val archiveStream = WebHandler.getOrderedArchives() ?: return@withTransaction
+            val archiveStream = WebHandler.getAllArchives() ?: return@withTransaction
             val updateArchive: suspend (ArchiveJson) -> Unit = if (ServerManager.serverTracksProgress) {
                 { updateArchive(it) }
             } else {
                 { updateArchive(it as ArchiveJsonBase) }
             }
             JsonReader(archiveStream.bufferedReader(Charsets.UTF_8)).use {
-                it.beginObject()
+                it.beginArray()
                 while (it.hasNext()) {
-                    val name = it.nextName()
-                    if (name == "data") {
-                        it.beginArray()
-                        while (it.hasNext()) {
-                            val archive: ArchiveJson = gson.fromJson(it, ArchiveJson::class.java)
-                            updateArchive(archive)
-                            archive.toc?.let { toc -> database.archiveDao().addToc(toc) }
-                        }
-                        it.endArray()
-                    } else it.skipValue()
+                    val archive: ArchiveJson = gson.fromJson(it, ArchiveJson::class.java)
+                    updateArchive(archive)
+                    archive.toc?.let { toc -> database.archiveDao().addToc(toc) }
                 }
-                it.endObject()
+                it.endArray()
             }
 
             removeOldArchives(currentTime)
@@ -271,11 +286,15 @@ object DatabaseReader {
 
         launch { database.archiveDao().clearSearchCache() }
         CategoryManager.updateCategories()
+        if (ServerManager.checkVersionAtLeast(0, 9, 30))
+            updateTanks(currentTime)
         isDirty = false
     }
 
     private suspend fun updateArchive(archiveJson: ArchiveJson) = database.archiveDao().insertJson(archiveJson)
     private suspend fun updateArchive(archiveJson: ArchiveJsonBase) = database.archiveDao().insertJsonBase(archiveJson)
+    private suspend fun updateTank(tankJson: TankJson) = database.archiveDao().insertTankJson(tankJson)
+    private suspend fun updateTank(tankJsonBase: TankJsonBase) = database.archiveDao().insertTankJsonBase(tankJsonBase)
 
     suspend fun <R> withTransaction(block: suspend () -> R) = database.withTransaction { block() }
 
@@ -294,9 +313,73 @@ object DatabaseReader {
         }
     }
 
+    suspend fun clearSearchCache() = database.archiveDao().clearSearchCache()
+
+    suspend fun updateTanks(updateTime: Long) = withTransaction {
+        var page = 0
+        var viewed = 0
+        var total = 0
+
+        val gson = GsonBuilder()
+            .registerTypeAdapter(TankJson::class.java, TankDeserializer(updateTime))
+            .create()
+
+        val updateArchive: suspend (TankJson) -> Unit = if (ServerManager.serverTracksProgress) {
+            { updateTank(it) }
+        } else {
+            { updateTank(it as TankJsonBase) }
+        }
+
+        do {
+            val tankStream = WebHandler.getTankoubons(page++) ?: break
+            JsonReader(tankStream.bufferedReader(Charsets.UTF_8)).use {
+                it.beginObject()
+                while (it.hasNext()) {
+                    when (it.nextName()) {
+                        "filtered" -> viewed += it.nextInt()
+                        "total" -> total = it.nextInt()
+                        "result" -> {
+                            it.beginArray()
+                            while (it.hasNext()) {
+                                val tank: TankJson = gson.fromJson(it, TankJson::class.java)
+
+                                for ((i, archive) in tank.archives.withIndex()) {
+                                    database.archiveDao()
+                                        .insertTankRef(TankoubonArchiveRef(tank.id, archive, i, updateTime))
+                                    getArchive(archive)?.run {
+                                        tank.dateAdded = max(tank.dateAdded, dateAdded)
+                                        tank.pageCount += numPages
+                                    }
+                                }
+
+                                updateArchive(tank)
+                            }
+                            it.endArray()
+                        }
+                        else -> it.skipValue()
+                    }
+
+                }
+                it.endObject()
+            }
+        } while (viewed < total)
+
+        database.archiveDao().removeOldTankRefs(updateTime)
+    }
+
+    suspend fun getTank(id: String): Tankoubon? = withTransaction {
+        database.archiveDao().getArchive(id)?.let {
+            Tankoubon(it, database.archiveDao().getTankArchives(id))
+        }
+    }
+
     fun getAllCategories() = database.archiveDao().getAllCategories()
 
-    suspend fun getArchiveWithCategories(id: String) = database.archiveDao().getCategoryArchives(id)
+    suspend fun getArchiveWithCategories(id: String): ArchiveWithCategories? = withTransaction {
+        database.archiveDao().getArchive(id)?.let {
+            ArchiveWithCategories(it, database.archiveDao().getCategoryArchives(id))
+        }
+    }
 
     suspend fun isInCategory(categoryId: String, archiveId: String) = database.archiveDao().isInCategory(categoryId, archiveId)
 
@@ -346,7 +429,13 @@ object DatabaseReader {
             database.archiveDao().markCompleted(archive.id)
     }
 
-    suspend fun deleteArchives(ids: Collection<String>) = database.archiveDao().removeArchives(ids)
+    suspend fun deleteArchives(ids: Collection<String>) = withTransaction {
+        database.archiveDao().removeArchives(ids)
+        for (id in ids) {
+            if (isTankId(id))
+                database.archiveDao().removeTank(id)
+        }
+    }
 
     fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
 
@@ -356,8 +445,8 @@ object DatabaseReader {
 
     suspend fun removeToCEntry(page: Int, archiveId: String) = database.archiveDao().removeToCEntry(page, archiveId)
 
-    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null) : PagingSource<Int, ArchiveBase> {
-        val queryBuilder = StringBuilder("Select id, title, tags, pageCount from archive")
+    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null, groupTanks: Boolean = true) : PagingSource<Int, ArchiveBase> {
+        val queryBuilder = StringBuilder("Select id, title, tags, pageCount, dateAdded from archive")
         val args = buildList(2) {
             if (!search.isNullOrBlank()) {
                 add(search)
@@ -370,13 +459,25 @@ object DatabaseReader {
             }
         }
 
+        if (groupTanks) {
+            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
+        }
+
         when (status) {
             StatusFilter.OnlyNew -> queryBuilder.append(" where archive.isNew")
             StatusFilter.InProgress -> queryBuilder.append(" where archive.currentPage > 0 and archive.currentPage < archive.pageCount - 1")
             StatusFilter.Completed -> queryBuilder.append(" where archive.currentPage == archive.pageCount - 1")
             StatusFilter.None -> {}
         }
-        queryBuilder.append(" order by ${if (sortMethod == SortMethod.Date) "dateAdded" else "titleSortIndex"} ${if (descending) "desc" else "asc"}")
+
+        if (!groupTanks) {
+            if (status == StatusFilter.None)
+                queryBuilder.append(" where not archive.isTank")
+            else
+                queryBuilder.append(" and not archive.isTank")
+        }
+
+        queryBuilder.append(" order by ${if (sortMethod == SortMethod.Date) "dateAdded" else "title"} ${if (descending) "desc" else "asc"}")
 
         val query = if (args.isNotEmpty()) SimpleSQLiteQuery(queryBuilder.toString(), args.toTypedArray()) else SimpleSQLiteQuery(queryBuilder.toString())
         return database.archiveDao().getSearchSource(query)
@@ -390,7 +491,7 @@ object DatabaseReader {
 
     suspend fun getArchives(offset: Int, limit: Int) = database.archiveDao().getArchives(offset, limit)
 
-    fun getRandomSource(filter: String, categoryId: String, count: Int, status: StatusFilter): PagingSource<Int, ArchiveBase> {
+    fun getRandomSource(filter: String, categoryId: String, count: Int, status: StatusFilter, groupTanks: Boolean): PagingSource<Int, ArchiveBase> {
         val queryBuilder = StringBuilder("Select archive.id, title, tags, pageCount from archive where id in (select archive.id from archive")
         val args = mutableListOf<Any>()
 
@@ -404,11 +505,22 @@ object DatabaseReader {
             queryBuilder.append(" join staticcategoryref on categoryId = ? and archive.id = staticcategoryref.archiveId")
         }
 
+        if (groupTanks) {
+            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
+        }
+
         when (status) {
             StatusFilter.OnlyNew -> queryBuilder.append(" where archive.isNew")
             StatusFilter.InProgress -> queryBuilder.append(" where archive.currentPage > 0 and archive.currentPage < archive.pageCount - 1")
             StatusFilter.Completed -> queryBuilder.append(" where archive.currentPage == archive.pageCount - 1")
             StatusFilter.None -> {}
+        }
+
+        if (!groupTanks) {
+            if (status == StatusFilter.None)
+                queryBuilder.append(" where not archive.isTank")
+            else
+                queryBuilder.append(" and not archive.isTank")
         }
 
         args.add(count)
@@ -514,7 +626,12 @@ object DatabaseReader {
         isDirty || updateTime < 0 || (syncMilli >= 0 && Calendar.getInstance().timeInMillis - updateTime > syncMilli)
     }
 
-    suspend fun getArchive(id: String) = database.archiveDao().getArchive(id)
+    suspend fun getArchive(id: String): MetaArchive?  {
+        if (isTankId(id))
+            return getTank(id)
+
+        return database.archiveDao().getArchive(id)
+    }
 
     suspend fun getRandomArchive() = database.archiveDao().getRandom(false)
 
@@ -555,7 +672,7 @@ object DatabaseReader {
         return File(thumbDir, "$id.jpg")
     }
 
-    suspend fun getArchiveImage(archive: Archive, context: Context) = getArchiveImage(archive.id, context)
+    suspend fun getArchiveImage(archive: MetaArchive, context: Context) = getArchiveImage(archive.id, context)
 
     private suspend fun getArchiveImage(id: String, context: Context, page: Int? = null) : File? {
         val thumbDir = getThumbDir(context.noBackupFilesDir, id)

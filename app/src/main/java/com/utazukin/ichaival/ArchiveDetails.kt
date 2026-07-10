@@ -103,8 +103,8 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             R.id.mark_read_item -> {
                 archiveId?.let {
                     launch {
-                        DatabaseReader.setArchiveNewFlag(it)
                         DatabaseReader.getArchive(it)?.run {
+                            clearNewFlag()
                             DatabaseReader.updateProgress(it, numPages - 1)
                             WebHandler.updateProgress(it, numPages - 1)
                         }

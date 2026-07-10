@@ -193,6 +193,8 @@ fun isAnimatedImage(imageFile: File) : Boolean {
     return getImageFormat(imageFile) == ImageFormat.GIF || isSupportedAnimatedWebp(imageFile)
 }
 
+fun isTankId(id: CharSequence?) = id?.startsWith("TANK_") == true
+
 fun SubsamplingScaleImageView.setDefaultScale() {
     if (!isReady)
         return

@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2025 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -52,10 +52,9 @@ import coil3.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
-import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ImageDecoder
-import com.utazukin.ichaival.ImageFormat
 import com.utazukin.ichaival.ImageRegionDecoder
+import com.utazukin.ichaival.MetaArchive
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.cacheOrGet
 import com.utazukin.ichaival.createGifLoader
@@ -591,7 +590,7 @@ class ReaderMultiPageFragment : Fragment(), PageFragment {
 
     override fun onScaleTypeChange(scaleType: ScaleType) = updateScaleType(scaleType)
 
-    override fun onArchiveLoad(archive: Archive) {
+    override fun onArchiveLoad(archive: MetaArchive) {
         arguments?.run {
             val page = getInt(PAGE_NUM)
             val otherPage = getInt(OTHER_PAGE_ID)

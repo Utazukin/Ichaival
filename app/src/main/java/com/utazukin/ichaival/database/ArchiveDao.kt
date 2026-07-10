@@ -40,9 +40,11 @@ import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveFull
 import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.ArchiveJsonBase
-import com.utazukin.ichaival.ArchiveWithCategories
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.StaticCategoryRef
+import com.utazukin.ichaival.TankJson
+import com.utazukin.ichaival.TankJsonBase
+import com.utazukin.ichaival.TankoubonArchiveRef
 import com.utazukin.ichaival.ToCEntry
 import com.utazukin.ichaival.ToCEntryFull
 import com.utazukin.ichaival.ToCEntryUpdate
@@ -139,8 +141,8 @@ interface ArchiveDao {
     @Query("Select * from archivecategory order by pinned")
     fun getAllCategories() : Flow<List<ArchiveCategory>>
 
-    @Query("Select * from archive where id = :archiveId")
-    suspend fun getCategoryArchives(archiveId: String) : ArchiveWithCategories?
+    @Query("Select * from archivecategory join staticcategoryref on archiveId = :archiveId")
+    suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
 
     @Query("Select exists(select * from staticcategoryref where categoryId = :categoryId and archiveId = :archiveId)")
     suspend fun isInCategory(categoryId: String, archiveId: String) : Boolean
@@ -183,6 +185,24 @@ interface ArchiveDao {
 
     @Query("Update archive set currentPage = pageCount - 1 where id = :id")
     suspend fun markCompleted(id: String)
+
+    @Upsert
+    suspend fun insertTankRef(ref: TankoubonArchiveRef)
+
+    @Query("Delete from tankoubonarchiveref where updateTime < :updateTime")
+    suspend fun removeOldTankRefs(updateTime: Long)
+
+    @Query("Select * from archive join tankoubonarchiveref on tankId = :id and archiveId = archive.id order by `order`")
+    suspend fun getTankArchives(id: String): List<Archive>
+
+    @Upsert(entity = ArchiveFull::class)
+    suspend fun insertTankJson(tankJson: TankJson)
+
+    @Upsert(entity = ArchiveFull::class)
+    suspend fun insertTankJsonBase(tankJsonBase: TankJsonBase)
+
+    @Query("Delete from tankoubonarchiveref where tankId = :id")
+    suspend fun removeTank(id: String)
 }
 
 class DatabaseTypeConverters {
@@ -259,8 +279,9 @@ class DatabaseTypeConverters {
         ArchiveCategoryFull::class,
         StaticCategoryRef::class,
         SearchArchiveRef::class,
-        ToCEntryFull::class
-    ], version = 10, exportSchema = false)
+        ToCEntryFull::class,
+        TankoubonArchiveRef::class
+    ], version = 11, exportSchema = false)
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ArchiveDatabase : RoomDatabase() {
     abstract fun archiveDao(): ArchiveDao

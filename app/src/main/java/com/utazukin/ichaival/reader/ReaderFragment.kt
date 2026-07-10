@@ -44,9 +44,9 @@ import coil3.size.Dimension
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.chrisbanes.photoview.PhotoView
-import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ImageDecoder
 import com.utazukin.ichaival.ImageRegionDecoder
+import com.utazukin.ichaival.MetaArchive
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.cacheOrGet
 import com.utazukin.ichaival.createGifLoader
@@ -66,7 +66,7 @@ enum class TouchZone {
 }
 
 interface PageFragment {
-    fun onArchiveLoad(archive: Archive)
+    fun onArchiveLoad(archive: MetaArchive)
     fun onScaleTypeChange(scaleType: ScaleType)
     fun reloadImage()
 }
@@ -335,7 +335,7 @@ class ReaderFragment : Fragment(), PageFragment {
 
     override fun onScaleTypeChange(scaleType: ScaleType) = updateScaleType(scaleType)
 
-    override fun onArchiveLoad(archive: Archive) {
+    override fun onArchiveLoad(archive: MetaArchive) {
         arguments?.run {
             val page = getInt(PAGE_NUM)
             lifecycleScope.launch {

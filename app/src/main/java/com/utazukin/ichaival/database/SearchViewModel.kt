@@ -20,6 +20,7 @@ package com.utazukin.ichaival.database
 
 import android.app.Application
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -40,6 +41,7 @@ import com.utazukin.ichaival.StatusFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.NotNull
 import kotlin.reflect.KProperty
 
 class ReaderTabViewModel : ViewModel() {
@@ -62,6 +64,44 @@ private class StateDelegate<T>(private val state: SavedStateHandle,
     }
 }
 
+@Suppress("UNCHECKED_CAST")
+private class PrefDelegate<T>(@NotNull default: T, private val key: String, private val prefs: SharedPreferences, private val onChange: () -> Unit) {
+    @NotNull
+    private var field: T
+
+    init {
+        with(prefs) {
+            field = when (default) {
+                is Boolean -> getBoolean(key, default) as T
+                is String -> getString(key, default) as T
+                is Int -> getInt(key, default) as T
+                is Long -> getLong(key, default) as T
+                is Float -> getFloat(key, default) as T
+                is SortMethod -> SortMethod.fromInt(getInt(key, default.value)) as T
+                else -> default
+            }
+        }
+    }
+
+    operator fun getValue(thisRef: Any?, property: KProperty<*>) = field
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        if (field != value) {
+            prefs.edit {
+                when (value) {
+                    is Boolean -> putBoolean(key, value)
+                    is String -> putString(key, value)
+                    is Int -> putInt(key, value)
+                    is Long -> putLong(key, value)
+                    is Float -> putFloat(key, value)
+                    is SortMethod -> putInt(key, value.value)
+                }
+            }
+            field = value
+            onChange()
+        }
+    }
+}
+
 private class ChangeDelegate<T>(private var field: T, private val onChange: () -> Unit) {
     operator fun getValue(thisRef: Any?, property: KProperty<*>) = field
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
@@ -75,12 +115,17 @@ private class ChangeDelegate<T>(private var field: T, private val onChange: () -
 class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPreferences) : AndroidViewModel(app) {
     constructor(app: Application, state: SavedStateHandle) : this(app, state, PreferenceManager.getDefaultSharedPreferences(app.applicationContext))
     var status by StateDelegate(state, StatusFilter.None) { reset() }
-    var isLocal by StateDelegate(state, prefs.getBoolean(app.resources.getString(R.string.local_search_key), false)) { reset(false) }
+    var isLocal by ChangeDelegate(prefs.getBoolean(app.resources.getString(R.string.local_search_key), false)) { reset(false) }
+    var groupTanks by PrefDelegate(true, TANK_GROUP_PREF, prefs) {
+        //The search cache doesn't care if tanks are grouped or not, but the server does
+        viewModelScope.launch { DatabaseReader.clearSearchCache() }
+        reset()
+    }
     var randomCount by StateDelegate(state, 0) { reset() }
     var categoryId by StateDelegate(state, "") { reset() }
     var isSearch by StateDelegate(state, false) { reset() }
-    var sortMethod by StateDelegate(state, SortMethod.fromInt(prefs.getInt(app.resources.getString(R.string.sort_pref), 1))) { jumpToTop = true; reset() }
-    var descending by StateDelegate(state, prefs.getBoolean(app.resources.getString(R.string.desc_pref), false)) { jumpToTop = true; reset() }
+    var sortMethod by PrefDelegate(SortMethod.Alpha, app.resources.getString(R.string.sort_pref), prefs) { jumpToTop = true; reset() }
+    var descending by PrefDelegate(false, app.resources.getString(R.string.desc_pref), prefs) { jumpToTop = true; reset() }
     var filter by StateDelegate(state, "")
         private set
     var jumpToTop = false
@@ -104,12 +149,12 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     private fun getPagingSource() : PagingSource<Int, ArchiveBase> {
         archivePagingSource = when {
             !initiated -> EmptySource()
-            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, status)
-            categoryId.isNotEmpty() && filter.isBlank() -> DatabaseReader.getArchiveSource(sortMethod, descending, status, categoryId = categoryId)
-            isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, status, categoryId)
-            filter.isNotBlank() -> ArchiveListServerPagingSource(status, sortMethod, descending, filter, categoryId)
+            randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, status, groupTanks)
+            categoryId.isNotEmpty() && filter.isBlank() -> DatabaseReader.getArchiveSource(sortMethod, descending, status, categoryId = categoryId, groupTanks = groupTanks)
+            isLocal && filter.isNotBlank() -> ArchiveListLocalPagingSource(filter, sortMethod, descending, status, categoryId, groupTanks)
+            filter.isNotBlank() -> ArchiveListServerPagingSource(status, sortMethod, descending, filter, categoryId, groupTanks)
             isSearch -> EmptySource()
-            else -> DatabaseReader.getArchiveSource(sortMethod, descending, status)
+            else -> DatabaseReader.getArchiveSource(sortMethod, descending, status, groupTanks = groupTanks)
         }
         return archivePagingSource
     }
@@ -155,5 +200,9 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     private fun onCategoriesUpdated(categories: List<ArchiveCategory>, firstUpdate: Boolean) {
         if (!firstUpdate && categoryId.isNotEmpty() && !categories.any { it.id  == categoryId })
             categoryId = ""
+    }
+
+    companion object {
+        private const val TANK_GROUP_PREF = "group tanks pref"
     }
 }

@@ -115,6 +115,12 @@ object WebHandler {
     private fun HttpUrl.Builder.addClearTemp() = addApi().addPathSegment("tempfolder")
     private fun HttpUrl.Builder.addModifyCategory(categoryId: String, archiveId: String) = addCategory().addPathSegment(categoryId).addPathSegment(archiveId)
     private fun HttpUrl.Builder.addMinionStatus(id: Int) = addApi().addPathSegment("minion").addPathSegment(id)
+    private fun HttpUrl.Builder.addTankoubon() = addApi().addPathSegment("tankoubons")
+    private fun HttpUrl.Builder.addTankoubonThumb(id: String) = addTankoubon().addPathSegment(id).addPathSegment("thumbnail")
+    private fun HttpUrl.Builder.addTankoubonDelete(id: String) = addTankoubon().addPathSegment(id)
+    private fun HttpUrl.Builder.addTankoubonProgress(id: String, page: Int): HttpUrl.Builder {
+        return addTankoubon().addPathSegment(id).addPathSegment("progress").addPathSegment(page + 1)
+    }
 
     var serverLocation: String = ""
     var apiKey: String = ""
@@ -248,7 +254,10 @@ object WebHandler {
         if (checkConnection && !canConnect())
             return false
 
-        val url = serverUrlBuilder.addDeleteArchive(archiveId).build()
+        val url = if (!isTankId(archiveId))
+            serverUrlBuilder.addDeleteArchive(archiveId).build()
+        else
+            serverUrlBuilder.addTankoubonDelete(archiveId).build()
         val connection = createServerConnection(url, "DELETE")
         val response = httpClient.newCall(connection).tryAwait()
         return response?.use {
@@ -343,9 +352,18 @@ object WebHandler {
         if (!canConnect() || !ServerManager.serverTracksProgress || (ServerManager.authenticatedProgress && apiKey.isEmpty()))
             return
 
-        val url = serverUrlBuilder.addProgress(id, page).build()
+        val url = if (!isTankId(id)) serverUrlBuilder.addProgress(id, page).build() else serverUrlBuilder.addTankoubonProgress(id, page).build()
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
         httpClient.newCall(connection).enqueue()
+    }
+
+    suspend fun getAllArchives(): InputStream? {
+        if (!canConnect())
+            return null
+
+        val url = serverUrlBuilder.addArchiveList().build()
+        val connection = createServerConnection(url)
+        return httpClient.newCall(connection).tryAwait()?.body?.byteStream()
     }
 
     suspend fun getOrderedArchives(start: Long = -1): InputStream? {
@@ -353,7 +371,7 @@ object WebHandler {
             return null
 
         return try {
-            val response = searchServerInternal("", false, SortMethod.Alpha, false, start)
+            val response = searchServerInternal("", false, SortMethod.Alpha, false, start, false)
             if (!response.isSuccessful) {
                 handleErrorMessage(response.code, R.string.failed_to_sync_message)
                 null
@@ -364,28 +382,33 @@ object WebHandler {
         }
     }
 
-    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long = 0) : InputStream? {
+    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long = 0, groupTanks: Boolean = false) : InputStream? {
         if (!canConnect())
             return null
 
-        val response = tryOrNull { searchServerInternal(search, onlyNew, sortMethod, descending, start) }
+        val response = tryOrNull { searchServerInternal(search, onlyNew, sortMethod, descending, start, groupTanks) }
         return if (response?.isSuccessful == true) response.body.byteStream() else null
     }
 
-    private suspend fun searchServerInternal(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long) : Response {
+    private suspend fun searchServerInternal(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long, groupTanks: Boolean) : Response {
         val sort = when(sortMethod) {
             SortMethod.Alpha -> "title"
             SortMethod.Date -> "date_added"
         }
         val order = if (descending) "desc" else "asc"
-        val url = serverUrlBuilder
-            .addSearch()
-            .addQueryParameter("filter", search)
-            .addQueryParameter("newonly", onlyNew)
-            .addQueryParameter("sortby", sort)
-            .addQueryParameter("order", order)
-            .addQueryParameter("start", start)
-            .build()
+        val url = with (serverUrlBuilder) {
+            addSearch()
+            addQueryParameter("filter", search)
+            addQueryParameter("newonly", onlyNew)
+            addQueryParameter("sortby", sort)
+            addQueryParameter("order", order)
+            addQueryParameter("start", start)
+
+            if (ServerManager.checkVersionAtLeast(0, 9, 30))
+                addQueryParameter("groupby_tanks", groupTanks)
+
+            build()
+        }
 
         val connection = createServerConnection(url)
         return httpClient.newCall(connection).await()
@@ -398,6 +421,24 @@ object WebHandler {
                 emptyList()
             }
             else -> List(jsonPages.length()) { jsonPages.getString(it).trimStart('.') }
+        }
+    }
+
+    suspend fun getTankoubons(page: Int = 0): InputStream? {
+        if (!canConnect())
+            return null
+
+        return withContext(Dispatchers.IO) {
+            val url = serverUrlBuilder.addTankoubon().addQueryParameter("page", page).build()
+            val connection = createServerConnection(url)
+            val response = httpClient.newCall(connection).tryAwait()
+
+            response?.let {
+                if (!it.isSuccessful)
+                    null
+                else
+                    it.body.byteStream()
+            }
         }
     }
 
@@ -503,12 +544,18 @@ object WebHandler {
         if (!canConnect())
             return ""
 
-        return serverUrlBuilder
-            .addThumb(id)
-            .addQueryParameter("page", page + 1)
-            .addQueryParameter("no_fallback", true)
-            .build()
-            .toString()
+        return with (serverUrlBuilder) {
+            if (id.startsWith("TANK_"))
+                addTankoubonThumb(id)
+            else {
+                addThumb(id)
+                addQueryParameter("page", page + 1)
+            }
+
+            addQueryParameter("no_fallback", true)
+            build()
+            toString()
+        }
     }
 
     suspend fun downloadImage(serverPath: String) : InputStream? {
@@ -542,7 +589,13 @@ object WebHandler {
             return null
 
         return withContext(Dispatchers.IO) {
-            val url = serverUrlBuilder.addThumb(id).build()
+            val url = with (serverUrlBuilder) {
+                if (id.startsWith("TANK_"))
+                    addTankoubonThumb(id)
+                else
+                    addThumb(id)
+                build()
+            }
             if (page != null) {
                 val updateUrl = url.newBuilder().addQueryParameter("page", page + 1).build()
                 val connection = createServerConnection(updateUrl, "PUT", FormBody.Builder().build())
