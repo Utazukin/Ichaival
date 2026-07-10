@@ -376,7 +376,7 @@ object DatabaseReader {
     fun getAllCategories() = database.archiveDao().getAllCategories()
 
     suspend fun getArchiveWithCategories(id: String): ArchiveWithCategories? = withTransaction {
-        database.archiveDao().getArchive(id)?.let {
+        getArchive(id)?.let {
             ArchiveWithCategories(it, database.archiveDao().getCategoryArchives(id))
         }
     }
