@@ -29,7 +29,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
@@ -97,6 +100,36 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
                         put(namepace, new)
                     }
                 }
+            }
+        }
+    }
+
+    @delegate:Ignore
+    override val toc by lazy {
+        channelFlow {
+            val flow = archives.map { it.toc }.merge()
+            flow.collectLatest {
+                var total = 0
+                val list = if (it.isNotEmpty()) {
+                    buildList {
+                        addAll(it)
+                        for (archive in archives) {
+                            removeAll { x -> x.page == total }
+                            add(ToCEntry(archive.title, total))
+                            total += archive.numPages
+                        }
+                        sortBy { x -> x.page }
+                    }
+                } else {
+                    buildList {
+                        for (archive in archives) {
+                            add(ToCEntry(archive.title, total))
+                            total += archive.numPages
+                        }
+                    }
+                }
+
+                send(list)
             }
         }
     }
@@ -182,6 +215,7 @@ interface MetaArchive {
     var isNew: Boolean
     val dateAdded: Long
     val tags: Map<String, List<String>>
+    val toc: Flow<List<ToCEntry>>
     fun getThumb(page: Int): String
     fun invalidateCache()
     fun hasPage(page: Int) = numPages <= 0 || (page in 0 until numPages)
@@ -203,6 +237,9 @@ data class Archive (
 
     @delegate:Ignore
     override val isWebtoon by lazy { containsTag("webtoon", false) }
+
+    @delegate:Ignore
+    override val toc by lazy { DatabaseReader.getToC(id) }
 
     override suspend fun extract(context: Context, forceFull: Boolean) {
         val pages = DatabaseReader.getPageList(context, id, forceFull)

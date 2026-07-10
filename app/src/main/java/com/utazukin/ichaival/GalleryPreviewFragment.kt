@@ -84,14 +84,12 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
         lifecycleScope.launch {
             DatabaseReader.getArchive(archiveId)?.let {
                 setGalleryView(savedInstanceState, it)
-            }
 
-            if (!isTankId(archiveId)) {
                 repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    DatabaseReader.getToC(archiveId).collectLatest {
+                    it.toc.collectLatest { toc ->
                         var firstThumb = -1
-                        if (it.isNotEmpty() && currentToc != null) {
-                            for ((i, chapter) in it.withIndex()) {
+                        if (toc.isNotEmpty() && currentToc != null) {
+                            for ((i, chapter) in toc.withIndex()) {
                                 if (chapter.page != currentToc?.getOrNull(i)?.page) {
                                     firstThumb = chapter.page
                                     break
@@ -99,21 +97,10 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
                             }
                         }
 
-                        currentToc = it
-                        updateToCButton(it, savedInstanceState, firstThumb)
+                        currentToc = toc
+                        updateToCButton(toc, savedInstanceState, firstThumb)
                     }
                 }
-            } else {
-                val tank = DatabaseReader.getTank(archiveId) ?: return@launch
-                val toc = buildList {
-                    var total = 0
-                    for (archive in tank.archives) {
-                        add(ToCEntry(archive.title, total))
-                        total += archive.numPages
-                    }
-                }
-                currentToc = toc
-                updateToCButton(toc, savedInstanceState)
             }
         }
 
@@ -172,7 +159,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.refresh_item -> {
-                archiveId?.let {
+                archiveId.let {
                     DatabaseReader.invalidateImageCache(it)
                     launch {
                         (activity as ArchiveDetails).extractArchive(it)
