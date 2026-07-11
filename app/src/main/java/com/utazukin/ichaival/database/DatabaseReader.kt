@@ -460,10 +460,6 @@ object DatabaseReader {
             }
         }
 
-        if (groupTanks) {
-            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
-        }
-
         when (status) {
             StatusFilter.OnlyNew -> queryBuilder.append(" where archive.isNew")
             StatusFilter.InProgress -> queryBuilder.append(" where archive.currentPage > 0 and archive.currentPage < archive.pageCount - 1")
@@ -476,7 +472,8 @@ object DatabaseReader {
                 queryBuilder.append(" where not archive.isTank")
             else
                 queryBuilder.append(" and not archive.isTank")
-        }
+        } else
+            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
 
         queryBuilder.append(" order by ${if (sortMethod == SortMethod.Date) "dateAdded" else "title"} ${if (descending) "desc" else "asc"}")
 
@@ -506,10 +503,6 @@ object DatabaseReader {
             queryBuilder.append(" join staticcategoryref on categoryId = ? and archive.id = staticcategoryref.archiveId")
         }
 
-        if (groupTanks) {
-            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
-        }
-
         when (status) {
             StatusFilter.OnlyNew -> queryBuilder.append(" where archive.isNew")
             StatusFilter.InProgress -> queryBuilder.append(" where archive.currentPage > 0 and archive.currentPage < archive.pageCount - 1")
@@ -522,7 +515,8 @@ object DatabaseReader {
                 queryBuilder.append(" where not archive.isTank")
             else
                 queryBuilder.append(" and not archive.isTank")
-        }
+        } else
+            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
 
         args.add(count)
         queryBuilder.append(" order by random() limit ?)")
