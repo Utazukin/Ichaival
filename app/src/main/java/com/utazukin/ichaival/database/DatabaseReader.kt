@@ -368,10 +368,15 @@ object DatabaseReader {
         database.archiveDao().removeOldTankRefs(updateTime)
     }
 
-    suspend fun getTank(id: String): Tankoubon? = withTransaction {
-        database.archiveDao().getArchive(id)?.let {
-            Tankoubon(it, database.archiveDao().getTankArchives(id))
+    suspend fun getTank(id: String) = database.archiveDao().getArchive(id)?.let { getTank(it) }
+
+    suspend fun getTank(archive: MetaArchive): Tankoubon = withTransaction {
+        val tankArchives = database.archiveDao().getTankArchives(archive.id).toMutableList<MetaArchive>()
+        for (i in tankArchives.indices) {
+            if (isTankId(tankArchives[i].id) && tankArchives[i].id != archive.id)
+                tankArchives[i] = getTank(tankArchives[i])
         }
+        Tankoubon(archive, tankArchives)
     }
 
     fun getAllCategories() = database.archiveDao().getAllCategories()
@@ -432,10 +437,8 @@ object DatabaseReader {
 
     suspend fun deleteArchives(ids: Collection<String>) = withTransaction {
         database.archiveDao().removeArchives(ids)
-        for (id in ids) {
-            if (isTankId(id))
-                database.archiveDao().removeTank(id)
-        }
+        for (id in ids.filter { isTankId(it) })
+            database.archiveDao().removeTank(id)
     }
 
     fun getToC(archiveId: String) = database.archiveDao().getToC(archiveId)
