@@ -490,7 +490,7 @@ object DatabaseReader {
     suspend fun getArchives(offset: Int, limit: Int) = database.archiveDao().getArchives(offset, limit)
 
     fun getRandomSource(filter: String, categoryId: String, count: Int, status: StatusFilter, groupTanks: Boolean): PagingSource<Int, ArchiveBase> {
-        val queryBuilder = StringBuilder("Select archive.id, title, tags, pageCount from archive where id in (select archive.id from archive")
+        val queryBuilder = StringBuilder("Select archive.id, title, tags, pageCount from archive")
         val args = mutableListOf<Any>()
 
         if (filter.isNotBlank()) {
@@ -510,16 +510,18 @@ object DatabaseReader {
             StatusFilter.None -> {}
         }
 
-        if (!groupTanks) {
-            if (status == StatusFilter.None)
-                queryBuilder.append(" where not archive.isTank")
-            else
-                queryBuilder.append(" and not archive.isTank")
-        } else
-            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
+        if (status == StatusFilter.None)
+            queryBuilder.append(" where")
+        else
+            queryBuilder.append(" and")
+
+        if (!groupTanks)
+            queryBuilder.append(" not archive.isTank")
+        else
+            queryBuilder.append(" id not in (select id from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId)")
 
         args.add(count)
-        queryBuilder.append(" order by random() limit ?)")
+        queryBuilder.append(" order by random() limit ?")
         return database.archiveDao().getRandomSource(SimpleSQLiteQuery(queryBuilder.toString(), args.toTypedArray()))
     }
 
@@ -621,7 +623,10 @@ object DatabaseReader {
         isDirty || updateTime < 0 || (syncMilli >= 0 && Calendar.getInstance().timeInMillis - updateTime > syncMilli)
     }
 
-    suspend fun getArchive(id: String): MetaArchive?  {
+    suspend fun getArchive(id: String?): MetaArchive?  {
+        if (id == null)
+            return null
+
         if (isTankId(id))
             return getTank(id)
 

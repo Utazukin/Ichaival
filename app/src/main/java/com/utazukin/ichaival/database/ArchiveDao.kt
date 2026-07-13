@@ -141,7 +141,7 @@ interface ArchiveDao {
     @Query("Select * from archivecategory order by pinned")
     fun getAllCategories() : Flow<List<ArchiveCategory>>
 
-    @Query("Select * from archivecategory join staticcategoryref on archiveId = :archiveId")
+    @Query("Select * from archivecategory join staticcategoryref on archiveId = :archiveId and id = categoryId")
     suspend fun getCategoryArchives(archiveId: String) : List<ArchiveCategory>
 
     @Query("Select exists(select * from staticcategoryref where categoryId = :categoryId and archiveId = :archiveId)")
