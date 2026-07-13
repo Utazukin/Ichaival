@@ -30,11 +30,13 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
 @Entity(tableName = "archive")
@@ -87,17 +89,17 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
         buildMap {
             putAll(tank.tags)
             for (archive in archives) {
-                for ((namepace, tags) in archive.tags) {
-                    val existing = get(namepace)
+                for ((namespace, tags) in archive.tags) {
+                    val existing = get(namespace)
                     if (existing == null)
-                        put(namepace, tags.toList())
+                        put(namespace, tags.toList())
                     else {
                         val new = existing.toMutableList()
                         for (tag in tags) {
                             if (tag !in new)
                                 new.add(tag)
                         }
-                        put(namepace, new)
+                        put(namespace, new)
                     }
                 }
             }
@@ -107,29 +109,22 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
     @delegate:Ignore
     override val toc by lazy {
         channelFlow {
-            val flow = archives.map { it.toc }.merge()
-            flow.collectLatest {
-                var total = 0
-                val list = if (it.isNotEmpty()) {
-                    buildList {
-                        addAll(it)
-                        for (archive in archives) {
-                            removeAll { x -> x.page == total }
+            coroutineScope {
+                val allToc = archives.map { it.toc.stateIn(this, SharingStarted.Eagerly, emptyList()) }
+                val flow = allToc.merge()
+                flow.collectLatest { _ ->
+                    val list = buildList {
+                        var total = 0
+                        for ((i, archive) in archives.withIndex()) {
                             add(ToCEntry(archive.title, total))
-                            total += archive.numPages
-                        }
-                        sortBy { x -> x.page }
-                    }
-                } else {
-                    buildList {
-                        for (archive in archives) {
-                            add(ToCEntry(archive.title, total))
+                            for (entry in allToc[i].value) {
+                                add(ToCEntry(entry.name, entry.page + total))
+                            }
                             total += archive.numPages
                         }
                     }
+                    send(list)
                 }
-
-                send(list)
             }
         }
     }
@@ -203,6 +198,21 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
         val (archive, localPage) = getArchiveForPage(page)
         return archive.getPageImage(context, localPage)
     }
+
+    override suspend fun addToCEntry(name: String, page: Int) {
+        val (archive, localPage) = getArchiveForPage(page)
+        archive.addToCEntry(name, localPage)
+    }
+
+    override suspend fun removeToCEntry(page: Int) {
+        val (archive, localPage) = getArchiveForPage(page)
+        archive.removeToCEntry(localPage)
+    }
+
+    override suspend fun getToCEntry(page: Int): ToCEntry? {
+        val (archive, localPage) = getArchiveForPage(page)
+        return archive.getToCEntry(localPage)
+    }
 }
 
 interface MetaArchive {
@@ -223,6 +233,9 @@ interface MetaArchive {
     suspend fun getPageImage(context: Context, page: Int): String?
     suspend fun clearNewFlag()
     suspend fun extract(context: Context, forceFull: Boolean = false)
+    suspend fun addToCEntry(name: String, page: Int)
+    suspend fun removeToCEntry(page: Int)
+    suspend fun getToCEntry(page: Int): ToCEntry?
 }
 
 data class Archive (
@@ -261,6 +274,19 @@ data class Archive (
     override fun getThumb(page: Int) = WebHandler.getThumbUrl(id, page)
 
     override suspend fun generateThumbs() = WebHandler.tryGenerateThumbs(id)
+
+    override suspend fun addToCEntry(name: String, page: Int) {
+        val entry = ToCEntryUpdate(name, page, id)
+        if (WebHandler.addToCEntry(entry))
+            DatabaseReader.updateToCEntry(entry)
+    }
+
+    override suspend fun removeToCEntry(page: Int) {
+        if (WebHandler.removeToCEntry(id, page))
+            DatabaseReader.removeToCEntry(page, id)
+    }
+
+    override suspend fun getToCEntry(page: Int) = DatabaseReader.getToCEntry(page, id)
 
     private suspend fun downloadPage(context: Context, page: Int) : String? {
         val downloadPath = DownloadManager.getDownloadedPage(id, page)

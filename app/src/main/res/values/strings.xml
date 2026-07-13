@@ -276,4 +276,5 @@
     <string name="default_chapter">Untitled Chapter</string>
     <string name="add_edit_chapter">Add/Edit Chapter</string>
     <string name="group_tanks_switch">Group Tankoubons</string>
+    <string name="fail_chapter_edit_message">Failed to edit chapter!</string>
 </resources>

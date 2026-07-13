@@ -19,7 +19,6 @@
 package com.utazukin.ichaival
 
 import android.app.Dialog
-import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -31,12 +30,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.utazukin.ichaival.database.DatabaseReader
 import kotlinx.coroutines.launch
 
-interface ChapterEditListener {
-    fun onChapterEdit(name: String, page: Int, delete: Boolean)
-}
-
 class EditChapterDialogFragment : DialogFragment() {
-    private var listener: ChapterEditListener? = null
     private var pageNum = 0
     private var archiveId = ""
     private lateinit var edtChapter: EditText
@@ -67,40 +61,44 @@ class EditChapterDialogFragment : DialogFragment() {
         cancelButton.setOnClickListener { dismiss() }
         okButton.setOnClickListener {
             if (edtChapter.text.isNotBlank()) {
-                listener?.onChapterEdit(edtChapter.text.toString(), pageNum, false)
-                dismiss()
+                updateChapter(edtChapter.text.toString(), pageNum)
             }
         }
 
         deleteButton.setOnClickListener {
-            listener?.onChapterEdit("", pageNum, true)
-            dismiss()
+            deleteChapter(pageNum)
         }
 
         lifecycleScope.launch {
-            val entry = DatabaseReader.getToCEntry(pageNum, archiveId)
-            if (entry != null) {
-                edtChapter.hint = null
-                edtChapter.setText(entry.name)
-                deleteButton.visibility = View.VISIBLE
-                deleteButton.isEnabled = true
-            } else {
-                deleteButton.isEnabled = false
-                deleteButton.visibility = View.GONE
+            DatabaseReader.getArchive(archiveId)?.let {
+                val entry = it.getToCEntry(pageNum)
+                if (entry != null) {
+                    edtChapter.hint = null
+                    edtChapter.setText(entry.name)
+                    deleteButton.visibility = View.VISIBLE
+                    deleteButton.isEnabled = true
+                } else {
+                    deleteButton.isEnabled = false
+                    deleteButton.visibility = View.GONE
+                }
             }
         }
 
         return view
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        listener = parentFragment as? ChapterEditListener ?: context as? ChapterEditListener
+    private fun updateChapter(name: String, page: Int) {
+        lifecycleScope.launch {
+            DatabaseReader.getArchive(archiveId)?.run { addToCEntry(name, page) }
+            dismiss()
+        }
     }
 
-    override fun onDetach() {
-        super.onDetach()
-        listener = null
+    private fun deleteChapter(page: Int) {
+        lifecycleScope.launch {
+            DatabaseReader.getArchive(archiveId)?.run { removeToCEntry(page) }
+            dismiss()
+        }
     }
 
     companion object {

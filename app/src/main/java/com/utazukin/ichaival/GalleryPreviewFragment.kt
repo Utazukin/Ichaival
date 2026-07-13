@@ -57,7 +57,6 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
     private var readerPage = -1
     private lateinit var listView: RecyclerView
     private lateinit var tocButton: Button
-    private var currentToc: List<ToCEntry>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,18 +86,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
 
                 repeatOnLifecycle(Lifecycle.State.CREATED) {
                     it.toc.collectLatest { toc ->
-                        var firstThumb = -1
-                        if (toc.isNotEmpty() && currentToc != null) {
-                            for ((i, chapter) in toc.withIndex()) {
-                                if (chapter.page != currentToc?.getOrNull(i)?.page) {
-                                    firstThumb = chapter.page
-                                    break
-                                }
-                            }
-                        }
-
-                        currentToc = toc
-                        updateToCButton(toc, savedInstanceState, firstThumb)
+                        updateToCButton(toc, savedInstanceState)
                     }
                 }
             }
@@ -107,7 +95,7 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
         return view
     }
 
-    private fun updateToCButton(toc: List<ToCEntry>, savedInstanceState: Bundle? = null, firstThumb: Int = -1) {
+    private fun updateToCButton(toc: List<ToCEntry>, savedInstanceState: Bundle? = null) {
         if (toc.isNotEmpty()) {
             with(tocButton) {
                 val items = if (toc[0].page > 0) {
@@ -119,7 +107,6 @@ class GalleryPreviewFragment : Fragment(), CoroutineScope, MenuProvider {
 
                 val currentIndex = max(when {
                     savedInstanceState != null -> items.indexOfFirst { it.page == savedInstanceState.getInt(CHAPTER_PAGE) }
-                    firstThumb >= 0 -> items.indexOfFirst { it.page == firstThumb }
                     else -> items.indexOfFirst { it.page == thumbAdapter.thumbStart }
                 }, 0)
 

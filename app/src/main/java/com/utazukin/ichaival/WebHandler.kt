@@ -336,7 +336,9 @@ object WebHandler {
 
         val url = serverUrlBuilder.addToC(entry.archiveId, entry.page).addQueryParameter("title", entry.name).build()
         val connection = createServerConnection(url, "PUT", FormBody.Builder().build())
-        return withContext(Dispatchers.IO) { httpClient.newCall(connection).tryAwait()?.isSuccessful == true }
+        return withContext(Dispatchers.IO) {
+            httpClient.newCall(connection).tryAwait(R.string.fail_chapter_edit_message)?.isSuccessful == true
+        }
     }
 
     suspend fun removeToCEntry(id: String, page: Int): Boolean {
@@ -345,7 +347,9 @@ object WebHandler {
 
         val url = serverUrlBuilder.addToC(id, page).build()
         val connection = createServerConnection(url, "DELETE", FormBody.Builder().build())
-        return withContext(Dispatchers.IO) { httpClient.newCall(connection).tryAwait()?.isSuccessful == true }
+        return withContext(Dispatchers.IO) {
+            httpClient.newCall(connection).tryAwait(R.string.fail_chapter_edit_message)?.isSuccessful == true
+        }
     }
 
     fun updateProgress(id: String, page: Int) {

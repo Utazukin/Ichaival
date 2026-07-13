@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
 
 const val FROM_READER_PAGE = "READER_PAGE"
 
-class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener, ChapterEditListener {
+class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionListener {
     private var archiveId: String? = null
     private var pageCount = -1
     private var readerPage = -1
@@ -242,20 +242,6 @@ class ArchiveDetails : BaseActivity(), TagInteractionListener, ThumbInteractionL
             show()
         }
         return true
-    }
-
-    override fun onChapterEdit(name: String, page: Int, delete: Boolean) {
-        archiveId?.let {
-            launch {
-                if (!delete) {
-                    val chapter = ToCEntryUpdate(name, page, it)
-                    if (WebHandler.addToCEntry(chapter))
-                        DatabaseReader.updateToCEntry(chapter)
-                }
-                else if (WebHandler.removeToCEntry(it, page))
-                    DatabaseReader.removeToCEntry(page, it)
-            }
-        }
     }
 
     private fun getThumbFragment(): GalleryPreviewFragment? {
