@@ -259,7 +259,7 @@ private fun handleButtonClick(download: DownloadedArchive, context: Context, ope
             DownloadManager.deleteArchive(dl.id)
         }
     } else if (!DownloadManager.isDownloading(download.id)) {
-        if (download.count == archive.numPages) {
+        if (download.count >= archive.numPages) {
             openDialog.value = ButtonOption(download, context.getString(R.string.delete_archive_item), context.getString(R.string.delete_downloads_message)) { dl, dialog ->
                 dialog.value = null
                 DownloadManager.deleteArchive(dl.id)

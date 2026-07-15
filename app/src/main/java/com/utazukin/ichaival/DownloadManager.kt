@@ -1,6 +1,6 @@
 /*
  * Ichaival - Android client for LANraragi https://github.com/Utazukin/Ichaival/
- * Copyright (C) 2024 Utazukin
+ * Copyright (C) 2026 Utazukin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -65,13 +65,33 @@ object DownloadManager {
                 return@launch
 
             val job = scope.launch {
-                downloadSemaphore.withPermit {
-                    val pages = DatabaseReader.getPageList(App.context, id, true)
-                    for ((i, page) in pages.withIndex()) {
-                        if (!downloadImage(id, page, i, downloadDir))
-                            break
+                if (!isTankId(id)) {
+                    downloadSemaphore.withPermit {
+                        val pages = DatabaseReader.getPageList(id, true)
+                        for ((i, page) in pages.withIndex()) {
+                            if (!downloadImage(id, page, i, downloadDir))
+                                break
+                        }
+                        runningDownloads.remove(id)
                     }
-                    runningDownloads.remove(id)
+                } else {
+                    downloadSemaphore.withPermit {
+                        val tank = DatabaseReader.getTank(id)
+                        if (tank != null) {
+                            var silent = false
+                            var total = 0
+                            for (archive in tank.archives) {
+                                val pages = DatabaseReader.getPageList(archive.id, true, silent)
+                                silent = true
+                                for ((i, page) in pages.withIndex()) {
+                                    if (!downloadImage(id, page, i + total, downloadDir))
+                                        break
+                                }
+                                total += archive.numPages
+                            }
+                            runningDownloads.remove(id)
+                        } else runningDownloads.remove(id)
+                    }
                 }
             }
             runningDownloads[id] = DownloadJob(job)
@@ -105,13 +125,50 @@ object DownloadManager {
                 return@launch
 
             val job = scope.launch {
-                downloadSemaphore.withPermit {
-                    val pages = DatabaseReader.getPageList(App.context, id, true)
-                    for (i in from until pages.size) {
-                        if (!downloadImage(id, pages[i], i, downloadDir))
-                            break
+                if (!isTankId(id)) {
+                    downloadSemaphore.withPermit {
+                        val pages = DatabaseReader.getPageList(id, true)
+                        for (i in from until pages.size) {
+                            if (!downloadImage(id, pages[i], i, downloadDir))
+                                break
+                        }
+                        runningDownloads.remove(id)
                     }
-                    runningDownloads.remove(id)
+                } else {
+                    downloadSemaphore.withPermit {
+                        val tank = DatabaseReader.getTank(id)
+                        if (tank != null) {
+                            var total = 0
+                            var startArchive = -1
+                            for ((i, archive) in tank.archives.withIndex()) {
+                                total += archive.numPages
+                                if (from < total) {
+                                    startArchive = i
+                                    break
+                                }
+                            }
+
+                            if (startArchive >= 0) {
+                                val archive = tank.archives[startArchive]
+                                val pages = DatabaseReader.getPageList(archive.id, true)
+                                val start = from - (total - archive.numPages)
+                                for (i in start until pages.size) {
+                                    if (!downloadImage(id, pages[i], i + total - archive.numPages, downloadDir))
+                                        break
+                                }
+
+                                for (archive in tank.archives.drop(startArchive + 1)) {
+                                    val pages = DatabaseReader.getPageList(archive.id, true, true)
+                                    for ((i, page) in pages.withIndex()) {
+                                        if (!downloadImage(id, page, i + total, downloadDir))
+                                            break
+                                    }
+                                    total += archive.numPages
+                                }
+                            }
+                        }
+                        runningDownloads.remove(id)
+                    }
                 }
             }
             runningDownloads[id] = DownloadJob(job)

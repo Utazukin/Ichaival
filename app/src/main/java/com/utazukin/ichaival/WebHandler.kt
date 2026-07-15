@@ -679,11 +679,12 @@ object WebHandler {
         })
     }
 
-    suspend fun extractArchive(id: String, forceFull: Boolean = false) : JSONObject? {
+    suspend fun extractArchive(id: String, forceFull: Boolean = false, silent: Boolean = false) : JSONObject? {
         if (!canConnect())
             return null
 
-        notify(R.string.archive_extract_message)
+        if (!silent)
+            notify(R.string.archive_extract_message)
 
         val url = serverUrlBuilder
             .addFiles(id)

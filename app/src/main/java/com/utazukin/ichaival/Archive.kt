@@ -130,6 +130,10 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
     }
 
     override fun getThumb(page: Int): String {
+        val localThumb = DownloadManager.getDownloadedPage(id, page)
+        if (localThumb != null)
+            return localThumb
+
         val (archive, localPage) = getArchiveForPage(page)
         return archive.getThumb(localPage)
     }
@@ -154,10 +158,12 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
         //Do nothing? maybe clear the new flag for all?
     }
 
-    override suspend fun extract(context: Context, forceFull: Boolean) {
+    override suspend fun extract(context: Context, forceFull: Boolean, silent: Boolean) {
         var pageCount = 0
+        var silent = silent
         for (archive in archives) {
-            archive.extract(context, forceFull)
+            archive.extract(context, forceFull, silent)
+            silent = true
             pageCount += archive.numPages
         }
         tank.numPages = pageCount
@@ -195,6 +201,9 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
     }
 
     override suspend fun getPageImage(context: Context, page: Int): String? {
+        if (DownloadManager.isDownloaded(id))
+            return DownloadManager.getDownloadedPage(id, page)
+
         val (archive, localPage) = getArchiveForPage(page)
         return archive.getPageImage(context, localPage)
     }
@@ -254,8 +263,8 @@ data class Archive (
     @delegate:Ignore
     override val toc by lazy { DatabaseReader.getToC(id) }
 
-    override suspend fun extract(context: Context, forceFull: Boolean) {
-        val pages = DatabaseReader.getPageList(context, id, forceFull)
+    override suspend fun extract(context: Context, forceFull: Boolean, silent: Boolean) {
+        val pages = DatabaseReader.getPageList(id, forceFull, silent)
         if (numPages > 0)
             numPages = pages.size
     }
@@ -293,7 +302,7 @@ data class Archive (
         if (downloadPath != null)
             return downloadPath
 
-        val pages = DatabaseReader.getPageList(context.applicationContext, id)
+        val pages = DatabaseReader.getPageList(id)
         return if (page < pages.size) WebHandler.getRawImageUrl(pages[page]) else null
     }
 }

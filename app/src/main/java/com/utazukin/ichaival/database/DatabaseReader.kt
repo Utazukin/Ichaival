@@ -596,12 +596,12 @@ object DatabaseReader {
             listener.onExtract(id, pageCount)
     }
 
-    suspend fun getPageList(context: Context, id: String, forceFull: Boolean = false) : List<String> = withContext(Dispatchers.IO) {
+    suspend fun getPageList(id: String, forceFull: Boolean = false, silent: Boolean = false) : List<String> = withContext(Dispatchers.IO) {
         val mutex = extractingMutex.withLock { extractingArchives.getOrPut(id) { Mutex() } }
 
         mutex.withLock {
             archivePageMap.getOrPut(id) {
-                WebHandler.getPageList(WebHandler.extractArchive(id, forceFull)).also {
+                WebHandler.getPageList(WebHandler.extractArchive(id, forceFull, silent)).also {
                     if (it.isNotEmpty())
                         database.archiveDao().updatePageCount(id, it.size)
                     notifyExtractListeners(id, it.size)
