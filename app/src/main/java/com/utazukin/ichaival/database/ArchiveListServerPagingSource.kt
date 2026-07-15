@@ -75,7 +75,8 @@ open class ArchiveListServerPagingSource(
         val cacheCount = DatabaseReader.getCachedSearchCount(filter)
         if (cacheCount == 0) {
             WebHandler.updateRefreshing(true)
-            val resultsStream = WebHandler.searchServer(filter, false, sortMethod, descending, -1, groupTanks)
+            val idsOnly = ServerManager.checkVersionAtLeast(0, 9, 80)
+            val resultsStream = WebHandler.searchServer(filter, false, sortMethod, descending, -1, groupTanks, idsOnly)
             resultsStream?.use {
                 JsonReader(it.bufferedReader(Charsets.UTF_8)).use { reader ->
                     reader.beginObject()
@@ -84,14 +85,19 @@ open class ArchiveListServerPagingSource(
                             "data" -> {
                                 DatabaseReader.withTransaction {
                                     reader.beginArray()
-                                    while (reader.hasNext()) {
-                                        reader.beginObject()
+                                    if (idsOnly) {
+                                        while (reader.hasNext())
+                                            insertSearch(reader.nextString())
+                                    } else {
                                         while (reader.hasNext()) {
-                                            if (reader.nextName() == "arcid")
-                                                insertSearch(reader.nextString())
-                                            else reader.skipValue()
+                                            reader.beginObject()
+                                            while (reader.hasNext()) {
+                                                if (reader.nextName() == "arcid")
+                                                    insertSearch(reader.nextString())
+                                                else reader.skipValue()
+                                            }
+                                            reader.endObject()
                                         }
-                                        reader.endObject()
                                     }
                                     reader.endArray()
                                 }

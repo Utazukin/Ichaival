@@ -370,31 +370,17 @@ object WebHandler {
         return httpClient.newCall(connection).tryAwait()?.body?.byteStream()
     }
 
-    suspend fun getOrderedArchives(start: Long = -1): InputStream? {
+    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean,
+                             start: Long = 0, groupTanks: Boolean = false, idsOnly: Boolean = false) : InputStream? {
         if (!canConnect())
             return null
 
-        return try {
-            val response = searchServerInternal("", false, SortMethod.Alpha, false, start, false)
-            if (!response.isSuccessful) {
-                handleErrorMessage(response.code, R.string.failed_to_sync_message)
-                null
-            } else response.body.byteStream()
-        } catch (e: Exception) {
-            handleErrorMessage(e, R.string.failed_to_sync_message)
-            null
-        }
-    }
-
-    suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long = 0, groupTanks: Boolean = false) : InputStream? {
-        if (!canConnect())
-            return null
-
-        val response = tryOrNull { searchServerInternal(search, onlyNew, sortMethod, descending, start, groupTanks) }
+        val response = tryOrNull { searchServerInternal(search, onlyNew, sortMethod, descending, start, groupTanks, idsOnly) }
         return if (response?.isSuccessful == true) response.body.byteStream() else null
     }
 
-    private suspend fun searchServerInternal(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean, start: Long, groupTanks: Boolean) : Response {
+    private suspend fun searchServerInternal(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod,
+                                             descending: Boolean, start: Long, groupTanks: Boolean, idsOnly: Boolean) : Response {
         val sort = when(sortMethod) {
             SortMethod.Alpha -> "title"
             SortMethod.Date -> "date_added"
@@ -402,6 +388,10 @@ object WebHandler {
         val order = if (descending) "desc" else "asc"
         val url = with (serverUrlBuilder) {
             addSearch()
+
+            if (idsOnly)
+                addPathSegment("ids")
+
             addQueryParameter("filter", search)
             addQueryParameter("newonly", onlyNew)
             addQueryParameter("sortby", sort)
