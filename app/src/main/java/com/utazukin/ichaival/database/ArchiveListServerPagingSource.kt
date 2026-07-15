@@ -21,12 +21,14 @@ package com.utazukin.ichaival.database
 import android.util.JsonReader
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.utazukin.ichaival.ArchiveBase
+import com.utazukin.ichaival.ArchiveListEntry
 import com.utazukin.ichaival.CategoryManager
+import com.utazukin.ichaival.ServerManager
 import com.utazukin.ichaival.SortMethod
 import com.utazukin.ichaival.StatusFilter
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.containsTag
+import com.utazukin.ichaival.isTankId
 import com.utazukin.ichaival.parseTermsInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -47,7 +49,7 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
                                            protected val descending: Boolean,
                                            status: StatusFilter,
                                            protected val categoryId: String,
-                                           protected val groupTanks: Boolean) : PagingSource<Int, ArchiveBase>() {
+                                           protected val groupTanks: Boolean) : PagingSource<Int, ArchiveListEntry>() {
     protected open val roomSource = DatabaseReader.getArchiveSource(sortMethod,
             descending,
             status,
@@ -56,7 +58,7 @@ abstract class ArchiveListPagingSourceBase(protected val filter: String,
             groupTanks)
     override val jumpingSupported get() = roomSource.jumpingSupported
 
-    override fun getRefreshKey(state: PagingState<Int, ArchiveBase>) = roomSource.getRefreshKey(state)
+    override fun getRefreshKey(state: PagingState<Int, ArchiveListEntry>) = roomSource.getRefreshKey(state)
     protected suspend fun insertSearch(arcId: String) = DatabaseReader.insertSearch(SearchArchiveRef(filter, arcId))
     fun reset() {
         invalidate()
@@ -112,7 +114,7 @@ open class ArchiveListServerPagingSource(
         }
     }
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ArchiveBase> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ArchiveListEntry> {
         withContext(Dispatchers.IO) { loadResults() }
         return roomSource.load(params)
     }
@@ -145,7 +147,7 @@ class ArchiveListLocalPagingSource(filter: String,
         WebHandler.updateRefreshing(false)
     }
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ArchiveBase> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ArchiveListEntry> {
         val cacheCount = DatabaseReader.getCachedSearchCount(filter)
         if (cacheCount == 0)
             internalFilter()

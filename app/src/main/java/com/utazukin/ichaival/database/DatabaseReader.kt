@@ -40,11 +40,11 @@ import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.stream.JsonReader
 import com.utazukin.ichaival.Archive
-import com.utazukin.ichaival.ArchiveBase
 import com.utazukin.ichaival.ArchiveCategory
 import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.ArchiveJsonBase
+import com.utazukin.ichaival.ArchiveListEntry
 import com.utazukin.ichaival.ArchiveWithCategories
 import com.utazukin.ichaival.CategoryManager
 import com.utazukin.ichaival.MetaArchive
@@ -430,7 +430,7 @@ object DatabaseReader {
 
     suspend fun updateProgress(id: String, page: Int) = database.archiveDao().updateProgress(id, page)
 
-    suspend fun markCompleted(archives: List<ArchiveBase>) = withTransaction {
+    suspend fun markCompleted(archives: List<ArchiveListEntry>) = withTransaction {
         for (archive in archives)
             database.archiveDao().markCompleted(archive.id)
     }
@@ -449,7 +449,7 @@ object DatabaseReader {
 
     suspend fun removeToCEntry(page: Int, archiveId: String) = database.archiveDao().removeToCEntry(page, archiveId)
 
-    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null, groupTanks: Boolean = true) : PagingSource<Int, ArchiveBase> {
+    fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null, groupTanks: Boolean = true) : PagingSource<Int, ArchiveListEntry> {
         val queryBuilder = StringBuilder("Select id, title, tags, pageCount, dateAdded from archive")
         val args = buildList(2) {
             if (!search.isNullOrBlank()) {
@@ -492,7 +492,7 @@ object DatabaseReader {
 
     suspend fun getArchives(offset: Int, limit: Int) = database.archiveDao().getArchives(offset, limit)
 
-    fun getRandomSource(filter: String, categoryId: String, count: Int, status: StatusFilter, groupTanks: Boolean): PagingSource<Int, ArchiveBase> {
+    fun getRandomSource(filter: String, categoryId: String, count: Int, status: StatusFilter, groupTanks: Boolean): PagingSource<Int, ArchiveListEntry> {
         val queryBuilder = StringBuilder("Select archive.id, title, tags, pageCount from archive")
         val args = mutableListOf<Any>()
 

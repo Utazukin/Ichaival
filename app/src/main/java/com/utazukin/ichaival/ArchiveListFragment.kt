@@ -72,7 +72,7 @@ import kotlin.math.roundToInt
 private const val DEFAULT_SEARCH_DELAY = 750L
 
 interface OnListFragmentInteractionListener {
-    fun onListFragmentInteraction(archive: ArchiveBase, view: View)
+    fun onListFragmentInteraction(archive: ArchiveListEntry, view: View)
 }
 
 class ArchiveListFragment : Fragment(),
@@ -399,7 +399,7 @@ class ArchiveListFragment : Fragment(),
         swipeRefreshLayout.isEnabled = canSwipeRefresh && enable && !isSearch
     }
 
-    private fun handleArchiveLongPress(archive: ArchiveBase) : Boolean {
+    private fun handleArchiveLongPress(archive: ArchiveListEntry) : Boolean {
         val tagFragment = TagDialogFragment.newInstance(archive.id)
 
         if (activity !is ArchiveRandomActivity) {
@@ -498,7 +498,7 @@ class ArchiveListFragment : Fragment(),
         }
     }
 
-    override fun onListFragmentInteraction(archive: ArchiveBase, view: View) {
+    override fun onListFragmentInteraction(archive: ArchiveListEntry, view: View) {
         when (val act = requireActivity()) {
             is ArchiveSearch, is ArchiveRandomActivity -> act.setResult(Activity.RESULT_OK)
         }

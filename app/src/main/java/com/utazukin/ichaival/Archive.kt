@@ -71,10 +71,12 @@ private fun containsTag(tag: String, exact: Boolean, tags: Map<String, List<Stri
     return false
 }
 
-fun Archive.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
+fun MetaArchive.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
 fun ArchiveBase.containsTag(tag: String, exact: Boolean) = containsTag(tag, exact, tags)
 
 data class ArchiveBase(val id: String, val title: String, val pageCount: Int, val tags: Map<String, List<String>>)
+
+data class ArchiveListEntry(val id: String, val title: String, val pageCount: Int)
 
 data class ArchiveWithCategories(val archive: MetaArchive, val categories: List<ArchiveCategory>)
 
@@ -241,7 +243,7 @@ interface MetaArchive {
     suspend fun generateThumbs(): ThumbResult
     suspend fun getPageImage(context: Context, page: Int): String?
     suspend fun clearNewFlag()
-    suspend fun extract(context: Context, forceFull: Boolean = false)
+    suspend fun extract(context: Context, forceFull: Boolean = false, silent: Boolean = false)
     suspend fun addToCEntry(name: String, page: Int)
     suspend fun removeToCEntry(page: Int)
     suspend fun getToCEntry(page: Int): ToCEntry?

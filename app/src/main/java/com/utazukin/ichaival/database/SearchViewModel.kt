@@ -31,8 +31,8 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.cachedIn
 import androidx.preference.PreferenceManager
-import com.utazukin.ichaival.ArchiveBase
 import com.utazukin.ichaival.ArchiveCategory
+import com.utazukin.ichaival.ArchiveListEntry
 import com.utazukin.ichaival.R
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.ServerManager
@@ -118,8 +118,10 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     var isLocal by ChangeDelegate(prefs.getBoolean(app.resources.getString(R.string.local_search_key), false)) { reset(false) }
     var groupTanks by PrefDelegate(true, TANK_GROUP_PREF, prefs) {
         //The search cache doesn't care if tanks are grouped or not, but the server does
-        viewModelScope.launch { DatabaseReader.clearSearchCache() }
-        reset()
+        viewModelScope.launch {
+            DatabaseReader.clearSearchCache()
+            reset()
+        }
     }
     var randomCount by StateDelegate(state, 0) { reset() }
     var categoryId by StateDelegate(state, "") { reset() }
@@ -133,7 +135,7 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
     var initiated by StateDelegate(state, false) { reset() }
         private set
     private var resetDisabled by ChangeDelegate(!initiated) { reset(false) }
-    private var archivePagingSource: PagingSource<Int, ArchiveBase> = EmptySource()
+    private var archivePagingSource: PagingSource<Int, ArchiveListEntry> = EmptySource()
     private val archiveList = Pager(PagingConfig(ServerManager.pageSize, jumpThreshold = ServerManager.pageSize * 3), 0) { getPagingSource() }.flow.cachedIn(viewModelScope)
 
     init {
@@ -146,7 +148,7 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
         }
     }
 
-    private fun getPagingSource() : PagingSource<Int, ArchiveBase> {
+    private fun getPagingSource() : PagingSource<Int, ArchiveListEntry> {
         archivePagingSource = when {
             !initiated -> EmptySource()
             randomCount > 0 -> ArchiveListRandomPagingSource(filter, randomCount, categoryId, status, groupTanks)
@@ -193,7 +195,7 @@ class SearchViewModel(app: Application, state: SavedStateHandle, prefs: SharedPr
         }
     }
 
-    fun monitor(scope: CoroutineScope, action: suspend (PagingData<ArchiveBase>) -> Unit) {
+    fun monitor(scope: CoroutineScope, action: suspend (PagingData<ArchiveListEntry>) -> Unit) {
         scope.launch { archiveList.collectLatest(action) }
     }
 

@@ -70,8 +70,8 @@ class ArchiveRecyclerViewAdapter(
     fragment: Fragment,
     viewModel: SearchViewModel,
     private val itemWidth: Int,
-    private val longListener: ((a: ArchiveBase) -> Boolean)?
-) : PagingDataAdapter<ArchiveBase, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
+    private val longListener: ((a: ArchiveListEntry) -> Boolean)?
+) : PagingDataAdapter<ArchiveListEntry, ArchiveRecyclerViewAdapter.ViewHolder>(DIFF_CALLBACK), ActionMode.Callback {
 
     private var multiSelect = false
     private val selectedArchives = mutableSetOf<Int>()
@@ -89,14 +89,14 @@ class ArchiveRecyclerViewAdapter(
     private val itemHeight = (itemWidth * 1.43f).toInt()
 
     private val mOnClickListener: View.OnClickListener = View.OnClickListener { v ->
-        val item = v.tag as ArchiveBase
+        val item = v.tag as ArchiveListEntry
         // Notify the active callbacks interface (the activity, if the fragment is attached to
         // one) that an item has been selected.
         listener?.onListFragmentInteraction(item, v)
     }
 
     private val onLongClickListener: View.OnLongClickListener = View.OnLongClickListener { v ->
-        val item = v.tag as ArchiveBase
+        val item = v.tag as ArchiveListEntry
         longListener?.invoke(item) == true
     }
 
@@ -275,9 +275,9 @@ class ArchiveRecyclerViewAdapter(
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ArchiveBase>() {
-            override fun areItemsTheSame(oldItem: ArchiveBase, newItem: ArchiveBase) = oldItem.id == newItem.id
-            override fun areContentsTheSame(oldItem: ArchiveBase, newItem: ArchiveBase) = oldItem == newItem
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ArchiveListEntry>() {
+            override fun areItemsTheSame(oldItem: ArchiveListEntry, newItem: ArchiveListEntry) = oldItem.id == newItem.id
+            override fun areContentsTheSame(oldItem: ArchiveListEntry, newItem: ArchiveListEntry) = oldItem == newItem
         }
     }
 }

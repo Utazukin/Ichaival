@@ -40,6 +40,7 @@ import com.utazukin.ichaival.ArchiveCategoryFull
 import com.utazukin.ichaival.ArchiveFull
 import com.utazukin.ichaival.ArchiveJson
 import com.utazukin.ichaival.ArchiveJsonBase
+import com.utazukin.ichaival.ArchiveListEntry
 import com.utazukin.ichaival.ReaderTab
 import com.utazukin.ichaival.StaticCategoryRef
 import com.utazukin.ichaival.TankJson
@@ -157,10 +158,10 @@ interface ArchiveDao {
     suspend fun getCachedSearchCount(search: String) : Int
 
     @RawQuery(observedEntities = [ArchiveFull::class])
-    fun getRandomSource(query: SupportSQLiteQuery) : PagingSource<Int, ArchiveBase>
+    fun getRandomSource(query: SupportSQLiteQuery) : PagingSource<Int, ArchiveListEntry>
 
     @RawQuery(observedEntities = [ArchiveFull::class])
-    fun getSearchSource(query: SupportSQLiteQuery) : PagingSource<Int, ArchiveBase>
+    fun getSearchSource(query: SupportSQLiteQuery) : PagingSource<Int, ArchiveListEntry>
 
     @RawQuery(observedEntities = [ArchiveFull::class])
     suspend fun getRandom(query: SupportSQLiteQuery) : Archive?
