@@ -452,7 +452,7 @@ object DatabaseReader {
     suspend fun removeToCEntry(page: Int, archiveId: String) = database.archiveDao().removeToCEntry(page, archiveId)
 
     fun getArchiveSource(sortMethod: SortMethod, descending: Boolean, status: StatusFilter, search: String? = null, categoryId: String? = null, groupTanks: Boolean = true) : PagingSource<Int, ArchiveListEntry> {
-        val queryBuilder = StringBuilder("Select id, title, tags, pageCount, dateAdded from archive")
+        val queryBuilder = StringBuilder("Select id, title, pageCount, dateAdded from archive")
         val args = buildList(2) {
             if (!search.isNullOrBlank()) {
                 add(search)
@@ -478,7 +478,7 @@ object DatabaseReader {
             else
                 queryBuilder.append(" and not archive.isTank")
         } else
-            queryBuilder.append(" except select archive.id, archive.title, archive.tags, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
+            queryBuilder.append(" except select archive.id, archive.title, archive.pageCount, archive.dateAdded from archive join tankoubonarchiveref on archive.id = tankoubonarchiveref.archiveId")
 
         queryBuilder.append(" order by ${if (sortMethod == SortMethod.Date) "dateAdded" else "title"} ${if (descending) "desc" else "asc"}")
 
@@ -495,7 +495,7 @@ object DatabaseReader {
     suspend fun getArchives(offset: Int, limit: Int) = database.archiveDao().getArchives(offset, limit)
 
     fun getRandomSource(filter: String, categoryId: String, count: Int, status: StatusFilter, groupTanks: Boolean): PagingSource<Int, ArchiveListEntry> {
-        val queryBuilder = StringBuilder("Select archive.id, title, tags, pageCount from archive")
+        val queryBuilder = StringBuilder("Select archive.id, title, pageCount from archive")
         val args = mutableListOf<Any>()
 
         if (filter.isNotBlank()) {
