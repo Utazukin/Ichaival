@@ -194,7 +194,7 @@ class ArchiveList : BaseActivity(), SharedPreferences.OnSharedPreferenceChangeLi
                         val view = findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
                         val syncMessage = Snackbar.make(view, R.string.sync_snack_message, Snackbar.LENGTH_INDEFINITE)
                         syncMessage.show()
-                        viewModel.viewModelScope.async { DatabaseReader.updateArchiveList(applicationContext) }.await()
+                        viewModel.viewModelScope.async { DatabaseReader.updateArchiveList() }.await()
                         syncMessage.dismiss()
                     }
                     viewModel.init()

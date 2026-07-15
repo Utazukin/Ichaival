@@ -402,7 +402,7 @@ class ArchiveDetailsFragment : Fragment(), TabRemovedListener, TabsClearedListen
             true
         }
 
-        thumbView.load(DatabaseReader.getArchiveImagePath(archiveId, requireContext()), coverLoader) {
+        thumbView.load(DatabaseReader.getArchiveImagePath(archiveId), coverLoader) {
             allowRgb565(true)
             allowHardware(false)
             addLastModifiedToFileCacheKey(true)

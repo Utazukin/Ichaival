@@ -39,6 +39,7 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.stream.JsonReader
+import com.utazukin.ichaival.App
 import com.utazukin.ichaival.Archive
 import com.utazukin.ichaival.ArchiveCategory
 import com.utazukin.ichaival.ArchiveCategoryFull
@@ -251,7 +252,7 @@ object DatabaseReader {
             .build()
     }
 
-    suspend fun updateArchiveList(context: Context) = withContext(Dispatchers.IO) {
+    suspend fun updateArchiveList() = withContext(Dispatchers.IO) {
         val currentTime = Calendar.getInstance().timeInMillis
         var syncComplete = false
         withTransaction {
@@ -284,7 +285,7 @@ object DatabaseReader {
         if (!syncComplete)
             return@withContext
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(App.context)
         prefs.edit { putLong(UPDATE_KEY, currentTime) }
 
         launch { database.archiveDao().clearSearchCache() }
@@ -670,8 +671,8 @@ object DatabaseReader {
         }
     }
 
-    fun getArchiveImagePath(id: String, context: Context): File {
-        val thumbDir = getThumbDir(context.noBackupFilesDir, id)
+    fun getArchiveImagePath(id: String): File {
+        val thumbDir = getThumbDir(App.context.noBackupFilesDir, id)
         return File(thumbDir, "$id.jpg")
     }
 

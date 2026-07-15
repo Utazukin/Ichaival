@@ -447,7 +447,7 @@ class ArchiveListFragment : Fragment(),
             viewModel.jumpToTop = true
             viewModel.viewModelScope.async {
                 viewModel.refreshing = true
-                DatabaseReader.updateArchiveList(requireContext())
+                DatabaseReader.updateArchiveList()
                 viewModel.refreshing = false
             }.await()
             syncMessage.dismiss()

@@ -36,6 +36,8 @@ import coil3.request.crossfade
 import com.utazukin.ichaival.database.DatabaseReader
 import com.utazukin.ichaival.database.ReaderTabViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab, ReaderTabViewAdapter.ViewHolder>(DIFF_CALLBACK) {
 
@@ -62,20 +64,9 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
             holder.titleView.text = item.title
             holder.pageView.text = if (item.page >= 0) (item.page + 1).toString() else ""
 
-            if (item.page >= 0) {
-                holder.thumbView.load(WebHandler.getThumbUrl(item.id, item.page)) {
-                    allowRgb565(true)
-                    crossfade(true)
-                }
-            } else {
-                holder.thumbView.load(DatabaseReader.getArchiveImagePath(item.id, holder.view.context), coverLoader) {
-                    allowRgb565(true)
-                    crossfade(true)
-                    addLastModifiedToFileCacheKey(true)
-                }
-            }
+            holder.loadImage(item)
 
-            with(holder.view) {
+            with(holder.itemView) {
                 tag = item
                 setOnClickListener(onClickListener)
                 setOnLongClickListener(onLongClickListener)
@@ -85,10 +76,7 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
-        with(holder.thumbView) {
-            dispose()
-            setImageBitmap(null)
-        }
+        holder.recycle()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -96,10 +84,52 @@ class ReaderTabViewAdapter(activity: BaseActivity) : PagingDataAdapter<ReaderTab
         return ViewHolder(view)
     }
 
-    inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val titleView: TextView = view.findViewById(R.id.archive_title)
         val pageView: TextView = view.findViewById(R.id.archive_page)
         val thumbView: ImageView = view.findViewById(R.id.reader_thumb)
+        private var thumbLoadJob: Job? = null
+
+        fun loadImage(item: ReaderTab) {
+            thumbLoadJob?.cancel()
+            thumbLoadJob = null
+
+            if (item.page >= 0) {
+                if (!isTankId(item.id))
+                    loadThumb(WebHandler.getThumbUrl(item.id, item.page))
+                else {
+                    thumbLoadJob = activityScope.launch {
+                        val tank = DatabaseReader.getTank(item.id)
+                        if (tank != null)
+                            loadThumb(tank.getThumb(item.page))
+                        else
+                            loadCover(item.id)
+                    }
+                }
+            } else loadCover(item.id)
+        }
+
+        private fun loadThumb(url: String) {
+            thumbView.load(url) {
+                allowRgb565(true)
+                crossfade(true)
+            }
+        }
+
+        private fun loadCover(id: String) {
+            thumbView.load(DatabaseReader.getArchiveImagePath(id), coverLoader) {
+                allowRgb565(true)
+                crossfade(true)
+                addLastModifiedToFileCacheKey(true)
+            }
+        }
+
+        fun recycle() {
+            thumbLoadJob?.cancel()
+            thumbLoadJob = null
+            thumbView.dispose()
+            thumbView.setImageBitmap(null)
+        }
     }
 
     interface OnTabInteractionListener {

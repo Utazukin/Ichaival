@@ -138,7 +138,7 @@ class ArchiveRecyclerViewAdapter(
     }
 
     private fun loadImage(archiveImage: ImageView, id: String) {
-        archiveImage.load(DatabaseReader.getArchiveImagePath(id, context), coverLoader) {
+        archiveImage.load(DatabaseReader.getArchiveImagePath(id), coverLoader) {
             allowRgb565(true)
             allowHardware(false)
             addLastModifiedToFileCacheKey(true)
