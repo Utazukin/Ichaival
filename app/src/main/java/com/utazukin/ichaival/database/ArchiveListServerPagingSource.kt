@@ -135,11 +135,22 @@ class ArchiveListLocalPagingSource(filter: String,
             for (i in 0 until totalCount step DatabaseReader.MAX_WORKING_ARCHIVES) {
                 val allArchives = DatabaseReader.getArchives(i, DatabaseReader.MAX_WORKING_ARCHIVES)
                 for (archive in allArchives) {
+                    if (isTankId(archive.id) && !groupTanks)
+                        continue
+
                     if (categoryId.isEmpty() || CategoryManager.isInCategory(categoryId, archive.id)) {
                         if (archive.title.contains(titleSearch, ignoreCase = true))
                             insertSearch(archive.id)
-                        else if (terms.all { archive.containsTag(it.term, it.exact) != it.negative })
-                            insertSearch(archive.id)
+                        else {
+                            if (isTankId(archive.id)) {
+                                DatabaseReader.getTank(archive.id)?.let { tank ->
+                                    if (terms.all { tank.containsTag(it.term, it.exact) != it.negative })
+                                        insertSearch(archive.id)
+                                }
+                            }
+                            else if (terms.all { archive.containsTag(it.term, it.exact) != it.negative })
+                                insertSearch(archive.id)
+                        }
                     }
                 }
             }
