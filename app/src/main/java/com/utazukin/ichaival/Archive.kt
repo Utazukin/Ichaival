@@ -81,27 +81,21 @@ data class ArchiveListEntry(val id: String, val title: String, val pageCount: In
 data class ArchiveWithCategories(val archive: MetaArchive, val categories: List<ArchiveCategory>)
 
 data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : MetaArchive by tank {
-    @Ignore
-    override val isWebtoon = archives.any { it.isWebtoon }
-    @Ignore
-    override var isNew = false
+    @delegate:Ignore
+    override val isWebtoon by lazy { archives.any { it.isWebtoon } }
 
     @delegate:Ignore
     override val tags by lazy {
-        buildMap {
-            putAll(tank.tags)
+        buildMap<String, MutableList<String>> {
+            for ((ns, tags) in tank.tags)
+                put(ns, tags.toMutableList())
+
             for (archive in archives) {
                 for ((namespace, tags) in archive.tags) {
-                    val existing = get(namespace)
-                    if (existing == null)
-                        put(namespace, tags.toList())
-                    else {
-                        val new = existing.toMutableList()
-                        for (tag in tags) {
-                            if (tag !in new)
-                                new.add(tag)
-                        }
-                        put(namespace, new)
+                    val nsTags = getOrPut(namespace) { mutableListOf() }
+                    for (tag in tags) {
+                        if (tag !in nsTags)
+                            nsTags.add(tag)
                     }
                 }
             }
@@ -157,7 +151,9 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
     }
 
     override suspend fun clearNewFlag() {
-        //Do nothing? maybe clear the new flag for all?
+        tank.clearNewFlag()
+        for (archive in archives)
+            archive.clearNewFlag()
     }
 
     override suspend fun extract(context: Context, forceFull: Boolean, silent: Boolean) {
@@ -189,7 +185,8 @@ data class Tankoubon(val tank: MetaArchive, val archives: List<MetaArchive>) : M
             for ((i, result) in results.withIndex()) {
                 when (result) {
                     is InProgressThumbResult -> {
-                        add(result.flow.map { it + archives.take(i).sumOf { arc -> arc.numPages } })
+                        val total = archives.take(i).sumOf { arc -> arc.numPages }
+                        add(result.flow.map { it + total })
                     }
                     is CompleteThumbResult -> {
                         val start = archives.take(i).sumOf { arc -> arc.numPages }
@@ -274,6 +271,7 @@ data class Archive (
     override fun invalidateCache() = DatabaseReader.invalidateImageCache(id)
 
     override suspend fun clearNewFlag() = withContext(Dispatchers.IO) {
+        WebHandler.setArchiveNewFlag(id)
         DatabaseReader.setArchiveNewFlag(id)
         isNew = false
     }
@@ -365,7 +363,7 @@ open class TankJsonBase(json: JsonObject, val updatedAt: Long) {
     val summary: String = json.get("summary").asString
     val tags: String = json.get("tags").asString
     var dateAdded = 0L //Supplied from the contained archives
-    val isNew = false
+    var isNew = false
     var pageCount = 0
     val isTank = true
     @Ignore

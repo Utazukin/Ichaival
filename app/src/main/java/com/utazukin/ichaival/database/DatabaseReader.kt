@@ -350,6 +350,7 @@ object DatabaseReader {
                                     getArchive(archive)?.run {
                                         tank.dateAdded = max(tank.dateAdded, dateAdded)
                                         tank.pageCount += numPages
+                                        tank.isNew = tank.isNew or isNew
                                     }
                                 }
 
@@ -642,7 +643,6 @@ object DatabaseReader {
 
     suspend fun setArchiveNewFlag(id: String) = withContext(Dispatchers.IO) {
         database.archiveDao().updateNewFlag(id, false)
-        WebHandler.setArchiveNewFlag(id)
     }
 
     private fun getThumbDir(cacheDir: File, id: String) : File {
