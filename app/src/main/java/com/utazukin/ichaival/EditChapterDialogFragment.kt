@@ -21,6 +21,7 @@ package com.utazukin.ichaival
 import android.app.Dialog
 import android.os.Bundle
 import android.view.View
+import android.view.WindowManager.LayoutParams
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
@@ -47,7 +48,13 @@ class EditChapterDialogFragment : DialogFragment() {
         return when (context?.getCustomTheme()) {
             getString(R.string.material_theme) -> MaterialAlertDialogBuilder(requireContext(), theme)
             else -> AlertDialog.Builder(requireContext(), theme)
-        }.setView(setupDialog()).setTitle(R.string.add_edit_chapter).create()
+        }.setView(setupDialog())
+            .setTitle(R.string.add_edit_chapter)
+            .create()
+            .apply {
+                edtChapter.requestFocus()
+                window?.setSoftInputMode(LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+            }
     }
 
     private fun setupDialog(): View? {
@@ -75,6 +82,7 @@ class EditChapterDialogFragment : DialogFragment() {
                 if (entry != null) {
                     edtChapter.hint = null
                     edtChapter.setText(entry.name)
+                    edtChapter.setSelection(entry.name.length)
                     deleteButton.visibility = View.VISIBLE
                     deleteButton.isEnabled = true
                 } else {
