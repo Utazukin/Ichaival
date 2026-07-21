@@ -318,10 +318,6 @@ object DatabaseReader {
     suspend fun clearSearchCache() = database.archiveDao().clearSearchCache()
 
     suspend fun updateTanks(updateTime: Long) {
-        var page = 0
-        var viewed = 0
-        var total = 0
-
         val gson = GsonBuilder()
             .registerTypeAdapter(TankJson::class.java, TankDeserializer(updateTime))
             .create()
@@ -332,40 +328,36 @@ object DatabaseReader {
             { updateTank(it as TankJsonBase) }
         }
 
-        do {
-            val tankStream = WebHandler.getTankoubons(page++) ?: break
-            JsonReader(tankStream.bufferedReader(Charsets.UTF_8)).use {
-                it.beginObject()
-                while (it.hasNext()) {
-                    when (it.nextName()) {
-                        "filtered" -> viewed += it.nextInt()
-                        "total" -> total = it.nextInt()
-                        "result" -> {
-                            it.beginArray()
-                            while (it.hasNext()) {
-                                val tank: TankJson = gson.fromJson(it, TankJson::class.java)
+        val tankStream = WebHandler.getTankoubons() ?: return
+        JsonReader(tankStream.bufferedReader(Charsets.UTF_8)).use {
+            it.beginObject()
+            while (it.hasNext()) {
+                when (it.nextName()) {
+                    "result" -> {
+                        it.beginArray()
+                        while (it.hasNext()) {
+                            val tank: TankJson = gson.fromJson(it, TankJson::class.java)
 
-                                for ((i, archive) in tank.archives.withIndex()) {
-                                    database.archiveDao()
-                                        .insertTankRef(TankoubonArchiveRef(tank.id, archive, i, updateTime))
-                                    getArchive(archive)?.run {
-                                        tank.dateAdded = max(tank.dateAdded, dateAdded)
-                                        tank.pageCount += numPages
-                                        tank.isNew = tank.isNew or isNew
-                                    }
+                            for ((i, archive) in tank.archives.withIndex()) {
+                                database.archiveDao()
+                                    .insertTankRef(TankoubonArchiveRef(tank.id, archive, i, updateTime))
+                                getArchive(archive)?.run {
+                                    tank.dateAdded = max(tank.dateAdded, dateAdded)
+                                    tank.pageCount += numPages
+                                    tank.isNew = tank.isNew || isNew
                                 }
-
-                                updateArchive(tank)
                             }
-                            it.endArray()
-                        }
-                        else -> it.skipValue()
-                    }
 
+                            updateArchive(tank)
+                        }
+                        it.endArray()
+                    }
+                    else -> it.skipValue()
                 }
-                it.endObject()
+
             }
-        } while (viewed < total)
+            it.endObject()
+        }
 
         database.archiveDao().removeOldTankRefs(updateTime)
     }

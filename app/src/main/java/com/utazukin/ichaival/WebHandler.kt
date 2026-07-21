@@ -418,7 +418,7 @@ object WebHandler {
         }
     }
 
-    suspend fun getTankoubons(page: Int = 0): InputStream? {
+    suspend fun getTankoubons(page: Int = -1): InputStream? {
         if (!canConnect())
             return null
 
