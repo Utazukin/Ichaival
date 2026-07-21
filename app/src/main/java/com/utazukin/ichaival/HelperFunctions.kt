@@ -153,6 +153,20 @@ fun <T> MutableList<T>.removeRange(start: Int, count: Int) {
         removeAt(i--)
 }
 
+fun parseDateAdded(tags: String): Long {
+    val timeStampIndex = tags.indexOf("date_added:")
+    return if (timeStampIndex < 0) 0L
+    else {
+        val tagStart = tags.indexOf(':', timeStampIndex) + 1
+        var tagEnd = tags.indexOf(',', tagStart)
+        if (tagEnd < 0)
+            tagEnd = tags.length
+
+        val dateTag = tags.substring(tagStart, tagEnd)
+        dateTag.toLongOrNull() ?: 0L
+    }
+}
+
 val BitmapFactory.Options.outSize: Size
     get() = Size(outWidth, outHeight)
 

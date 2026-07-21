@@ -184,7 +184,7 @@ open class TankJsonBase(json: JsonObject, val updatedAt: Long) {
     val id: String = json.get("id").asString
     val summary: String = json.get("summary").asString
     val tags: String = json.get("tags").asString
-    var dateAdded = 0L //Supplied from the contained archives
+    var dateAdded = parseDateAdded(tags)
     var isNew = false
     var pageCount = 0
     val isTank = true

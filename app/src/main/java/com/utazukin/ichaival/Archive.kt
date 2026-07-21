@@ -166,7 +166,7 @@ open class ArchiveJsonBase(json: JsonObject, val updatedAt: Long, val titleSortI
     val pageCount = json.get("pagecount")?.asInt ?: 0
     val isNew = json.get("isnew").asString == "true"
     val summary = json.getOrNull("summary")?.asString
-    val dateAdded: Long
+    val dateAdded = parseDateAdded(tags)
 
     @Ignore
     val toc = json.getOrNull("toc")?.asJsonArray?.let {
@@ -180,21 +180,6 @@ open class ArchiveJsonBase(json: JsonObject, val updatedAt: Long, val titleSortI
             )
         }
     }
-
-    init {
-        val timeStampIndex = tags.indexOf("date_added:")
-        dateAdded = if (timeStampIndex < 0) 0L
-        else {
-            val tagStart = tags.indexOf(':', timeStampIndex) + 1
-            var tagEnd = tags.indexOf(',', tagStart)
-            if (tagEnd < 0)
-                tagEnd = tags.length
-
-            val dateTag = tags.substring(tagStart, tagEnd)
-            dateTag.toLongOrNull() ?: 0L
-        }
-    }
-
 }
 
 open class ArchiveJson(json: JsonObject, updatedAt: Long, titleSortIndex: Int) : ArchiveJsonBase(json, updatedAt, titleSortIndex) {
