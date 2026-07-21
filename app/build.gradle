@@ -68,6 +68,10 @@ android {
         }
     }
 
+    androidResources {
+        generateLocaleConfig true
+    }
+
     namespace 'com.utazukin.ichaival'
     buildFeatures {
         compose true
