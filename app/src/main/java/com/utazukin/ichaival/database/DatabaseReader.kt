@@ -431,6 +431,7 @@ object DatabaseReader {
 
     suspend fun deleteArchives(ids: Collection<String>) = withTransaction {
         database.archiveDao().removeArchives(ids)
+        database.archiveDao().removeFromTanks(ids)
         for (id in ids.filter { isTankId(it) })
             database.archiveDao().removeTank(id)
     }

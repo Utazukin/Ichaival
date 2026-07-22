@@ -204,6 +204,9 @@ interface ArchiveDao {
 
     @Query("Delete from tankoubonarchiveref where tankId = :id")
     suspend fun removeTank(id: String)
+
+    @Query("Delete from tankoubonarchiveref where archiveId in (:archiveIds)")
+    suspend fun removeFromTanks(archiveIds: Collection<String>)
 }
 
 class DatabaseTypeConverters {
