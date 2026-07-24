@@ -97,7 +97,7 @@ class EditChapterDialogFragment : DialogFragment() {
 
     private fun updateChapter(name: String, page: Int) {
         lifecycleScope.launch {
-            DatabaseReader.getArchive(archiveId)?.run { addToCEntry(name, page) }
+            DatabaseReader.getArchive(archiveId)?.run { addToCEntry(name.trim(), page) }
             dismiss()
         }
     }
