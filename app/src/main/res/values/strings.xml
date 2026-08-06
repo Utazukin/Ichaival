@@ -277,4 +277,8 @@
     <string name="add_edit_chapter">Add/Edit Chapter</string>
     <string name="group_tanks_switch">Group Tankoubons</string>
     <string name="fail_chapter_edit_message">Failed to edit chapter!</string>
+    <string name="quick_sync_item">Quick Sync</string>
+    <string name="quick_sync_pref" translatable="false">quick_sync_pref</string>
+    <string name="quick_sync_title">Default to Quick Sync</string>
+    <string name="quick_sync_summary">When enabled, swaps the sync button with the quick sync button</string>
 </resources>

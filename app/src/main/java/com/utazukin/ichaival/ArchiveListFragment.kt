@@ -203,6 +203,19 @@ class ArchiveListFragment : Fragment(),
                 }
             }
         }
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireActivity())
+        if (prefs.getBoolean(getString(R.string.quick_sync_pref), false)) {
+            with (menu) {
+                findItem(R.id.quick_sync)?.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                findItem(R.id.refresh_archives)?.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_NEVER)
+            }
+        } else {
+            with (menu) {
+                findItem(R.id.quick_sync)?.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_NEVER)
+                findItem(R.id.refresh_archives)?.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+            }
+        }
     }
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
@@ -210,6 +223,12 @@ class ArchiveListFragment : Fragment(),
             R.id.refresh_archives -> {
                 if (viewModel.initiated && !viewModel.refreshing) {
                     forceArchiveListUpdate()
+                    true
+                } else false
+            }
+            R.id.quick_sync -> {
+                if (viewModel.initiated && !viewModel.refreshing) {
+                    forceArchiveListUpdate(true)
                     true
                 } else false
             }
@@ -437,7 +456,7 @@ class ArchiveListFragment : Fragment(),
         prefs.unregisterOnSharedPreferenceChangeListener(this)
     }
 
-    private fun forceArchiveListUpdate() {
+    private fun forceArchiveListUpdate(quick: Boolean = false) {
         listAdapter?.disableMultiSelect()
         searchJob?.cancel()
         launch {
@@ -447,7 +466,10 @@ class ArchiveListFragment : Fragment(),
             viewModel.jumpToTop = true
             viewModel.viewModelScope.async {
                 viewModel.refreshing = true
-                DatabaseReader.updateArchiveList()
+                if (quick)
+                    DatabaseReader.quickSyncArchives()
+                else
+                    DatabaseReader.updateArchiveList()
                 viewModel.refreshing = false
             }.await()
             syncMessage.dismiss()
