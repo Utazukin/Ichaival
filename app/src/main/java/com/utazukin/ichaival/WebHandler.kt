@@ -370,6 +370,14 @@ object WebHandler {
         return httpClient.newCall(connection).tryAwait()?.body?.byteStream()
     }
 
+    suspend fun quickSync(): InputStream? {
+        if (!canConnect())
+            return null
+
+        val response = tryOrNull { searchServerInternal("", false, SortMethod.Date, true, 0, false, false) }
+        return if (response?.isSuccessful == true) response.body.byteStream() else null
+    }
+
     suspend fun searchServer(search: CharSequence, onlyNew: Boolean, sortMethod: SortMethod, descending: Boolean,
                              start: Long = 0, groupTanks: Boolean = false, idsOnly: Boolean = false) : InputStream? {
         if (!canConnect())

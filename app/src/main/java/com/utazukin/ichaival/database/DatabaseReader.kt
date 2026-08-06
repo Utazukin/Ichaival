@@ -293,6 +293,40 @@ object DatabaseReader {
         isDirty = false
     }
 
+    suspend fun quickSyncArchives() = withContext(Dispatchers.IO) {
+        val currentTime = Calendar.getInstance().timeInMillis
+
+        withTransaction {
+            val gson = GsonBuilder()
+                .registerTypeAdapter(ArchiveJson::class.java, ArchiveDeserializer(currentTime))
+                .create()
+            val archiveStream = WebHandler.quickSync() ?: return@withTransaction
+            val updateArchive: suspend (ArchiveJson) -> Unit = if (ServerManager.serverTracksProgress) {
+                { updateArchive(it) }
+            } else {
+                { updateArchive(it as ArchiveJsonBase) }
+            }
+
+            JsonReader(archiveStream.bufferedReader(Charsets.UTF_8)).use {
+                it.beginObject()
+                while (it.hasNext()) {
+                    if (it.nextName() == "data") {
+                        it.beginArray()
+                        while (it.hasNext()) {
+                            val archive: ArchiveJson = gson.fromJson(it, ArchiveJson::class.java)
+                            updateArchive(archive)
+                            archive.toc?.let { toc -> database.archiveDao().addToc(toc) }
+                        }
+                        it.endArray()
+                    } else it.skipValue()
+                }
+                it.endObject()
+            }
+        }
+
+        launch { database.archiveDao().clearSearchCache() }
+    }
+
     private suspend fun updateArchive(archiveJson: ArchiveJson) = database.archiveDao().insertJson(archiveJson)
     private suspend fun updateArchive(archiveJson: ArchiveJsonBase) = database.archiveDao().insertJsonBase(archiveJson)
     private suspend fun updateTank(tankJson: TankJson) = database.archiveDao().insertTankJson(tankJson)
