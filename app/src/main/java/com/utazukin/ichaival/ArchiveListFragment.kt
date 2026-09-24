@@ -42,6 +42,7 @@ import android.widget.SimpleCursorAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.content.edit
 import androidx.core.util.Pair
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -65,11 +66,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.ceil
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 private const val DEFAULT_SEARCH_DELAY = 750L
+const val UPDATE_COVER_KEY = "update covers"
 
 interface OnListFragmentInteractionListener {
     fun onListFragmentInteraction(archive: ArchiveListEntry, view: View)
@@ -289,20 +290,19 @@ class ArchiveListFragment : Fragment(),
         super.onStart()
         searchView.setOnQueryTextListener(this)
 
-        //Update the image on all bound view holders to catch any cover updates
-        var firstBoundPosition = Int.MAX_VALUE
-        var lastBoundPosition = Int.MIN_VALUE
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val covers = prefs.getStringSet(UPDATE_COVER_KEY, setOf()) ?: return
         for (i in 0 until listView.childCount) {
-            val holder = listView.getChildViewHolder(listView.getChildAt(i))
-            if (holder.bindingAdapterPosition < 0)
-                continue
-
-            firstBoundPosition = min(firstBoundPosition, holder.bindingAdapterPosition)
-            lastBoundPosition = max(lastBoundPosition, holder.bindingAdapterPosition)
+            val child = listView.getChildAt(i)
+            val holder = listView.getChildViewHolder(child)
+            if (holder.bindingAdapterPosition >= 0) {
+                if (covers.contains((child.tag as? ArchiveListEntry)?.id))
+                    listAdapter?.notifyItemChanged(holder.bindingAdapterPosition)
+            }
         }
 
-        if (firstBoundPosition != Int.MAX_VALUE && lastBoundPosition != Int.MIN_VALUE)
-            listAdapter?.notifyItemRangeChanged(firstBoundPosition, lastBoundPosition, true)
+        if (activity is ArchiveList)
+            prefs.edit { remove(UPDATE_COVER_KEY) }
     }
 
     override fun onStop() {

@@ -133,13 +133,7 @@ class ArchiveRecyclerViewAdapter(
         if (payloads.isEmpty())
             onBindViewHolder(holder, position)
         else {
-            getItem(position)?.let {
-                //Run on an IO thread to work around an animation issue with the card view
-                //and to avoid crossfading all visible images
-                scope.launch(Dispatchers.IO) {
-                    loadImage(holder.archiveImage, it.id)
-                }
-            }
+            getItem(position)?.let { loadImage(holder.archiveImage, it.id) }
         }
     }
 

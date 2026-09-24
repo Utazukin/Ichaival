@@ -60,6 +60,7 @@ import com.utazukin.ichaival.TankJsonBase
 import com.utazukin.ichaival.Tankoubon
 import com.utazukin.ichaival.TankoubonArchiveRef
 import com.utazukin.ichaival.ToCEntryUpdate
+import com.utazukin.ichaival.UPDATE_COVER_KEY
 import com.utazukin.ichaival.WebHandler
 import com.utazukin.ichaival.castStringPrefToLong
 import com.utazukin.ichaival.isTankId
@@ -698,7 +699,12 @@ object DatabaseReader {
             if (image.exists())
                 image.delete()
 
-            getArchiveImage(id, context, page)
+            val file = getArchiveImage(id, context, page)
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val covers = prefs.getStringSet(UPDATE_COVER_KEY, setOf())!!.toMutableSet()
+            covers.add(id)
+            prefs.edit { putStringSet(UPDATE_COVER_KEY, covers) }
+            file
         }
     }
 
