@@ -367,7 +367,8 @@ object WebHandler {
 
         val url = serverUrlBuilder.addArchiveList().build()
         val connection = createServerConnection(url)
-        return httpClient.newCall(connection).tryAwait()?.body?.byteStream()
+        val response = httpClient.newCall(connection).tryAwait()
+        return if (response?.isSuccessful == true) response.body.byteStream() else null
     }
 
     suspend fun quickSync(): InputStream? {
